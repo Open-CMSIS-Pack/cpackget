@@ -1,0 +1,29 @@
+project_name: cpackget
+builds:
+  - env: [CGO_ENABLED=0]
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+
+archives:
+  - files:
+      - LICENSE.txt
+      - README.md
+      - CHANGELOG.md
+
+    format_overrides:
+      - goos: windows
+        format: zip
+
+    # Set to true, if you want all files in the archive to be in a single directory.
+    # If set to true and you extract the archive 'goreleaser_Linux_arm64.tar.gz',
+    # you get a folder 'goreleaser_Linux_arm64'.
+    # If set to false, all files are extracted separately.
+    # You can also set it to a custom folder name (templating is supported).
+    # Default is false.
+    wrap_in_directory: true
+
+

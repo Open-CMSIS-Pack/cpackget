@@ -1,0 +1,65 @@
+#!/bin/bash
+
+echo "Preparing release of cpackget"
+
+# Sanity check, no uncommited changes are allowed
+changed=$(git diff-index --name-only HEAD -- || true)
+if [ -n "$changed" ]
+then
+    echo "Uncommited changes found; cannot release like this:"
+    echo "$changed"
+    echo "Commit these changes first! Aborting"
+    exit 1
+fi
+
+# Display current release version and ask for the next
+current_version=`git describe`
+echo "Current version is at: $current_version"
+echo -n " Next release version: v"
+read next_release_version
+
+# Make sure version is going up
+IFS=. read curr_major curr_mid curr_minor <<< ${current_version//-*/}
+IFS=. read next_major next_mid next_minor <<< $next_release_version
+diff_major=$(($next_major - $curr_major))
+diff_mid=$(($next_mid - $curr_mid))
+diff_minor=$(($next_minor - $curr_minor))
+if [ $diff_major -lt 0 ] ||
+   [ $diff_major -eq 0 -a $diff_mid -lt 0 ] ||
+   [ $diff_major -eq 0 -a $diff_mid -eq 0 -a $diff_minor -le 0 ]
+then
+	echo "Versions should always go up: (next) $next_release_version <= $current_version (current)"
+	echo "For more info, visit: https://semver.org/"
+	exit -1
+fi
+
+# Prepend a "v" before version number
+next_release_version=v${next_release_version}
+
+# Make sure release version hasn't been used before
+if git rev-parse --verify --quiet $next_release_version >/dev/null -o
+   grep -q "^# $next_release_version" CHANGELOG.md
+then
+    echo "Version $next_release_version has already been released. Aborting"
+    exit 1
+fi
+
+# Make sure to document changes
+if ! grep -q "^# $next_release_version" CHANGELOG.md
+then
+    echo "Document the changes in CHANGELOG.md"
+    editor CHANGELOG.md
+fi
+if ! grep -q "^# $next_release_version" CHANGELOG.md; then
+    echo "Version $next_release_version is not documented in CHANGELOG.md"
+    echo "Please do that before releasing. Aborting"
+    exit 1
+fi
+
+# Commit changes to CHANGELOG, bump up the version and push
+# tags so that github action can take care of the second
+# part of the release, see .github/workflows/release.yml
+git commit --message "New release: $next_release_version" CHANGELOG.md || true
+git tag -s -m "Vidx2pidx release $next_release_version" "$next_release_version"
+git push
+git push --tags

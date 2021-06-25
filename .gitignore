@@ -1,0 +1,3 @@
+build/
+testing.log
+*.out

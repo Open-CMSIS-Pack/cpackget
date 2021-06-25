@@ -1,0 +1,9 @@
+<index>
+                  <vendor>TheVendor</vendor>
+                  <url>http://vendor.com/</url>
+                  <timestamp></timestamp>
+                  <pindex>
+                    <pdsc url="http://vendor.com/" vendor="TheVendor" name="ThePack" version="1.2.3" />
+                    <pdsc url="http://vendor.com/" vendor="TheVendor" name="TheOtherPack" version="1.1.0" />
+                  </pindex>
+                </index>

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+previous_tag=$(git describe --tags "HEAD^" --abbrev=0)
+sed "/^# ${previous_tag}/q" CHANGELOG.md | head -n -1
