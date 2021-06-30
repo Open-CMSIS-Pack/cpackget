@@ -12,9 +12,6 @@ import (
 )
 
 var flags struct {
-	outputFileName string
-	force          bool
-	cacheDir       string
 	version        bool
 }
 
