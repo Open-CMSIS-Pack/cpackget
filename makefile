@@ -13,7 +13,7 @@ ifneq (,$(findstring windows,$(OS)))
     PROG=build/$(BIN_NAME).exe
 endif
 
-SOURCES := $(wildcard *.go)
+SOURCES := $(wildcard cmd/*.go)
 
 all:
 	@echo Pick one of:
