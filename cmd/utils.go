@@ -5,6 +5,8 @@ package main
 
 import (
 	"os"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func AnyErr(errs []error) error {
@@ -19,7 +21,7 @@ func AnyErr(errs []error) error {
 
 func ExitOnError(err error) {
 	if err != nil {
-		Logger.Error(err.Error())
+		log.Error(err.Error())
 		os.Exit(-1)
 	}
 }

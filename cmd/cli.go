@@ -8,6 +8,7 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
+	log "github.com/sirupsen/logrus"
 )
 
 var flags struct {
@@ -33,7 +34,7 @@ func NewCli() *cobra.Command {
 			}
 
 			if len(args) == 0 {
-				Logger.Error("Empty arguments list. See --help for more information.")
+				log.Error("Empty arguments list. See --help for more information.")
 				return
 			}
 		},
