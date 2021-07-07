@@ -4,6 +4,8 @@
 package main
 
 import (
+	"os"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -14,5 +16,5 @@ func main() {
 
 func init() {
 	log.SetOutput(os.Stdout)
-	log.SetLevel(log.WarnLevel)
+	log.SetLevel(log.InfoLevel)
 }
