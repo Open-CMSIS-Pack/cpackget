@@ -26,21 +26,48 @@ func ExitOnError(err error) {
 	}
 }
 
-// PackPathToPdscTag returns an array of strings with
-// Package-Vendor, Package-Name and Package-Version
+// PackPathToPdscTag takes in a path to a pack and returns a PdscTag
+// struct representation
+// Valid packPath's are:
+// - /path/to/dev/Vendor.Pack.pdsc
+// - /path/to/local/Vendor.Pack.Version.pack (or .zip)
+// - https://web.com/Vendor.Pack.Version.pack (or .zip)
 func PackPathToPdscTag(packPath string) (PdscTag, error) {
 	log.Debugf("Parsing pack path \"%s\"", packPath)
-	url, packName := path.Split(packPath)
+
 	tag := PdscTag{}
+	url, packName := path.Split(packPath)
+	isPdsc := false
+	validExtensions := []string{".zip", ".pack"}
+
+	if strings.HasSuffix(packName, ".pdsc") {
+		isPdsc = true
+		validExtensions = []string{".pdsc"}
+	}
+
 	details := strings.SplitAfterN(packName, ".", 3)
-	if len(details) != 3 || !strings.HasSuffix(packName, ".pack"){
+	if len(details) != 3 {
 		return tag, ErrBadPackName
+	}
+
+	extension := ""
+	for _, validExtension := range validExtensions {
+		if strings.HasSuffix(packName, validExtension) {
+			extension = validExtension
+		}
+	}
+
+	if extension == "" {
+		return tag, ErrBadPackNameInvalidExtension
 	}
 
 	tag.URL     = url
 	tag.Vendor  = strings.ReplaceAll(details[0], ".", "")
 	tag.Name    = strings.ReplaceAll(details[1], ".", "")
-	tag.Version = strings.ReplaceAll(details[2], ".pack", "")
+
+	if !isPdsc {
+		tag.Version = strings.ReplaceAll(details[2], extension, "")
+	}
 
 	// nameRegex validates pack name and pack vendor name
 	nameRegex := regexp.MustCompile(`^[0-9a-zA-Z_\-]+$`)
@@ -56,7 +83,7 @@ func PackPathToPdscTag(packPath string) (PdscTag, error) {
 	} else if !nameRegex.MatchString(tag.Name) {
 		log.Errorf("Pack name \"%s\" does not match %s", tag.Name, nameRegex)
 		err = ErrBadPackNameInvalidName
-	} else if !versionRegex.MatchString(tag.Version) {
+	} else if !isPdsc && !versionRegex.MatchString(tag.Version) {
 		log.Errorf("Pack version \"%s\" does not match %s", tag.Version, versionRegex)
 		err = ErrBadPackNameInvalidVersion
 	}
@@ -69,10 +96,7 @@ func PackPathToPdscTag(packPath string) (PdscTag, error) {
 	// file system. If it's the latter, make sure to fill in
 	// in case the file is coming from the current directory
 	if tag.URL == "" {
-		base, err := os.Getwd()
-		if err != nil {
-			return tag, err
-		}
+		base, _ := os.Getwd()
 		tag.URL = base
 	}
 

@@ -13,7 +13,7 @@ var (
 	ErrBadPackNameInvalidVendor    = errors.New("bad pack name: pack vendor should be a string containing letters")
 	ErrBadPackNameInvalidName      = errors.New("bad pack name: pack name should be a string containing letters")
 	ErrBadPackNameInvalidVersion   = errors.New("bad pack name: pack version should be versioned like 0.0.0, and optionally have a suffix containing letters")
-	ErrBadPackNameInvalidExtension = errors.New("bad pack name: pack extension should be \"pdsc\"")
+	ErrBadPackNameInvalidExtension = errors.New("bad pack name: pack extension should be \"pdsc\", \"pack\" or \"zip\"")
 
 	// Errors related to package content
 	ErrPdscNotFound    = errors.New("pdsc not found")
