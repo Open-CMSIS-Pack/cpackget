@@ -4,8 +4,8 @@
 package main
 
 import (
-	"os"
-	"path"
+	//"os"
+	//"path"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -13,11 +13,11 @@ import (
 func (manager *PacksManagerType) Uninstall(packName string) error {
 	log.Infof("Uninstalling %s", packName)
 
+/*
 	pdsc, err := PackPathToPdscTag(packName)
 	if err != nil {
 		return err
 	}
-
 	var pidx *PidxXML
 	if manager.Pidx.HasPdsc(pdsc) {
 		pidx = manager.Pidx
@@ -40,7 +40,7 @@ func (manager *PacksManagerType) Uninstall(packName string) error {
 	if err != nil {
 		log.Errorf("Can't deregister pack %s: %s", pdsc.Key(), err)
 		return ErrUnknownBehavior
-	}*/
-
+	}
+*/
 	return nil
 }

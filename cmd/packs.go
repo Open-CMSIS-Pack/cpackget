@@ -6,6 +6,7 @@ package main
 import (
 	"archive/zip"
 	"fmt"
+	"os"
 	"path"
 	"strings"
 
@@ -20,8 +21,16 @@ type PackInstallationType struct {
 	// Manager is a reference to PackManagerType
 	Manager *PacksManagerType
 
-	// IsLocal tells if the file comes from a local file system or the Internet
+	// IsPublic tells whether the pack exists in the public index or not
+	IsPublic bool
+
+	// IsLocal tells whether the pack comes from a local file system (for dev)
+	// Local packs are installed via adding pdsc files
+	// Ex: cpackget install path/to/Vendor.Pack.pdsc
 	IsLocal bool
+
+	// IsDownloaded tells whether the file needed to be downloaded from a server
+	IsDownloaded bool
 
 	// Path points to a file in the local system, whether or not it's local
 	Path string
@@ -47,10 +56,11 @@ func (p *PackInstallationType) Fetch() error {
 	var err error
 	if strings.HasPrefix(p.Path, "http") {
 		p.Path, err = DownloadFile(p.Path)
-		if err != nil {
-			return err
-		}
-	} else if !FileExists(p.Path) {
+		p.IsDownloaded = true
+		return err
+	}
+
+	if !FileExists(p.Path) {
 		log.Errorf("File \"%s\" does't exist", p.Path)
 		return ErrFileNotFound
 	}
@@ -79,21 +89,47 @@ func (p *PackInstallationType) Validate() error {
 	return nil
 }
 
+// IsInstalled returns true if pack is already installed or false otherwise
+// First it checks if there's a folder named p.Vendor / p.Name / p.Version
+// Then it checks if it's listed in .Local/local_repository.pidx
+func (p *PackInstallationType) IsInstalled() bool {
+	installationDir := path.Join(p.Manager.PackRoot, p.Vendor, p.Name, p.Vendor)
+	if _, err := os.Stat(installationDir); !os.IsNotExist(err) {
+		return true
+	}
+
+	return p.Manager.LocalPidx.HasPdsc(p.ToPdscTag())
+}
+
 // Install installs itself using PackManager's info
 // It should:
-//   * extract all files from the pack into CMSIS_PACK_ROOT/Vendor/Name/Version
-//   * if pack comes from file system
-//     * add this pack's pdscTag to CMSIS_PACK_ROOT/.Local/local_repository.pidx
-//   * if pack comes from the Internet
-//     * add this pack's pdscTag to CMSIS_PACK_ROOT/.Web/index.pidx
-//     * place the original pack file under CMSIS_PACK_ROOT/.Download
+//   - If pack.IsLocal (pdsc file) is true then
+//     - It means the tool is adding a development version of the pack
+//       and the only step is to add it to the "CMSIS_PACK_ROOT/.Local/local_repository.pidx"
+//       and the URL should be the directory of the pdsc file
+//   - If it's no local then
+//     - Extract all files to "CMSIS_PACK_ROOT/p.Vendor/p.Name/p.Version/"
+//     - Save a copy of the pack in "CMSIS_PACK_ROOT/.Download/"
+//     - Save a versioned pdsc file in "CMSIS_PACK_ROOT/.Download/"
+//     - If it's not public (pack not in CMSIS_PACK_ROOT/.Web/index.pidx) then
+//       - Save an unversioned copy of the pdsc file in "CMSIS_PACK_ROOT/.Local/"
+//
 func (p *PackInstallationType) Install() error {
+	log.Debugf("Installing \"%s\"", p.Path)
+	if p.IsLocal {
+		pdsc := NewPdsc(p.Path)
+		pdsc.Read()
+		return p.Manager.LocalPidx.AddPdsc(pdsc.Tag())
+	}
+
 	packHomeDir := path.Join(p.Manager.PackRoot, p.Vendor, p.Name, p.Version)
 	err := EnsureDir(packHomeDir)
 	if err != nil {
 		log.Errorf("Can't access pack directory \"%s\": %s", packHomeDir, err)
 		return err
 	}
+
+	log.Debugf("Extracting files from \"%s\" to \"%s\"", p.Path, packHomeDir)
 
 	p.ZipReader, err = zip.OpenReader(p.Path)
 	if err != nil {
@@ -107,9 +143,7 @@ func (p *PackInstallationType) Install() error {
 		return err
 	}
 
-	log.Debugf("Installing \"%s\" into \"%s\"", p.Path, packHomeDir)
-
-	// Inflate all first
+	// Inflate all files
 	for _, file := range p.ZipReader.File {
 		err = InflateFile(file, packHomeDir)
 		if err != nil {
@@ -121,28 +155,24 @@ func (p *PackInstallationType) Install() error {
 	pdscFilePath := path.Join(packHomeDir, pdscFileName)
 	newPdscFileName := fmt.Sprintf("%s.%s.%s.pdsc", p.Vendor, p.Name, p.Version)
 
-	if p.IsLocal {
-		// Keep a copy of a versioned pdsc file under .Local/
-		err = CopyFile(pdscFilePath, path.Join(p.Manager.LocalDir, newPdscFileName))
-		if err != nil {
-			return err
-		}
-	} else {
-		// Keep a copy of a versioned pdsc file under .Download/
-		err = CopyFile(pdscFilePath, path.Join(p.Manager.DownloadDir, newPdscFileName))
-		if err != nil {
-			return err
-		}
-
-		// Keep a copy of the original pack under .Download/ as well
-		packFileName := path.Base(p.Path)
-		err = MoveFile(p.Path, path.Join(p.Manager.DownloadDir, packFileName))
+	if !p.IsPublic {
+		err = CopyFile(pdscFilePath, path.Join(p.Manager.LocalDir, pdscFileName))
 		if err != nil {
 			return err
 		}
 	}
 
-	return nil
+	err = CopyFile(pdscFilePath, path.Join(p.Manager.DownloadDir, newPdscFileName))
+	if err != nil {
+		return err
+	}
+
+	packBackupPath := path.Join(p.Manager.DownloadDir, path.Base(p.Path))
+	if p.IsDownloaded {
+		return MoveFile(p.Path, packBackupPath)
+	} else {
+		return CopyFile(p.Path, packBackupPath)
+	}
 }
 
 // PacksManagerType is the scruct tha manages Open-CMSIS-Pack installation/deletion
@@ -158,7 +188,7 @@ type PacksManagerType struct {
 	Packs map[string]*PackInstallationType
 
 	// Package index
-	Pidx      *PidxXML
+	WebPidx   *PidxXML
 	LocalPidx *PidxXML
 }
 
@@ -172,7 +202,7 @@ func NewPacksManager(packRoot string) (*PacksManagerType, error) {
 		LocalDir:    path.Join(packRoot, ".Local"),
 		WebDir:      path.Join(packRoot, ".Web"),
 	}
-	manager.Pidx = NewPidx(path.Join(manager.WebDir, "index.pidx"))
+	manager.WebPidx = NewPidx(path.Join(manager.WebDir, "index.pidx"))
 	manager.LocalPidx = NewPidx(path.Join(manager.LocalDir, "local_repository.pidx"))
 
 	var err error
@@ -182,7 +212,7 @@ func NewPacksManager(packRoot string) (*PacksManagerType, error) {
 		}
 	}
 
-	for _, pidx := range []*PidxXML{manager.Pidx, manager.LocalPidx} {
+	for _, pidx := range []*PidxXML{manager.WebPidx, manager.LocalPidx} {
 		if err = pidx.Read(); err != nil {
 			return manager, err
 		}
@@ -203,7 +233,6 @@ func (manager *PacksManagerType) NewPackInstallation(packPath string) (*PackInst
 		PdscTag: pdscTag,
 		Manager: manager,
 		Path:    packPath,
-		IsLocal: !strings.HasPrefix(packPath, "http"),
 	}
 
 	return packInstallation, nil
@@ -211,15 +240,5 @@ func (manager *PacksManagerType) NewPackInstallation(packPath string) (*PackInst
 
 // Save saves proper modifications to pidx files to disk
 func (manager *PacksManagerType) Save() error {
-	err := manager.Pidx.Write()
-	if err != nil {
-		return err
-	}
-
-	err = manager.LocalPidx.Write()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return manager.LocalPidx.Write()
 }

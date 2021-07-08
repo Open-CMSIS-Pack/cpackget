@@ -16,8 +16,9 @@ var (
 	ErrBadPackNameInvalidExtension = errors.New("bad pack name: pack extension should be \"pdsc\", \"pack\" or \"zip\"")
 
 	// Errors related to package content
-	ErrPdscNotFound    = errors.New("pdsc not found")
-	ErrPdscEntryExists = errors.New("pdsc entry exists already")
+	ErrPdscNotFound         = errors.New("pdsc not found")
+	ErrPackAlreadyInstalled = errors.New("pack already installed")
+	ErrPdscEntryExists      = errors.New("pdsc already in index")
 
 	// Errors related to network
 	ErrBadRequest            = errors.New("bad request")
