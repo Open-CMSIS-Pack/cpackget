@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"os"
@@ -61,7 +62,6 @@ func PackPathToPdscTag(packPath string) (PdscTag, error) {
 		return tag, ErrBadPackNameInvalidExtension
 	}
 
-	tag.URL     = url
 	tag.Vendor  = strings.ReplaceAll(details[0], ".", "")
 	tag.Name    = strings.ReplaceAll(details[1], ".", "")
 
@@ -95,11 +95,17 @@ func PackPathToPdscTag(packPath string) (PdscTag, error) {
 	// tag.URL can be either an actual URL or a path to the local
 	// file system. If it's the latter, make sure to fill in
 	// in case the file is coming from the current directory
-	if tag.URL == "" {
-		base, _ := os.Getwd()
-		tag.URL = base
+	if !(strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "file://")) {
+		if !filepath.IsAbs(url) {
+			absPath, _ := os.Getwd()
+			url = path.Join(absPath, url)
+			url, _ = filepath.Abs(url)
+		}
+
+		url = "file://" + url
 	}
 
+	tag.URL = url
 	return tag, nil
 }
 
