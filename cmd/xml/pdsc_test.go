@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright Contributors to the vidx2pidx project. */
 
-package main
+package xml_test
 
 import (
 	"fmt"

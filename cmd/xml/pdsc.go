@@ -1,12 +1,13 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright Contributors to the vidx2pidx project. */
 
-package main
+package xml
 
 import (
 	"encoding/xml"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 )
 
 type PdscXML struct {
@@ -55,5 +56,5 @@ func (p *PdscXML) Tag() PdscTag {
 
 func (p *PdscXML) Read() error {
 	log.Debugf("Reading pdsc from file \"%s\"", p.fileName)
-	return ReadXML(p.fileName, p)
+	return utils.ReadXML(p.fileName, p)
 }

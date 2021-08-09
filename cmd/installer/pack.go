@@ -13,6 +13,23 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// CHEEEEEEEEEEEEEEEECK if there's a way to do this in golang
+// class A:
+//  def doA()
+//    doChild()
+//    doB()
+//  def doChild()
+//    raise Uninmplemented
+//  def doB()
+//    echo "common method"
+// 
+// class Child
+//   def doChild()
+//     echo "childing"
+// 
+// c = Child()
+// c.doA()
+
 // PackInstallationType is the struct that represents the installation of a
 // single pack
 type PackInstallationType struct {
@@ -242,3 +259,49 @@ func (manager *PacksManagerType) NewPackInstallation(packPath string) (*PackInst
 func (manager *PacksManagerType) Save() error {
 	return manager.LocalPidx.Write()
 }
+
+// REFACTORRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR
+//func runPackAdd(cmd *cobra.Command, args []string) {
+//	log.Info("")
+//	packRoot := viper.GetString("pack-root")
+//	manager, err := NewPacksManager(packRoot)
+//	if err != nil {
+//		log.Errorf("Could not initialize pack manager: %s", err)
+//		return
+//	}
+//
+//	for _, packPath := range args {
+//		err = manager.Install(packPath)
+//		if err != nil {
+//			if errors.Is(err, ErrPdscEntryExists) {
+//				log.Infof("%s is already installed", packPath)
+//			} else {
+//				log.Error(err.Error())
+//			}
+//		}
+//	}
+//
+//	manager.Save()
+//}
+//
+//func runPackRm(cmd *cobra.Command, args []string) {
+//	log.SetLevel(log.DebugLevel)
+//	manager, err := NewPacksManager(flags.packRoot)
+//	if err != nil {
+//		log.Errorf("Could not initialize pack manager: %s", err)
+//		return
+//	}
+//
+//	for _, packName := range args {
+//		err = manager.Uninstall(packName)
+//		if err != nil {
+//			if errors.Is(err, ErrPdscNotFound) {
+//				log.Infof("Pack \"%s\" is not installed", packName)
+//			} else {
+//				log.Error(err.Error())
+//			}
+//		}
+//	}
+//
+//	manager.Save()
+//}

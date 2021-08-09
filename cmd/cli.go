@@ -4,7 +4,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,8 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/open-cmsis-pack/cmd/commands"
-	installer "github.com/open-cmsis-pack/cmd/packinstaller"
+	"github.com/open-cmsis-pack/cpackget/cmd/commands"
 )
 
 var flags struct {
@@ -49,9 +47,12 @@ func NewCli() *cobra.Command {
 
 	rootCmd.Flags().BoolVarP(&flags.version, "version", "V", false, "Output the version number of cpackget and exit.")
 	rootCmd.PersistentFlags().IntVarP(&flags.verbosiness, "verbosiness", "v", 1, "Set verbosiness: 0 (Errors), 1 (Info messages), 2 (Warnings), 3 (Debugging).")
-	rootCmd.PersistentFlags().StringVarP("pack-root", "R", defaultPackRoot, "Specify pack root folder. Defaults to CMSIS_PACK_ROOT environment variable or current directory.")
+	rootCmd.PersistentFlags().StringP("pack-root", "R", defaultPackRoot, "Specify pack root folder. Defaults to CMSIS_PACK_ROOT environment variable or current directory.")
 	viper.BindPFlag("pack-root", rootCmd.PersistentFlags().Lookup("pack-root"))
-	rootCmd.AddCommand(commands.PackCmd(), commands.PdscCmd())
+
+	for _, cmd := range commands.All {
+		rootCmd.AddCommand(cmd)
+	}
 
 	return rootCmd
 }

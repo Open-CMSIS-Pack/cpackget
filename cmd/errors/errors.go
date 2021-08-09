@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright Contributors to the cpackget project. */
 
-package main
+package errors
 
 import (
 	"errors"
@@ -9,28 +9,28 @@ import (
 
 var (
 	// Errors related to package file name
-	ErrBadPackName                 = errors.New("bad pack name: it should follow the standard PackVendor.PackName.PackVersion.pack")
-	ErrBadPackNameInvalidVendor    = errors.New("bad pack name: pack vendor should be a string containing letters")
-	ErrBadPackNameInvalidName      = errors.New("bad pack name: pack name should be a string containing letters")
-	ErrBadPackNameInvalidVersion   = errors.New("bad pack name: pack version should be versioned like 0.0.0, and optionally have a suffix containing letters")
-	ErrBadPackNameInvalidExtension = errors.New("bad pack name: pack extension should be \"pdsc\", \"pack\" or \"zip\"")
+	BadPackName                 = errors.New("bad pack name: it should follow the standard PackVendor.PackName.PackVersion.pack")
+	BadPackNameInvalidVendor    = errors.New("bad pack name: pack vendor should be a string containing letters")
+	BadPackNameInvalidName      = errors.New("bad pack name: pack name should be a string containing letters")
+	BadPackNameInvalidVersion   = errors.New("bad pack name: pack version should be versioned like 0.0.0, and optionally have a suffix containing letters")
+	BadPackNameInvalidExtension = errors.New("bad pack name: pack extension should be \"pdsc\", \"pack\" or \"zip\"")
 
 	// Errors related to package content
-	ErrPdscNotFound         = errors.New("pdsc not found")
-	ErrPackAlreadyInstalled = errors.New("pack already installed")
-	ErrPdscEntryExists      = errors.New("pdsc already in index")
+	PdscNotFound         = errors.New("pdsc not found")
+	PackAlreadyInstalled = errors.New("pack already installed")
+	PdscEntryExists      = errors.New("pdsc already in index")
 
 	// Errors related to network
-	ErrBadRequest            = errors.New("bad request")
-	ErrFailedDownloadingFile = errors.New("failed to download file")
+	BadRequest            = errors.New("bad request")
+	FailedDownloadingFile = errors.New("failed to download file")
 
 	// Errors related to file system
-	ErrFailedCreatingFile        = errors.New("failed to create a local file")
-	ErrFailedWrittingToLocalFile = errors.New("failed writing HTTP stream to local file")
-	ErrFailedDecompressingFile   = errors.New("fail to decompress file")
-	ErrFailedInflatingFile       = errors.New("fail to inflate file")
-	ErrFileNotFound              = errors.New("file not found")
+	FailedCreatingFile        = errors.New("failed to create a local file")
+	FailedWrittingToLocalFile = errors.New("failed writing HTTP stream to local file")
+	FailedDecompressingFile   = errors.New("fail to decompress file")
+	FailedInflatingFile       = errors.New("fail to inflate file")
+	FileNotFound              = errors.New("file not found")
 
 	// Errors that can't be be predicted
-	ErrUnknownBehavior = errors.New("unknown behavior")
+	UnknownBehavior = errors.New("unknown behavior")
 )

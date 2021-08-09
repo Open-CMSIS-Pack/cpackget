@@ -1,13 +1,15 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright Contributors to the vidx2pidx project. */
 
-package main
+package xml
 
 import (
 	"encoding/xml"
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
+	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 )
 
 //
@@ -47,7 +49,7 @@ func NewPidx(fileName string) *PidxXML {
 func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 	log.Debugf("Adding pdsc tag \"%s\" pidx file to \"%s\"", pdsc, p.fileName)
 	if p.HasPdsc(pdsc) {
-		return ErrPdscEntryExists
+		return errs.PdscEntryExists
 	}
 
 	p.Pindex.Pdscs = append(p.Pindex.Pdscs, pdsc)
@@ -75,7 +77,7 @@ func (p *PidxXML) Read() error {
 		}
 	}
 
-	if err := ReadXML(p.fileName, p); err != nil {
+	if err := utils.ReadXML(p.fileName, p); err != nil {
 		return err
 	}
 
@@ -90,7 +92,7 @@ func (p *PidxXML) Read() error {
 // Save saves this PidxXML struct into its FileName
 func (p *PidxXML) Write() error {
 	log.Debugf("Writing pidx file to \"%s\"", p.fileName)
-	return WriteXML(p.fileName, p)
+	return utils.WriteXML(p.fileName, p)
 }
 
 // String returns the string representation of this pdscTag

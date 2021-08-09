@@ -4,15 +4,15 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 )
 
 func main() {
 	cmd := NewCli()
-	ExitOnError(cmd.Execute())
+	utils.ExitOnError(cmd.Execute())
 }
 
 func init() {

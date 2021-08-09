@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright Contributors to the cpackget project. */
 
-package main
+package utils
 
 import (
 	"archive/zip"
@@ -10,14 +10,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
-	"path/filepath"
-	"regexp"
 	"strings"
 	"os"
 
-
-
 	log "github.com/sirupsen/logrus"
+	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 )
 
 func ExitOnError(err error) {
@@ -25,88 +22,6 @@ func ExitOnError(err error) {
 		log.Error(err.Error())
 		os.Exit(-1)
 	}
-}
-
-// PackPathToPdscTag takes in a path to a pack and returns a PdscTag
-// struct representation
-// Valid packPath's are:
-// - /path/to/dev/Vendor.Pack.pdsc
-// - /path/to/local/Vendor.Pack.Version.pack (or .zip)
-// - https://web.com/Vendor.Pack.Version.pack (or .zip)
-func PackPathToPdscTag(packPath string) (PdscTag, error) {
-	log.Debugf("Parsing pack path \"%s\"", packPath)
-
-	tag := PdscTag{}
-	url, packName := path.Split(packPath)
-	isPdsc := false
-	validExtensions := []string{".zip", ".pack"}
-
-	if strings.HasSuffix(packName, ".pdsc") {
-		isPdsc = true
-		validExtensions = []string{".pdsc"}
-	}
-
-	details := strings.SplitAfterN(packName, ".", 3)
-	if len(details) != 3 {
-		return tag, ErrBadPackName
-	}
-
-	extension := ""
-	for _, validExtension := range validExtensions {
-		if strings.HasSuffix(packName, validExtension) {
-			extension = validExtension
-		}
-	}
-
-	if extension == "" {
-		return tag, ErrBadPackNameInvalidExtension
-	}
-
-	tag.Vendor  = strings.ReplaceAll(details[0], ".", "")
-	tag.Name    = strings.ReplaceAll(details[1], ".", "")
-
-	if !isPdsc {
-		tag.Version = strings.ReplaceAll(details[2], extension, "")
-	}
-
-	// nameRegex validates pack name and pack vendor name
-	nameRegex := regexp.MustCompile(`^[0-9a-zA-Z_\-]+$`)
-
-	// versionRegex validates pack version, it can be in the format referenced here: https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-	//                                   <major>         . <minor>        . <patch>        - <quality>                                                                                       + <meta info>
-	versionRegex := regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*)?(\+[0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*)?$`)
-
-	var err error
-	if !nameRegex.MatchString(tag.Vendor) {
-		log.Errorf("Pack vendor \"%s\" does not match %s", tag.Vendor, nameRegex)
-		err = ErrBadPackNameInvalidVendor
-	} else if !nameRegex.MatchString(tag.Name) {
-		log.Errorf("Pack name \"%s\" does not match %s", tag.Name, nameRegex)
-		err = ErrBadPackNameInvalidName
-	} else if !isPdsc && !versionRegex.MatchString(tag.Version) {
-		log.Errorf("Pack version \"%s\" does not match %s", tag.Version, versionRegex)
-		err = ErrBadPackNameInvalidVersion
-	}
-
-	if err != nil {
-		return tag, err
-	}
-
-	// tag.URL can be either an actual URL or a path to the local
-	// file system. If it's the latter, make sure to fill in
-	// in case the file is coming from the current directory
-	if !(strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "file://")) {
-		if !filepath.IsAbs(url) {
-			absPath, _ := os.Getwd()
-			url = path.Join(absPath, url)
-			url, _ = filepath.Abs(url)
-		}
-
-		url = "file://" + url
-	}
-
-	tag.URL = url
-	return tag, nil
 }
 
 // CacheDir is used for cpackget to temporarily host downloaded pack files
@@ -121,27 +36,27 @@ func DownloadFile(url string) (string, error) {
 	out, err := os.Create(filePath)
 	if err != nil {
 		log.Error(err)
-		return "", ErrFailedCreatingFile
+		return "", errs.FailedCreatingFile
 	}
 	defer out.Close()
 
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Error(err)
-		return "", ErrFailedDownloadingFile
+		return "", errs.FailedDownloadingFile
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		log.Errorf("bad status: %s", resp.Status)
-		return "", ErrBadRequest
+		return "", errs.BadRequest
 	}
 
 	// Download file in smaller bits straight to a local file
 	written, err := io.Copy(out, resp.Body)
 	if err != nil {
 		log.Error(err)
-		return "", ErrFailedWrittingToLocalFile
+		return "", errs.FailedWrittingToLocalFile
 	}
 
 	log.Debugf("Downloaded %d bytes", written)
@@ -178,7 +93,7 @@ func InflateFile(file *zip.File, destinationDir string) error {
 	reader, err := file.Open()
 	if err != nil {
 		log.Errorf("Can't inflate file \"%s\": %s", file.Name, err)
-		return ErrFailedInflatingFile
+		return errs.FailedInflatingFile
 	}
 	defer reader.Close()
 
@@ -186,14 +101,14 @@ func InflateFile(file *zip.File, destinationDir string) error {
 	out, err := os.Create(filePath)
 	if err != nil {
 		log.Error(err)
-		return ErrFailedCreatingFile
+		return errs.FailedCreatingFile
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, reader)
 	if err != nil {
 		log.Error(err)
-		return ErrFailedWrittingToLocalFile
+		return errs.FailedWrittingToLocalFile
 	}
 
 	return nil
