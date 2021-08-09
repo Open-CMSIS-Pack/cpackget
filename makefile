@@ -44,7 +44,7 @@ all:
 
 $(PROG): $(SOURCES)
 	@echo Building project
-	GOOS=$(OS) GOARCH=$(ARCH) go build -ldflags "-X main.Version=`git describe 2>/dev/null || echo unknown`" -o $(PROG) ./...
+	GOOS=$(OS) GOARCH=$(ARCH) go build -ldflags "-X main.Version=`git describe 2>/dev/null || echo unknown`" -o $(PROG) ./cmd/
 
 run: $(PROG)
 	@./$(PROG) $(ARGS) || true

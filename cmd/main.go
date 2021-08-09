@@ -4,6 +4,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	log "github.com/sirupsen/logrus"
@@ -16,5 +17,6 @@ func main() {
 
 func init() {
 	log.SetOutput(os.Stdout)
-	log.SetLevel(log.InfoLevel)
+	// TODO: put it back to info, set to debug only when --verbosiness is specified
+	log.SetLevel(log.DebugLevel)
 }
