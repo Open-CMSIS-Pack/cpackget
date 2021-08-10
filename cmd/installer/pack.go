@@ -27,11 +27,6 @@ type PackType struct {
 	// isInstalled tells whether the pack is already installed
 	isInstalled bool
 
-	// isLocal tells whether the pack comes from a local file system (for dev)
-	// Local packs are installed via adding pdsc files
-	// Ex: cpackget install path/to/Vendor.Pack.pdsc
-	isLocal bool
-
 	// isDownloaded tells whether the file needed to be downloaded from a server
 	isDownloaded bool
 
@@ -40,16 +35,6 @@ type PackType struct {
 
 	// zipReader holds a pointer to the uncompress pack file
 	zipReader *zip.ReadCloser
-}
-
-// ToPdscTag generates a pdscTag out of this pack file name details
-func (p *PackType) toPdscTag() xml.PdscTag {
-	return xml.PdscTag{
-		Vendor:  p.Vendor,
-		URL:     p.URL,
-		Name:    p.Name,
-		Version: p.Version,
-	}
 }
 
 // fetch will download the pack file if it's on the Internet, or
