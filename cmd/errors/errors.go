@@ -23,6 +23,7 @@ var (
 	// Errors related to package content
 	PdscNotFound         = errors.New("pdsc not found")
 	PackAlreadyInstalled = errors.New("pack already installed")
+	PackNotInstalled     = errors.New("pack not installed")
 	PdscEntryExists      = errors.New("pdsc already in index")
 
 	// Errors related to network
