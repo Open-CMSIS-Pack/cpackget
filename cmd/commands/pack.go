@@ -38,18 +38,31 @@ The process consists of extracting all pack files into "CMSIS_PACK_ROOT/<vendor>
 	},
 }
 
+// purge stores the value of "--purge" flag for the "pack rm" command
+var purge bool
+
 var packRmCmd = &cobra.Command{
-	Use:   "rm <pack-name>",
-	Short: "Uninstall Open-CMSIS-Pack packages",
-	Long: `<pack-name> should be in the format of "PackVendor.PackName.PackVersion".
-This will remove the pack from the reference index files. If files need to be actually removed,
-please use "cpackget purge <pack-name>"`,
+	Use:   "rm <pack reference>",
+	Short: "Uninstalls Open-CMSIS-Pack packages",
+	Long: `Uninstalls a pack using the reference "PackVendor.PackName[.x.y.z]",
+where the version "x.y.z" is optional. This will remove
+the pack from the reference index files. If files need
+to be actually removed, please use "--purge".`,
 	Args: cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Removing %v", args)
+		installer.SetPackRoot(viper.GetString("pack-root"))
+		for _, packPath := range args {
+			if err := installer.RemovePack(packPath, purge); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	},
 }
 
 func init() {
+	packRmCmd.Flags().BoolVarP(&purge, "purge", "p", false, "forces deletion of cached pack files")
 	PackCmd.AddCommand(packAddCmd, packRmCmd)
 }
