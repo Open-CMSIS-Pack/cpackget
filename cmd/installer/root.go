@@ -6,6 +6,7 @@ package installer
 import (
 	"os"
 	"path"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -13,45 +14,96 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 )
 
+// AddPack adds a pack to the pack installation directory structure
 func AddPack(packPath string) error {
 	log.Debugf("Adding pack \"%v\"", packPath)
 
-	// Sanity check
-	info, err := utils.ExtractPackInfo(packPath)
+	pack, err := preparePack(packPath, false)
 	if err != nil {
 		return err
 	}
 
-	pack := &PackType{
-		PdscTag: xml.PdscTag{
-			URL: info.Location,
-			Vendor: info.Vendor,
-			Name: info.Pack,
-			Version: info.Version,
-		},
-		path: packPath,
-	}
-
-	// Check if it's already installed
-	if installation.packIsInstalled(pack) {
+	if pack.isInstalled {
 		return errs.PackAlreadyInstalled
 	}
 
-	// Check if it's public
-	pack.isPublic = installation.packIsPublic(pack)
-
-	// Fetch if, if needed
 	if err = pack.fetch(); err != nil {
 		return err
 	}
 
-	// Really installs the pack
 	if err = pack.install(installation); err != nil {
 		return err
 	}
 
-	// Touches pack.idx
 	return installation.touchPackIdx()
+}
+
+// RemovePack removes a pack given a pack path
+func RemovePack(packPath string, purge bool) error {
+	pack, err := preparePack(packPath, true)
+	if err != nil {
+		return err
+	}
+
+	if !pack.isInstalled {
+		log.Errorf("Pack \"%v\" is not installed", packPath)
+		return errs.PackNotInstalled
+	}
+
+	if err = pack.uninstall(installation, purge); err != nil {
+		return err
+	}
+
+	return installation.touchPackIdx()
+}
+
+// preparePack does some pre-checking steps before adding or removing packs.
+// If short is true, then prepare it considering that packPath is in the simpler
+// form of Vendor.Pack[.x.y.z], used when removing packs.
+func preparePack(packPath string, short bool) (*PackType, error) {
+	var info utils.PackInfo
+	var err error
+	pack := &PackType{
+		path: packPath,
+	}
+
+	if short {
+		_, packName := path.Split(packPath)
+		details := strings.SplitAfterN(packName, ".", 3)
+		if len(details) < 2 {
+			return pack, errs.BadPackName
+		}
+
+		info.Vendor = strings.ReplaceAll(details[0], ".", "")
+		info.Pack   = strings.ReplaceAll(details[1], ".", "")
+
+		if len(details) == 3 {
+			info.Version = details[2]
+			if !utils.IsPackVersionValid(info.Version) {
+				return pack, errs.BadPackNameInvalidVersion
+			}
+		}
+
+		if !utils.IsPackVendorNameValid(info.Vendor) || !utils.IsPackNameValid(info.Pack){
+			return pack, errs.BadPackNameInvalidName
+		}
+
+	} else {
+		// Sanity check
+		info, err = utils.ExtractPackInfo(packPath)
+		if err != nil {
+			return pack, err
+		}
+	}
+
+	pack.URL         = info.Location
+	pack.Name        = info.Pack
+	pack.Vendor      = info.Vendor
+	pack.Version     = info.Version
+	pack.isPublic    = installation.packIsPublic(pack)
+	pack.isInstalled = installation.packIsInstalled(pack)
+
+	return pack, nil
 }
 
 

@@ -192,7 +192,7 @@ func WriteXML(path string, targetStruct interface{}) error {
 func ListDir(dir, pattern string) ([]string, error) {
 	regexPattern := regexp.MustCompile(`.*`)
 	if pattern != "" {
-		regexPattern = regexp.MustCompile(`^[0-9a-zA-Z_\-]+$`)
+		regexPattern = regexp.MustCompile(pattern)
 	}
 
 	log.Debugf("Listing files and directories in \"%v\" that match \"%v\"", dir, regexPattern)
@@ -227,4 +227,20 @@ func TouchFile(filePath string) error {
 
 	currentTime := time.Now().Local()
 	return os.Chtimes(filePath, currentTime, currentTime)
+}
+
+// IsEmpty tells whether a directory specified by "dir" is empty or not
+func IsEmpty(dir string) bool {
+	file, err := os.Open(dir)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+
+	_, err = file.Readdirnames(1)
+	if err == io.EOF {
+		return true
+	}
+
+	return false
 }

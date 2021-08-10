@@ -6,6 +6,7 @@ package installer
 import (
 	"archive/zip"
 	"fmt"
+	"os"
 	"path"
 	"strings"
 
@@ -20,24 +21,24 @@ import (
 type PackType struct {
 	xml.PdscTag
 
-	// Manager is a reference to PackManagerType
-	installation *PacksInstallationType
-
-	// IsPublic tells whether the pack exists in the public index or not
+	// isPublic tells whether the pack exists in the public index or not
 	isPublic bool
 
-	// IsLocal tells whether the pack comes from a local file system (for dev)
+	// isInstalled tells whether the pack is already installed
+	isInstalled bool
+
+	// isLocal tells whether the pack comes from a local file system (for dev)
 	// Local packs are installed via adding pdsc files
 	// Ex: cpackget install path/to/Vendor.Pack.pdsc
 	isLocal bool
 
-	// IsDownloaded tells whether the file needed to be downloaded from a server
+	// isDownloaded tells whether the file needed to be downloaded from a server
 	isDownloaded bool
 
-	// Path points to a file in the local system, whether or not it's local
+	// path points to a file in the local system, whether or not it's local
 	path string
 
-	// ZipReader holds a pointer to the uncompress pack file
+	// zipReader holds a pointer to the uncompress pack file
 	zipReader *zip.ReadCloser
 }
 
@@ -94,10 +95,10 @@ func (p *PackType) validate() error {
 
 // install installs pack files to installation's directories
 // It:
-//   - Extracts all files to "CMSIS_PACK_ROOT/p.vendor/p.name/p.version/"
+//   - Extracts all files to "CMSIS_PACK_ROOT/p.Vendor/p.Name/p.Version/"
 //   - Saves a copy of the pack in "CMSIS_PACK_ROOT/.Download/"
 //   - Saves a versioned pdsc file in "CMSIS_PACK_ROOT/.Download/"
-//   - If "CMSIS_PACK_ROOT/.Web/p.vendor.p.name.pdsc" does not exist then
+//   - If "CMSIS_PACK_ROOT/.Web/p.Vendor.p.Name.pdsc" does not exist then
 //     - Save an unversioned copy of the pdsc file in "CMSIS_PACK_ROOT/.Local/"
 func (p *PackType) install(installation *PacksInstallationType) error {
 	log.Debugf("Installing \"%s\"", p.path)
@@ -155,37 +156,72 @@ func (p *PackType) install(installation *PacksInstallationType) error {
 	}
 }
 
-/*
-func (manager *PacksManagerType) Uninstall(packName string) error {
-	log.Infof("Uninstalling %s", packName)
+// uninstall removes the pack from the installation directory.
+// It:
+//   - Removes all pack files from "CMSIS_PACK_ROOT/p.Vendor/p.Name/[p.Version]", where p.Version might be ommited
+//   - Removes "CMSIS_PACK_ROOT/p.Vendor/p.Name/" if empty
+//   - Removes "CMSIS_PACK_ROOT/p.Vendor/" if empty
+//   - If purge is true then
+//     - Remove "CMSIS_PACK_ROOT/.Download/p.Vendor.p.Name.p.Version.pdsc"
+//     - Remove "CMSIS_PACK_ROOT/.Download/p.Vendor.p.Name.p.Version.pack" (or zip)
+//   - If "CMSIS_PACK_ROOT/.Web/p.Vendor.p.Name.pdsc" does not exist then
+//     - Remove "p.Vendor.p.Name.pdsc" from "CMSIS_PACK_ROOT/.Local/"
+func (p *PackType) uninstall(installation *PacksInstallationType, purge bool) error {
+	log.Debugf("Uninstalling \"%v\"", p.path)
 
-	pdsc, err := PackPathToPdscTag(packName)
-	if err != nil {
-		return err
-	}
-	var pidx *PidxXML
-	if manager.Pidx.HasPdsc(pdsc) {
-		pidx = manager.Pidx
-	} else if manager.LocalPidx.HasPdsc(pdsc) {
-		pidx = manager.LocalPidx
-	}
-
-	if pidx == nil {
-		return ErrPdscNotFound
-	}
-
-	packPath := path.Join(manager.PackRoot, pdsc.Vendor, pdsc.Name, pdsc.Version)
+	// Remove Vendor/Pack/x.y.z
+	packPath := path.Join(installation.packRoot, p.Vendor, p.Name, p.Version)
 	if err := os.RemoveAll(packPath); err != nil {
 		return err
 	}
 
-	// TODO: If there are left over empty directories
-
-	/*err = pidx.RemovePdsc(pdsc)
-	if err != nil {
-		log.Errorf("Can't deregister pack %s: %s", pdsc.Key(), err)
-		return ErrUnknownBehavior
+	// Remove Vendor/Pack/ if empty
+	packPath = path.Join(installation.packRoot, p.Vendor, p.Name)
+	if utils.IsEmpty(packPath) {
+		if err := os.Remove(packPath); err != nil {
+			return err
+		}
 	}
+
+	// Remove Vendor/ if empty
+	vendorPath := path.Join(installation.packRoot, p.Vendor)
+	if utils.IsEmpty(vendorPath) {
+		if err := os.Remove(vendorPath); err != nil {
+			return err
+		}
+	}
+
+	// Remove some extra files when --purge is specified
+	if purge {
+		fileNamePattern := p.Vendor + "\\." + p.Name
+		if len(p.Version) > 0 {
+			fileNamePattern += "\\." + p.Version
+		} else {
+			fileNamePattern += "\\..*?"
+		}
+		fileNamePattern += "\\.(?:pack|zip|pdsc)"
+
+		files, err := utils.ListDir(installation.downloadDir, fileNamePattern)
+		if err != nil {
+			return err
+		}
+		log.Debugf("Files to be purged \"%v\"", files)
+
+		for _, file := range files {
+			if err := os.Remove(file); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Removes local pdsc file if pack is not public
+	if !p.isPublic {
+		localPdscFileName := p.Vendor + "." + p.Name + ".pdsc"
+		filePath := path.Join(installation.localDir, localPdscFileName)
+		if err := os.Remove(filePath); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
-*/
