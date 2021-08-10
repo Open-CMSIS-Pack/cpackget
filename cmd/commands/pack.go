@@ -6,6 +6,9 @@ package commands
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
+	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 )
 
 var PackCmd = &cobra.Command{
@@ -22,8 +25,16 @@ The file can be a local file or a file hosted somewhere else on the Internet.
 If it's hosted somewhere, cpackget will first download it. 
 The process consists of extracting all pack files into "CMSIS_PACK_ROOT/<vendor>/<packName>/<packVersion>/"`,
 	Args: cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Adding %v", args)
+		installer.SetPackRoot(viper.GetString("pack-root"))
+		for _, packPath := range args {
+			if err := installer.AddPack(packPath); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	},
 }
 

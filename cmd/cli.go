@@ -30,6 +30,7 @@ func NewCli() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "cpackget",
 		Short: "This utility installs/removes CMSIS-Packs",
+		SilenceUsage: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if flags.version {
 				printVersionAndLicense(cmd.OutOrStdout())

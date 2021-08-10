@@ -6,23 +6,19 @@ package utils
 import (
 	"archive/zip"
 	"encoding/xml"
+	"path/filepath"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"path"
+	"regexp"
 	"strings"
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 )
-
-func ExitOnError(err error) {
-	if err != nil {
-		log.Error(err.Error())
-		os.Exit(-1)
-	}
-}
 
 // CacheDir is used for cpackget to temporarily host downloaded pack files
 // before moving it to CMSIS_PACK_ROOT
@@ -189,4 +185,46 @@ func WriteXML(path string, targetStruct interface{}) error {
 	}
 
 	return nil
+}
+
+// ListDir generates a list of files and directories in "dir".
+// If pattern is specified, generates a list with matches only
+func ListDir(dir, pattern string) ([]string, error) {
+	regexPattern := regexp.MustCompile(`.*`)
+	if pattern != "" {
+		regexPattern = regexp.MustCompile(`^[0-9a-zA-Z_\-]+$`)
+	}
+
+	log.Debugf("Listing files and directories in \"%v\" that match \"%v\"", dir, regexPattern)
+
+	var files []string
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
+		if regexPattern.MatchString(path) {
+			files = append(files, path)
+		}
+
+		return nil
+	})
+
+	return files, err
+}
+
+// TouchFile touches the file specified by filePath.
+// If the file does not exist, create it.
+func TouchFile(filePath string) error {
+	_, err := os.Stat(filePath)
+	if os.IsNotExist(err) {
+		file, err := os.Create(filePath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		file.Close()
+	}
+
+	currentTime := time.Now().Local()
+	return os.Chtimes(filePath, currentTime, currentTime)
 }
