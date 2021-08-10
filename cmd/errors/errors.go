@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+// Is returns true if err is equals to target
+func Is(err, target error) bool {
+	return err == target
+}
+
 var (
 	// Errors related to package file name
 	BadPackName                 = errors.New("bad pack name: it should follow the standard PackVendor.PackName.PackVersion.pack")
