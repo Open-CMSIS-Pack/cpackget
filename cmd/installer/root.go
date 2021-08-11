@@ -57,6 +57,44 @@ func RemovePack(packPath string, purge bool) error {
 	return installation.touchPackIdx()
 }
 
+// AddPdsc adds a pack via PDSC file
+func AddPdsc(pdscPath string) error {
+	log.Debugf("Adding pdsc \"%v\"", pdscPath)
+
+	info, err := utils.ExtractPackInfo(pdscPath)
+	if err != nil {
+		return err
+	}
+
+	pdsc := &PdscType{
+		PdscTag: xml.PdscTag{
+			URL: info.Location,
+			Vendor: info.Vendor,
+			Name: info.Pack,
+		},
+		path: pdscPath,
+	}
+
+	pdsc.isInstalled, err = installation.pdscIsInstalled(pdsc)
+	if err != nil {
+		return err
+	}
+
+	if pdsc.isInstalled {
+		return errs.PdscEntryExists
+	}
+
+	if err := pdsc.install(installation); err != nil {
+		return err
+	}
+
+	if err := installation.localPidx.Write(); err != nil {
+		return err
+	}
+
+	return installation.touchPackIdx()
+}
+
 // preparePack does some pre-checking steps before adding or removing packs.
 // If short is true, then prepare it considering that packPath is in the simpler
 // form of Vendor.Pack[.x.y.z], used when removing packs.
@@ -105,18 +143,6 @@ func preparePack(packPath string, short bool) (*PackType, error) {
 
 	return pack, nil
 }
-
-
-/*
-func AddPdsc(pdscPath string) error {
-	return p.Manager.LocalPidx.HasPdsc(p.ToPdscTag())
-	if p.IsLocal {
-		pdsc := NewPdsc(p.Path)
-		pdsc.Read()
-		return p.Manager.LocalPidx.AddPdsc(pdsc.Tag())
-	}
-}
-*/
 
 // installation is a singleton variable that keeps the only reference
 // to PacksInstallationType
@@ -178,11 +204,6 @@ func (p *PacksInstallationType) touchPackIdx() error {
 	return utils.TouchFile(p.packIdx)
 }
 
-// Save saves the file "local_repository.pidx" to disk
-func (p *PacksInstallationType) saveLocalRepository() error {
-	return p.localPidx.Write()
-}
-
 // packIsInstalled checks whether a given pack is already installed or not
 func (p *PacksInstallationType) packIsInstalled(pack *PackType) bool {
 	installationDir := path.Join(p.packRoot, pack.Vendor, pack.Name, pack.Version)
@@ -190,6 +211,24 @@ func (p *PacksInstallationType) packIsInstalled(pack *PackType) bool {
 		return true
 	}
 	return false
+}
+
+// pdscIsInstalled checks whether a given pack PDSC is already installed or not
+func (p *PacksInstallationType) pdscIsInstalled(pdsc *PdscType) (bool, error) {
+	// lazyly lists all packs installed via PDSC
+	if !p.localIsLoaded {
+		if err := p.localPidx.Read(); err != nil {
+			return false, err
+		}
+		p.localIsLoaded = true
+	}
+
+	tag, err := pdsc.toPdscTag()
+	if err != nil {
+		return false, err
+	}
+
+	return p.localPidx.HasPdsc(tag), nil
 }
 
 // packIsPublic checks whether the pack is public or not.
