@@ -64,7 +64,7 @@ func (p *PidxXML) HasPdsc(pdsc PdscTag) bool {
 
 // Key returns this pdscTag unique key
 func (p *PdscTag) Key() string {
-	return p.Vendor + "." + p.Name + "." + p.Version
+	return p.URL + p.Vendor + "." + p.Name + "." + p.Version
 }
 
 // Read reads FileName into this PidxXML struct
