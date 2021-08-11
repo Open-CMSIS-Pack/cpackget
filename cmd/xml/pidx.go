@@ -40,7 +40,6 @@ type PdscTag struct {
 func NewPidx(fileName string) *PidxXML {
 	log.Debugf("Initializing PidxXML object for \"%s\"", fileName)
 	p := new(PidxXML)
-	p.pdscList = make(map[string]bool)
 	p.fileName = fileName
 	return p
 }
@@ -81,6 +80,7 @@ func (p *PidxXML) Read() error {
 		return err
 	}
 
+	p.pdscList = make(map[string]bool)
 	for _, pdsc := range p.Pindex.Pdscs {
 		log.Debugf("Registring \"%s\"", pdsc.Key())
 		p.pdscList[pdsc.Key()] = true
