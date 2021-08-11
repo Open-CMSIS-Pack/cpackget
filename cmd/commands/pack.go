@@ -15,6 +15,7 @@ var PackCmd = &cobra.Command{
 	Use:   "pack",
 	Short: "add/rm Open-CMSIS-Pack packages",
 	Long: "Add or remove an Open-CMSIS-Pack from a local file or a file hosted somewhere else on the Internet.",
+	PersistentPreRun: configureInstaller,
 }
 
 var packAddCmd = &cobra.Command{
@@ -27,7 +28,6 @@ The process consists of extracting all pack files into "CMSIS_PACK_ROOT/<vendor>
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Adding %v", args)
-		installer.SetPackRoot(viper.GetString("pack-root"))
 		for _, packPath := range args {
 			if err := installer.AddPack(packPath); err != nil {
 				return err
@@ -51,7 +51,6 @@ to be actually removed, please use "--purge".`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Removing %v", args)
-		installer.SetPackRoot(viper.GetString("pack-root"))
 		for _, packPath := range args {
 			if err := installer.RemovePack(packPath, purge); err != nil {
 				return err
