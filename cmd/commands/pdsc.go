@@ -6,6 +6,8 @@ package commands
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 )
 
 var PdscCmd = &cobra.Command{
@@ -13,6 +15,7 @@ var PdscCmd = &cobra.Command{
 	Short: "Add/remove packs in the local file system via PDSC files.",
 	Long: `<pack-path> can be a local file or a file hosted somewhere else on the Internet.
 cpack will extract information from it and install the files in specific directories inside this machine.`,
+	PersistentPreRun: configureInstaller,
 }
 
 var pdscAddCmd = &cobra.Command{
@@ -21,8 +24,15 @@ var pdscAddCmd = &cobra.Command{
 	Long: `<pack-path> can be a local file or a file hosted somewhere else on the Internet.
 cpack will extract information from it and install the files in specific directories inside this machine.`,
 	Args: cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Info("Adding pdsc")
+		for _, pdscPath := range args {
+			if err := installer.AddPdsc(pdscPath); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	},
 }
 
