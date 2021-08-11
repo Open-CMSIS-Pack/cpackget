@@ -172,29 +172,32 @@ func SetPackRoot(packRoot string) error {
 
 // PacksInstallationType is the scruct tha manages Open-CMSIS-Pack installation/deletion.
 type PacksInstallationType struct {
-	// PackRoot is the working directory if the packs installation
+	// packRoot is the working directory if the packs installation
 	packRoot string
 
-	// Packs installed
+	// packs installed
 	packs map[string]bool
 
-	// DownloadDir stores copies of all packs that were installed via pack files
+	// downloadDir stores copies of all packs that were installed via pack files
 	// from external servers.
 	downloadDir string
 
-	// LocalDir stores "local_repository.pidx" containing a list of all packs
+	// localDir stores "local_repository.pidx" containing a list of all packs
 	// installed via PDSC files.
 	localDir string
 
-	// WebDir stores "index.pidx" containing a list of PDSC tags with all
+	// webDir stores "index.pidx" containing a list of PDSC tags with all
 	// publicly available packs.
 	webDir string
 
-	// LocalPidx is a reference to "local_repository.pidx" that contains a flat
+	// localPidx is a reference to "local_repository.pidx" that contains a flat
 	// list of PDSC tags representing all packs installed via PDSC files.
 	localPidx *xml.PidxXML
 
-	// PackIdx is the "pack.idx" file used by other tools to be notified that
+	// localIsLoaded is a flag that tells whether the local_repository.pidx has been loaded or not
+	localIsLoaded bool
+
+	// packIdx is the "pack.idx" file used by other tools to be notified that
 	// the pack installation had changed.
 	packIdx string
 }
