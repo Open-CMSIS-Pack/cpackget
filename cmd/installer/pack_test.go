@@ -1,17 +1,41 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright Contributors to the vidx2pidx project. */
 
-package main
+package installer_test
 
 import (
-	"os"
-	"reflect"
+	//"os"
+	//"reflect"
 	"testing"
 
 )
 
-func TestPackPackToPdscTag(t *testing.T) {
+// Add tests to the following
+// - .pack
+//   - locally
+//     - is public
+//     - is no public
+//   - from remote server
+//     - is public
+//     - is not public
+// - .zip
+//   - locally
+//     - is public
+//     - is no public
+//   - from remote server
+//     - is public
+//     - is not public
 
+// Remove packs with the following
+// - Vendor.Pack
+//   - existing pack installation
+//   - non existing pack installation
+// - Vendor.Pack.x.y.z
+//   - existing pack installation
+//   - non existing pack installation
+
+func TestPackPackToPdscTag(t *testing.T) {
+	/*
 	t.Run("test bad pack name", func (t *testing.T) {
 		_, err := PackPathToPdscTag("invalid-pack-name")
 		AssertEqual(t, err, ErrBadPackName)
@@ -86,5 +110,5 @@ func TestPackPackToPdscTag(t *testing.T) {
 		AssertEqual(t, pdscTag.Vendor, "Vendor")
 		AssertEqual(t, pdscTag.Name, "Pack")
 		AssertEqual(t, pdscTag.Version, "0.0.1")
-	})
+	})*/
 }
