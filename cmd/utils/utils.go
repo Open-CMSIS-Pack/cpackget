@@ -6,18 +6,18 @@ package utils
 import (
 	"archive/zip"
 	"encoding/xml"
-	"path/filepath"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
-	"os"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // CacheDir is used for cpackget to temporarily host downloaded pack files

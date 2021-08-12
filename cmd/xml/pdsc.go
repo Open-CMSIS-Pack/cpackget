@@ -6,8 +6,8 @@ package xml
 import (
 	"encoding/xml"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 type PdscXML struct {

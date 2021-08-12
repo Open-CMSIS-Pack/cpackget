@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 //

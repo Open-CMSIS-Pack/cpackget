@@ -10,10 +10,10 @@ import (
 	"path"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
+	log "github.com/sirupsen/logrus"
 )
 
 // PackType is the struct that represents the installation of a
@@ -76,7 +76,6 @@ func (p *PackType) validate() error {
 
 	return nil
 }
-
 
 // install installs pack files to installation's directories
 // It:

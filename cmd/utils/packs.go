@@ -10,8 +10,8 @@ import (
 	"regexp"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // packNameRegex specifies a regular expression that matches Vendor and Pack names.
@@ -57,7 +57,7 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 
 	info := PackInfo{}
 	validExtensions := map[string]bool{
-		".zip": true,
+		".zip":  true,
 		".pack": true,
 		".pdsc": true,
 	}
@@ -76,7 +76,7 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 	}
 
 	info.Vendor = strings.ReplaceAll(details[0], ".", "")
-	info.Pack   = strings.ReplaceAll(details[1], ".", "")
+	info.Pack = strings.ReplaceAll(details[1], ".", "")
 
 	if !isPdsc {
 		info.Version = strings.ReplaceAll(details[2], info.Extension, "")

@@ -8,10 +8,10 @@ import (
 	"path"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
+	log "github.com/sirupsen/logrus"
 )
 
 // AddPack adds a pack to the pack installation directory structure
@@ -115,11 +115,11 @@ func preparePack(packPath string, short bool) (*PackType, error) {
 		return pack, err
 	}
 
-	pack.URL         = info.Location
-	pack.Name        = info.Pack
-	pack.Vendor      = info.Vendor
-	pack.Version     = info.Version
-	pack.isPublic    = installation.packIsPublic(pack)
+	pack.URL = info.Location
+	pack.Name = info.Pack
+	pack.Vendor = info.Vendor
+	pack.Version = info.Version
+	pack.isPublic = installation.packIsPublic(pack)
 	pack.isInstalled = installation.packIsInstalled(pack)
 
 	return pack, nil
@@ -137,9 +137,9 @@ func preparePdsc(pdscPath string, short bool) (*PdscType, error) {
 	if err != nil {
 		return pdsc, err
 	}
-	pdsc.URL     = info.Location
-	pdsc.Name    = info.Pack
-	pdsc.Vendor  = info.Vendor
+	pdsc.URL = info.Location
+	pdsc.Name = info.Pack
+	pdsc.Vendor = info.Vendor
 	pdsc.Version = info.Version
 
 	if !installation.localIsLoaded {
@@ -166,7 +166,7 @@ func prepare(packPath string, short bool) (utils.PackInfo, error) {
 		}
 
 		info.Vendor = strings.ReplaceAll(details[0], ".", "")
-		info.Pack   = strings.ReplaceAll(details[1], ".", "")
+		info.Pack = strings.ReplaceAll(details[1], ".", "")
 
 		if len(details) == 3 {
 			info.Version = details[2]
@@ -175,7 +175,7 @@ func prepare(packPath string, short bool) (utils.PackInfo, error) {
 			}
 		}
 
-		if !utils.IsPackVendorNameValid(info.Vendor) || !utils.IsPackNameValid(info.Pack){
+		if !utils.IsPackVendorNameValid(info.Vendor) || !utils.IsPackNameValid(info.Pack) {
 			return info, errs.BadPackNameInvalidName
 		}
 

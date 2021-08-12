@@ -4,13 +4,13 @@
 package commands
 
 import (
+	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 )
 
 // All contains all available commands for cpackget
-var All = []*cobra.Command {
+var All = []*cobra.Command{
 	PackCmd,
 	PdscCmd,
 }
