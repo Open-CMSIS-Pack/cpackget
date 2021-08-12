@@ -43,8 +43,15 @@ var pdscRmCmd = &cobra.Command{
 This will remove the pack from the reference index files. If files need to be actually removed,
 please use "cpackget purge <pack-name>"`,
 	Args: cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Info("Removing pdsc")
+		for _, pdscPath := range args {
+			if err := installer.RemovePdsc(pdscPath); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	},
 }
 

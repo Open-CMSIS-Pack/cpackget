@@ -58,3 +58,12 @@ func (p *PdscType) install(installation *PacksInstallationType) error {
 
 	return nil
 }
+
+// uninstall uninstalls a pack via PDSC
+// It:
+//   - Removes it to the "CMSIS_PACK_ROOT/.Local/local_repository.pidx"
+//     If version is ommited, remove all pdsc tags belonging to this pack
+func (p *PdscType) uninstall(installation *PacksInstallationType) error {
+	log.Debugf("Unistalling \"%s\"", p.path)
+	return installation.localPidx.RemovePdsc(p.PdscTag)
+}

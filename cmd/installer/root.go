@@ -40,6 +40,8 @@ func AddPack(packPath string) error {
 
 // RemovePack removes a pack given a pack path
 func RemovePack(packPath string, purge bool) error {
+	log.Debugf("Removing pack \"%v\"", packPath)
+
 	pack, err := preparePack(packPath, true)
 	if err != nil {
 		return err
@@ -61,21 +63,7 @@ func RemovePack(packPath string, purge bool) error {
 func AddPdsc(pdscPath string) error {
 	log.Debugf("Adding pdsc \"%v\"", pdscPath)
 
-	info, err := utils.ExtractPackInfo(pdscPath)
-	if err != nil {
-		return err
-	}
-
-	pdsc := &PdscType{
-		PdscTag: xml.PdscTag{
-			URL: info.Location,
-			Vendor: info.Vendor,
-			Name: info.Pack,
-		},
-		path: pdscPath,
-	}
-
-	pdsc.isInstalled, err = installation.pdscIsInstalled(pdsc)
+	pdsc, err := preparePdsc(pdscPath, false)
 	if err != nil {
 		return err
 	}
@@ -95,43 +83,36 @@ func AddPdsc(pdscPath string) error {
 	return installation.touchPackIdx()
 }
 
-// preparePack does some pre-checking steps before adding or removing packs.
-// If short is true, then prepare it considering that packPath is in the simpler
-// form of Vendor.Pack[.x.y.z], used when removing packs.
+// RemovePdsc removes a pack given a pdsc path
+func RemovePdsc(pdscPath string) error {
+	log.Debugf("Removing pdsc \"%v\"", pdscPath)
+
+	pdsc, err := preparePdsc(pdscPath, true)
+	if err != nil {
+		return err
+	}
+
+	if err = pdsc.uninstall(installation); err != nil {
+		return err
+	}
+
+	if err := installation.localPidx.Write(); err != nil {
+		return err
+	}
+
+	return installation.touchPackIdx()
+}
+
+// preparePack does some sanity validation regarding pack name
+// and check if it's public and if it's installed or not
 func preparePack(packPath string, short bool) (*PackType, error) {
-	var info utils.PackInfo
-	var err error
 	pack := &PackType{
 		path: packPath,
 	}
 
-	if short {
-		_, packName := path.Split(packPath)
-		details := strings.SplitAfterN(packName, ".", 3)
-		if len(details) < 2 {
-			return pack, errs.BadPackName
-		}
-
-		info.Vendor = strings.ReplaceAll(details[0], ".", "")
-		info.Pack   = strings.ReplaceAll(details[1], ".", "")
-
-		if len(details) == 3 {
-			info.Version = details[2]
-			if !utils.IsPackVersionValid(info.Version) {
-				return pack, errs.BadPackNameInvalidVersion
-			}
-		}
-
-		if !utils.IsPackVendorNameValid(info.Vendor) || !utils.IsPackNameValid(info.Pack){
-			return pack, errs.BadPackNameInvalidName
-		}
-
-	} else {
-		// Sanity check
-		info, err = utils.ExtractPackInfo(packPath)
-		if err != nil {
-			return pack, err
-		}
+	info, err := prepare(packPath, short)
+	if err != nil {
+		return pack, err
 	}
 
 	pack.URL         = info.Location
@@ -142,6 +123,67 @@ func preparePack(packPath string, short bool) (*PackType, error) {
 	pack.isInstalled = installation.packIsInstalled(pack)
 
 	return pack, nil
+}
+
+// preparePdsc does some sanity validation regarding pdsc name
+// and check if it's already installed or not
+func preparePdsc(pdscPath string, short bool) (*PdscType, error) {
+	var err error
+	pdsc := &PdscType{
+		path: pdscPath,
+	}
+
+	info, err := prepare(pdscPath, short)
+	if err != nil {
+		return pdsc, err
+	}
+	pdsc.URL     = info.Location
+	pdsc.Name    = info.Pack
+	pdsc.Vendor  = info.Vendor
+	pdsc.Version = info.Version
+
+	if !installation.localIsLoaded {
+		if err := installation.localPidx.Read(); err != nil {
+			return pdsc, err
+		}
+		installation.localIsLoaded = true
+	}
+
+	return pdsc, err
+}
+
+// prepare does some pre-checking steps before adding or removing packs/pdscs.
+// If short is true, then prepare it considering that path is in the simpler
+// form of Vendor.Pack[.x.y.z], used when removing packs/pdscs.
+func prepare(packPath string, short bool) (utils.PackInfo, error) {
+	var info utils.PackInfo
+
+	if short {
+		_, packName := path.Split(packPath)
+		details := strings.SplitAfterN(packName, ".", 3)
+		if len(details) < 2 {
+			return info, errs.BadPackName
+		}
+
+		info.Vendor = strings.ReplaceAll(details[0], ".", "")
+		info.Pack   = strings.ReplaceAll(details[1], ".", "")
+
+		if len(details) == 3 {
+			info.Version = details[2]
+			if !utils.IsPackVersionValid(info.Version) {
+				return info, errs.BadPackNameInvalidVersion
+			}
+		}
+
+		if !utils.IsPackVendorNameValid(info.Vendor) || !utils.IsPackNameValid(info.Pack){
+			return info, errs.BadPackNameInvalidName
+		}
+
+		return info, nil
+
+	}
+
+	return utils.ExtractPackInfo(packPath)
 }
 
 // installation is a singleton variable that keeps the only reference

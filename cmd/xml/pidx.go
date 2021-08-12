@@ -6,6 +6,7 @@ package xml
 import (
 	"encoding/xml"
 	"fmt"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
@@ -25,7 +26,7 @@ type PidxXML struct {
 		Pdscs   []PdscTag `xml:"pdsc"`
 	} `xml:"pindex"`
 
-	pdscList map[string]bool
+	pdscList map[string]PdscTag
 	fileName string
 }
 
@@ -46,25 +47,55 @@ func NewPidx(fileName string) *PidxXML {
 
 // AddPdsc takes in a PdscTag and add it to the <pindex> tag
 func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
-	log.Debugf("Adding pdsc tag \"%s\" pidx file to \"%s\"", pdsc, p.fileName)
+	log.Debugf("Adding pdsc tag \"%s\" to \"%s\"", pdsc, p.fileName)
 	if p.HasPdsc(pdsc) {
 		return errs.PdscEntryExists
 	}
 
-	p.Pindex.Pdscs = append(p.Pindex.Pdscs, pdsc)
-	p.pdscList[pdsc.Key()] = true
+	p.pdscList[pdsc.Key()] = pdsc
+	return nil
+}
+
+// RemovePdsc takes in a PdscTag and remove it from the <pindex> tag
+func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
+	log.Debugf("Removing pdsc tag \"%s\" from \"%s\"", pdsc, p.fileName)
+
+	var toRemove []string
+
+	if pdsc.Version != "" && p.HasPdsc(pdsc) {
+		toRemove = append(toRemove, pdsc.Key())
+	} else {
+		// Version is omitted, search all versions
+		targetKey := pdsc.Key()
+		for key := range p.pdscList {
+			if strings.Contains(key, targetKey) {
+				toRemove = append(toRemove, key)
+			}
+		}
+	}
+
+	if len(toRemove) == 0 {
+		return errs.PdscEntryNotFound
+	}
+
+	for _, key := range toRemove {
+		log.Debugf("Removing \"%v\"", key)
+		delete(p.pdscList, key)
+	}
+
 	return nil
 }
 
 // HasPdsc tells whether of not pdsc is already present in this pidx file
 func (p *PidxXML) HasPdsc(pdsc PdscTag) bool {
-	log.Debugf("Checking if pidx \"%s\" contains \"%s\"", p.fileName, pdsc.Key())
-	return p.pdscList[pdsc.Key()]
+	_, ok := p.pdscList[pdsc.Key()]
+	log.Debugf("Checking if pidx \"%s\" contains \"%s\": %v", p.fileName, pdsc.Key(), ok)
+	return ok
 }
 
 // Key returns this pdscTag unique key
 func (p *PdscTag) Key() string {
-	return p.URL + p.Vendor + "." + p.Name + "." + p.Version
+	return p.Vendor + "." + p.Name + "." + p.Version
 }
 
 // Read reads FileName into this PidxXML struct
@@ -80,11 +111,14 @@ func (p *PidxXML) Read() error {
 		return err
 	}
 
-	p.pdscList = make(map[string]bool)
+	p.pdscList = make(map[string]PdscTag)
 	for _, pdsc := range p.Pindex.Pdscs {
 		log.Debugf("Registring \"%s\"", pdsc.Key())
-		p.pdscList[pdsc.Key()] = true
+		p.pdscList[pdsc.Key()] = pdsc
 	}
+
+	// truncate Pindex.Pdscs
+	p.Pindex.Pdscs = p.Pindex.Pdscs[:0]
 
 	return nil
 }
@@ -92,6 +126,12 @@ func (p *PidxXML) Read() error {
 // Save saves this PidxXML struct into its FileName
 func (p *PidxXML) Write() error {
 	log.Debugf("Writing pidx file to \"%s\"", p.fileName)
+
+	// Use p.pdscList as the main source of pdsc tags
+	for _, pdsc := range p.pdscList {
+		p.Pindex.Pdscs = append(p.Pindex.Pdscs, pdsc)
+	}
+
 	return utils.WriteXML(p.fileName, p)
 }
 
