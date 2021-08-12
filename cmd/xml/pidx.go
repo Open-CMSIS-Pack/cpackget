@@ -134,9 +134,3 @@ func (p *PidxXML) Write() error {
 
 	return utils.WriteXML(p.fileName, p)
 }
-
-// String returns the string representation of this pdscTag
-func (p *PdscTag) String() string {
-	tagString := fmt.Sprintf("<pdsc url=\"%s\" vendor=\"%s\" name=\"%s\" version=\"%s\" />", p.URL, p.Vendor, p.Name, p.Version)
-	return tagString
-}
