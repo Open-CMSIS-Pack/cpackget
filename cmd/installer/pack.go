@@ -71,7 +71,7 @@ func (p *PackType) validate() error {
 
 	if !isPdscPresent {
 		log.Errorf("\"%s\" not found in \"%s\"", pdscFileName, p.path)
-		return errs.PdscNotFound
+		return errs.PdscFileNotFound
 	}
 
 	return nil
