@@ -52,10 +52,37 @@ type PackInfo struct {
 // - /path/to/dev/Vendor.Pack.pdsc
 // - /path/to/local/Vendor.Pack.Version.pack (or .zip)
 // - https://web.com/Vendor.Pack.Version.pack (or .zip)
-func ExtractPackInfo(packPath string) (PackInfo, error) {
+// If short is true, then prepare it considering that path is in the simpler
+// form of Vendor.Pack[.x.y.z], used when removing packs/pdscs.
+func ExtractPackInfo(packPath string, short bool) (PackInfo, error) {
 	log.Debugf("Extracting pack info from \"%s\"", packPath)
 
 	info := PackInfo{}
+	if short {
+		_, packName := path.Split(packPath)
+		details := strings.SplitAfterN(packName, ".", 3)
+		if len(details) < 2 {
+			return info, errs.BadPackName
+		}
+
+		info.Vendor = strings.ReplaceAll(details[0], ".", "")
+		info.Pack = strings.ReplaceAll(details[1], ".", "")
+
+		if len(details) == 3 {
+			info.Version = details[2]
+			if !IsPackVersionValid(info.Version) {
+				return info, errs.BadPackNameInvalidVersion
+			}
+		}
+
+		if !IsPackVendorNameValid(info.Vendor) || !IsPackNameValid(info.Pack) {
+			return info, errs.BadPackNameInvalidName
+		}
+
+		return info, nil
+
+	}
+
 	validExtensions := map[string]bool{
 		".zip":  true,
 		".pack": true,

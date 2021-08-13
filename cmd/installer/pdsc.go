@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 )
 
 // PdscType is the struct that represents the installation of a
@@ -22,6 +23,33 @@ type PdscType struct {
 
 	// path points to a file in the local system, whether or not it's local
 	path string
+}
+
+// preparePdsc does some sanity validation regarding pdsc name
+// and check if it's already installed or not
+func preparePdsc(pdscPath string, short bool) (*PdscType, error) {
+	var err error
+	pdsc := &PdscType{
+		path: pdscPath,
+	}
+
+	info, err := utils.ExtractPackInfo(pdscPath, short)
+	if err != nil {
+		return pdsc, err
+	}
+	pdsc.URL = info.Location
+	pdsc.Name = info.Pack
+	pdsc.Vendor = info.Vendor
+	pdsc.Version = info.Version
+
+	if !installation.localIsLoaded {
+		if err := installation.localPidx.Read(); err != nil {
+			return pdsc, err
+		}
+		installation.localIsLoaded = true
+	}
+
+	return pdsc, err
 }
 
 // toPdscTag returns a <pdsc> tag representation of this PDSC file

@@ -6,7 +6,6 @@ package installer
 import (
 	"os"
 	"path"
-	"strings"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
@@ -101,89 +100,6 @@ func RemovePdsc(pdscPath string) error {
 	}
 
 	return installation.touchPackIdx()
-}
-
-// preparePack does some sanity validation regarding pack name
-// and check if it's public and if it's installed or not
-func preparePack(packPath string, short bool) (*PackType, error) {
-	pack := &PackType{
-		path: packPath,
-	}
-
-	info, err := prepare(packPath, short)
-	if err != nil {
-		return pack, err
-	}
-
-	pack.URL = info.Location
-	pack.Name = info.Pack
-	pack.Vendor = info.Vendor
-	pack.Version = info.Version
-	pack.isPublic = installation.packIsPublic(pack)
-	pack.isInstalled = installation.packIsInstalled(pack)
-
-	return pack, nil
-}
-
-// preparePdsc does some sanity validation regarding pdsc name
-// and check if it's already installed or not
-func preparePdsc(pdscPath string, short bool) (*PdscType, error) {
-	var err error
-	pdsc := &PdscType{
-		path: pdscPath,
-	}
-
-	info, err := prepare(pdscPath, short)
-	if err != nil {
-		return pdsc, err
-	}
-	pdsc.URL = info.Location
-	pdsc.Name = info.Pack
-	pdsc.Vendor = info.Vendor
-	pdsc.Version = info.Version
-
-	if !installation.localIsLoaded {
-		if err := installation.localPidx.Read(); err != nil {
-			return pdsc, err
-		}
-		installation.localIsLoaded = true
-	}
-
-	return pdsc, err
-}
-
-// prepare does some pre-checking steps before adding or removing packs/pdscs.
-// If short is true, then prepare it considering that path is in the simpler
-// form of Vendor.Pack[.x.y.z], used when removing packs/pdscs.
-func prepare(packPath string, short bool) (utils.PackInfo, error) {
-	var info utils.PackInfo
-
-	if short {
-		_, packName := path.Split(packPath)
-		details := strings.SplitAfterN(packName, ".", 3)
-		if len(details) < 2 {
-			return info, errs.BadPackName
-		}
-
-		info.Vendor = strings.ReplaceAll(details[0], ".", "")
-		info.Pack = strings.ReplaceAll(details[1], ".", "")
-
-		if len(details) == 3 {
-			info.Version = details[2]
-			if !utils.IsPackVersionValid(info.Version) {
-				return info, errs.BadPackNameInvalidVersion
-			}
-		}
-
-		if !utils.IsPackVendorNameValid(info.Vendor) || !utils.IsPackNameValid(info.Pack) {
-			return info, errs.BadPackNameInvalidName
-		}
-
-		return info, nil
-
-	}
-
-	return utils.ExtractPackInfo(packPath)
 }
 
 // installation is a singleton variable that keeps the only reference

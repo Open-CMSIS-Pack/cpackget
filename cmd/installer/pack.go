@@ -37,6 +37,28 @@ type PackType struct {
 	zipReader *zip.ReadCloser
 }
 
+// preparePack does some sanity validation regarding pack name
+// and check if it's public and if it's installed or not
+func preparePack(packPath string, short bool) (*PackType, error) {
+	pack := &PackType{
+		path: packPath,
+	}
+
+	info, err := utils.ExtractPackInfo(packPath, short)
+	if err != nil {
+		return pack, err
+	}
+
+	pack.URL = info.Location
+	pack.Name = info.Pack
+	pack.Vendor = info.Vendor
+	pack.Version = info.Version
+	pack.isPublic = installation.packIsPublic(pack)
+	pack.isInstalled = installation.packIsInstalled(pack)
+
+	return pack, nil
+}
+
 // fetch will download the pack file if it's on the Internet, or
 // will make sure the file exists in the local file system
 func (p *PackType) fetch() error {

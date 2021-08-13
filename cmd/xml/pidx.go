@@ -5,7 +5,6 @@ package xml
 
 import (
 	"encoding/xml"
-	"fmt"
 	"strings"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
