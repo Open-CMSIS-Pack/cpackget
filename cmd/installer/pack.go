@@ -99,6 +99,40 @@ func (p *PackType) validate() error {
 	return nil
 }
 
+// purge Removes cached files when
+// - It
+//   - Removes "CMSIS_PACK_ROOT/.Download/p.Vendor.p.Name.p.Version.pdsc"
+//   - Removes "CMSIS_PACK_ROOT/.Download/p.Vendor.p.Name.p.Version.pack" (or zip)
+func (p *PackType) purge() error {
+	log.Debugf("Purging \"%v\"", p.path)
+
+	fileNamePattern := p.Vendor + "\\." + p.Name
+	if len(p.Version) > 0 {
+		fileNamePattern += "\\." + p.Version
+	} else {
+		fileNamePattern += "\\..*?"
+	}
+	fileNamePattern += "\\.(?:pack|zip|pdsc)"
+
+	files, err := utils.ListDir(installation.downloadDir, fileNamePattern)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Files to be purged \"%v\"", files)
+	if len(files) == 0 {
+		return errs.PackNotPurgeable
+	}
+
+	for _, file := range files {
+		if err := os.Remove(file); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // install installs pack files to installation's directories
 // It:
 //   - Extracts all files to "CMSIS_PACK_ROOT/p.Vendor/p.Name/p.Version/"
@@ -167,12 +201,9 @@ func (p *PackType) install(installation *PacksInstallationType) error {
 //   - Removes all pack files from "CMSIS_PACK_ROOT/p.Vendor/p.Name/[p.Version]", where p.Version might be ommited
 //   - Removes "CMSIS_PACK_ROOT/p.Vendor/p.Name/" if empty
 //   - Removes "CMSIS_PACK_ROOT/p.Vendor/" if empty
-//   - If purge is true then
-//     - Remove "CMSIS_PACK_ROOT/.Download/p.Vendor.p.Name.p.Version.pdsc"
-//     - Remove "CMSIS_PACK_ROOT/.Download/p.Vendor.p.Name.p.Version.pack" (or zip)
 //   - If "CMSIS_PACK_ROOT/.Web/p.Vendor.p.Name.pdsc" does not exist then
 //     - Remove "p.Vendor.p.Name.pdsc" from "CMSIS_PACK_ROOT/.Local/"
-func (p *PackType) uninstall(installation *PacksInstallationType, purge bool) error {
+func (p *PackType) uninstall(installation *PacksInstallationType) error {
 	log.Debugf("Uninstalling \"%v\"", p.path)
 
 	// Remove Vendor/Pack/x.y.z
@@ -194,29 +225,6 @@ func (p *PackType) uninstall(installation *PacksInstallationType, purge bool) er
 	if utils.IsEmpty(vendorPath) {
 		if err := os.Remove(vendorPath); err != nil {
 			return err
-		}
-	}
-
-	// Remove some extra files when --purge is specified
-	if purge {
-		fileNamePattern := p.Vendor + "\\." + p.Name
-		if len(p.Version) > 0 {
-			fileNamePattern += "\\." + p.Version
-		} else {
-			fileNamePattern += "\\..*?"
-		}
-		fileNamePattern += "\\.(?:pack|zip|pdsc)"
-
-		files, err := utils.ListDir(installation.downloadDir, fileNamePattern)
-		if err != nil {
-			return err
-		}
-		log.Debugf("Files to be purged \"%v\"", files)
-
-		for _, file := range files {
-			if err := os.Remove(file); err != nil {
-				return err
-			}
 		}
 	}
 

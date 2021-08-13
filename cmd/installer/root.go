@@ -46,16 +46,26 @@ func RemovePack(packPath string, purge bool) error {
 		return err
 	}
 
-	if !pack.isInstalled {
+	if pack.isInstalled {
+		if err = pack.uninstall(installation); err != nil {
+			return err
+		}
+
+		if purge {
+			if err = pack.purge(); err != nil {
+				return err
+			}
+		}
+
+		return installation.touchPackIdx()
+	} else if purge {
+		return pack.purge()
+	} else {
 		log.Errorf("Pack \"%v\" is not installed", packPath)
 		return errs.PackNotInstalled
 	}
 
-	if err = pack.uninstall(installation, purge); err != nil {
-		return err
-	}
-
-	return installation.touchPackIdx()
+	return nil
 }
 
 // AddPdsc adds a pack via PDSC file

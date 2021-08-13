@@ -24,6 +24,7 @@ var (
 	PdscFileNotFound     = errors.New("pdsc not found")
 	PackAlreadyInstalled = errors.New("pack already installed")
 	PackNotInstalled     = errors.New("pack not installed")
+	PackNotPurgeable     = errors.New("pack not purgeable")
 	PdscEntryExists      = errors.New("pdsc already in index")
 	PdscEntryNotFound    = errors.New("pdsc not found in index")
 
