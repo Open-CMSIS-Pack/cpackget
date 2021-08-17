@@ -37,7 +37,7 @@ type PdscTag struct {
 	Version string   `xml:"version,attr"`
 }
 
-func NewPidx(fileName string) *PidxXML {
+func NewPidxXML(fileName string) *PidxXML {
 	log.Debugf("Initializing PidxXML object for \"%s\"", fileName)
 	p := new(PidxXML)
 	p.fileName = fileName

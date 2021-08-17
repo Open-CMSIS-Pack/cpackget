@@ -125,7 +125,7 @@ func SetPackRoot(packRoot string) error {
 		localDir:    path.Join(packRoot, ".Local"),
 		webDir:      path.Join(packRoot, ".Web"),
 	}
-	installation.localPidx = xml.NewPidx(path.Join(installation.localDir, "local_repository.pidx"))
+	installation.localPidx = xml.NewPidxXML(path.Join(installation.localDir, "local_repository.pidx"))
 	installation.packIdx = path.Join(packRoot, "pack.idx")
 
 	var err error
