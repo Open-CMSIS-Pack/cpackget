@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"path"
@@ -243,4 +244,19 @@ func IsEmpty(dir string) bool {
 	}
 
 	return false
+}
+
+// RandStringBytes returns a random string with n bytes long
+// Ref: https://stackoverflow.com/a/31832326/3908350
+func RandStringBytes(n int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }
