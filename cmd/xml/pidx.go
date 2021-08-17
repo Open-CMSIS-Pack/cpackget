@@ -12,10 +12,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//
-//  This file contains all available packages from
-//  all vendors.
-//
+// PidxXML maps the PIDX file format.
+// Ref: https://github.com/ARM-software/CMSIS_5/blob/develop/CMSIS/Utilities/PackIndex.xsd
 type PidxXML struct {
 	XMLName   xml.Name `xml:"index"`
 	Timestamp string   `xml:"timestamp"`
@@ -29,6 +27,7 @@ type PidxXML struct {
 	fileName string
 }
 
+// PdscTag maps a <pdsc> tag that goes in PIDX files.
 type PdscTag struct {
 	XMLName xml.Name `xml:"pdsc"`
 	Vendor  string   `xml:"vendor,attr"`
@@ -37,6 +36,7 @@ type PdscTag struct {
 	Version string   `xml:"version,attr"`
 }
 
+// NewPidxXML creates a new instance of the PidxXML struct.
 func NewPidxXML(fileName string) *PidxXML {
 	log.Debugf("Initializing PidxXML object for \"%s\"", fileName)
 	p := new(PidxXML)
@@ -44,7 +44,7 @@ func NewPidxXML(fileName string) *PidxXML {
 	return p
 }
 
-// AddPdsc takes in a PdscTag and add it to the <pindex> tag
+// AddPdsc takes in a PdscTag and add it to the <pindex> tag.
 func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 	log.Debugf("Adding pdsc tag \"%s\" to \"%s\"", pdsc, p.fileName)
 	if p.HasPdsc(pdsc) {
@@ -55,7 +55,7 @@ func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 	return nil
 }
 
-// RemovePdsc takes in a PdscTag and remove it from the <pindex> tag
+// RemovePdsc takes in a PdscTag and remove it from the <pindex> tag.
 func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 	log.Debugf("Removing pdsc tag \"%s\" from \"%s\"", pdsc, p.fileName)
 
@@ -85,19 +85,19 @@ func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 	return nil
 }
 
-// HasPdsc tells whether of not pdsc is already present in this pidx file
+// HasPdsc tells whether of not pdsc is already present in this pidx file.
 func (p *PidxXML) HasPdsc(pdsc PdscTag) bool {
 	_, ok := p.pdscList[pdsc.Key()]
 	log.Debugf("Checking if pidx \"%s\" contains \"%s\": %v", p.fileName, pdsc.Key(), ok)
 	return ok
 }
 
-// Key returns this pdscTag unique key
+// Key returns this pdscTag unique key.
 func (p *PdscTag) Key() string {
 	return p.Vendor + "." + p.Name + "." + p.Version
 }
 
-// Read reads FileName into this PidxXML struct
+// Read reads FileName into this PidxXML struct and allocates memory for all PDSC tags.
 func (p *PidxXML) Read() error {
 	log.Debugf("Reading pidx from file \"%s\"", p.fileName)
 
@@ -117,7 +117,7 @@ func (p *PidxXML) Read() error {
 	return nil
 }
 
-// Save saves this PidxXML struct into its FileName
+// Save saves this PidxXML struct into its fileName.
 func (p *PidxXML) Write() error {
 	log.Debugf("Writing pidx file to \"%s\"", p.fileName)
 
