@@ -100,11 +100,6 @@ func (p *PdscTag) Key() string {
 // Read reads FileName into this PidxXML struct
 func (p *PidxXML) Read() error {
 	log.Debugf("Reading pidx from file \"%s\"", p.fileName)
-	if !utils.FileExists(p.fileName) {
-		if err := p.Write(); err != nil {
-			return err
-		}
-	}
 
 	if err := utils.ReadXML(p.fileName, p); err != nil {
 		return err

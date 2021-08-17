@@ -1,0 +1,203 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright Contributors to the vidx2pidx project. */
+
+package xml_test
+
+import (
+	"os"
+	"testing"
+
+	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
+	"github.com/open-cmsis-pack/cpackget/cmd/xml"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestPdscTag(t *testing.T) {
+
+	assert := assert.New(t)
+
+	t.Run("test PdscTag Key", func(t *testing.T) {
+		pdscTag := xml.PdscTag{
+			Vendor:  "TheVendor",
+			Name:    "ThePack",
+			Version: "0.0.1",
+			URL:     "http://vendor.com/",
+		}
+
+		assert.Equal(pdscTag.Key(), "TheVendor.ThePack.0.0.1")
+	})
+}
+
+func TestPidxXML(t *testing.T) {
+
+	assert := assert.New(t)
+
+	t.Run("test NewPidxXML", func(t *testing.T) {
+		var fileName = "somefile.pidx"
+		pidx := xml.NewPidxXML(fileName)
+		assert.NotNil(pidx, "NewPidxXML should not fail on a simple instance creation")
+	})
+
+	t.Run("test adding a PDSC tag to a PIDX file", func(t *testing.T) {
+		fileName := utils.RandStringBytes(10) + ".pidx"
+		defer os.Remove(fileName)
+
+		pdscTag1 := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "0.0.1",
+		}
+
+		pdscTag2 := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "0.0.2",
+		}
+
+		pdscTag2DiffURL := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://different-url.com/",
+			Name:    "ThePack",
+			Version: "0.0.2",
+		}
+
+		pidx := xml.NewPidxXML(fileName)
+		utils.WriteXML(fileName, &pidx)
+		pidx.Read()
+
+		// Adding first time is OK
+		assert.Nil(pidx.AddPdsc(pdscTag1))
+
+		// Adding an existing one is not OK
+		assert.Equal(pidx.AddPdsc(pdscTag1), errs.PdscEntryExists)
+
+		// Adding a second PDSC tag is OK
+		assert.Nil(pidx.AddPdsc(pdscTag2))
+
+		// Adding a PDSC of a Pack with different URL is NOT OK
+		assert.Equal(pidx.AddPdsc(pdscTag2DiffURL), errs.PdscEntryExists)
+	})
+
+	t.Run("test removing a PDSC tag from a PIDX file", func(t *testing.T) {
+		fileName := utils.RandStringBytes(10) + ".pidx"
+		defer os.Remove(fileName)
+
+		pdscTag1 := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "0.0.1",
+		}
+
+		pidx := xml.NewPidxXML(fileName)
+		utils.WriteXML(fileName, &pidx)
+		pidx.Read()
+
+		// Removing an non-existing PDSC tag is not OK
+		assert.Equal(pidx.RemovePdsc(pdscTag1), errs.PdscEntryNotFound)
+
+		// Adding first time is OK
+		assert.Nil(pidx.AddPdsc(pdscTag1))
+
+		// Removing is OK
+		assert.Nil(pidx.RemovePdsc(pdscTag1))
+
+		// Make sure it really got removed
+		assert.Equal(pidx.RemovePdsc(pdscTag1), errs.PdscEntryNotFound)
+	})
+
+	t.Run("test removing a PDSC tag without version from a PIDX file", func(t *testing.T) {
+		fileName := utils.RandStringBytes(10) + ".pidx"
+		defer os.Remove(fileName)
+
+		pdscTag1 := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "0.0.1",
+		}
+
+		pdscTag2 := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "0.0.2",
+		}
+
+		pdscTag2WithoutVersion := xml.PdscTag{
+			Vendor: "TheVendor",
+			URL:    "http://vendor.com/",
+			Name:   "ThePack",
+		}
+
+		pdscTagThatShouldRemain := xml.PdscTag{
+			Vendor:  "TheOtherVendor",
+			URL:     "http://theothervendor.com/",
+			Name:    "TheOtherPack",
+			Version: "0.0.1",
+		}
+
+		pidx := xml.NewPidxXML(fileName)
+		utils.WriteXML(fileName, &pidx)
+		pidx.Read()
+
+		// Make sure that an attempt to remove a PDSC tag without version also raises an error
+		assert.Equal(pidx.RemovePdsc(pdscTag2WithoutVersion), errs.PdscEntryNotFound)
+
+		// Populating tags
+		assert.Nil(pidx.AddPdsc(pdscTag1))
+		assert.Nil(pidx.AddPdsc(pdscTag2))
+		assert.Nil(pidx.AddPdsc(pdscTagThatShouldRemain))
+
+		// Removing a PDSC tag without version should remove all PDSC tags that match TheVendor.ThePack
+		assert.Nil(pidx.RemovePdsc(pdscTag2WithoutVersion))
+
+		// Make sure it really got removed
+		assert.Equal(pidx.RemovePdsc(pdscTag1), errs.PdscEntryNotFound)
+		assert.Equal(pidx.RemovePdsc(pdscTag2), errs.PdscEntryNotFound)
+	})
+
+	t.Run("test writting changes to a PIDX file", func(t *testing.T) {
+		fileName := utils.RandStringBytes(10) + ".pidx"
+		defer os.Remove(fileName)
+
+		pdscTag1 := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "0.0.1",
+		}
+
+		pdscTag2 := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "0.0.2",
+		}
+
+		pidx := xml.NewPidxXML(fileName)
+		utils.WriteXML(fileName, &pidx)
+		pidx.Read()
+
+		// Populates the file
+		assert.Nil(pidx.AddPdsc(pdscTag1))
+		assert.Nil(pidx.AddPdsc(pdscTag2))
+
+		// Make sure it writes OK
+		assert.Nil(pidx.Write())
+		newPidx := xml.NewPidxXML(fileName)
+		newPidx.Read()
+		assert.True(newPidx.HasPdsc(pdscTag1))
+		assert.True(newPidx.HasPdsc(pdscTag2))
+	})
+
+	t.Run("test reading PIDX file with malformed XML", func(t *testing.T) {
+		pidx := xml.NewPidxXML("../../testdata/MalformedPack.pidx")
+		err := pidx.Read()
+		assert.NotNil(err)
+		assert.Equal(err.Error(), "XML syntax error on line 3: unexpected EOF")
+	})
+}
