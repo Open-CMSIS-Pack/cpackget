@@ -4,102 +4,75 @@
 package xml_test
 
 import (
-	//"fmt"
 	"testing"
+
+	"github.com/open-cmsis-pack/cpackget/cmd/xml"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPdscXML(t *testing.T) {
-	/*t.Run("test match pdsc tag with equal file content", func(t *testing.T) {
-		pdscTag := PdscTag{
-			Vendor:  "TheVendor",
-			URL:     "http://the.url/",
-			Name:    "TheName",
-			Version: "0.0.1",
-		}
 
-		pdscXML := PdscXML{
-			Vendor: "TheVendor",
-			URL:    "http://the.url/",
-			Name:   "TheName",
-		}
-		release := ReleaseTag{
-			Version: "0.0.1",
-		}
-		pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, release)
+	assert := assert.New(t)
 
-		err := pdscXML.MatchTag(pdscTag)
-		if err != nil {
-			t.Errorf("MatchTag should not return error on matching tag: %s", err)
-		}
-	})
-
-	t.Run("test match pdsc tag with different file content", func(t *testing.T) {
-		pdscTag := PdscTag{
-			Vendor:  "TheVendor",
-			URL:     "http://the.url/",
-			Name:    "TheName",
-			Version: "0.0.1",
-		}
-
-		pdscXML := PdscXML{
-			Vendor: "TheVendor2",
-			URL:    "http://the.url2/",
-			Name:   "TheName2",
-		}
-		release := ReleaseTag{
-			Version: "0.0.2",
-		}
-		pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, release)
-
-		err := pdscXML.MatchTag(pdscTag)
-		expected := fmt.Sprintf("Pdsc tag '%s%s' does not match the actual file:", pdscTag.URL, pdscTag.Name)
-		expected += fmt.Sprintf(" Vendor('%s' != '%s')", pdscXML.Vendor, pdscTag.Vendor)
-		expected += fmt.Sprintf(" URL('%s' != '%s')", pdscXML.URL, pdscTag.URL)
-		expected += fmt.Sprintf(" Name('%s' != '%s')", pdscXML.Name, pdscTag.Name)
-		expected += fmt.Sprintf(" Version('%s' != '%s')", pdscXML.LatestVersion(), pdscTag.Version)
-
-		AssertEqual(t, err.Error(), expected)
+	t.Run("test NewPdscXML", func(t *testing.T) {
+		var fileName = "somefile.pdsc"
+		pdscXML := xml.NewPdscXML(fileName)
+		assert.NotNil(pdscXML, "NewPdscXML should not fail on a simple instance creation")
 	})
 
 	t.Run("test latest version", func(t *testing.T) {
 		var latest string
-		pdscXML := PdscXML{
+		pdscXML := xml.PdscXML{
 			Vendor: "TheVendor",
 			URL:    "http://the.url/",
 			Name:   "TheName",
 		}
 
+		// It is OK to have an empty LatestVersion() (or is it?)
 		latest = pdscXML.LatestVersion()
-		AssertEqual(t, latest, "")
+		assert.Equal(latest, "")
 
-		release1 := ReleaseTag{
+		release1 := xml.ReleaseTag{
 			Version: "0.0.1",
 		}
-		release2 := ReleaseTag{
+		release2 := xml.ReleaseTag{
 			Version: "0.0.2",
 		}
 		pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, release2)
 		pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, release1)
 
 		latest = pdscXML.LatestVersion()
-		AssertEqual(t, latest, "0.0.2")
+		assert.Equal(latest, "0.0.2")
 	})
 
 	t.Run("test pdscXML to pdscTag generation", func(t *testing.T) {
-		pdscXML := PdscXML{
-			Vendor: "TheVendor",
-			URL:    "http://the.url/",
-			Name:   "TheName",
+		var url = "http://the.url/"
+		var name = "TheName"
+		var vendor = "TheVendor"
+		var version = "0.0.1"
+		pdscXML := xml.PdscXML{
+			Vendor: vendor,
+			URL:    url,
+			Name:   name,
 		}
-		release := ReleaseTag{
-			Version: "0.0.1",
+		release := xml.ReleaseTag{
+			Version: version,
 		}
 		pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, release)
 
 		pdscTag := pdscXML.Tag()
-		err := pdscXML.MatchTag(pdscTag)
-		if err != nil {
-			t.Errorf("MatchTag should not return error on matching tag: %s", err)
-		}
-	})*/
+		assert.Equal(pdscTag.Vendor, vendor)
+		assert.Equal(pdscTag.URL, url)
+		assert.Equal(pdscTag.Name, name)
+		assert.Equal(pdscTag.Version, version)
+	})
+
+	t.Run("test reading a PDSC file", func(t *testing.T) {
+		pdsc := xml.NewPdscXML("../../testdata/devpack/1.2.3/TheVendor.DevPack.pdsc")
+		assert.Nil(pdsc.Read())
+		assert.Equal(pdsc.Vendor, "TheVendor")
+		assert.Equal(pdsc.URL, "file:///testdata/devpack/1.2.3/")
+		assert.Equal(pdsc.Name, "DevPack")
+		assert.Equal(pdsc.LatestVersion(), "1.2.3")
+	})
 }

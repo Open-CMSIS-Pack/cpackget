@@ -5,15 +5,8 @@ package utils_test
 
 import (
 	//"os"
-	"reflect"
 	"testing"
 )
-
-func AssertEqual(t *testing.T, got, want interface{}) {
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Wanted \"%s\", got \"%s\" instead", want, got)
-	}
-}
 
 func TestPackPackToPdscTag(t *testing.T) {
 	/*

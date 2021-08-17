@@ -30,7 +30,7 @@ type ReleaseTag struct {
 	Date    string   `xml:"Date,attr"`
 }
 
-func NewPdsc(fileName string) *PdscXML {
+func NewPdscXML(fileName string) *PdscXML {
 	log.Debugf("Initializing PdscXML object for \"%s\"", fileName)
 	p := new(PdscXML)
 	p.fileName = fileName

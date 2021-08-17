@@ -61,16 +61,16 @@ format-check:
 
 .PHONY: test release config
 test:
-	TESTING=1 go test $(ARGS) ./...
+	TESTING=1 go test $(ARGS) ./cmd/...
 
 test-all: format-check coverage-check lint
 
 coverage-report: 
-	TESTING=1 go test ./... -coverprofile cover.out
+	TESTING=1 go test ./cmd/... -coverprofile cover.out
 	go tool cover -html=cover.out
 
 coverage-check:
-	TESTING=1 go test ./... $(ARGS) -coverprofile cover.out
+	TESTING=1 go test ./cmd/... $(ARGS) -coverprofile cover.out
 	tail -n +2 cover.out | grep -v -e " 1$$" | grep -v main.go | tee coverage-check.out
 	test ! -s coverage-check.out
 

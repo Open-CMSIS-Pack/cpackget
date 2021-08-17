@@ -6,8 +6,8 @@ package installer
 import (
 	log "github.com/sirupsen/logrus"
 
-	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
+	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 )
 
 // PdscType is the struct that represents the installation of a
@@ -57,7 +57,7 @@ func (p *PdscType) toPdscTag() (xml.PdscTag, error) {
 	tag := p.PdscTag
 
 	if p.file == nil {
-		p.file = xml.NewPdsc(p.path)
+		p.file = xml.NewPdscXML(p.path)
 		if err := p.file.Read(); err != nil {
 			return tag, err
 		}
