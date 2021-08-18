@@ -37,6 +37,7 @@ var (
 	FailedWrittingToLocalFile = errors.New("failed writing HTTP stream to local file")
 	FailedDecompressingFile   = errors.New("fail to decompress file")
 	FailedInflatingFile       = errors.New("fail to inflate file")
+	FailedCreatingDirectory   = errors.New("fail to inflate file")
 	FileNotFound              = errors.New("file not found")
 
 	// Errors that can't be be predicted

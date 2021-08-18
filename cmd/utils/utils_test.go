@@ -4,85 +4,131 @@
 package utils_test
 
 import (
-	//"os"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestPackPackToPdscTag(t *testing.T) {
-	/*
-		t.Run("test bad pack name", func (t *testing.T) {
-			_, err := PackPathToPdscTag("invalid-pack-name")
-			AssertEqual(t, err, BadPackName)
-		})
+func TestDownloadFile(t *testing.T) {
+	assert := assert.New(t)
 
-		t.Run("test invalid file extension", func (t *testing.T) {
-			_, err := PackPathToPdscTag("Vendor.Pack.0.0.1.txt")
-			AssertEqual(t, err, BadPackNameInvalidExtension)
-		})
+	t.Run("test fail to create temporary file", func(t *testing.T) {
+		oldCache := utils.CacheDir
+		utils.CacheDir = "non-existant-path"
+		_, err := utils.DownloadFile("http://fake.com/file.txt")
+		assert.NotNil(err)
+		assert.True(errs.Is(err, errs.FailedCreatingFile))
+		utils.CacheDir = oldCache
+	})
 
-		t.Run("test invalid vendor", func (t *testing.T) {
-			_, err := PackPathToPdscTag("Vendo2?r.Pack.0.0.1.pack")
-			AssertEqual(t, err, BadPackNameInvalidVendor)
-		})
+	t.Run("test fail with bad http location", func(t *testing.T) {
+		fileName := "file.txt"
+		defer os.Remove(fileName)
 
-		t.Run("test invalid pack name", func (t *testing.T) {
-			_, err := PackPathToPdscTag("Vendor.Pack*.0.0.1.pack")
-			AssertEqual(t, err, BadPackNameInvalidName)
-		})
+		_, err := utils.DownloadFile(fileName)
+		assert.NotNil(err)
+		assert.True(errs.Is(err, errs.FailedDownloadingFile))
+	})
 
-		t.Run("test invalid version", func (t *testing.T) {
-			_, err := PackPathToPdscTag("Vendor.Pack.0.0.1.2.pack")
-			AssertEqual(t, err, BadPackNameInvalidVersion)
-		})
+	t.Run("test fail with bad http request", func(t *testing.T) {
+		fileName := "file.txt"
+		defer os.Remove(fileName)
 
-		t.Run("test pdsc as pack path", func (t *testing.T) {
-			pdscTag, err := PackPathToPdscTag("/path/to/Vendor.Pack.pdsc")
+		notFoundServer := httptest.NewServer(
+			http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusNotFound)
+				},
+			),
+		)
 
-			AssertEqual(t, err, nil)
-			AssertEqual(t, pdscTag.URL, "/path/to/")
-			AssertEqual(t, pdscTag.Vendor, "Vendor")
-			AssertEqual(t, pdscTag.Name, "Pack")
-			AssertEqual(t, pdscTag.Version, "")
-		})
+		_, err := utils.DownloadFile(notFoundServer.URL + "/" + fileName)
+		assert.NotNil(err)
+		assert.True(errs.Is(err, errs.BadRequest))
+	})
 
-		t.Run("test local pack in current directory as pack path", func (t *testing.T) {
-			pdscTag, err := PackPathToPdscTag("Vendor.Pack.0.0.1.pack")
+	t.Run("test fail to read data stream", func(t *testing.T) {
+		fileName := "file.txt"
+		defer os.Remove(fileName)
 
-			url, _ := os.Getwd()
-			AssertEqual(t, err, nil)
-			AssertEqual(t, pdscTag.URL, url)
-			AssertEqual(t, pdscTag.Vendor, "Vendor")
-			AssertEqual(t, pdscTag.Name, "Pack")
-			AssertEqual(t, pdscTag.Version, "0.0.1")
-		})
+		bodyErrorServer := httptest.NewServer(
+			http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Length", "1")
+				},
+			),
+		)
 
-		t.Run("test local pack as pack path", func (t *testing.T) {
-			pdscTag, err := PackPathToPdscTag("/path/to/Vendor.Pack.0.0.1.pack")
+		_, err := utils.DownloadFile(bodyErrorServer.URL + "/" + fileName)
+		assert.NotNil(err)
+		assert.True(errs.Is(err, errs.FailedWrittingToLocalFile))
+	})
 
-			AssertEqual(t, err, nil)
-			AssertEqual(t, pdscTag.URL, "/path/to/")
-			AssertEqual(t, pdscTag.Vendor, "Vendor")
-			AssertEqual(t, pdscTag.Name, "Pack")
-			AssertEqual(t, pdscTag.Version, "0.0.1")
-		})
+	t.Run("test download is OK", func(t *testing.T) {
+		fileName := "file.txt"
+		defer os.Remove(fileName)
+		goodResponse := []byte("all good")
+		goodServer := httptest.NewServer(
+			http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprint(w, string(goodResponse))
+				},
+			),
+		)
+		url := goodServer.URL + "/" + fileName
+		_, err1 := utils.DownloadFile(url)
+		assert.Nil(err1)
+		assert.True(utils.FileExists(fileName))
+		bytes, err2 := ioutil.ReadFile(fileName)
+		assert.Nil(err2)
+		assert.Equal(bytes, goodResponse)
+	})
+}
 
-		t.Run("test url pack as pack path", func (t *testing.T) {
-			pdscTag, err := PackPathToPdscTag("http://site.com/Vendor.Pack.0.0.1.pack")
+func TestFileExists(t *testing.T) {
+	assert := assert.New(t)
 
-			AssertEqual(t, err, nil)
-			AssertEqual(t, pdscTag.URL, "http://site.com/")
-			AssertEqual(t, pdscTag.Vendor, "Vendor")
-			AssertEqual(t, pdscTag.Name, "Pack")
-			AssertEqual(t, pdscTag.Version, "0.0.1")
-		})
+	t.Run("test a file that does not exist", func(t *testing.T) {
+		assert.False(utils.FileExists("this-file-does-not-exist"))
+	})
+}
 
-		t.Run("test local zip as pack path", func (t *testing.T) {
-			pdscTag, err := PackPathToPdscTag("/path/to/Vendor.Pack.0.0.1.zip")
 
-			AssertEqual(t, err, nil)
-			AssertEqual(t, pdscTag.URL, "/path/to/")
-			AssertEqual(t, pdscTag.Vendor, "Vendor")
-			AssertEqual(t, pdscTag.Name, "Pack")
-			AssertEqual(t, pdscTag.Version, "0.0.1")
-		}) */
+func TestEnsureDir(t *testing.T) {
+	assert := assert.New(t)
+	t.Run("test if directory gets created", func(t *testing.T) {
+		dirName := "tmp/ensure-dir-test"
+		defer func() {
+			err := os.RemoveAll(dirName)
+			assert.Nil(err)
+		}()
+
+		assert.Nil(utils.EnsureDir(dirName))
+
+		// Make sure it really exists
+		stat, err := os.Stat(dirName)
+		assert.Nil(err)
+		assert.True(stat.IsDir())
+	})
+
+	t.Run("test catch errors", func(t *testing.T) {
+		dirName := "/cannot-create-this-dir"
+		err := utils.EnsureDir(dirName)
+		assert.NotNil(err)
+		assert.True(errs.Is(err, errs.FailedCreatingDirectory))
+	})
+}
+
+func TestInflateFile(t *testing.T) {
+	t.Run("test inflating a directory", func(t *testing.T) {})
+	t.Run("test inflating a corrupt file", func(t *testing.T) {})
+	t.Run("test fail to create inflated file", func(t *testing.T) {})
+	t.Run("test fail to write to inflated file", func(t *testing.T) {})
 }
