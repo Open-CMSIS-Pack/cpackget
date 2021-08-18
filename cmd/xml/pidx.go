@@ -48,7 +48,7 @@ func NewPidxXML(fileName string) *PidxXML {
 func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 	log.Debugf("Adding pdsc tag \"%s\" to \"%s\"", pdsc, p.fileName)
 	if p.HasPdsc(pdsc) {
-		return errs.PdscEntryExists
+		return errs.ErrPdscEntryExists
 	}
 
 	p.pdscList[pdsc.Key()] = pdsc
@@ -74,7 +74,7 @@ func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 	}
 
 	if len(toRemove) == 0 {
-		return errs.PdscEntryNotFound
+		return errs.ErrPdscEntryNotFound
 	}
 
 	for _, key := range toRemove {

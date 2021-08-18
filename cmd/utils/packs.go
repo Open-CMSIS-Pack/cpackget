@@ -62,7 +62,7 @@ func ExtractPackInfo(packPath string, short bool) (PackInfo, error) {
 		_, packName := path.Split(packPath)
 		details := strings.SplitAfterN(packName, ".", 3)
 		if len(details) < 2 {
-			return info, errs.BadPackName
+			return info, errs.ErrBadPackName
 		}
 
 		info.Vendor = strings.ReplaceAll(details[0], ".", "")
@@ -71,12 +71,12 @@ func ExtractPackInfo(packPath string, short bool) (PackInfo, error) {
 		if len(details) == 3 {
 			info.Version = details[2]
 			if !IsPackVersionValid(info.Version) {
-				return info, errs.BadPackNameInvalidVersion
+				return info, errs.ErrBadPackNameInvalidVersion
 			}
 		}
 
 		if !IsPackVendorNameValid(info.Vendor) || !IsPackNameValid(info.Pack) {
-			return info, errs.BadPackNameInvalidName
+			return info, errs.ErrBadPackNameInvalidName
 		}
 
 		return info, nil
@@ -92,14 +92,14 @@ func ExtractPackInfo(packPath string, short bool) (PackInfo, error) {
 	location, packName := path.Split(packPath)
 	info.Extension = filepath.Ext(packName)
 	if !validExtensions[info.Extension] {
-		return info, errs.BadPackNameInvalidExtension
+		return info, errs.ErrBadPackNameInvalidExtension
 	}
 
 	isPdsc := info.Extension == ".pdsc"
 
 	details := strings.SplitAfterN(packName, ".", 3)
 	if len(details) != 3 {
-		return info, errs.BadPackName
+		return info, errs.ErrBadPackName
 	}
 
 	info.Vendor = strings.ReplaceAll(details[0], ".", "")
@@ -112,13 +112,13 @@ func ExtractPackInfo(packPath string, short bool) (PackInfo, error) {
 	var err error
 	if !IsPackVendorNameValid(info.Vendor) {
 		log.Errorf("Pack vendor \"%s\" does not match %s", info.Vendor, packNameRegex)
-		err = errs.BadPackNameInvalidVendor
+		err = errs.ErrBadPackNameInvalidVendor
 	} else if !IsPackNameValid(info.Pack) {
 		log.Errorf("Pack name \"%s\" does not match %s", info.Pack, packNameRegex)
-		err = errs.BadPackNameInvalidName
+		err = errs.ErrBadPackNameInvalidName
 	} else if !isPdsc && !IsPackVersionValid(info.Version) {
 		log.Errorf("Pack version \"%s\" does not match %s", info.Version, packVersionRegex)
-		err = errs.BadPackNameInvalidVersion
+		err = errs.ErrBadPackNameInvalidVersion
 	}
 
 	if err != nil {

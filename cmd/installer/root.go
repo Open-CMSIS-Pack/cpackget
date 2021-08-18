@@ -23,7 +23,7 @@ func AddPack(packPath string) error {
 	}
 
 	if pack.isInstalled {
-		return errs.PackAlreadyInstalled
+		return errs.ErrPackAlreadyInstalled
 	}
 
 	if err = pack.fetch(); err != nil {
@@ -62,7 +62,7 @@ func RemovePack(packPath string, purge bool) error {
 		return pack.purge()
 	} else {
 		log.Errorf("Pack \"%v\" is not installed", packPath)
-		return errs.PackNotInstalled
+		return errs.ErrPackNotInstalled
 	}
 
 	return nil
@@ -78,7 +78,7 @@ func AddPdsc(pdscPath string) error {
 	}
 
 	if pdsc.isInstalled {
-		return errs.PdscEntryExists
+		return errs.ErrPdscEntryExists
 	}
 
 	if err := pdsc.install(installation); err != nil {

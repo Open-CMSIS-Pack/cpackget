@@ -4,8 +4,6 @@
 package installer_test
 
 import (
-	//"os"
-	//"reflect"
 	"testing"
 )
 

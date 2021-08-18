@@ -51,7 +51,7 @@ func preparePack(packPath string, short bool) (*PackType, error) {
 		url, err := url.Parse(packPath)
 		if err != nil {
 			log.Error(err)
-			return pack, errs.BadPackURL
+			return pack, errs.ErrBadPackURL
 		}
 
 		url.User = nil
@@ -89,7 +89,7 @@ func (p *PackType) fetch() error {
 
 	if !utils.FileExists(p.path) {
 		log.Errorf("File \"%s\" does't exist", p.path)
-		return errs.FileNotFound
+		return errs.ErrFileNotFound
 	}
 
 	return nil
@@ -110,7 +110,7 @@ func (p *PackType) validate() error {
 
 	if !isPdscPresent {
 		log.Errorf("\"%s\" not found in \"%s\"", pdscFileName, p.path)
-		return errs.PdscFileNotFound
+		return errs.ErrPdscFileNotFound
 	}
 
 	return nil
@@ -138,7 +138,7 @@ func (p *PackType) purge() error {
 
 	log.Debugf("Files to be purged \"%v\"", files)
 	if len(files) == 0 {
-		return errs.PackNotPurgeable
+		return errs.ErrPackNotPurgeable
 	}
 
 	for _, file := range files {
@@ -172,7 +172,7 @@ func (p *PackType) install(installation *PacksInstallationType) error {
 	p.zipReader, err = zip.OpenReader(p.path)
 	if err != nil {
 		log.Errorf("Can't decompress \"%s\": %s", p.path, err)
-		return errs.FailedDecompressingFile
+		return errs.ErrFailedDecompressingFile
 	}
 	defer p.zipReader.Close()
 

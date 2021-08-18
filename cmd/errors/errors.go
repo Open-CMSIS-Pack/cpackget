@@ -14,33 +14,33 @@ func Is(err, target error) bool {
 
 var (
 	// Errors related to package file name
-	BadPackName                 = errors.New("bad pack name: it should follow the standard PackVendor.PackName.PackVersion.pack")
-	BadPackNameInvalidVendor    = errors.New("bad pack name: pack vendor should be a string containing letters")
-	BadPackNameInvalidName      = errors.New("bad pack name: pack name should be a string containing letters")
-	BadPackNameInvalidVersion   = errors.New("bad pack name: pack version should be versioned like 0.0.0, and optionally have a suffix containing letters")
-	BadPackNameInvalidExtension = errors.New("bad pack name: pack extension should be \"pdsc\", \"pack\" or \"zip\"")
-	BadPackURL                  = errors.New("bad pack url: the url provided for this pack is malformed")
+	ErrBadPackName                 = errors.New("bad pack name: it should follow the standard PackVendor.PackName.PackVersion.pack")
+	ErrBadPackNameInvalidVendor    = errors.New("bad pack name: pack vendor should be a string containing letters")
+	ErrBadPackNameInvalidName      = errors.New("bad pack name: pack name should be a string containing letters")
+	ErrBadPackNameInvalidVersion   = errors.New("bad pack name: pack version should be versioned like 0.0.0, and optionally have a suffix containing letters")
+	ErrBadPackNameInvalidExtension = errors.New("bad pack name: pack extension should be \"pdsc\", \"pack\" or \"zip\"")
+	ErrBadPackURL                  = errors.New("bad pack url: the url provided for this pack is malformed")
 
 	// Errors related to package content
-	PdscFileNotFound     = errors.New("pdsc not found")
-	PackAlreadyInstalled = errors.New("pack already installed")
-	PackNotInstalled     = errors.New("pack not installed")
-	PackNotPurgeable     = errors.New("pack not purgeable")
-	PdscEntryExists      = errors.New("pdsc already in index")
-	PdscEntryNotFound    = errors.New("pdsc not found in index")
+	ErrPdscFileNotFound     = errors.New("pdsc not found")
+	ErrPackAlreadyInstalled = errors.New("pack already installed")
+	ErrPackNotInstalled     = errors.New("pack not installed")
+	ErrPackNotPurgeable     = errors.New("pack not purgeable")
+	ErrPdscEntryExists      = errors.New("pdsc already in index")
+	ErrPdscEntryNotFound    = errors.New("pdsc not found in index")
 
 	// Errors related to network
-	BadRequest            = errors.New("bad request")
-	FailedDownloadingFile = errors.New("failed to download file")
+	ErrBadRequest            = errors.New("bad request")
+	ErrFailedDownloadingFile = errors.New("failed to download file")
 
 	// Errors related to file system
-	FailedCreatingFile        = errors.New("failed to create a local file")
-	FailedWrittingToLocalFile = errors.New("failed writing HTTP stream to local file")
-	FailedDecompressingFile   = errors.New("fail to decompress file")
-	FailedInflatingFile       = errors.New("fail to inflate file")
-	FailedCreatingDirectory   = errors.New("fail to inflate file")
-	FileNotFound              = errors.New("file not found")
+	ErrFailedCreatingFile        = errors.New("failed to create a local file")
+	ErrFailedWrittingToLocalFile = errors.New("failed writing HTTP stream to local file")
+	ErrFailedDecompressingFile   = errors.New("fail to decompress file")
+	ErrFailedInflatingFile       = errors.New("fail to inflate file")
+	ErrFailedCreatingDirectory   = errors.New("fail to inflate file")
+	ErrFileNotFound              = errors.New("file not found")
 
 	// Errors that can't be be predicted
-	UnknownBehavior = errors.New("unknown behavior")
+	ErrUnknownBehavior = errors.New("unknown behavior")
 )

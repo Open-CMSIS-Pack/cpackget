@@ -72,13 +72,13 @@ func TestPidxXML(t *testing.T) {
 		assert.Nil(pidx.AddPdsc(pdscTag1))
 
 		// Adding an existing one is not OK
-		assert.Equal(pidx.AddPdsc(pdscTag1), errs.PdscEntryExists)
+		assert.Equal(pidx.AddPdsc(pdscTag1), errs.ErrPdscEntryExists)
 
 		// Adding a second PDSC tag is OK
 		assert.Nil(pidx.AddPdsc(pdscTag2))
 
 		// Adding a PDSC of a Pack with different URL is NOT OK
-		assert.Equal(pidx.AddPdsc(pdscTag2DiffURL), errs.PdscEntryExists)
+		assert.Equal(pidx.AddPdsc(pdscTag2DiffURL), errs.ErrPdscEntryExists)
 	})
 
 	t.Run("test removing a PDSC tag from a PIDX file", func(t *testing.T) {
@@ -97,7 +97,7 @@ func TestPidxXML(t *testing.T) {
 		pidx.Read()
 
 		// Removing an non-existing PDSC tag is not OK
-		assert.Equal(pidx.RemovePdsc(pdscTag1), errs.PdscEntryNotFound)
+		assert.Equal(pidx.RemovePdsc(pdscTag1), errs.ErrPdscEntryNotFound)
 
 		// Adding first time is OK
 		assert.Nil(pidx.AddPdsc(pdscTag1))
@@ -106,7 +106,7 @@ func TestPidxXML(t *testing.T) {
 		assert.Nil(pidx.RemovePdsc(pdscTag1))
 
 		// Make sure it really got removed
-		assert.Equal(pidx.RemovePdsc(pdscTag1), errs.PdscEntryNotFound)
+		assert.Equal(pidx.RemovePdsc(pdscTag1), errs.ErrPdscEntryNotFound)
 	})
 
 	t.Run("test removing a PDSC tag without version from a PIDX file", func(t *testing.T) {
@@ -145,7 +145,7 @@ func TestPidxXML(t *testing.T) {
 		pidx.Read()
 
 		// Make sure that an attempt to remove a PDSC tag without version also raises an error
-		assert.Equal(pidx.RemovePdsc(pdscTag2WithoutVersion), errs.PdscEntryNotFound)
+		assert.Equal(pidx.RemovePdsc(pdscTag2WithoutVersion), errs.ErrPdscEntryNotFound)
 
 		// Populating tags
 		assert.Nil(pidx.AddPdsc(pdscTag1))
@@ -156,8 +156,8 @@ func TestPidxXML(t *testing.T) {
 		assert.Nil(pidx.RemovePdsc(pdscTag2WithoutVersion))
 
 		// Make sure it really got removed
-		assert.Equal(pidx.RemovePdsc(pdscTag1), errs.PdscEntryNotFound)
-		assert.Equal(pidx.RemovePdsc(pdscTag2), errs.PdscEntryNotFound)
+		assert.Equal(pidx.RemovePdsc(pdscTag1), errs.ErrPdscEntryNotFound)
+		assert.Equal(pidx.RemovePdsc(pdscTag2), errs.ErrPdscEntryNotFound)
 	})
 
 	t.Run("test writting changes to a PIDX file", func(t *testing.T) {

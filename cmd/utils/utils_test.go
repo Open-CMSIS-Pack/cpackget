@@ -24,7 +24,7 @@ func TestDownloadFile(t *testing.T) {
 		utils.CacheDir = "non-existant-path"
 		_, err := utils.DownloadFile("http://fake.com/file.txt")
 		assert.NotNil(err)
-		assert.True(errs.Is(err, errs.FailedCreatingFile))
+		assert.True(errs.Is(err, errs.ErrFailedCreatingFile))
 		utils.CacheDir = oldCache
 	})
 
@@ -34,7 +34,7 @@ func TestDownloadFile(t *testing.T) {
 
 		_, err := utils.DownloadFile(fileName)
 		assert.NotNil(err)
-		assert.True(errs.Is(err, errs.FailedDownloadingFile))
+		assert.True(errs.Is(err, errs.ErrFailedDownloadingFile))
 	})
 
 	t.Run("test fail with bad http request", func(t *testing.T) {
@@ -51,7 +51,7 @@ func TestDownloadFile(t *testing.T) {
 
 		_, err := utils.DownloadFile(notFoundServer.URL + "/" + fileName)
 		assert.NotNil(err)
-		assert.True(errs.Is(err, errs.BadRequest))
+		assert.True(errs.Is(err, errs.ErrBadRequest))
 	})
 
 	t.Run("test fail to read data stream", func(t *testing.T) {
@@ -68,7 +68,7 @@ func TestDownloadFile(t *testing.T) {
 
 		_, err := utils.DownloadFile(bodyErrorServer.URL + "/" + fileName)
 		assert.NotNil(err)
-		assert.True(errs.Is(err, errs.FailedWrittingToLocalFile))
+		assert.True(errs.Is(err, errs.ErrFailedWrittingToLocalFile))
 	})
 
 	t.Run("test download is OK", func(t *testing.T) {
@@ -121,7 +121,7 @@ func TestEnsureDir(t *testing.T) {
 		dirName := "/cannot-create-this-dir"
 		err := utils.EnsureDir(dirName)
 		assert.NotNil(err)
-		assert.True(errs.Is(err, errs.FailedCreatingDirectory))
+		assert.True(errs.Is(err, errs.ErrFailedCreatingDirectory))
 	})
 }
 

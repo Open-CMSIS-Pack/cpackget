@@ -35,27 +35,27 @@ func DownloadFile(URL string) (string, error) {
 	out, err := os.Create(filePath)
 	if err != nil {
 		log.Error(err)
-		return "", errs.FailedCreatingFile
+		return "", errs.ErrFailedCreatingFile
 	}
 	defer out.Close()
 
 	resp, err := http.Get(URL)
 	if err != nil {
 		log.Error(err)
-		return "", errs.FailedDownloadingFile
+		return "", errs.ErrFailedDownloadingFile
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		log.Errorf("bad status: %s", resp.Status)
-		return "", errs.BadRequest
+		return "", errs.ErrBadRequest
 	}
 
 	// Download file in smaller bits straight to a local file
 	written, err := io.Copy(out, resp.Body)
 	if err != nil {
 		log.Error(err)
-		return "", errs.FailedWrittingToLocalFile
+		return "", errs.ErrFailedWrittingToLocalFile
 	}
 
 	log.Debugf("Downloaded %d bytes", written)
@@ -78,7 +78,7 @@ func EnsureDir(dirName string) error {
 	err := os.MkdirAll(dirName, 0755)
 	if err != nil && !os.IsExist(err) {
 		log.Error(err)
-		return errs.FailedCreatingDirectory
+		return errs.ErrFailedCreatingDirectory
 	}
 	return nil
 }
@@ -93,7 +93,7 @@ func InflateFile(file *zip.File, destinationDir string) error {
 	reader, err := file.Open()
 	if err != nil {
 		log.Errorf("Can't inflate file \"%s\": %s", file.Name, err)
-		return errs.FailedInflatingFile
+		return errs.ErrFailedInflatingFile
 	}
 	defer reader.Close()
 
@@ -101,14 +101,14 @@ func InflateFile(file *zip.File, destinationDir string) error {
 	out, err := os.Create(filePath)
 	if err != nil {
 		log.Error(err)
-		return errs.FailedCreatingFile
+		return errs.ErrFailedCreatingFile
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, reader)
 	if err != nil {
 		log.Error(err)
-		return errs.FailedWrittingToLocalFile
+		return errs.ErrFailedWrittingToLocalFile
 	}
 
 	return nil
