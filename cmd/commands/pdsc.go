@@ -15,7 +15,7 @@ var PdscCmd = &cobra.Command{
 	Short: "Add/remove packs in the local file system via PDSC files.",
 	Long: `<pack-path> can be a local file or a file hosted somewhere else on the Internet.
 cpack will extract information from it and install the files in specific directories inside this machine.`,
-	PersistentPreRun: configureInstaller,
+	PersistentPreRunE: configureInstaller,
 }
 
 var pdscAddCmd = &cobra.Command{

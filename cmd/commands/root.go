@@ -16,6 +16,6 @@ var All = []*cobra.Command{
 }
 
 // configureInstaller configures cpackget installer for adding or removing pack/pdsc
-func configureInstaller(cmd *cobra.Command, args []string) {
-	installer.SetPackRoot(viper.GetString("pack-root"))
+func configureInstaller(cmd *cobra.Command, args []string) error {
+	return installer.SetPackRoot(viper.GetString("pack-root"))
 }

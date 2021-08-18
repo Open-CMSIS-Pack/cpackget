@@ -65,8 +65,8 @@ func TestPidxXML(t *testing.T) {
 		}
 
 		pidx := xml.NewPidxXML(fileName)
-		utils.WriteXML(fileName, &pidx)
-		pidx.Read()
+		assert.Nil(utils.WriteXML(fileName, &pidx))
+		assert.Nil(pidx.Read())
 
 		// Adding first time is OK
 		assert.Nil(pidx.AddPdsc(pdscTag1))
@@ -93,8 +93,8 @@ func TestPidxXML(t *testing.T) {
 		}
 
 		pidx := xml.NewPidxXML(fileName)
-		utils.WriteXML(fileName, &pidx)
-		pidx.Read()
+		assert.Nil(utils.WriteXML(fileName, &pidx))
+		assert.Nil(pidx.Read())
 
 		// Removing an non-existing PDSC tag is not OK
 		assert.Equal(pidx.RemovePdsc(pdscTag1), errs.ErrPdscEntryNotFound)
@@ -141,8 +141,8 @@ func TestPidxXML(t *testing.T) {
 		}
 
 		pidx := xml.NewPidxXML(fileName)
-		utils.WriteXML(fileName, &pidx)
-		pidx.Read()
+		assert.Nil(utils.WriteXML(fileName, &pidx))
+		assert.Nil(pidx.Read())
 
 		// Make sure that an attempt to remove a PDSC tag without version also raises an error
 		assert.Equal(pidx.RemovePdsc(pdscTag2WithoutVersion), errs.ErrPdscEntryNotFound)
@@ -179,8 +179,8 @@ func TestPidxXML(t *testing.T) {
 		}
 
 		pidx := xml.NewPidxXML(fileName)
-		utils.WriteXML(fileName, &pidx)
-		pidx.Read()
+		assert.Nil(utils.WriteXML(fileName, &pidx))
+		assert.Nil(pidx.Read())
 
 		// Populates the file
 		assert.Nil(pidx.AddPdsc(pdscTag1))
@@ -189,7 +189,7 @@ func TestPidxXML(t *testing.T) {
 		// Make sure it writes OK
 		assert.Nil(pidx.Write())
 		newPidx := xml.NewPidxXML(fileName)
-		newPidx.Read()
+		assert.Nil(newPidx.Read())
 		assert.True(newPidx.HasPdsc(pdscTag1))
 		assert.True(newPidx.HasPdsc(pdscTag2))
 	})

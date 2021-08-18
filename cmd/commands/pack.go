@@ -14,7 +14,7 @@ var PackCmd = &cobra.Command{
 	Use:              "pack",
 	Short:            "add/rm Open-CMSIS-Pack packages",
 	Long:             "Add or remove an Open-CMSIS-Pack from a local file or a file hosted somewhere else on the Internet.",
-	PersistentPreRun: configureInstaller,
+	PersistentPreRunE: configureInstaller,
 }
 
 var packAddCmd = &cobra.Command{

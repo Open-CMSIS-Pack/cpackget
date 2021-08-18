@@ -49,7 +49,7 @@ func NewCli() *cobra.Command {
 	rootCmd.Flags().BoolVarP(&flags.version, "version", "V", false, "Output the version number of cpackget and exit.")
 	rootCmd.PersistentFlags().IntVarP(&flags.verbosiness, "verbosiness", "v", 1, "Set verbosiness: 0 (Errors), 1 (Info messages), 2 (Warnings), 3 (Debugging).")
 	rootCmd.PersistentFlags().StringP("pack-root", "R", defaultPackRoot, "Specify pack root folder. Defaults to CMSIS_PACK_ROOT environment variable or current directory.")
-	viper.BindPFlag("pack-root", rootCmd.PersistentFlags().Lookup("pack-root"))
+	_ = viper.BindPFlag("pack-root", rootCmd.PersistentFlags().Lookup("pack-root"))
 
 	for _, cmd := range commands.All {
 		rootCmd.AddCommand(cmd)
