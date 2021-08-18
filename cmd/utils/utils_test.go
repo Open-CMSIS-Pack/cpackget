@@ -6,9 +6,9 @@ package utils_test
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -99,7 +99,6 @@ func TestFileExists(t *testing.T) {
 		assert.False(utils.FileExists("this-file-does-not-exist"))
 	})
 }
-
 
 func TestEnsureDir(t *testing.T) {
 	assert := assert.New(t)

@@ -6,8 +6,8 @@ package installer
 import (
 	"archive/zip"
 	"fmt"
-	"os"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 
