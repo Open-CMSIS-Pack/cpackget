@@ -60,12 +60,10 @@ func RemovePack(packPath string, purge bool) error {
 		return installation.touchPackIdx()
 	} else if purge {
 		return pack.purge()
-	} else {
-		log.Errorf("Pack \"%v\" is not installed", packPath)
-		return errs.ErrPackNotInstalled
 	}
 
-	return nil
+	log.Errorf("Pack \"%v\" is not installed", packPath)
+	return errs.ErrPackNotInstalled
 }
 
 // AddPdsc adds a pack via PDSC file
