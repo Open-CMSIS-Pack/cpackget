@@ -19,6 +19,7 @@ var (
 	BadPackNameInvalidName      = errors.New("bad pack name: pack name should be a string containing letters")
 	BadPackNameInvalidVersion   = errors.New("bad pack name: pack version should be versioned like 0.0.0, and optionally have a suffix containing letters")
 	BadPackNameInvalidExtension = errors.New("bad pack name: pack extension should be \"pdsc\", \"pack\" or \"zip\"")
+	BadPackURL                  = errors.New("bad pack url: the url provided for this pack is malformed")
 
 	// Errors related to package content
 	PdscFileNotFound     = errors.New("pdsc not found")

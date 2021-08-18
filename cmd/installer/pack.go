@@ -7,6 +7,7 @@ import (
 	"archive/zip"
 	"fmt"
 	"os"
+	"net/url"
 	"path"
 	"strings"
 
@@ -42,6 +43,22 @@ type PackType struct {
 func preparePack(packPath string, short bool) (*PackType, error) {
 	pack := &PackType{
 		path: packPath,
+	}
+
+	// Clean out any possible query or user auth in the URL
+	// to help finding the correct path info
+	if strings.HasPrefix(packPath, "https") {
+		url, err := url.Parse(packPath)
+		if err != nil {
+			log.Error(err)
+			return pack, errs.BadPackURL
+		}
+
+		url.User = nil
+		url.Fragment = ""
+		url.RawQuery = ""
+
+		packPath = url.String()
 	}
 
 	info, err := utils.ExtractPackInfo(packPath, short)

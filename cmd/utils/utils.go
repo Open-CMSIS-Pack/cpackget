@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -26,9 +27,10 @@ import (
 var CacheDir string
 
 // DownloadFile downloads a file from an URL and saves it locally under destionationFilePath
-func DownloadFile(url string) (string, error) {
-	filePath := path.Join(CacheDir, path.Base(url))
-	log.Debugf("Downloading %s to %s", url, filePath)
+func DownloadFile(URL string) (string, error) {
+	parsedURL, _ := url.Parse(URL)
+	filePath := path.Join(CacheDir, path.Base(parsedURL.Path))
+	log.Debugf("Downloading %s to %s", URL, filePath)
 
 	out, err := os.Create(filePath)
 	if err != nil {
@@ -37,7 +39,7 @@ func DownloadFile(url string) (string, error) {
 	}
 	defer out.Close()
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(URL)
 	if err != nil {
 		log.Error(err)
 		return "", errs.FailedDownloadingFile
