@@ -184,24 +184,6 @@ func (p *PacksInstallationType) packIsInstalled(pack *PackType) bool {
 	return false
 }
 
-// pdscIsInstalled checks whether a given pack PDSC is already installed or not
-func (p *PacksInstallationType) pdscIsInstalled(pdsc *PdscType) (bool, error) {
-	// lazyly lists all packs installed via PDSC
-	if !p.localIsLoaded {
-		if err := p.localPidx.Read(); err != nil {
-			return false, err
-		}
-		p.localIsLoaded = true
-	}
-
-	tag, err := pdsc.toPdscTag()
-	if err != nil {
-		return false, err
-	}
-
-	return p.localPidx.HasPdsc(tag), nil
-}
-
 // packIsPublic checks whether the pack is public or not.
 // Being public means a PDSC file is present in ".Web/" folder
 func (p *PacksInstallationType) packIsPublic(pack *PackType) bool {
