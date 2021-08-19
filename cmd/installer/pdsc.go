@@ -4,10 +4,9 @@
 package installer
 
 import (
-	log "github.com/sirupsen/logrus"
-
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
+	log "github.com/sirupsen/logrus"
 )
 
 // PdscType is the struct that represents the installation of a

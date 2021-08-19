@@ -53,7 +53,7 @@ func SecureCopy(dst io.Writer, src io.Reader) (int64, error) {
 func SecureInflateFile(file *zip.File, destinationDir string) error {
 	log.Debugf("Inflating \"%s\"", file.Name)
 
-	if strings.Contains(file.Name, ".." + string(os.PathSeparator)) {
+	if strings.Contains(file.Name, ".."+string(os.PathSeparator)) {
 		return errs.ErrInsecureZipFileName
 	}
 

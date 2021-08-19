@@ -4,10 +4,9 @@
 package commands
 
 import (
+	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-
-	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 )
 
 var PdscCmd = &cobra.Command{

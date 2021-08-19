@@ -4,16 +4,15 @@
 package commands
 
 import (
+	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-
-	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 )
 
 var PackCmd = &cobra.Command{
-	Use:              "pack",
-	Short:            "add/rm Open-CMSIS-Pack packages",
-	Long:             "Add or remove an Open-CMSIS-Pack from a local file or a file hosted somewhere else on the Internet.",
+	Use:               "pack",
+	Short:             "add/rm Open-CMSIS-Pack packages",
+	Long:              "Add or remove an Open-CMSIS-Pack from a local file or a file hosted somewhere else on the Internet.",
 	PersistentPreRunE: configureInstaller,
 }
 
