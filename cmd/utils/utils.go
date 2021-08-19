@@ -4,7 +4,6 @@
 package utils
 
 import (
-	"archive/zip"
 	"encoding/xml"
 	"io"
 	"io/ioutil"
@@ -15,7 +14,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -39,7 +37,7 @@ func DownloadFile(URL string) (string, error) {
 	}
 	defer out.Close()
 
-	resp, err := http.Get(URL)
+	resp, err := http.Get(URL) // #nosec
 	if err != nil {
 		log.Error(err)
 		return "", errs.ErrFailedDownloadingFile
@@ -52,15 +50,10 @@ func DownloadFile(URL string) (string, error) {
 	}
 
 	// Download file in smaller bits straight to a local file
-	written, err := io.Copy(out, resp.Body)
-	if err != nil {
-		log.Error(err)
-		return "", errs.ErrFailedWrittingToLocalFile
-	}
-
+	written, err := SecureCopy(out, resp.Body)
 	log.Debugf("Downloaded %d bytes", written)
 
-	return filePath, nil
+	return filePath, err
 }
 
 // FileExists checks if filePath is an actual file in the local file system
@@ -80,37 +73,6 @@ func EnsureDir(dirName string) error {
 		log.Error(err)
 		return errs.ErrFailedCreatingDirectory
 	}
-	return nil
-}
-
-func InflateFile(file *zip.File, destinationDir string) error {
-	log.Debugf("Inflating \"%s\"", file.Name)
-
-	if strings.HasSuffix(file.Name, "/") {
-		return EnsureDir(path.Join(destinationDir, file.Name))
-	}
-
-	reader, err := file.Open()
-	if err != nil {
-		log.Errorf("Can't inflate file \"%s\": %s", file.Name, err)
-		return errs.ErrFailedInflatingFile
-	}
-	defer reader.Close()
-
-	filePath := path.Join(destinationDir, file.Name)
-	out, err := os.Create(filePath)
-	if err != nil {
-		log.Error(err)
-		return errs.ErrFailedCreatingFile
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, reader)
-	if err != nil {
-		log.Error(err)
-		return errs.ErrFailedWrittingToLocalFile
-	}
-
 	return nil
 }
 
@@ -242,11 +204,7 @@ func IsEmpty(dir string) bool {
 	defer file.Close()
 
 	_, err = file.Readdirnames(1)
-	if err == io.EOF {
-		return true
-	}
-
-	return false
+	return err == io.EOF
 }
 
 // RandStringBytes returns a random string with n bytes long
@@ -255,7 +213,7 @@ func RandStringBytes(n int) string {
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+		b[i] = letters[rand.Intn(len(letters))] // #nosec
 	}
 	return string(b)
 }

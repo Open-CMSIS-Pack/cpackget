@@ -183,7 +183,7 @@ func (p *PackType) install(installation *PacksInstallationType) error {
 
 	// Inflate all files
 	for _, file := range p.zipReader.File {
-		err = utils.InflateFile(file, packHomeDir)
+		err = utils.SecureInflateFile(file, packHomeDir)
 		if err != nil {
 			return err
 		}

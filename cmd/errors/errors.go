@@ -41,6 +41,10 @@ var (
 	ErrFailedCreatingDirectory   = errors.New("fail to inflate file")
 	ErrFileNotFound              = errors.New("file not found")
 
+	// Security errors
+	ErrInsecureZipFileName = errors.New("zip file contains insecure characters: ../")
+	ErrFileTooBig          = errors.New("files cannot be over 20G")
+
 	// Errors that can't be be predicted
 	ErrUnknownBehavior = errors.New("unknown behavior")
 )
