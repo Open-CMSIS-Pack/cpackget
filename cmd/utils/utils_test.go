@@ -108,7 +108,7 @@ func TestEnsureDir(t *testing.T) {
 	t.Run("test if directory gets created", func(t *testing.T) {
 		dirName := "tmp/ensure-dir-test"
 		defer func() {
-			err := os.RemoveAll(dirName)
+			err := os.RemoveAll("tmp/")
 			assert.Nil(err)
 		}()
 

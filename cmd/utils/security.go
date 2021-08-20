@@ -16,7 +16,7 @@ import (
 
 // MaxDownloadSize determines that the max file to be downloaded. Defaults to 20G
 // It prevents malicious requests from providing infinite or very long files
-const MaxDownloadSize = 20 * 1024 * 1024 * 1024
+var MaxDownloadSize = int64(20 * 1024 * 1024 * 1024)
 
 // DownloadBufferSize is the number of bytes to transfer from the stream to the downloaded
 // file per iteration. It is 4kb
@@ -30,18 +30,20 @@ func SecureCopy(dst io.Writer, src io.Reader) (int64, error) {
 	bytesRead := int64(0)
 	for {
 		partialRead, err := io.CopyN(dst, src, DownloadBufferSize)
+
+		// Check if copy limit has explode before checking for errors
+		bytesRead += int64(partialRead)
+		if bytesRead > MaxDownloadSize {
+			log.Errorf("Attempted to copy a file over %v bytes", MaxDownloadSize)
+			return bytesRead, errs.ErrFileTooBig
+		}
+
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
 			log.Error(err)
 			return bytesRead, errs.ErrFailedWrittingToLocalFile
-		}
-
-		bytesRead += int64(partialRead)
-		if bytesRead > MaxDownloadSize {
-			log.Errorf("Attempted to extract a file over 20G")
-			return bytesRead, errs.ErrFileTooBig
 		}
 	}
 
@@ -61,11 +63,7 @@ func SecureInflateFile(file *zip.File, destinationDir string) error {
 		return EnsureDir(path.Join(destinationDir, file.Name)) // #nosec
 	}
 
-	reader, err := file.Open()
-	if err != nil {
-		log.Errorf("Can't inflate file \"%s\": %s", file.Name, err)
-		return errs.ErrFailedInflatingFile
-	}
+	reader, _ := file.Open()
 	defer reader.Close()
 
 	filePath := path.Join(destinationDir, file.Name) // #nosec
