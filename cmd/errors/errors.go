@@ -40,6 +40,8 @@ var (
 	ErrFailedInflatingFile       = errors.New("fail to inflate file")
 	ErrFailedCreatingDirectory   = errors.New("fail to inflate file")
 	ErrFileNotFound              = errors.New("file not found")
+	ErrCopyingEqualPaths         = errors.New("failed copying files: source is the same as destination")
+	ErrMovingEqualPaths          = errors.New("failed moving files: source is the same as destination")
 
 	// Security errors
 	ErrInsecureZipFileName = errors.New("zip file contains insecure characters: ../")

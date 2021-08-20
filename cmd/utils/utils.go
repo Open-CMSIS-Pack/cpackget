@@ -80,9 +80,8 @@ func EnsureDir(dirName string) error {
 func CopyFile(source, destination string) error {
 	log.Debugf("Copying file from \"%s\" to \"%s\"", source, destination)
 
-	_, err := os.Stat(source)
-	if err != nil {
-		return err
+	if source == destination {
+		return errs.ErrCopyingEqualPaths
 	}
 
 	sourceFile, err := os.Open(source)
@@ -105,6 +104,10 @@ func CopyFile(source, destination string) error {
 func MoveFile(source, destination string) error {
 	log.Debugf("Moving file from \"%s\" to \"%s\"", source, destination)
 
+	if source == destination {
+		return errs.ErrCopyingEqualPaths
+	}
+
 	err := os.Rename(source, destination)
 	if err != nil {
 		log.Errorf("Can't move file \"%s\" to \"%s\": %s", source, destination, err)
@@ -116,12 +119,7 @@ func MoveFile(source, destination string) error {
 
 // ReadXML reads in a file into an XML struct
 func ReadXML(path string, targetStruct interface{}) error {
-	xmlFile, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-
-	contents, err := ioutil.ReadAll(xmlFile)
+	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -140,21 +138,12 @@ func WriteXML(path string, targetStruct interface{}) error {
 		return err
 	}
 
-	if path == "" || path == "-" {
-		os.Stdout.Write(output)
-		return nil
-	}
-
-	err = ioutil.WriteFile(path, output, 0600)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(path, output, 0600)
 }
 
 // ListDir generates a list of files and directories in "dir".
-// If pattern is specified, generates a list with matches only
+// If pattern is specified, generates a list with matches only.
+// It does NOT walk subdirectories
 func ListDir(dir, pattern string) ([]string, error) {
 	regexPattern := regexp.MustCompile(`.*`)
 	if pattern != "" {
@@ -163,14 +152,24 @@ func ListDir(dir, pattern string) ([]string, error) {
 
 	log.Debugf("Listing files and directories in \"%v\" that match \"%v\"", dir, regexPattern)
 
-	var files []string
+	files := []string{}
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
+		if err != nil {
+			return err
+		}
+
+		// The target dir is always passed, skip it
+		if path == dir {
 			return nil
 		}
 
 		if regexPattern.MatchString(path) {
 			files = append(files, path)
+		}
+
+		// Avoid digging subdirs
+		if info.IsDir() {
+			return filepath.SkipDir
 		}
 
 		return nil
@@ -181,15 +180,14 @@ func ListDir(dir, pattern string) ([]string, error) {
 
 // TouchFile touches the file specified by filePath.
 // If the file does not exist, create it.
+// Touch also updates the modified timestamp of the file.
 func TouchFile(filePath string) error {
-	_, err := os.Stat(filePath)
-	if os.IsNotExist(err) {
-		file, err := os.Create(filePath)
-		if err != nil {
-			log.Fatal(err)
-		}
-		file.Close()
+	file, err := os.Create(filePath)
+	if err != nil {
+		log.Error(err)
+		return err
 	}
+	defer file.Close()
 
 	currentTime := time.Now().Local()
 	return os.Chtimes(filePath, currentTime, currentTime)
