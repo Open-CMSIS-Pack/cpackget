@@ -135,9 +135,9 @@ func ExtractPackInfo(packPath string, short bool) (PackInfo, error) {
 			location, _ = filepath.Abs(location)
 		}
 
-		location = "file://" + location
+		location = "file://" + location + "/"
 	}
 
-	info.Location = location + "/"
+	info.Location = location
 	return info, nil
 }

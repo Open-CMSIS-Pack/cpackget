@@ -3,79 +3,184 @@
 
 package utils_test
 
-/*
-	t.Run("test bad pack name", func (t *testing.T) {
-		_, err := PackPathToPdscTag("invalid-pack-name")
-		AssertEqual(t, err, BadPackName)
-	})
+import (
+	"os"
+	"path"
+	"path/filepath"
+	"testing"
 
-	t.Run("test invalid file extension", func (t *testing.T) {
-		_, err := PackPathToPdscTag("Vendor.Pack.0.0.1.txt")
-		AssertEqual(t, err, BadPackNameInvalidExtension)
-	})
+	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
+	"github.com/stretchr/testify/assert"
+)
 
-	t.Run("test invalid vendor", func (t *testing.T) {
-		_, err := PackPathToPdscTag("Vendo2?r.Pack.0.0.1.pack")
-		AssertEqual(t, err, BadPackNameInvalidVendor)
-	})
+type testCase struct {
+	name     string
+	path     string
+	expected utils.PackInfo
+	err      error
+	short    bool
+}
 
-	t.Run("test invalid pack name", func (t *testing.T) {
-		_, err := PackPathToPdscTag("Vendor.Pack*.0.0.1.pack")
-		AssertEqual(t, err, BadPackNameInvalidName)
-	})
+func absPath(filePath string) string {
+	abs, _ := filepath.Abs(filePath)
+	return abs
+}
 
-	t.Run("test invalid version", func (t *testing.T) {
-		_, err := PackPathToPdscTag("Vendor.Pack.0.0.1.2.pack")
-		AssertEqual(t, err, BadPackNameInvalidVersion)
-	})
+func TestExtractPackInfo(t *testing.T) {
+	assert := assert.New(t)
+	cwd, _ := os.Getwd()
 
-	t.Run("test pdsc as pack path", func (t *testing.T) {
-		pdscTag, err := PackPathToPdscTag("/path/to/Vendor.Pack.pdsc")
+	var tests = []testCase{
+		// Cases where short=true
+		{
+			name:  "test short path bad pack name",
+			path:  "this-is-not-a-valid-pack-name",
+			short: true,
+			err:   errs.ErrBadPackName,
+		},
+		{
+			name:  "test short path bad pack name with invalid version",
+			path:  "TheVendor.ThePack.not-a-valid-version",
+			short: true,
+			err:   errs.ErrBadPackNameInvalidVersion,
+		},
+		{
+			name:  "test short path bad pack name with invalid vendor name",
+			path:  "not-a-valid-vendor?.ThePack",
+			short: true,
+			err:   errs.ErrBadPackNameInvalidName,
+		},
+		{
+			name:  "test short path bad pack name with invalid pack name",
+			path:  "TheVendor.not-a-valid-pack-name?",
+			short: true,
+			err:   errs.ErrBadPackNameInvalidName,
+		},
+		{
+			name:  "test short path successfully extract pack info",
+			path:  "TheVendor.ThePack.0.0.1",
+			short: true,
+			expected: utils.PackInfo{
+				Vendor:  "TheVendor",
+				Pack:    "ThePack",
+				Version: "0.0.1",
+			},
+		},
+		{
+			name:  "test short path successfully extract pack info without version",
+			path:  "TheVendor.ThePack",
+			short: true,
+			expected: utils.PackInfo{
+				Vendor: "TheVendor",
+				Pack:   "ThePack",
+			},
+		},
 
-		AssertEqual(t, err, nil)
-		AssertEqual(t, pdscTag.URL, "/path/to/")
-		AssertEqual(t, pdscTag.Vendor, "Vendor")
-		AssertEqual(t, pdscTag.Name, "Pack")
-		AssertEqual(t, pdscTag.Version, "")
-	})
+		// Tests with full paths (short=false)
+		{
+			name: "test path with bad extension",
+			path: "only-check-for-extension.txt",
+			err:  errs.ErrBadPackNameInvalidExtension,
+		},
+		{
+			name: "test path with bad name pack extension",
+			path: "not-a-valid-pack-name.pack",
+			err:  errs.ErrBadPackName,
+		},
+		{
+			name: "test path with bad name zip extension",
+			path: "not-a-valid-pack-name.zip",
+			err:  errs.ErrBadPackName,
+		},
+		{
+			name: "test path with bad name pdsc extension",
+			path: "not-a-valid-pack-name.pdsc",
+			err:  errs.ErrBadPackName,
+		},
+		{
+			name: "test pdsc path with bad vendor name",
+			path: "not-a-valid-vendor-name?.ThePack.pdsc",
+			err:  errs.ErrBadPackNameInvalidVendor,
+		},
+		{
+			name: "test pack path with bad vendor name",
+			path: "not-a-valid-vendor-name?.ThePack.0.0.1.pack",
+			err:  errs.ErrBadPackNameInvalidVendor,
+		},
+		{
+			name: "test zip path with bad vendor name",
+			path: "not-a-valid-vendor-name?.ThePack.0.0.1.pdsc",
+			err:  errs.ErrBadPackNameInvalidVendor,
+		},
+		{
+			name: "test pdsc path with bad pack name",
+			path: "TheVendor.not-a-valid-pack-name?.pdsc",
+			err:  errs.ErrBadPackNameInvalidName,
+		},
+		{
+			name: "test pack path with bad pack name",
+			path: "TheVendor.not-a-valid-pack-name?.0.0.1.pack",
+			err:  errs.ErrBadPackNameInvalidName,
+		},
+		{
+			name: "test zip path with bad pack name",
+			path: "TheVendor.not-a-valid-pack-name?.0.0.1.zip",
+			err:  errs.ErrBadPackNameInvalidName,
+		},
+		{
+			name: "test pack path with bad version",
+			path: "TheVendor.ThePack.not-a-valid-version?.pack",
+			err:  errs.ErrBadPackNameInvalidVersion,
+		},
+		{
+			name: "test zip path with bad version",
+			path: "TheVendor.ThePack.not-a-valid-version?.zip",
+			err:  errs.ErrBadPackNameInvalidVersion,
+		},
+		{
+			name: "test path with with http URL",
+			path: "http://vendor.com/TheVendor.ThePack.0.0.1.pack",
+			expected: utils.PackInfo{
+				Vendor:    "TheVendor",
+				Pack:      "ThePack",
+				Version:   "0.0.1",
+				Extension: ".pack",
+				Location:  "http://vendor.com/",
+			},
+		},
+		{
+			name: "test path with with relative path",
+			path: "relative/path/to/TheVendor.ThePack.0.0.1.pack",
+			expected: utils.PackInfo{
+				Vendor:    "TheVendor",
+				Pack:      "ThePack",
+				Version:   "0.0.1",
+				Extension: ".pack",
+				Location:  "file://" + path.Join(cwd, "relative/path/to") + "/",
+			},
+		},
+		{
+			name: "test path with with relative path and dot-dot",
+			path: "../path/to/TheVendor.ThePack.0.0.1.pack",
+			expected: utils.PackInfo{
+				Vendor:    "TheVendor",
+				Pack:      "ThePack",
+				Version:   "0.0.1",
+				Extension: ".pack",
+				Location:  "file://" + absPath(path.Join(cwd, "../path/to")) + "/",
+			},
+		},
+	}
 
-	t.Run("test local pack in current directory as pack path", func (t *testing.T) {
-		pdscTag, err := PackPathToPdscTag("Vendor.Pack.0.0.1.pack")
-
-		url, _ := os.Getwd()
-		AssertEqual(t, err, nil)
-		AssertEqual(t, pdscTag.URL, url)
-		AssertEqual(t, pdscTag.Vendor, "Vendor")
-		AssertEqual(t, pdscTag.Name, "Pack")
-		AssertEqual(t, pdscTag.Version, "0.0.1")
-	})
-
-	t.Run("test local pack as pack path", func (t *testing.T) {
-		pdscTag, err := PackPathToPdscTag("/path/to/Vendor.Pack.0.0.1.pack")
-
-		AssertEqual(t, err, nil)
-		AssertEqual(t, pdscTag.URL, "/path/to/")
-		AssertEqual(t, pdscTag.Vendor, "Vendor")
-		AssertEqual(t, pdscTag.Name, "Pack")
-		AssertEqual(t, pdscTag.Version, "0.0.1")
-	})
-
-	t.Run("test url pack as pack path", func (t *testing.T) {
-		pdscTag, err := PackPathToPdscTag("http://site.com/Vendor.Pack.0.0.1.pack")
-
-		AssertEqual(t, err, nil)
-		AssertEqual(t, pdscTag.URL, "http://site.com/")
-		AssertEqual(t, pdscTag.Vendor, "Vendor")
-		AssertEqual(t, pdscTag.Name, "Pack")
-		AssertEqual(t, pdscTag.Version, "0.0.1")
-	})
-
-	t.Run("test local zip as pack path", func (t *testing.T) {
-		pdscTag, err := PackPathToPdscTag("/path/to/Vendor.Pack.0.0.1.zip")
-
-		AssertEqual(t, err, nil)
-		AssertEqual(t, pdscTag.URL, "/path/to/")
-		AssertEqual(t, pdscTag.Vendor, "Vendor")
-		AssertEqual(t, pdscTag.Name, "Pack")
-		AssertEqual(t, pdscTag.Version, "0.0.1")
-	}) */
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			info, err := utils.ExtractPackInfo(test.path, test.short)
+			if test.err != nil {
+				assert.True(errs.Is(err, test.err))
+			} else {
+				assert.Equal(info, test.expected)
+			}
+		})
+	}
+}
