@@ -93,6 +93,34 @@ func TestDownloadFile(t *testing.T) {
 		assert.Nil(err2)
 		assert.Equal(bytes, goodResponse)
 	})
+
+	t.Run("test download uses cache", func(t *testing.T) {
+		fileName := "file.txt"
+		defer os.Remove(fileName)
+		requestCount := 0
+		goodResponse := []byte("all good")
+		goodServer := httptest.NewServer(
+			http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprint(w, string(goodResponse))
+					requestCount += 1
+				},
+			),
+		)
+		url := goodServer.URL + "/" + fileName
+		_, err1 := utils.DownloadFile(url)
+		assert.Nil(err1)
+		assert.True(utils.FileExists(fileName))
+		bytes, err2 := ioutil.ReadFile(fileName)
+		assert.Nil(err2)
+		assert.Equal(bytes, goodResponse)
+		assert.Equal(1, requestCount)
+
+		// Download it again, this time it shouldn't trigger any HTTP request
+		_, err1 = utils.DownloadFile(url)
+		assert.Nil(err1)
+		assert.Equal(1, requestCount)
+	})
 }
 
 func TestFileExists(t *testing.T) {

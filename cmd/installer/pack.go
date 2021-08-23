@@ -77,7 +77,8 @@ func preparePack(packPath string, short bool) (*PackType, error) {
 }
 
 // fetch will download the pack file if it's on the Internet, or
-// will make sure the file exists in the local file system
+// will use the one in .Download/ if previously downloaded.
+// If the path is not a URL, it will make sure the file exists in the local file system
 func (p *PackType) fetch() error {
 	log.Debugf("Fetching pack file \"%s\" (or just making sure it exists locally)", p.path)
 	var err error
@@ -206,11 +207,11 @@ func (p *PackType) install(installation *PacksInstallationType) error {
 	}
 
 	packBackupPath := path.Join(installation.downloadDir, path.Base(p.path))
-	if p.isDownloaded {
-		return utils.MoveFile(p.path, packBackupPath)
-	} else {
+	if !p.isDownloaded {
 		return utils.CopyFile(p.path, packBackupPath)
 	}
+
+	return nil
 }
 
 // uninstall removes the pack from the installation directory.

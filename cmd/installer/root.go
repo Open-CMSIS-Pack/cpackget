@@ -133,6 +133,9 @@ func SetPackRoot(packRoot string) error {
 		}
 	}
 
+	// Make sure utils.DownloadFile always downloads files to .Download/
+	utils.CacheDir = installation.downloadDir
+
 	return nil
 }
 

@@ -29,6 +29,10 @@ func DownloadFile(URL string) (string, error) {
 	parsedURL, _ := url.Parse(URL)
 	filePath := path.Join(CacheDir, path.Base(parsedURL.Path))
 	log.Debugf("Downloading %s to %s", URL, filePath)
+	if FileExists(filePath) {
+		log.Debugf("Download not required, using the one from cache")
+		return filePath, nil
+	}
 
 	out, err := os.Create(filePath)
 	if err != nil {
