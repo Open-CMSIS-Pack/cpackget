@@ -1,0 +1,25 @@
+#!/bin/bash
+	
+echo "Attempting to install all publicly available packs found in www.keil.com/pack/keil.vidx"
+echo "Warning: this should only be used from time to time (possibly before releases) because it'll download dozens of GB of files"
+
+# Get the latest version of vidx2pidx to generate a flat list of packs
+curl -sL https://api.github.com/repos/open-cmsis-pack/vidx2pidx/releases/latest | jq -r '.assets[].browser_download_url' | grep linux | xargs wget -O ./tmp/vidx2pidx.tar.gz
+cd ./tmp
+trap cleanup INT TERM EXIT
+cleanup() {
+    rm -rf "vidx2pidx*" index.pidx packs_urls .cpackget .idxcache
+    cd ../
+}
+
+tar --extract --file=vidx2pidx.tar.gz --wildcards "*/vidx2pidx" --strip-components=1
+
+# Generate a flat list of public packs, to be saved in "index.pidx"
+./vidx2pidx https://www.keil.com/pack/keil.vidx
+grep '<pdsc' index.pidx | sed -e 's/.*vendor="//' -e 's/" url="/ /' -e 's/" name="/ /' -e 's/" version="/ /' -e 's/".*//' | awk '{print $2$1"."$3"."$4".pack"}' > packs_urls
+
+for u in `cat packs_urls`
+do
+	echo installing $u
+	../build/cpackget -v pack add $u && ../build/cpackget -v pack rm --purge `basename ${u::-5}`
+done

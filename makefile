@@ -74,6 +74,9 @@ coverage-check:
 	tail -n +2 cover.out | grep -v -e " 1$$" | grep -v main.go | tee coverage-check.out
 	test ! -s coverage-check.out
 
+test-public-index:
+	@./scripts/test-public-index
+
 release: test-all build/cpackget
 	@./scripts/release
 
