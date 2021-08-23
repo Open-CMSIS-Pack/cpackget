@@ -30,11 +30,11 @@ func AddPack(packPath string) error {
 		return err
 	}
 
-	if err = pack.install(installation); err != nil {
+	if err = pack.install(Installation); err != nil {
 		return err
 	}
 
-	return installation.touchPackIdx()
+	return Installation.touchPackIdx()
 }
 
 // RemovePack removes a pack given a pack path
@@ -47,7 +47,7 @@ func RemovePack(packPath string, purge bool) error {
 	}
 
 	if pack.isInstalled {
-		if err = pack.uninstall(installation); err != nil {
+		if err = pack.uninstall(Installation); err != nil {
 			return err
 		}
 
@@ -57,7 +57,7 @@ func RemovePack(packPath string, purge bool) error {
 			}
 		}
 
-		return installation.touchPackIdx()
+		return Installation.touchPackIdx()
 	} else if purge {
 		return pack.purge()
 	}
@@ -79,15 +79,15 @@ func AddPdsc(pdscPath string) error {
 		return errs.ErrPdscEntryExists
 	}
 
-	if err := pdsc.install(installation); err != nil {
+	if err := pdsc.install(Installation); err != nil {
 		return err
 	}
 
-	if err := installation.localPidx.Write(); err != nil {
+	if err := Installation.localPidx.Write(); err != nil {
 		return err
 	}
 
-	return installation.touchPackIdx()
+	return Installation.touchPackIdx()
 }
 
 // RemovePdsc removes a pack given a pdsc path
@@ -99,42 +99,42 @@ func RemovePdsc(pdscPath string) error {
 		return err
 	}
 
-	if err = pdsc.uninstall(installation); err != nil {
+	if err = pdsc.uninstall(Installation); err != nil {
 		return err
 	}
 
-	if err := installation.localPidx.Write(); err != nil {
+	if err := Installation.localPidx.Write(); err != nil {
 		return err
 	}
 
-	return installation.touchPackIdx()
+	return Installation.touchPackIdx()
 }
 
-// installation is a singleton variable that keeps the only reference
+// Installation is a singleton variable that keeps the only reference
 // to PacksInstallationType
-var installation *PacksInstallationType
+var Installation *PacksInstallationType
 
 // SetPackRoot sets the working directory of the packs installation
 func SetPackRoot(packRoot string) error {
 	log.Debugf("Setting pack installation working directory to \"%v\"", packRoot)
-	installation = &PacksInstallationType{
+	Installation = &PacksInstallationType{
 		packRoot:    packRoot,
 		downloadDir: path.Join(packRoot, ".Download"),
 		localDir:    path.Join(packRoot, ".Local"),
 		webDir:      path.Join(packRoot, ".Web"),
 	}
-	installation.localPidx = xml.NewPidxXML(path.Join(installation.localDir, "local_repository.pidx"))
-	installation.packIdx = path.Join(packRoot, "pack.idx")
+	Installation.localPidx = xml.NewPidxXML(path.Join(Installation.localDir, "local_repository.pidx"))
+	Installation.packIdx = path.Join(packRoot, "pack.idx")
 
 	var err error
-	for _, dir := range []string{packRoot, installation.downloadDir, installation.localDir, installation.webDir} {
+	for _, dir := range []string{packRoot, Installation.downloadDir, Installation.localDir, Installation.webDir} {
 		if err = utils.EnsureDir(dir); err != nil {
 			return err
 		}
 	}
 
 	// Make sure utils.DownloadFile always downloads files to .Download/
-	utils.CacheDir = installation.downloadDir
+	utils.CacheDir = Installation.downloadDir
 
 	return nil
 }
@@ -176,8 +176,8 @@ func (p *PacksInstallationType) touchPackIdx() error {
 	return utils.TouchFile(p.packIdx)
 }
 
-// packIsInstalled checks whether a given pack is already installed or not
-func (p *PacksInstallationType) packIsInstalled(pack *PackType) bool {
+// PackIsInstalled checks whether a given pack is already installed or not
+func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 	installationDir := path.Join(p.packRoot, pack.Vendor, pack.Name, pack.Version)
 	if _, err := os.Stat(installationDir); !os.IsNotExist(err) {
 		return true

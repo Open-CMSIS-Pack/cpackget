@@ -41,11 +41,11 @@ func preparePdsc(pdscPath string, short bool) (*PdscType, error) {
 	pdsc.Vendor = info.Vendor
 	pdsc.Version = info.Version
 
-	if !installation.localIsLoaded {
-		if err := installation.localPidx.Read(); err != nil {
+	if !Installation.localIsLoaded {
+		if err := Installation.localPidx.Read(); err != nil {
 			return pdsc, err
 		}
-		installation.localIsLoaded = true
+		Installation.localIsLoaded = true
 	}
 
 	return pdsc, err
@@ -79,7 +79,7 @@ func (p *PdscType) install(installation *PacksInstallationType) error {
 		return err
 	}
 
-	if err := installation.localPidx.AddPdsc(tag); err != nil {
+	if err := Installation.localPidx.AddPdsc(tag); err != nil {
 		return err
 	}
 
@@ -92,5 +92,5 @@ func (p *PdscType) install(installation *PacksInstallationType) error {
 //     If version is ommited, remove all pdsc tags belonging to this pack
 func (p *PdscType) uninstall(installation *PacksInstallationType) error {
 	log.Debugf("Unistalling \"%s\"", p.path)
-	return installation.localPidx.RemovePdsc(p.PdscTag)
+	return Installation.localPidx.RemovePdsc(p.PdscTag)
 }

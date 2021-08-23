@@ -70,8 +70,8 @@ func preparePack(packPath string, short bool) (*PackType, error) {
 	pack.Name = info.Pack
 	pack.Vendor = info.Vendor
 	pack.Version = info.Version
-	pack.isPublic = installation.packIsPublic(pack)
-	pack.isInstalled = installation.packIsInstalled(pack)
+	pack.isPublic = Installation.packIsPublic(pack)
+	pack.isInstalled = Installation.PackIsInstalled(pack)
 
 	return pack, nil
 }
@@ -132,7 +132,7 @@ func (p *PackType) purge() error {
 	}
 	fileNamePattern += "\\.(?:pack|zip|pdsc)"
 
-	files, err := utils.ListDir(installation.downloadDir, fileNamePattern)
+	files, err := utils.ListDir(Installation.downloadDir, fileNamePattern)
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func (p *PackType) purge() error {
 func (p *PackType) install(installation *PacksInstallationType) error {
 	log.Debugf("Installing \"%s\"", p.path)
 
-	packHomeDir := path.Join(installation.packRoot, p.Vendor, p.Name, p.Version)
+	packHomeDir := path.Join(Installation.packRoot, p.Vendor, p.Name, p.Version)
 	err := utils.EnsureDir(packHomeDir)
 	if err != nil {
 		log.Errorf("Can't access pack directory \"%s\": %s", packHomeDir, err)
@@ -195,18 +195,18 @@ func (p *PackType) install(installation *PacksInstallationType) error {
 	newPdscFileName := fmt.Sprintf("%s.%s.%s.pdsc", p.Vendor, p.Name, p.Version)
 
 	if !p.isPublic {
-		err = utils.CopyFile(pdscFilePath, path.Join(installation.localDir, pdscFileName))
+		err = utils.CopyFile(pdscFilePath, path.Join(Installation.localDir, pdscFileName))
 		if err != nil {
 			return err
 		}
 	}
 
-	err = utils.CopyFile(pdscFilePath, path.Join(installation.downloadDir, newPdscFileName))
+	err = utils.CopyFile(pdscFilePath, path.Join(Installation.downloadDir, newPdscFileName))
 	if err != nil {
 		return err
 	}
 
-	packBackupPath := path.Join(installation.downloadDir, path.Base(p.path))
+	packBackupPath := path.Join(Installation.downloadDir, path.Base(p.path))
 	if !p.isDownloaded {
 		return utils.CopyFile(p.path, packBackupPath)
 	}
@@ -225,13 +225,13 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 	log.Debugf("Uninstalling \"%v\"", p.path)
 
 	// Remove Vendor/Pack/x.y.z
-	packPath := path.Join(installation.packRoot, p.Vendor, p.Name, p.Version)
+	packPath := path.Join(Installation.packRoot, p.Vendor, p.Name, p.Version)
 	if err := os.RemoveAll(packPath); err != nil {
 		return err
 	}
 
 	// Remove Vendor/Pack/ if empty
-	packPath = path.Join(installation.packRoot, p.Vendor, p.Name)
+	packPath = path.Join(Installation.packRoot, p.Vendor, p.Name)
 	if utils.IsEmpty(packPath) {
 		if err := os.Remove(packPath); err != nil {
 			return err
@@ -239,7 +239,7 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 	}
 
 	// Remove Vendor/ if empty
-	vendorPath := path.Join(installation.packRoot, p.Vendor)
+	vendorPath := path.Join(Installation.packRoot, p.Vendor)
 	if utils.IsEmpty(vendorPath) {
 		if err := os.Remove(vendorPath); err != nil {
 			return err
@@ -249,7 +249,7 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 	// Removes local pdsc file if pack is not public
 	if !p.isPublic {
 		localPdscFileName := p.Vendor + "." + p.Name + ".pdsc"
-		filePath := path.Join(installation.localDir, localPdscFileName)
+		filePath := path.Join(Installation.localDir, localPdscFileName)
 		if err := os.Remove(filePath); err != nil {
 			return err
 		}
