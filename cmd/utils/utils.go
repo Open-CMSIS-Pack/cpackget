@@ -17,6 +17,7 @@ import (
 	"time"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
+	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -27,7 +28,8 @@ var CacheDir string
 // DownloadFile downloads a file from an URL and saves it locally under destionationFilePath
 func DownloadFile(URL string) (string, error) {
 	parsedURL, _ := url.Parse(URL)
-	filePath := path.Join(CacheDir, path.Base(parsedURL.Path))
+	fileBase := path.Base(parsedURL.Path)
+	filePath := path.Join(CacheDir, fileBase)
 	log.Debugf("Downloading %s to %s", URL, filePath)
 	if FileExists(filePath) {
 		log.Debugf("Download not required, using the one from cache")
@@ -53,8 +55,17 @@ func DownloadFile(URL string) (string, error) {
 		return "", errs.ErrBadRequest
 	}
 
+	writers := []io.Writer{out}
+	if log.GetLevel() != log.ErrorLevel {
+		progressWriter := progressbar.DefaultBytes(
+			resp.ContentLength,
+			"Downloading "+fileBase,
+		)
+		writers = append(writers, progressWriter)
+	}
+
 	// Download file in smaller bits straight to a local file
-	written, err := SecureCopy(out, resp.Body)
+	written, err := SecureCopy(io.MultiWriter(writers...), resp.Body)
 	log.Debugf("Downloaded %d bytes", written)
 
 	return filePath, err
