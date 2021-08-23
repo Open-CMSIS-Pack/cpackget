@@ -15,8 +15,7 @@ import (
 )
 
 var flags struct {
-	version     bool
-	verbosiness int
+	version bool
 }
 
 func printVersionAndLicense(file io.Writer) {
@@ -47,9 +46,10 @@ func NewCli() *cobra.Command {
 	}
 
 	rootCmd.Flags().BoolVarP(&flags.version, "version", "V", false, "Output the version number of cpackget and exit.")
-	rootCmd.PersistentFlags().IntVarP(&flags.verbosiness, "verbosiness", "v", 1, "Set verbosiness: 0 (Errors), 1 (Info messages), 2 (Warnings), 3 (Debugging).")
+	rootCmd.PersistentFlags().CountP("verbosiness", "v", "Set verbosiness: None (Errors), -v (Info), -vv (Debugging).")
 	rootCmd.PersistentFlags().StringP("pack-root", "R", defaultPackRoot, "Specify pack root folder. Defaults to CMSIS_PACK_ROOT environment variable or current directory.")
 	_ = viper.BindPFlag("pack-root", rootCmd.PersistentFlags().Lookup("pack-root"))
+	_ = viper.BindPFlag("verbosiness", rootCmd.PersistentFlags().Lookup("verbosiness"))
 
 	for _, cmd := range commands.All {
 		rootCmd.AddCommand(cmd)
