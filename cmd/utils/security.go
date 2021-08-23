@@ -63,6 +63,18 @@ func SecureInflateFile(file *zip.File, destinationDir string) error {
 		return EnsureDir(path.Join(destinationDir, file.Name)) // #nosec
 	}
 
+	// Some zipped files look like this
+	// 1. zipped-dir/
+	// 2. zipped-dir/file
+	// And the directory will get created separately
+	// But there are zipped files without that, hence the snipped below
+	// ensures all file's path are created prior to inflating the actual file
+	fileDir, _ := path.Split(file.Name)
+	fileDir = path.Join(destinationDir, fileDir) + string(os.PathSeparator)
+	if err := EnsureDir(fileDir); err != nil {
+		return err
+	}
+
 	reader, _ := file.Open()
 	defer reader.Close()
 
