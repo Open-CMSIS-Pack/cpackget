@@ -195,16 +195,10 @@ func (p *PackType) install(installation *PacksInstallationType) error {
 	newPdscFileName := fmt.Sprintf("%s.%s.%s.pdsc", p.Vendor, p.Name, p.Version)
 
 	if !p.isPublic {
-		err = utils.CopyFile(pdscFilePath, path.Join(Installation.LocalDir, pdscFileName))
-		if err != nil {
-			return err
-		}
+		_ = utils.CopyFile(pdscFilePath, path.Join(Installation.LocalDir, pdscFileName))
 	}
 
-	err = utils.CopyFile(pdscFilePath, path.Join(Installation.DownloadDir, newPdscFileName))
-	if err != nil {
-		return err
-	}
+	_ = utils.CopyFile(pdscFilePath, path.Join(Installation.DownloadDir, newPdscFileName))
 
 	packBackupPath := path.Join(Installation.DownloadDir, path.Base(p.path))
 	if !p.isDownloaded {
