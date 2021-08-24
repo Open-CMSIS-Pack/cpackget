@@ -47,7 +47,7 @@ func preparePack(packPath string, short bool) (*PackType, error) {
 
 	// Clean out any possible query or user auth in the URL
 	// to help finding the correct path info
-	if strings.HasPrefix(packPath, "https") {
+	if strings.HasPrefix(packPath, "http") {
 		url, err := url.Parse(packPath)
 		if err != nil {
 			log.Error(err)
