@@ -38,7 +38,7 @@ var (
 	ErrFailedWrittingToLocalFile = errors.New("failed writing HTTP stream to local file")
 	ErrFailedDecompressingFile   = errors.New("fail to decompress file")
 	ErrFailedInflatingFile       = errors.New("fail to inflate file")
-	ErrFailedCreatingDirectory   = errors.New("fail to inflate file")
+	ErrFailedCreatingDirectory   = errors.New("fail to create directory")
 	ErrFileNotFound              = errors.New("file not found")
 	ErrCopyingEqualPaths         = errors.New("failed copying files: source is the same as destination")
 	ErrMovingEqualPaths          = errors.New("failed moving files: source is the same as destination")
