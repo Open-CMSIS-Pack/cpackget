@@ -132,7 +132,7 @@ func (p *PackType) purge() error {
 	}
 	fileNamePattern += "\\.(?:pack|zip|pdsc)"
 
-	files, err := utils.ListDir(Installation.downloadDir, fileNamePattern)
+	files, err := utils.ListDir(Installation.DownloadDir, fileNamePattern)
 	if err != nil {
 		return err
 	}
@@ -195,18 +195,18 @@ func (p *PackType) install(installation *PacksInstallationType) error {
 	newPdscFileName := fmt.Sprintf("%s.%s.%s.pdsc", p.Vendor, p.Name, p.Version)
 
 	if !p.isPublic {
-		err = utils.CopyFile(pdscFilePath, path.Join(Installation.localDir, pdscFileName))
+		err = utils.CopyFile(pdscFilePath, path.Join(Installation.LocalDir, pdscFileName))
 		if err != nil {
 			return err
 		}
 	}
 
-	err = utils.CopyFile(pdscFilePath, path.Join(Installation.downloadDir, newPdscFileName))
+	err = utils.CopyFile(pdscFilePath, path.Join(Installation.DownloadDir, newPdscFileName))
 	if err != nil {
 		return err
 	}
 
-	packBackupPath := path.Join(Installation.downloadDir, path.Base(p.path))
+	packBackupPath := path.Join(Installation.DownloadDir, path.Base(p.path))
 	if !p.isDownloaded {
 		return utils.CopyFile(p.path, packBackupPath)
 	}
@@ -249,7 +249,7 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 	// Removes local pdsc file if pack is not public
 	if !p.isPublic {
 		localPdscFileName := p.Vendor + "." + p.Name + ".pdsc"
-		filePath := path.Join(Installation.localDir, localPdscFileName)
+		filePath := path.Join(Installation.LocalDir, localPdscFileName)
 		if err := os.Remove(filePath); err != nil {
 			return err
 		}

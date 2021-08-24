@@ -119,22 +119,22 @@ func SetPackRoot(packRoot string) error {
 	log.Debugf("Setting pack installation working directory to \"%v\"", packRoot)
 	Installation = &PacksInstallationType{
 		packRoot:    packRoot,
-		downloadDir: path.Join(packRoot, ".Download"),
-		localDir:    path.Join(packRoot, ".Local"),
-		webDir:      path.Join(packRoot, ".Web"),
+		DownloadDir: path.Join(packRoot, ".Download"),
+		LocalDir:    path.Join(packRoot, ".Local"),
+		WebDir:      path.Join(packRoot, ".Web"),
 	}
-	Installation.localPidx = xml.NewPidxXML(path.Join(Installation.localDir, "local_repository.pidx"))
+	Installation.localPidx = xml.NewPidxXML(path.Join(Installation.LocalDir, "local_repository.pidx"))
 	Installation.packIdx = path.Join(packRoot, "pack.idx")
 
 	var err error
-	for _, dir := range []string{packRoot, Installation.downloadDir, Installation.localDir, Installation.webDir} {
+	for _, dir := range []string{packRoot, Installation.DownloadDir, Installation.LocalDir, Installation.WebDir} {
 		if err = utils.EnsureDir(dir); err != nil {
 			return err
 		}
 	}
 
 	// Make sure utils.DownloadFile always downloads files to .Download/
-	utils.CacheDir = Installation.downloadDir
+	utils.CacheDir = Installation.DownloadDir
 
 	return nil
 }
@@ -147,17 +147,17 @@ type PacksInstallationType struct {
 	// packs installed
 	packs map[string]bool
 
-	// downloadDir stores copies of all packs that were installed via pack files
+	// DownloadDir stores copies of all packs that were installed via pack files
 	// from external servers.
-	downloadDir string
+	DownloadDir string
 
-	// localDir stores "local_repository.pidx" containing a list of all packs
+	// LocalDir stores "local_repository.pidx" containing a list of all packs
 	// installed via PDSC files.
-	localDir string
+	LocalDir string
 
-	// webDir stores "index.pidx" containing a list of PDSC tags with all
+	// WebDir stores "index.pidx" containing a list of PDSC tags with all
 	// publicly available packs.
-	webDir string
+	WebDir string
 
 	// localPidx is a reference to "local_repository.pidx" that contains a flat
 	// list of PDSC tags representing all packs installed via PDSC files.
@@ -191,7 +191,7 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType) bool {
 	// lazyly lists all pdsc files in the ".Web/" folder only once
 	if p.packs == nil {
 		p.packs = make(map[string]bool)
-		files, _ := utils.ListDir(p.webDir, `^.*\\.pdsc$`)
+		files, _ := utils.ListDir(p.WebDir, `^.*\\.pdsc$`)
 		for _, file := range files {
 			p.packs[file] = true
 		}
