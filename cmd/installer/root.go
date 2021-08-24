@@ -191,9 +191,10 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType) bool {
 	// lazyly lists all pdsc files in the ".Web/" folder only once
 	if p.packs == nil {
 		p.packs = make(map[string]bool)
-		files, _ := utils.ListDir(p.WebDir, `^.*\\.pdsc$`)
+		files, _ := utils.ListDir(p.WebDir, `^.*\.pdsc$`)
 		for _, file := range files {
-			p.packs[file] = true
+			_, baseFileName := path.Split(file)
+			p.packs[baseFileName] = true
 		}
 	}
 
