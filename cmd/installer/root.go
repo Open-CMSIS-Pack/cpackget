@@ -118,7 +118,7 @@ var Installation *PacksInstallationType
 func SetPackRoot(packRoot string) error {
 	log.Debugf("Setting pack installation working directory to \"%v\"", packRoot)
 	Installation = &PacksInstallationType{
-		packRoot:    packRoot,
+		PackRoot:    packRoot,
 		DownloadDir: path.Join(packRoot, ".Download"),
 		LocalDir:    path.Join(packRoot, ".Local"),
 		WebDir:      path.Join(packRoot, ".Web"),
@@ -141,8 +141,8 @@ func SetPackRoot(packRoot string) error {
 
 // PacksInstallationType is the scruct tha manages Open-CMSIS-Pack installation/deletion.
 type PacksInstallationType struct {
-	// packRoot is the working directory if the packs installation
-	packRoot string
+	// PackRoot is the working directory if the packs installation
+	PackRoot string
 
 	// packs installed
 	packs map[string]bool
@@ -178,7 +178,7 @@ func (p *PacksInstallationType) touchPackIdx() error {
 
 // PackIsInstalled checks whether a given pack is already installed or not
 func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
-	installationDir := path.Join(p.packRoot, pack.Vendor, pack.Name, pack.Version)
+	installationDir := path.Join(p.PackRoot, pack.Vendor, pack.Name, pack.Version)
 	if _, err := os.Stat(installationDir); !os.IsNotExist(err) {
 		return true
 	}
