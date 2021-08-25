@@ -83,7 +83,7 @@ func AddPdsc(pdscPath string) error {
 		return err
 	}
 
-	if err := Installation.localPidx.Write(); err != nil {
+	if err := Installation.LocalPidx.Write(); err != nil {
 		return err
 	}
 
@@ -103,7 +103,7 @@ func RemovePdsc(pdscPath string) error {
 		return err
 	}
 
-	if err := Installation.localPidx.Write(); err != nil {
+	if err := Installation.LocalPidx.Write(); err != nil {
 		return err
 	}
 
@@ -123,8 +123,8 @@ func SetPackRoot(packRoot string) error {
 		LocalDir:    path.Join(packRoot, ".Local"),
 		WebDir:      path.Join(packRoot, ".Web"),
 	}
-	Installation.localPidx = xml.NewPidxXML(path.Join(Installation.LocalDir, "local_repository.pidx"))
-	Installation.packIdx = path.Join(packRoot, "pack.idx")
+	Installation.LocalPidx = xml.NewPidxXML(path.Join(Installation.LocalDir, "local_repository.pidx"))
+	Installation.PackIdx = path.Join(packRoot, "pack.idx")
 
 	var err error
 	for _, dir := range []string{packRoot, Installation.DownloadDir, Installation.LocalDir, Installation.WebDir} {
@@ -159,21 +159,21 @@ type PacksInstallationType struct {
 	// publicly available packs.
 	WebDir string
 
-	// localPidx is a reference to "local_repository.pidx" that contains a flat
+	// LocalPidx is a reference to "local_repository.pidx" that contains a flat
 	// list of PDSC tags representing all packs installed via PDSC files.
-	localPidx *xml.PidxXML
+	LocalPidx *xml.PidxXML
 
 	// localIsLoaded is a flag that tells whether the local_repository.pidx has been loaded or not
 	localIsLoaded bool
 
-	// packIdx is the "pack.idx" file used by other tools to be notified that
+	// PackIdx is the "pack.idx" file used by other tools to be notified that
 	// the pack installation had changed.
-	packIdx string
+	PackIdx string
 }
 
 // touchPackIdx changes the timestamp of pack.idx.
 func (p *PacksInstallationType) touchPackIdx() error {
-	return utils.TouchFile(p.packIdx)
+	return utils.TouchFile(p.PackIdx)
 }
 
 // PackIsInstalled checks whether a given pack is already installed or not
