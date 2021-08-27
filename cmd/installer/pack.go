@@ -230,21 +230,21 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 		if err := os.Remove(packPath); err != nil {
 			return err
 		}
+
+		// Remove local pdsc file if pack is not public and if there are no more versions of this pack installed
+		if !p.isPublic {
+			localPdscFileName := p.Vendor + "." + p.Name + ".pdsc"
+			filePath := path.Join(Installation.LocalDir, localPdscFileName)
+			if err := os.Remove(filePath); err != nil {
+				return err
+			}
+		}
 	}
 
 	// Remove Vendor/ if empty
 	vendorPath := path.Join(Installation.PackRoot, p.Vendor)
 	if utils.IsEmpty(vendorPath) {
 		if err := os.Remove(vendorPath); err != nil {
-			return err
-		}
-	}
-
-	// Removes local pdsc file if pack is not public
-	if !p.isPublic {
-		localPdscFileName := p.Vendor + "." + p.Name + ".pdsc"
-		filePath := path.Join(Installation.LocalDir, localPdscFileName)
-		if err := os.Remove(filePath); err != nil {
 			return err
 		}
 	}
