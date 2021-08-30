@@ -5,7 +5,6 @@ package utils
 
 import (
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -59,7 +58,7 @@ func ExtractPackInfo(packPath string, short bool) (PackInfo, error) {
 
 	info := PackInfo{}
 	if short {
-		_, packName := path.Split(packPath)
+		_, packName := filepath.Split(packPath)
 		details := strings.SplitAfterN(packName, ".", 3)
 		if len(details) < 2 {
 			return info, errs.ErrBadPackName
@@ -89,7 +88,7 @@ func ExtractPackInfo(packPath string, short bool) (PackInfo, error) {
 		".pdsc": true,
 	}
 
-	location, packName := path.Split(packPath)
+	location, packName := filepath.Split(packPath)
 	info.Extension = filepath.Ext(packName)
 	if !validExtensions[info.Extension] {
 		return info, errs.ErrBadPackNameInvalidExtension
@@ -131,11 +130,11 @@ func ExtractPackInfo(packPath string, short bool) (PackInfo, error) {
 	if !(strings.HasPrefix(location, "http://") || strings.HasPrefix(location, "https://") || strings.HasPrefix(location, "file://")) {
 		if !filepath.IsAbs(location) {
 			absPath, _ := os.Getwd()
-			location = path.Join(absPath, location)
+			location = filepath.Join(absPath, location)
 			location, _ = filepath.Abs(location)
 		}
 
-		location = "file://" + location + "/"
+		location = "file://" + location + string(os.PathSeparator)
 	}
 
 	info.Location = location

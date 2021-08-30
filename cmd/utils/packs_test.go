@@ -5,7 +5,6 @@ package utils_test
 
 import (
 	"os"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -151,24 +150,24 @@ func TestExtractPackInfo(t *testing.T) {
 		},
 		{
 			name: "test path with with relative path",
-			path: "relative/path/to/TheVendor.ThePack.0.0.1.pack",
+			path: filepath.Join("relative", "path", "to", "TheVendor.ThePack.0.0.1.pack"),
 			expected: utils.PackInfo{
 				Vendor:    "TheVendor",
 				Pack:      "ThePack",
 				Version:   "0.0.1",
 				Extension: ".pack",
-				Location:  "file://" + path.Join(cwd, "relative/path/to") + "/",
+				Location:  "file://" + filepath.Join(cwd, "relative", "path", "to") + string(os.PathSeparator),
 			},
 		},
 		{
 			name: "test path with with relative path and dot-dot",
-			path: "../path/to/TheVendor.ThePack.0.0.1.pack",
+			path: filepath.Join("..", "path", "to", "TheVendor.ThePack.0.0.1.pack"),
 			expected: utils.PackInfo{
 				Vendor:    "TheVendor",
 				Pack:      "ThePack",
 				Version:   "0.0.1",
 				Extension: ".pack",
-				Location:  "file://" + absPath(path.Join(cwd, "../path/to")) + "/",
+				Location:  "file://" + absPath(filepath.Join(cwd, "..", "path", "to")) + string(os.PathSeparator),
 			},
 		},
 	}
@@ -179,7 +178,7 @@ func TestExtractPackInfo(t *testing.T) {
 			if test.err != nil {
 				assert.True(errs.Is(err, test.err))
 			} else {
-				assert.Equal(info, test.expected)
+				assert.Equal(test.expected, info)
 			}
 		})
 	}

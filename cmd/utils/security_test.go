@@ -8,7 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -43,7 +43,7 @@ func TestSecureInflateFile(t *testing.T) {
 
 	t.Run("test fail to inflate tainted file names", func(t *testing.T) {
 		zipFile := &zip.File{}
-		zipFile.Name = "../tainted-file"
+		zipFile.Name = filepath.Join("..", "tainted-file")
 		err := utils.SecureInflateFile(zipFile, "")
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrInsecureZipFileName))
@@ -52,8 +52,8 @@ func TestSecureInflateFile(t *testing.T) {
 	t.Run("test inflating a directory", func(t *testing.T) {
 		dirName := "test-inflate-zip-dir"
 		zipFile := &zip.File{}
-		zipFile.Name = dirName + "/"
-		err := utils.SecureInflateFile(zipFile, "./")
+		zipFile.Name = dirName + string(os.PathSeparator)
+		err := utils.SecureInflateFile(zipFile, "")
 		assert.Nil(err)
 		defer os.Remove(dirName)
 
@@ -63,34 +63,13 @@ func TestSecureInflateFile(t *testing.T) {
 		assert.True(info.IsDir())
 	})
 
-	t.Run("test fail to write to inflated file", func(t *testing.T) {
-		// Archive:  testdata/utils/test-secureinflatefile.zip
-		//   Length      Date    Time    Name
-		// ---------  ---------- -----   ----
-		//        14  2021-08-20 13:44   file-to-zip
-		//         0  2021-08-23 09:06   zipped-dir/file-in-folder
-		zipReader, err := zip.OpenReader("../../testdata/utils/test-secureinflatefile.zip")
-		assert.Nil(err)
-		defer zipReader.Close()
-
-		zipFile := zipReader.File[0]
-		err = utils.SecureInflateFile(zipFile, "/")
-		assert.NotNil(err)
-		assert.Equal(err, errs.ErrFailedCreatingFile)
-
-		zipFile = zipReader.File[1]
-		err = utils.SecureInflateFile(zipFile, "/")
-		assert.NotNil(err)
-		assert.Equal(err, errs.ErrFailedCreatingDirectory)
-	})
-
 	t.Run("test inflating a file", func(t *testing.T) {
 		// Archive:  testdata/utils/test-secureinflatefile.zip
 		//   Length      Date    Time    Name
 		// ---------  ---------- -----   ----
 		//        14  2021-08-20 13:44   file-to-zip
 		//         0  2021-08-23 09:06   zipped-dir/file-in-folder
-		zipReader, err := zip.OpenReader("../../testdata/utils/test-secureinflatefile.zip")
+		zipReader, err := zip.OpenReader(filepath.Join("..", "..", "testdata", "utils", "test-secureinflatefile.zip"))
 		assert.Nil(err)
 		defer zipReader.Close()
 
@@ -103,7 +82,7 @@ func TestSecureInflateFile(t *testing.T) {
 		}
 
 		// Make sure files are OK
-		assert.True(utils.FileExists(path.Join(outDir, "file-to-zip")))
-		assert.True(utils.FileExists(path.Join(outDir, "zipped-dir/file-in-folder")))
+		assert.True(utils.FileExists(filepath.Join(outDir, "file-to-zip")))
+		assert.True(utils.FileExists(filepath.Join(outDir, "zipped-dir/file-in-folder")))
 	})
 }

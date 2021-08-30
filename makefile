@@ -77,6 +77,9 @@ coverage-check:
 test-public-index:
 	@./scripts/test-public-index
 
+test-on-windows:
+	@./scripts/test-on-windows
+
 release: test-all build/cpackget
 	@./scripts/release
 

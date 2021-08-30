@@ -1,0 +1,29 @@
+#!/bin/bash
+
+echo "Testing on Windows"
+
+is_vagrant_up=$1
+
+# Spin up windows box
+if [ -z $is_vagrant_up ]
+then
+	vagrant up
+fi
+
+cd cmd
+
+# Build test binaries for windows and run it
+PACKAGES="utils installer xml"
+for package in $PACKAGES
+do
+	cd $package
+	GOOS=windows go test -c
+	vagrant ssh -- -t "cd ../../vagrant/cmd/$package; ./$package.test.exe $ARGS"
+	cd ..
+done
+
+# Shut down windows box
+if [ -z $is_vagrant_up ]
+then
+	vagrant halt
+fi

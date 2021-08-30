@@ -1,5 +1,7 @@
 build/
 testing.log
 *.out
+*.exe
 .cpackget*
 tmp/
+.vagrant/
