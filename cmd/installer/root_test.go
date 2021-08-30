@@ -11,7 +11,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
+	"time"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
@@ -31,26 +33,131 @@ func packPathToPdsc(packPath string, withVersion bool) string {
 	if withVersion {
 		return packPath[:len(packPath)-len(".pack")] + ".pdsc"
 	}
-	return packPath[:len(packPath)-len("x.y.z.pack")] + ".pdsc"
+	return packPath[:len(packPath)-len(".x.y.z.pack")] + ".pdsc"
 }
 
-func checkPackIsInstalled(t *testing.T, packPath string) bool {
+func shortenPackPath(packPath string, withVersion bool) string {
+	// Remove extension
+	_, packName := path.Split(packPath)
+	ext := filepath.Ext(packName)
+
+	stripLength := len(packName) - len(ext)
+
+	if !withVersion {
+		stripLength -= len(".x.y.z")
+	}
+
+	return packName[:stripLength]
+}
+
+func getPackIdxModTime() time.Time {
+	packIdx, _ := os.Stat(installer.Installation.PackIdx)
+	return packIdx.ModTime()
+}
+
+func checkPackIsInstalled(t *testing.T, packPath string, isPublic bool) {
+	assert := assert.New(t)
+
 	info, err := utils.ExtractPackInfo(packPath, false)
-	assert.Nil(t, err)
+	assert.Nil(err)
+
+	// Check in installer internals
 	pack := packInfoToType(info)
-	return installer.Installation.PackIsInstalled(pack)
+	assert.True(installer.Installation.PackIsInstalled(pack))
+
+	// Get only basename of the pack
+	_, packPath = path.Split(packPath)
+
+	// Make sure there's a copy of the pack file in .Download/
+	assert.True(utils.FileExists(path.Join(installer.Installation.DownloadDir, packPath)))
+
+	// Make sure there's a versioned copy of the PDSC file in .Download/
+	assert.True(utils.FileExists(path.Join(installer.Installation.DownloadDir, packPathToPdsc(packPath, true))))
+
+	if isPublic {
+		// Make sure no PDSC file got copied to .Local/
+		assert.False(utils.FileExists(path.Join(installer.Installation.LocalDir, packPathToPdsc(packPath, false))))
+	} else {
+		// Make sure there's an unversioned copy of the PDSC file in .Local/, in case pack is not public
+		assert.True(utils.FileExists(path.Join(installer.Installation.LocalDir, packPathToPdsc(packPath, false))))
+	}
+
+	// Make sure the pack.idx file gets created
+	assert.True(utils.FileExists(installer.Installation.PackIdx))
 }
 
-// Tests should cover all possible scenarios for adding packs
-// +----------------+--------+------------+
-// | origin/privacy | public | non-public |
-// +----------------+--------+------------+
-// | local          |        |            |
-// +----------------+--------+------------+
-// | remote         |        |            |
-// +----------------+--------+------------+
+func addPack(t *testing.T, packPath string, isPublic bool) {
+	assert := assert.New(t)
+
+	err := installer.AddPack(packPath)
+	assert.Nil(err)
+
+	checkPackIsInstalled(t, packPath, isPublic)
+}
+
+func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool) {
+	assert := assert.New(t)
+
+	// Get pack.idx before removing pack
+	packIdxModTime := getPackIdxModTime()
+
+	// [http://vendor.com|path/to]/TheVendor.PackName.x.y.z -> TheVendor.PackName[.x.y.z]
+	shortPackPath := shortenPackPath(packPath, withVersion)
+
+	info, err := utils.ExtractPackInfo(shortPackPath, true /*short=true*/)
+	assert.Nil(err)
+
+	// Check in installer internals
+	pack := packInfoToType(info)
+	isInstalled := installer.Installation.PackIsInstalled(pack)
+
+	purgeOnly := !isInstalled && purge
+
+	err = installer.RemovePack(shortPackPath, purge)
+	assert.Nil(err)
+
+	if isInstalled {
+		assert.False(installer.Installation.PackIsInstalled(pack))
+	}
+
+	if withVersion {
+		// Make sure files are there (purge=false) or if they no longer exist (purge=true) in .Download/
+		assert.Equal(!purge, utils.FileExists(path.Join(installer.Installation.DownloadDir, shortPackPath+".pack")))
+		assert.Equal(!purge, utils.FileExists(path.Join(installer.Installation.DownloadDir, shortPackPath+".pdsc")))
+	} else {
+		// If withVersion=false, it means shortPackPath=TheVendor.PackName only
+		// so we need to add '.*' to make utils.ListDir() list all available files
+		files, err := utils.ListDir(installer.Installation.DownloadDir, shortPackPath+".*")
+		assert.Nil(err)
+		assert.Equal(!purge, len(files) > 0)
+	}
+
+	if !isPublic {
+		// Make sure that the unversioned copy of the PDSC file in .Local/ was removed, in case pack is not public
+		assert.False(utils.FileExists(path.Join(installer.Installation.LocalDir, packPathToPdsc(packPath, false))))
+	}
+
+	// No touch on purging only
+	if !purgeOnly {
+		// Make sure the pack.idx file gets trouched
+		assert.True(packIdxModTime.Before(getPackIdxModTime()))
+	}
+}
 
 var (
+	// Constant telling pack privacy
+
+	IsPublic  = true
+	NotPublic = false
+
+	// Constant for path functions that require withVersion
+	WithVersion = true
+	// WithoutVersion = false
+
+	// Shortcut for purge=false|true
+	//Purge = true
+	NoPurge = false
+
 	// Available testing packs
 	testDir = "../../testdata/integration/"
 
@@ -62,15 +169,14 @@ var (
 	packWithTaintedCompressedFiles = path.Join(testDir, "PackWith.TaintedFiles.1.2.3.pack")
 
 	// Public packs
-	publicLocalPack123 = path.Join(testDir, "1.2.3", "TheVendor.PublicLocalPack.1.2.3.pack")
-	// publicLocalPack124  = path.Join(testDir, "1.2.4", "TheVendor.PublicLocalPack.1.2.4.pack")
+	publicLocalPack123  = path.Join(testDir, "1.2.3", "TheVendor.PublicLocalPack.1.2.3.pack")
+	publicLocalPack124  = path.Join(testDir, "1.2.4", "TheVendor.PublicLocalPack.1.2.4.pack")
 	publicRemotePack123 = path.Join(testDir, "1.2.3", "TheVendor.PublicRemotePack.1.2.3.pack")
-	// publicRemotePack124 = path.Join(testDir, "1.2.4", "TheVendor.PublicRemotePack.1.2.4.pack")
 
 	// Private packs
 	nonPublicLocalPack123 = path.Join(testDir, "1.2.3", "TheVendor.NonPublicLocalPack.1.2.3.pack")
 	// nonPublicLocalPack124  = path.Join(testDir, "1.2.4", "TheVendor.NonPublicLocalPack.1.2.4.pack")
-	// nonPublicRemotePack123 = path.Join(testDir, "1.2.3", "TheVendor.NonPublicRemotePack.1.2.3.pack")
+	nonPublicRemotePack123 = path.Join(testDir, "1.2.3", "TheVendor.NonPublicRemotePack.1.2.3.pack")
 	// nonPublicRemotePack124 = path.Join(testDir, "1.2.4", "TheVendor.NonPublicRemotePack.1.2.4.pack")
 )
 
@@ -80,6 +186,14 @@ func TestSetPackRoot(t *testing.T) {
 	assert.Equal(t, err, errs.ErrFailedCreatingDirectory)
 }
 
+// Tests should cover all possible scenarios for adding packs
+// +----------------+--------+------------+
+// | origin/privacy | public | non-public |
+// +----------------+--------+------------+
+// | local          |        |            |
+// +----------------+--------+------------+
+// | remote         |        |            |
+// +----------------+--------+------------+
 func TestAddPack(t *testing.T) {
 
 	assert := assert.New(t)
@@ -97,34 +211,35 @@ func TestAddPack(t *testing.T) {
 		// Sanity check
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrBadPackNameInvalidExtension))
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
 	t.Run("test installing a pack previously installed", func(t *testing.T) {
 		localTestingDir := "test-add-pack-previously-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir))
+		installer.Installation.WebDir = path.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := publicLocalPack123
 
-		err := installer.AddPack(packPath)
+		addPack(t, packPath, IsPublic)
 
-		// Sanity check
+		packIdx, err := os.Stat(installer.Installation.PackIdx)
 		assert.Nil(err)
-
-		_, packPath = path.Split(packPath)
-
-		// Make sure it really got installed
-		assert.True(checkPackIsInstalled(t, packPath))
-
-		// Make sure that both pack and pdsc files are under .Download folder
-		assert.True(utils.FileExists(path.Join(installer.Installation.DownloadDir, packPath)))
-		assert.True(utils.FileExists(path.Join(installer.Installation.DownloadDir, packPathToPdsc(packPath, true))))
+		packIdxModTime := packIdx.ModTime()
 
 		// Attempt installing it again, this time we should get an error
 		packPath = publicLocalPack123
 		err = installer.AddPack(packPath)
 		assert.NotNil(err)
 		assert.Equal(err, errs.ErrPackAlreadyInstalled)
+
+		// Make sure pack.idx did NOT get touched
+		packIdx, err = os.Stat(installer.Installation.PackIdx)
+		assert.Nil(err)
+		assert.Equal(packIdxModTime, packIdx.ModTime())
 	})
 
 	t.Run("test installing local pack that does not exist", func(t *testing.T) {
@@ -139,6 +254,9 @@ func TestAddPack(t *testing.T) {
 		// Sanity check
 		assert.NotNil(err)
 		assert.Equal(err, errs.ErrFileNotFound)
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
 	t.Run("test installing remote pack that does not exist", func(t *testing.T) {
@@ -161,6 +279,9 @@ func TestAddPack(t *testing.T) {
 		// Sanity check
 		assert.NotNil(err)
 		assert.Equal(err, errs.ErrBadRequest)
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
 	t.Run("test installing a pack with corrupt zip file", func(t *testing.T) {
@@ -175,6 +296,9 @@ func TestAddPack(t *testing.T) {
 		// Sanity check
 		assert.NotNil(err)
 		assert.Equal(err, errs.ErrFailedDecompressingFile)
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
 	t.Run("test installing a pack with bad URL format", func(t *testing.T) {
@@ -189,6 +313,9 @@ func TestAddPack(t *testing.T) {
 		// Sanity check
 		assert.NotNil(err)
 		assert.Equal(err, errs.ErrBadPackURL)
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
 	t.Run("test installing a pack with no PDSC file inside", func(t *testing.T) {
@@ -203,6 +330,9 @@ func TestAddPack(t *testing.T) {
 		// Sanity check
 		assert.NotNil(err)
 		assert.Equal(err, errs.ErrPdscFileNotFound)
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
 	t.Run("test installing a pack that has problems with its directory", func(t *testing.T) {
@@ -219,8 +349,10 @@ func TestAddPack(t *testing.T) {
 
 		// Sanity check
 		assert.NotNil(err)
-
 		assert.Equal(err, errs.ErrFailedCreatingDirectory)
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
 	t.Run("test installing a pack with tainted compressed files", func(t *testing.T) {
@@ -235,8 +367,10 @@ func TestAddPack(t *testing.T) {
 
 		// Sanity check
 		assert.NotNil(err)
-
 		assert.Equal(err, errs.ErrInsecureZipFileName)
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
 	// Test installing a combination of public/non-public local/remote packs
@@ -246,24 +380,7 @@ func TestAddPack(t *testing.T) {
 		installer.Installation.WebDir = path.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
-		packPath := publicLocalPack123
-
-		err := installer.AddPack(packPath)
-
-		// Sanity check
-		assert.Nil(err)
-
-		_, packPath = path.Split(packPath)
-
-		// Make sure it really got installed
-		assert.True(checkPackIsInstalled(t, packPath))
-
-		// Make sure that both pack and pdsc files are under .Download folder
-		assert.True(utils.FileExists(path.Join(installer.Installation.DownloadDir, packPath)))
-		assert.True(utils.FileExists(path.Join(installer.Installation.DownloadDir, packPathToPdsc(packPath, true))))
-
-		// Make sure no pdsc file got copied to .Local
-		assert.False(utils.FileExists(path.Join(installer.Installation.LocalDir, packPathToPdsc(packPath, false))))
+		addPack(t, publicLocalPack123, IsPublic)
 	})
 
 	t.Run("test installing public pack via remote file", func(t *testing.T) {
@@ -288,20 +405,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packServer.URL + "/" + packBasePath
 
-		err = installer.AddPack(packPath)
-
-		// Sanity check
-		assert.Nil(err)
-
-		// Make sure it really got installed
-		assert.True(checkPackIsInstalled(t, packBasePath))
-
-		// Make sure that both pack and pdsc files are under .Download folder
-		assert.True(utils.FileExists(path.Join(installer.Installation.DownloadDir, packBasePath)))
-		assert.True(utils.FileExists(path.Join(installer.Installation.DownloadDir, packPathToPdsc(packBasePath, true))))
-
-		// Make sure no pdsc file got copied to .Local
-		assert.False(utils.FileExists(path.Join(installer.Installation.LocalDir, packPathToPdsc(packPath, false))))
+		addPack(t, packPath, IsPublic)
 	})
 
 	t.Run("test installing non-public pack via local file", func(t *testing.T) {
@@ -310,25 +414,16 @@ func TestAddPack(t *testing.T) {
 		installer.Installation.WebDir = path.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
-		packPath := nonPublicLocalPack123
+		addPack(t, nonPublicLocalPack123, NotPublic)
+	})
 
-		err := installer.AddPack(packPath)
+	t.Run("test installing non-public pack via remote file", func(t *testing.T) {
+		localTestingDir := "test-add-non-public-remote-pack"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		installer.Installation.WebDir = path.Join(testDir, "public_index")
+		defer os.RemoveAll(localTestingDir)
 
-		// Sanity check
-		assert.Nil(err)
-
-		_, packPath = path.Split(packPath)
-
-		// Make sure it really got installed
-		assert.True(checkPackIsInstalled(t, packPath))
-
-		// Make sure that both pack and pdsc files are under .Download folder
-		assert.True(utils.FileExists(path.Join(installer.Installation.DownloadDir, packPath)))
-		assert.True(utils.FileExists(path.Join(installer.Installation.DownloadDir, packPathToPdsc(packPath, true))))
-
-		// Make sure pdsc file got copied to .Local
-		// TODO: check why it's not working
-		// assert.True(utils.FileExists(path.Join(installer.Installation.LocalDir, packPathToPdsc(packPath, false))))
+		addPack(t, nonPublicRemotePack123, NotPublic)
 	})
 }
 
@@ -337,23 +432,124 @@ func TestRemovePack(t *testing.T) {
 	assert := assert.New(t)
 
 	// Sanity tests
-	t.Run("test removing a pack that is not installed", func(t *testing.T) {
-		localTestingDir := "test-add-pack-with-bad-name"
+	t.Run("test removing a pack with malformed name", func(t *testing.T) {
+		localTestingDir := "test-remove-pack-with-bad-name"
 		assert.Nil(installer.SetPackRoot(localTestingDir))
 		defer os.RemoveAll(localTestingDir)
 
-		err := installer.AddPack("TheVendor.PackName.1.2.3")
+		err := installer.RemovePack("TheVendor.PackName.no-a-valid-version", false)
 
 		// Sanity check
 		assert.NotNil(err)
-		assert.True(errs.Is(err, errs.ErrBadPackNameInvalidExtension))
+		assert.Equal(err, errs.ErrBadPackNameInvalidVersion)
 	})
 
-	// Install a pack and Remove it
-	// Install a pack, a new version and Remove the first one
-	// Install a pack, a new version and Remove all
-	// Install a pack, a new version and Remove all with purge
-	// Install a pack, and remove it with purge
-	// Install a pack, remove it, then purge it
-	// Install a pack, a new version, remove the first, then remove the second one with purge
+	t.Run("test removing a pack that is not installed", func(t *testing.T) {
+		localTestingDir := "test-remove-pack-not-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		err := installer.RemovePack("TheVendor.PackName.1.2.3", false)
+
+		// Sanity check
+		assert.NotNil(err)
+		assert.Equal(err, errs.ErrPackNotInstalled)
+	})
+
+	t.Run("test remove a public pack that was added", func(t *testing.T) {
+		localTestingDir := "test-remove-public-pack-that-was-added"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		installer.Installation.WebDir = path.Join(testDir, "public_index")
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := publicLocalPack123
+
+		// Test all possible combinations, with or without version, with or without purging
+		addPack(t, packPath, IsPublic)
+		removePack(t, packPath, true, IsPublic, true) // withVersion=true, purge=true
+
+		addPack(t, packPath, IsPublic)
+		removePack(t, packPath, true, IsPublic, false) // withVersion=true, purge=false
+
+		addPack(t, packPath, IsPublic)
+		removePack(t, packPath, false, IsPublic, true) // withVersion=false, purge=true
+
+		addPack(t, packPath, IsPublic)
+		removePack(t, packPath, false, IsPublic, false) // withVersion=false, purge=false
+	})
+
+	t.Run("test remove a non-public pack that was added", func(t *testing.T) {
+		localTestingDir := "test-remove-nonpublic-pack-that-was-added"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		installer.Installation.WebDir = path.Join(testDir, "public_index")
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := nonPublicLocalPack123
+
+		// Test all possible combinations, with or without version, with or without purging
+		addPack(t, packPath, NotPublic)
+		removePack(t, packPath, true, NotPublic, true) // withVersion=true, purge=true
+
+		addPack(t, packPath, NotPublic)
+		removePack(t, packPath, true, NotPublic, false) // withVersion=true, purge=false
+
+		addPack(t, packPath, NotPublic)
+		removePack(t, packPath, false, NotPublic, true) // withVersion=false, purge=true
+
+		addPack(t, packPath, NotPublic)
+		removePack(t, packPath, false, IsPublic, false) // withVersion=false, purge=false
+	})
+
+	t.Run("test remove version of a pack", func(t *testing.T) {
+		localTestingDir := "test-remove-version-of-a-pack"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		installer.Installation.WebDir = path.Join(testDir, "public_index")
+		defer os.RemoveAll(localTestingDir)
+
+		// Add a pack, add an updated version of the pack, then remove the first one
+		packPath := publicLocalPack123
+		updatedPackPath := publicLocalPack124
+		addPack(t, packPath, IsPublic)
+		addPack(t, updatedPackPath, IsPublic)
+
+		// Remove first one (old pack)
+		removePack(t, packPath, true, NotPublic, true) // withVersion=true, purge=true
+	})
+
+	t.Run("test remove a pack then purge", func(t *testing.T) {
+		localTestingDir := "test-remove-a-pack-then-purge"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		installer.Installation.WebDir = path.Join(testDir, "public_index")
+		defer os.RemoveAll(localTestingDir)
+
+		// Add a pack, add an updated version of the pack, then remove the first one
+		packPath := publicLocalPack123
+		addPack(t, packPath, IsPublic)
+
+		// Remove it without purge
+		removePack(t, packPath, true, NotPublic, false) // withVersion=true, purge=true
+
+		// Now just purge it
+		removePack(t, packPath, true, NotPublic, true) // withVersion=true, purge=true
+
+		// Make sure pack is not purgeable
+		err := installer.RemovePack(shortenPackPath(packPath, false), true) // withVersion=false, purge=true
+		assert.Equal(errs.ErrPackNotPurgeable, err)
+	})
+
+	t.Run("test remove all versions at once", func(t *testing.T) {
+		localTestingDir := "test-remove-all-versions-at-once"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		installer.Installation.WebDir = path.Join(testDir, "public_index")
+		defer os.RemoveAll(localTestingDir)
+
+		// Add a pack, add an updated version of the pack, then remove the first one
+		packPath := publicLocalPack123
+		updatedPackPath := publicLocalPack124
+		addPack(t, packPath, IsPublic)
+		addPack(t, updatedPackPath, IsPublic)
+
+		// Remove all packs (withVersion=false), i.e. path will be "TheVendor.PackName"
+		removePack(t, packPath, false, IsPublic, true) // withVersion=false, purge=true
+	})
 }
