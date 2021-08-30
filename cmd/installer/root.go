@@ -75,10 +75,6 @@ func AddPdsc(pdscPath string) error {
 		return err
 	}
 
-	if pdsc.isInstalled {
-		return errs.ErrPdscEntryExists
-	}
-
 	if err := pdsc.install(Installation); err != nil {
 		return err
 	}

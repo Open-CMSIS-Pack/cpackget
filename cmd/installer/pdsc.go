@@ -17,9 +17,6 @@ type PdscType struct {
 	// file points to the actual PDSC file
 	file *xml.PdscXML
 
-	// isInstalled tells whether the pack is already installed
-	isInstalled bool
-
 	// path points to a file in the local system, whether or not it's local
 	path string
 }
@@ -79,11 +76,7 @@ func (p *PdscType) install(installation *PacksInstallationType) error {
 		return err
 	}
 
-	if err := Installation.LocalPidx.AddPdsc(tag); err != nil {
-		return err
-	}
-
-	return nil
+	return Installation.LocalPidx.AddPdsc(tag)
 }
 
 // uninstall uninstalls a pack via PDSC

@@ -101,11 +101,18 @@ func (p *PdscTag) Key() string {
 func (p *PidxXML) Read() error {
 	log.Debugf("Reading pidx from file \"%s\"", p.fileName)
 
+	p.pdscList = make(map[string]PdscTag)
+
+	// Create a new empty l
+	if !utils.FileExists(p.fileName) {
+		log.Warnf("\"%v\" not found. Creating a new one.", p.fileName)
+		return p.Write()
+	}
+
 	if err := utils.ReadXML(p.fileName, p); err != nil {
 		return err
 	}
 
-	p.pdscList = make(map[string]PdscTag)
 	for _, pdsc := range p.Pindex.Pdscs {
 		log.Debugf("Registring \"%s\"", pdsc.Key())
 		p.pdscList[pdsc.Key()] = pdsc

@@ -65,7 +65,6 @@ func TestPidxXML(t *testing.T) {
 		}
 
 		pidx := xml.NewPidxXML(fileName)
-		assert.Nil(utils.WriteXML(fileName, &pidx))
 		assert.Nil(pidx.Read())
 
 		// Adding first time is OK

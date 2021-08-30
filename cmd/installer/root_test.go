@@ -18,6 +18,7 @@ import (
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
+	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -152,7 +153,6 @@ var (
 
 	// Constant for path functions that require withVersion
 	WithVersion = true
-	// WithoutVersion = false
 
 	// Shortcut for purge=false|true
 	//Purge = true
@@ -174,10 +174,15 @@ var (
 	publicRemotePack123 = path.Join(testDir, "1.2.3", "TheVendor.PublicRemotePack.1.2.3.pack")
 
 	// Private packs
-	nonPublicLocalPack123 = path.Join(testDir, "1.2.3", "TheVendor.NonPublicLocalPack.1.2.3.pack")
-	// nonPublicLocalPack124  = path.Join(testDir, "1.2.4", "TheVendor.NonPublicLocalPack.1.2.4.pack")
+	nonPublicLocalPack123  = path.Join(testDir, "1.2.3", "TheVendor.NonPublicLocalPack.1.2.3.pack")
 	nonPublicRemotePack123 = path.Join(testDir, "1.2.3", "TheVendor.NonPublicRemotePack.1.2.3.pack")
-	// nonPublicRemotePack124 = path.Join(testDir, "1.2.4", "TheVendor.NonPublicRemotePack.1.2.4.pack")
+
+	// PDSC packs
+	pdscPack123 = path.Join(testDir, "1.2.3", "TheVendor.PackName.pdsc")
+	pdscPack124 = path.Join(testDir, "1.2.4", "TheVendor.PackName.pdsc")
+
+	// Bad local_repository.pidx
+	badLocalRepositoryPidx = path.Join(testDir, "bad_local_repository.pidx")
 )
 
 func TestSetPackRoot(t *testing.T) {
@@ -551,5 +556,104 @@ func TestRemovePack(t *testing.T) {
 
 		// Remove all packs (withVersion=false), i.e. path will be "TheVendor.PackName"
 		removePack(t, packPath, false, IsPublic, true) // withVersion=false, purge=true
+	})
+}
+
+func TestAddPdsc(t *testing.T) {
+
+	assert := assert.New(t)
+
+	// Sanity tests
+	t.Run("test add pdsc with bad name", func(t *testing.T) {
+		localTestingDir := "test-add-pdsc-with-bad-name"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		err := installer.AddPdsc(malformedPackName)
+		assert.Equal(errs.ErrBadPackNameInvalidExtension, err)
+	})
+
+	t.Run("test add pdsc with bad local_repository.pidx", func(t *testing.T) {
+		localTestingDir := "test-add-pdsc-with-bad-local-repository"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		installer.Installation.LocalPidx = xml.NewPidxXML(badLocalRepositoryPidx)
+		defer os.RemoveAll(localTestingDir)
+
+		err := installer.AddPdsc(pdscPack123)
+		assert.NotNil(err)
+		assert.Equal("XML syntax error on line 3: unexpected EOF", err.Error())
+	})
+
+	t.Run("test add a pdsc", func(t *testing.T) {
+		localTestingDir := "test-add-a-pdsc"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		err := installer.AddPdsc(pdscPack123)
+
+		// Sanity check
+		assert.Nil(err)
+	})
+
+	t.Run("test add a pdsc already installed", func(t *testing.T) {
+		localTestingDir := "test-add-a-pdsc-already-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		err := installer.AddPdsc(pdscPack123)
+		assert.Nil(err)
+
+		err = installer.AddPdsc(pdscPack123)
+		assert.Equal(errs.ErrPdscEntryExists, err)
+	})
+
+	t.Run("test add new pdsc version", func(t *testing.T) {
+		localTestingDir := "test-add-new-pdsc-version"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		err := installer.AddPdsc(pdscPack123)
+		assert.Nil(err)
+
+		err = installer.AddPdsc(pdscPack124)
+		assert.Nil(err)
+	})
+}
+
+func TestRemovePdsc(t *testing.T) {
+
+	assert := assert.New(t)
+
+	t.Run("test remove pdsc with bad name", func(t *testing.T) {
+		localTestingDir := "test-remove-pdsc-with-bad-name"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		err := installer.RemovePdsc(malformedPackName)
+		assert.NotNil(err)
+		assert.Equal(errs.ErrBadPackName, err)
+	})
+
+	t.Run("test remove a pdsc", func(t *testing.T) {
+		localTestingDir := "test-remove-pdsc"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		// Add it first
+		err := installer.AddPdsc(pdscPack123)
+		assert.Nil(err)
+
+		// Remove it
+		err = installer.RemovePdsc(shortenPackPath(pdscPack123, true))
+		assert.Nil(err)
+	})
+
+	t.Run("test remove a pdsc that does not exist", func(t *testing.T) {
+		localTestingDir := "test-remove-pdsc-that-does-not-exist"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		err := installer.RemovePdsc(shortenPackPath(pdscPack123, true))
+		assert.Equal(errs.ErrPdscEntryNotFound, err)
 	})
 }
