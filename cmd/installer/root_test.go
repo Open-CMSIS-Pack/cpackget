@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* Copyright Contributors to the vidx2pidx project. */
+/* Copyright Contributors to the cpackget project. */
 
 package installer_test
 

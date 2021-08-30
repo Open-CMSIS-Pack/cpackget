@@ -60,6 +60,6 @@ fi
 # tags so that github action can take care of the second
 # part of the release, see .github/workflows/release.yml
 git commit --message "New release: $next_release_version" CHANGELOG.md || true
-git tag -s -m "Vidx2pidx release $next_release_version" "$next_release_version"
+git tag -s -m "cpackget release $next_release_version" "$next_release_version"
 git push
 git push --tags
