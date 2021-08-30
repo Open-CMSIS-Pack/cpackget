@@ -61,18 +61,17 @@ format-check:
 
 .PHONY: test release config
 test:
-	TESTING=1 go test $(ARGS) ./cmd/...
+	go test $(ARGS) ./cmd/...
 
 test-all: format-check coverage-check lint
 
 coverage-report: 
-	TESTING=1 go test ./cmd/... -coverprofile cover.out
+	go test ./cmd/... -coverprofile cover.out
 	go tool cover -html=cover.out
 
 coverage-check:
-	TESTING=1 go test ./cmd/... $(ARGS) -coverprofile cover.out
-	tail -n +2 cover.out | grep -v -e " 1$$" | grep -v main.go | tee coverage-check.out
-	test ! -s coverage-check.out
+	@echo Checking if test coverage is above 90%
+	test `go tool cover -func cover.out | tail -1 | awk '{print ($$3 + 0)*10}'` -gt 900
 
 test-public-index:
 	@./scripts/test-public-index
