@@ -147,16 +147,8 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 
 var (
 	// Constant telling pack privacy
-
 	IsPublic  = true
 	NotPublic = false
-
-	// Constant for path functions that require withVersion
-	WithVersion = true
-
-	// Shortcut for purge=false|true
-	//Purge = true
-	NoPurge = false
 
 	// Available testing packs
 	testDir = "../../testdata/integration/"
