@@ -5,7 +5,7 @@ package installer
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
@@ -115,12 +115,12 @@ func SetPackRoot(packRoot string) error {
 	log.Debugf("Setting pack installation working directory to \"%v\"", packRoot)
 	Installation = &PacksInstallationType{
 		PackRoot:    packRoot,
-		DownloadDir: path.Join(packRoot, ".Download"),
-		LocalDir:    path.Join(packRoot, ".Local"),
-		WebDir:      path.Join(packRoot, ".Web"),
+		DownloadDir: filepath.Join(packRoot, ".Download"),
+		LocalDir:    filepath.Join(packRoot, ".Local"),
+		WebDir:      filepath.Join(packRoot, ".Web"),
 	}
-	Installation.LocalPidx = xml.NewPidxXML(path.Join(Installation.LocalDir, "local_repository.pidx"))
-	Installation.PackIdx = path.Join(packRoot, "pack.idx")
+	Installation.LocalPidx = xml.NewPidxXML(filepath.Join(Installation.LocalDir, "local_repository.pidx"))
+	Installation.PackIdx = filepath.Join(packRoot, "pack.idx")
 
 	var err error
 	for _, dir := range []string{packRoot, Installation.DownloadDir, Installation.LocalDir, Installation.WebDir} {
@@ -174,7 +174,7 @@ func (p *PacksInstallationType) touchPackIdx() error {
 
 // PackIsInstalled checks whether a given pack is already installed or not
 func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
-	installationDir := path.Join(p.PackRoot, pack.Vendor, pack.Name, pack.Version)
+	installationDir := filepath.Join(p.PackRoot, pack.Vendor, pack.Name, pack.Version)
 	if _, err := os.Stat(installationDir); !os.IsNotExist(err) {
 		return true
 	}
@@ -189,7 +189,7 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType) bool {
 		p.packs = make(map[string]bool)
 		files, _ := utils.ListDir(p.WebDir, `^.*\.pdsc$`)
 		for _, file := range files {
-			_, baseFileName := path.Split(file)
+			_, baseFileName := filepath.Split(file)
 			p.packs[baseFileName] = true
 		}
 	}

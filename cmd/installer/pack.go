@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -161,7 +161,7 @@ func (p *PackType) purge() error {
 func (p *PackType) install(installation *PacksInstallationType) error {
 	log.Debugf("Installing \"%s\"", p.path)
 
-	packHomeDir := path.Join(Installation.PackRoot, p.Vendor, p.Name, p.Version)
+	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.Version)
 	err := utils.EnsureDir(packHomeDir)
 	if err != nil {
 		log.Errorf("Can't access pack directory \"%s\": %s", packHomeDir, err)
@@ -191,16 +191,16 @@ func (p *PackType) install(installation *PacksInstallationType) error {
 	}
 
 	pdscFileName := fmt.Sprintf("%s.%s.pdsc", p.Vendor, p.Name)
-	pdscFilePath := path.Join(packHomeDir, pdscFileName)
+	pdscFilePath := filepath.Join(packHomeDir, pdscFileName)
 	newPdscFileName := fmt.Sprintf("%s.%s.%s.pdsc", p.Vendor, p.Name, p.Version)
 
 	if !p.isPublic {
-		_ = utils.CopyFile(pdscFilePath, path.Join(Installation.LocalDir, pdscFileName))
+		_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.LocalDir, pdscFileName))
 	}
 
-	_ = utils.CopyFile(pdscFilePath, path.Join(Installation.DownloadDir, newPdscFileName))
+	_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.DownloadDir, newPdscFileName))
 
-	packBackupPath := path.Join(Installation.DownloadDir, path.Base(p.path))
+	packBackupPath := filepath.Join(Installation.DownloadDir, filepath.Base(p.path))
 	if !p.isDownloaded {
 		return utils.CopyFile(p.path, packBackupPath)
 	}
@@ -219,13 +219,13 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 	log.Debugf("Uninstalling \"%v\"", p.path)
 
 	// Remove Vendor/Pack/x.y.z
-	packPath := path.Join(Installation.PackRoot, p.Vendor, p.Name, p.Version)
+	packPath := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.Version)
 	if err := os.RemoveAll(packPath); err != nil {
 		return err
 	}
 
 	// Remove Vendor/Pack/ if empty
-	packPath = path.Join(Installation.PackRoot, p.Vendor, p.Name)
+	packPath = filepath.Join(Installation.PackRoot, p.Vendor, p.Name)
 	if utils.IsEmpty(packPath) {
 		if err := os.Remove(packPath); err != nil {
 			return err
@@ -234,7 +234,7 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 		// Remove local pdsc file if pack is not public and if there are no more versions of this pack installed
 		if !p.isPublic {
 			localPdscFileName := p.Vendor + "." + p.Name + ".pdsc"
-			filePath := path.Join(Installation.LocalDir, localPdscFileName)
+			filePath := filepath.Join(Installation.LocalDir, localPdscFileName)
 			if err := os.Remove(filePath); err != nil {
 				return err
 			}
@@ -242,7 +242,7 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 	}
 
 	// Remove Vendor/ if empty
-	vendorPath := path.Join(Installation.PackRoot, p.Vendor)
+	vendorPath := filepath.Join(Installation.PackRoot, p.Vendor)
 	if utils.IsEmpty(vendorPath) {
 		if err := os.Remove(vendorPath); err != nil {
 			return err

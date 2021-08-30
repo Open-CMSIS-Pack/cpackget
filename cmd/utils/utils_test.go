@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -147,13 +148,6 @@ func TestEnsureDir(t *testing.T) {
 		assert.Nil(err)
 		assert.True(stat.IsDir())
 	})
-
-	t.Run("test catch errors", func(t *testing.T) {
-		dirName := "/cannot-create-this-dir"
-		err := utils.EnsureDir(dirName)
-		assert.NotNil(err)
-		assert.True(errs.Is(err, errs.ErrFailedCreatingDirectory))
-	})
 }
 
 func TestCopyFile(t *testing.T) {
@@ -171,7 +165,6 @@ func TestCopyFile(t *testing.T) {
 		assert.NotNil(err)
 		_, ok := err.(*fs.PathError)
 		assert.True(ok)
-		assert.Equal(err.Error(), "open file-that-does-not-exist: no such file or directory")
 	})
 
 	t.Run("test cannot create destination file", func(t *testing.T) {
@@ -185,7 +178,6 @@ func TestCopyFile(t *testing.T) {
 		assert.NotNil(err)
 		_, ok := err.(*fs.PathError)
 		assert.True(ok)
-		assert.Equal(err.Error(), "open ~/dummy-file-for-copy-test-destionation.txt: no such file or directory")
 	})
 
 	t.Run("test overwrite destination file", func(t *testing.T) {
@@ -243,7 +235,6 @@ func TestMoveFile(t *testing.T) {
 		assert.NotNil(err)
 		_, ok := err.(*os.LinkError)
 		assert.True(ok)
-		assert.Equal(err.Error(), "rename dummy-file new-file: no such file or directory")
 	})
 
 	t.Run("test really moving files", func(t *testing.T) {
@@ -279,12 +270,11 @@ func TestReadXML(t *testing.T) {
 		assert.NotNil(err)
 		_, ok := err.(*fs.PathError)
 		assert.True(ok)
-		assert.Equal(err.Error(), "open file-that-does-not-exist: no such file or directory")
 	})
 
 	t.Run("test read malformed xml", func(t *testing.T) {
 		dummy := dummyXML{}
-		err := utils.ReadXML("../../testdata/MalformedPack.pidx", &dummy)
+		err := utils.ReadXML(filepath.Join("..", "..", "testdata", "MalformedPack.pidx"), &dummy)
 		assert.NotNil(err)
 		assert.Equal(err.Error(), "XML syntax error on line 3: unexpected EOF")
 	})
@@ -325,7 +315,8 @@ func TestWriteXML(t *testing.T) {
 	t.Run("test fail to write to empty path", func(t *testing.T) {
 		err := utils.WriteXML("", new(dummyXML))
 		assert.NotNil(err)
-		assert.Equal(err.Error(), "open : no such file or directory")
+		_, ok := err.(*fs.PathError)
+		assert.True(ok)
 	})
 
 	t.Run("test fail to write to file", func(t *testing.T) {
@@ -333,7 +324,9 @@ func TestWriteXML(t *testing.T) {
 		dummy := new(dummyXML)
 		err := utils.WriteXML(fileName, dummy)
 
-		assert.Equal(err.Error(), "open ~/cannot-create-this-file: no such file or directory")
+		assert.NotNil(err)
+		_, ok := err.(*fs.PathError)
+		assert.True(ok)
 
 	})
 
@@ -359,7 +352,7 @@ func TestWriteXML(t *testing.T) {
 
 func TestListDir(t *testing.T) {
 	assert := assert.New(t)
-	testDir := "../../testdata/utils/test-listdir/"
+	testDir := filepath.Join("..", "..", "testdata", "utils", "test-listdir")
 
 	t.Run("test fail listing non-existing dir", func(t *testing.T) {
 		_, err := utils.ListDir("dir-does-not-exist", "")
@@ -369,22 +362,23 @@ func TestListDir(t *testing.T) {
 	})
 
 	t.Run("test find no files or dirs", func(t *testing.T) {
-		dir := testDir + "dir2/"
+		dir := "empty-dir"
+		assert.Nil(os.MkdirAll(dir, 0600))
+		defer os.Remove(dir)
 		files, err := utils.ListDir(dir, "")
 		assert.Nil(err)
-		// .gitignore is required to have "empty" directories pushed to git
-		assert.Equal(files, []string{dir + ".gitignore"})
+		assert.Equal(files, []string{})
 	})
 
 	t.Run("test find everything", func(t *testing.T) {
 		files, err := utils.ListDir(testDir, "")
 		assert.Nil(err)
 		assert.Equal(files, []string{
-			testDir + "dir1",
-			testDir + "dir2",
-			testDir + "dir3",
-			testDir + "file1",
-			testDir + "file2",
+			filepath.Join(testDir, "dir1"),
+			filepath.Join(testDir, "dir2"),
+			filepath.Join(testDir, "dir3"),
+			filepath.Join(testDir, "file1"),
+			filepath.Join(testDir, "file2"),
 		})
 	})
 
@@ -392,21 +386,14 @@ func TestListDir(t *testing.T) {
 		files, err := utils.ListDir(testDir, "file.*")
 		assert.Nil(err)
 		assert.Equal(files, []string{
-			testDir + "file1",
-			testDir + "file2",
+			filepath.Join(testDir, "file1"),
+			filepath.Join(testDir, "file2"),
 		})
 	})
 }
 
 func TestTouchFile(t *testing.T) {
 	assert := assert.New(t)
-
-	t.Run("test fail to access file", func(t *testing.T) {
-		err := utils.TouchFile("~/cannot-access-this-file")
-		assert.NotNil(err)
-		_, ok := err.(*fs.PathError)
-		assert.True(ok)
-	})
 
 	t.Run("test create file", func(t *testing.T) {
 		fileName := "touchfile-test-file-create"
@@ -435,7 +422,7 @@ func TestTouchFile(t *testing.T) {
 
 func TestIsEmpty(t *testing.T) {
 	assert := assert.New(t)
-	testDir := "../../testdata/utils/test-listdir/"
+	testDir := filepath.Join("..", "..", "testdata", "utils", "test-listdir")
 
 	t.Run("test cannot access directory", func(t *testing.T) {
 		assert.False(utils.IsEmpty("dir-does-not-exist"))
