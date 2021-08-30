@@ -369,9 +369,11 @@ func TestListDir(t *testing.T) {
 	})
 
 	t.Run("test find no files or dirs", func(t *testing.T) {
-		files, err := utils.ListDir(testDir+"dir2/", "")
+		dir := testDir + "dir2/"
+		files, err := utils.ListDir(dir, "")
 		assert.Nil(err)
-		assert.Equal(files, []string{})
+		// .gitignore is required to have "empty" directories pushed to git
+		assert.Equal(files, []string{dir + ".gitignore"})
 	})
 
 	t.Run("test find everything", func(t *testing.T) {
@@ -444,7 +446,10 @@ func TestIsEmpty(t *testing.T) {
 	})
 
 	t.Run("test empty dir", func(t *testing.T) {
-		assert.True(utils.IsEmpty(testDir + "dir2"))
+		dir := "empty-dir"
+		assert.Nil(os.MkdirAll(dir, 0600))
+		defer os.Remove(dir)
+		assert.True(utils.IsEmpty(dir))
 	})
 }
 
