@@ -59,7 +59,7 @@ func SecureInflateFile(file *zip.File, destinationDir string) error {
 		return errs.ErrInsecureZipFileName
 	}
 
-	if strings.HasSuffix(file.Name, string(os.PathSeparator)) {
+	if strings.HasSuffix(file.Name, "/") || strings.HasSuffix(file.Name, "\\") {
 		return EnsureDir(filepath.Join(destinationDir, file.Name)) // #nosec
 	}
 
