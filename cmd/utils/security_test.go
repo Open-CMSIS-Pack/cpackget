@@ -63,6 +63,20 @@ func TestSecureInflateFile(t *testing.T) {
 		assert.True(info.IsDir())
 	})
 
+	t.Run("test inflating a directory with forward slash", func(t *testing.T) {
+		dirName := "test-inflate-zip-dir-forward-slash"
+		zipFile := &zip.File{}
+		zipFile.Name = dirName + "/"
+		err := utils.SecureInflateFile(zipFile, "")
+		assert.Nil(err)
+		defer os.Remove(dirName)
+
+		// Make sure directory exists
+		info, err := os.Stat(dirName)
+		assert.Nil(err)
+		assert.True(info.IsDir())
+	})
+
 	t.Run("test inflating a file", func(t *testing.T) {
 		// Archive:  testdata/utils/test-secureinflatefile.zip
 		//   Length      Date    Time    Name
