@@ -139,6 +139,13 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 
 	// No touch on purging only
 	if !purgeOnly {
+		// Apparently Windows systems update of file modified times
+		// happens 64 times per second, and in some cases that is not
+		// enough for the time delta below to show a difference
+		// Ref: https://www.lochan.org/2005/keith-cl/useful/win32time.html#timingwin
+		// So let's sleep a bit before checking for file mod times
+		time.Sleep(1 * time.Second)
+
 		// Make sure the pack.idx file gets trouched
 		assert.True(packIdxModTime.Before(getPackIdxModTime()))
 	}
