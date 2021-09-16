@@ -34,6 +34,9 @@ type PackType struct {
 	// path points to a file in the local system, whether or not it's local
 	path string
 
+	// pdsc holds a pointer to the PDSC file already parsed as XML
+	pdsc *xml.PdscXML
+
 	// zipReader holds a pointer to the uncompress pack file
 	zipReader *zip.ReadCloser
 }
@@ -101,20 +104,24 @@ func (p *PackType) fetch() error {
 func (p *PackType) validate() error {
 	log.Debugf("Validating pack")
 	pdscFileName := fmt.Sprintf("%s.%s.pdsc", p.Vendor, p.Name)
-	isPdscPresent := false
 	for _, file := range p.zipReader.File {
 		if file.Name == pdscFileName {
-			isPdscPresent = true
-			break
+
+			// Read pack's pdsc
+			tmpPdscFileName := utils.RandStringBytes(10)
+			defer os.RemoveAll(tmpPdscFileName)
+
+			if err := utils.SecureInflateFile(file, tmpPdscFileName); err != nil {
+				return err
+			}
+
+			p.pdsc = xml.NewPdscXML(tmpPdscFileName)
+			return p.pdsc.Read()
 		}
 	}
 
-	if !isPdscPresent {
-		log.Errorf("\"%s\" not found in \"%s\"", pdscFileName, p.path)
-		return errs.ErrPdscFileNotFound
-	}
-
-	return nil
+	log.Errorf("\"%s\" not found in \"%s\"", pdscFileName, p.path)
+	return errs.ErrPdscFileNotFound
 }
 
 // purge Removes cached files when
