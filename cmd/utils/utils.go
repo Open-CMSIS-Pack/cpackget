@@ -153,7 +153,10 @@ func WriteXML(path string, targetStruct interface{}) error {
 		return err
 	}
 
-	return ioutil.WriteFile(path, output, 0600)
+	xmlText := []byte(xml.Header)
+	xmlText = append(xmlText, output...)
+
+	return ioutil.WriteFile(path, xmlText, 0600)
 }
 
 // ListDir generates a list of files and directories in "dir".

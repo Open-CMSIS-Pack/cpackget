@@ -343,7 +343,8 @@ func TestWriteXML(t *testing.T) {
 		written, err2 := ioutil.ReadFile(fileName)
 		assert.Nil(err2)
 
-		assert.Equal(written, []byte(`<dummyXML>
+		assert.Equal(written, []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<dummyXML>
  <dummy></dummy>
  <contents>dummy content</contents>
 </dummyXML>`))
