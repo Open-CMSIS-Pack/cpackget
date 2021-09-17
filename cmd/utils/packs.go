@@ -56,6 +56,8 @@ type PackInfo struct {
 func ExtractPackInfo(packPath string, short bool) (PackInfo, error) {
 	log.Debugf("Extracting pack info from \"%s\"", packPath)
 
+	const localFilePrefix = "file://localhost/"
+
 	info := PackInfo{}
 	if short {
 		_, packName := filepath.Split(packPath)
@@ -134,7 +136,7 @@ func ExtractPackInfo(packPath string, short bool) (PackInfo, error) {
 			location, _ = filepath.Abs(location)
 		}
 
-		location = "file://" + location + string(os.PathSeparator)
+		location = localFilePrefix + location + string(os.PathSeparator)
 	}
 
 	info.Location = location
