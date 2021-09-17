@@ -110,6 +110,10 @@ func NewLicenseWindow(licenseTitle, licenseContents, promptText string) *License
 			return gocui.ErrQuit
 		}
 
+		if Extract {
+			return errs.ErrExtractEula
+		}
+
 		return nil
 	}
 
@@ -208,7 +212,7 @@ func (l *LicenseWindowType) Setup() error {
 func (l *LicenseWindowType) PromptUser() (bool, error) {
 	log.Debug("Prompting user for license agreement")
 	err := l.Gui.MainLoop()
-	if err != nil && err != gocui.ErrQuit {
+	if err != nil && err != gocui.ErrQuit && err != errs.ErrExtractEula {
 		log.Error("Cannot obtain user response: ", err)
 		return false, err
 	}
