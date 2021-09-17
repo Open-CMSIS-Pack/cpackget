@@ -4,6 +4,7 @@
 package utils
 
 import (
+	"bytes"
 	"encoding/xml"
 	"io"
 	"io/ioutil"
@@ -14,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -229,6 +231,28 @@ func RandStringBytes(n int) string {
 		b[i] = letters[rand.Intn(len(letters))] // #nosec
 	}
 	return string(b)
+}
+
+// CountLines returns the number of lines in a string
+// Ref: https://stackoverflow.com/a/24563853
+func CountLines(content string) int {
+	reader := strings.NewReader(content)
+	buffer := make([]byte, 32*1024)
+	count := 0
+	lineFeed := []byte{'\n'}
+
+	for {
+		c, err := reader.Read(buffer)
+		count += bytes.Count(buffer[:c], lineFeed)
+
+		switch {
+		case err == io.EOF:
+			return count
+
+		case err != nil:
+			return count
+		}
+	}
 }
 
 func init() {

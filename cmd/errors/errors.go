@@ -28,6 +28,9 @@ var (
 	ErrPackNotPurgeable     = errors.New("pack not purgeable")
 	ErrPdscEntryExists      = errors.New("pdsc already in index")
 	ErrPdscEntryNotFound    = errors.New("pdsc not found in index")
+	ErrEula                 = errors.New("user does not agree with the pack's license")
+	ErrExtractEula          = errors.New("user wants to extract embedded license only")
+	ErrLicenseNotFound      = errors.New("embedded license not found")
 
 	// Errors related to network
 	ErrBadRequest            = errors.New("bad request")

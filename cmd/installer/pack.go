@@ -5,13 +5,17 @@ package installer
 
 import (
 	"archive/zip"
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
+	"github.com/open-cmsis-pack/cpackget/cmd/ui"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	log "github.com/sirupsen/logrus"
@@ -35,7 +39,7 @@ type PackType struct {
 	path string
 
 	// pdsc holds a pointer to the PDSC file already parsed as XML
-	pdsc *xml.PdscXML
+	Pdsc *xml.PdscXML
 
 	// zipReader holds a pointer to the uncompress pack file
 	zipReader *zip.ReadCloser
@@ -102,7 +106,7 @@ func (p *PackType) fetch() error {
 // validate ensures the pack is legit and it has all minimal requrements
 // to be installed.
 func (p *PackType) validate() error {
-	log.Debugf("Validating pack")
+	log.Debug("Validating pack")
 	pdscFileName := fmt.Sprintf("%s.%s.pdsc", p.Vendor, p.Name)
 	for _, file := range p.zipReader.File {
 		if file.Name == pdscFileName {
@@ -115,8 +119,8 @@ func (p *PackType) validate() error {
 				return err
 			}
 
-			p.pdsc = xml.NewPdscXML(tmpPdscFileName)
-			return p.pdsc.Read()
+			p.Pdsc = xml.NewPdscXML(filepath.Join(tmpPdscFileName, pdscFileName))
+			return p.Pdsc.Read()
 		}
 	}
 
@@ -165,18 +169,10 @@ func (p *PackType) purge() error {
 //   - Saves a versioned pdsc file in "CMSIS_PACK_ROOT/.Download/"
 //   - If "CMSIS_PACK_ROOT/.Web/p.Vendor.p.Name.pdsc" does not exist then
 //     - Save an unversioned copy of the pdsc file in "CMSIS_PACK_ROOT/.Local/"
-func (p *PackType) install(installation *PacksInstallationType) error {
+func (p *PackType) install(installation *PacksInstallationType, checkEula bool) error {
 	log.Debugf("Installing \"%s\"", p.path)
 
-	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.Version)
-	err := utils.EnsureDir(packHomeDir)
-	if err != nil {
-		log.Errorf("Can't access pack directory \"%s\": %s", packHomeDir, err)
-		return err
-	}
-
-	log.Debugf("Extracting files from \"%s\" to \"%s\"", p.path, packHomeDir)
-
+	var err error
 	p.zipReader, err = zip.OpenReader(p.path)
 	if err != nil {
 		log.Errorf("Can't decompress \"%s\": %s", p.path, err)
@@ -184,12 +180,40 @@ func (p *PackType) install(installation *PacksInstallationType) error {
 	}
 	defer p.zipReader.Close()
 
-	err = p.validate()
-	if err != nil {
+	if err = p.validate(); err != nil {
 		return err
 	}
 
+	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.Version)
+
+	if len(p.Pdsc.License) > 0 {
+		if checkEula {
+			ok, err := p.checkEula()
+			if err != nil {
+				if err == errs.ErrExtractEula {
+					return p.extractEula()
+				}
+				return err
+			}
+
+			if !ok {
+				return errs.ErrEula
+			}
+		} else {
+			// Explicitly inform the user that license has been agreed
+			fmt.Printf("Agreed to embedded license: %v", filepath.Join(packHomeDir, p.Pdsc.License))
+			fmt.Println()
+		}
+	}
+
 	// Inflate all files
+	err = utils.EnsureDir(packHomeDir)
+	if err != nil {
+		log.Errorf("Can't access pack directory \"%s\": %s", packHomeDir, err)
+		return err
+	}
+
+	log.Debugf("Extracting files from \"%s\" to \"%s\"", p.path, packHomeDir)
 	for _, file := range p.zipReader.File {
 		err = utils.SecureInflateFile(file, packHomeDir)
 		if err != nil {
@@ -257,4 +281,59 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 	}
 
 	return nil
+}
+
+// readEula reads in the pack's license into a string
+func (p *PackType) readEula() (string, error) {
+	log.Debug("Reading EULA")
+
+	// License contains the license path inside the pack file
+	for _, file := range p.zipReader.File {
+		if file.Name == p.Pdsc.License {
+
+			reader, _ := file.Open()
+			defer reader.Close()
+
+			buffer := new(bytes.Buffer)
+			_, err := utils.SecureCopy(buffer, reader)
+			if err != nil {
+				log.Error(err)
+				return "", err
+			}
+
+			return buffer.String(), nil
+		}
+	}
+
+	return "", errs.ErrLicenseNotFound
+}
+
+// checkEula prints out the pack's license (if any) to the user and asks for
+// confirmation. Returns false if user has not agreed with the license's terms.
+// Returns true if pack has no license specified.
+func (p *PackType) checkEula() (bool, error) {
+	log.Debug("Checking EULA")
+
+	eulaContents, err := p.readEula()
+	if err != nil {
+		return false, err
+	}
+
+	return ui.DisplayAndWaitForEULA(p.Pdsc.License, eulaContents)
+}
+
+// extractEula extracts the pack's License to a file next to the pack's location
+func (p *PackType) extractEula() error {
+	log.Debug("Extracting EULA")
+
+	eulaContents, err := p.readEula()
+	if err != nil {
+		return err
+	}
+
+	eulaFileName := p.path + "." + path.Base(p.Pdsc.License)
+
+	log.Infof("Extracting embedded license to %v", eulaFileName)
+
+	return ioutil.WriteFile(eulaFileName, []byte(eulaContents), 0600)
 }

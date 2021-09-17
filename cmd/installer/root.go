@@ -14,7 +14,7 @@ import (
 )
 
 // AddPack adds a pack to the pack installation directory structure
-func AddPack(packPath string) error {
+func AddPack(packPath string, checkEula bool) error {
 	log.Debugf("Adding pack \"%v\"", packPath)
 
 	pack, err := preparePack(packPath, false)
@@ -30,7 +30,7 @@ func AddPack(packPath string) error {
 		return err
 	}
 
-	if err = pack.install(Installation); err != nil {
+	if err = pack.install(Installation, checkEula); err != nil {
 		return err
 	}
 
