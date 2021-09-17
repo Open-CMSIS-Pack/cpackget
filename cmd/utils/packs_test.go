@@ -29,6 +29,7 @@ func absPath(filePath string) string {
 func TestExtractPackInfo(t *testing.T) {
 	assert := assert.New(t)
 	cwd, _ := os.Getwd()
+	localFilePrefix := "file://localhost/"
 
 	var tests = []testCase{
 		// Cases where short=true
@@ -156,7 +157,7 @@ func TestExtractPackInfo(t *testing.T) {
 				Pack:      "ThePack",
 				Version:   "0.0.1",
 				Extension: ".pack",
-				Location:  "file://" + filepath.Join(cwd, "relative", "path", "to") + string(os.PathSeparator),
+				Location:  localFilePrefix + filepath.Join(cwd, "relative", "path", "to") + string(os.PathSeparator),
 			},
 		},
 		{
@@ -167,7 +168,7 @@ func TestExtractPackInfo(t *testing.T) {
 				Pack:      "ThePack",
 				Version:   "0.0.1",
 				Extension: ".pack",
-				Location:  "file://" + absPath(filepath.Join(cwd, "..", "path", "to")) + string(os.PathSeparator),
+				Location:  localFilePrefix + absPath(filepath.Join(cwd, "..", "path", "to")) + string(os.PathSeparator),
 			},
 		},
 	}
