@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -e
+
+echo "Making sure that CMSIS_PACK_ROOT/.Local/local_repository.pidx is valid"
+
+PACK_ROOT=packroot
+
+rm -rf $PACK_ROOT
+
+./build/cpackget --pack-root $PACK_ROOT pdsc add testdata/devpack/1.2.3/TheVendor.DevPack.pdsc
+
+xmllint --schema testdata/PackIndex.xsd $PACK_ROOT/.Local/local_repository.pidx --noout
+
+rm -rf $PACK_ROOT

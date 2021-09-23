@@ -5,6 +5,8 @@ package xml
 
 import (
 	"encoding/xml"
+	"path"
+	"path/filepath"
 	"strings"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -15,8 +17,10 @@ import (
 // PidxXML maps the PIDX file format.
 // Ref: https://github.com/ARM-software/CMSIS_5/blob/develop/CMSIS/Utilities/PackIndex.xsd
 type PidxXML struct {
-	XMLName   xml.Name `xml:"index"`
-	Timestamp string   `xml:"timestamp"`
+	XMLName       xml.Name `xml:"index"`
+	SchemaVersion string   `xml:"schemaVersion,attr"`
+	Vendor        string   `xml:"vendor"`
+	URL           string   `xml:"url"`
 
 	Pindex struct {
 		XMLName xml.Name  `xml:"pindex"`
@@ -106,6 +110,9 @@ func (p *PidxXML) Read() error {
 	// Create a new empty l
 	if !utils.FileExists(p.fileName) {
 		log.Warnf("\"%v\" not found. Creating a new one.", p.fileName)
+		p.SchemaVersion = "1.1.0"
+		vendorName := path.Base(p.fileName)
+		p.Vendor = strings.TrimSuffix(vendorName, filepath.Ext(vendorName))
 		return p.Write()
 	}
 
