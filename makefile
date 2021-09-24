@@ -77,6 +77,9 @@ coverage-check:
 test-public-index:
 	@./scripts/test-public-index
 
+test-xmllint-localrepository: build/cpackget
+	@./scripts/test-xmllint-localrepository
+
 test-on-windows:
 	@./scripts/test-on-windows
 

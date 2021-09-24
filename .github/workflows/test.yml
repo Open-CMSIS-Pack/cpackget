@@ -36,6 +36,27 @@ jobs:
         run: |
           make format-check
 
+  # Make sure local_repository.pidx is linted against PackIndex.xsd
+  xmllint:
+    name: Xmllint
+    strategy:
+      matrix:
+        platform: [ubuntu-latest]
+        go: [1.16.x]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Install go 1.16
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Install xmllint
+        run: sudo apt-get install libxml2-utils
+      - name: Check if local_repository.pidx is valid
+        run: |
+          make test-xmllint-localrepository
+
   test:
     strategy:
       matrix:
