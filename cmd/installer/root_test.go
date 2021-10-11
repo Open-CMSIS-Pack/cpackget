@@ -97,7 +97,7 @@ type ConfigType struct {
 func addPack(t *testing.T, packPath string, config ConfigType) {
 	assert := assert.New(t)
 
-	err := installer.AddPack(packPath, config.CheckEula)
+	err := installer.AddPack(packPath, config.CheckEula, config.ExtractEula)
 	assert.Nil(err)
 
 	if config.ExtractEula {
@@ -223,7 +223,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := malformedPackName
 
-		err := installer.AddPack(packPath, !CheckEula)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -250,7 +250,7 @@ func TestAddPack(t *testing.T) {
 
 		// Attempt installing it again, this time we should get an error
 		packPath = publicLocalPack123
-		err = installer.AddPack(packPath, !CheckEula)
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
 		assert.NotNil(err)
 		assert.Equal(err, errs.ErrPackAlreadyInstalled)
 
@@ -267,7 +267,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packThatDoesNotExist
 
-		err := installer.AddPack(packPath, !CheckEula)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -292,7 +292,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := notFoundServer.URL + "/" + packThatDoesNotExist
 
-		err := installer.AddPack(packPath, !CheckEula)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -309,7 +309,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithCorruptZip
 
-		err := installer.AddPack(packPath, !CheckEula)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -326,7 +326,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithMalformedURL
 
-		err := installer.AddPack(packPath, !CheckEula)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -343,7 +343,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithoutPdscFileInside
 
-		err := installer.AddPack(packPath, !CheckEula)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -363,7 +363,7 @@ func TestAddPack(t *testing.T) {
 
 		// Force a bad file path
 		installer.Installation.PackRoot = filepath.Join(string(os.PathSeparator), "CON")
-		err := installer.AddPack(packPath, !CheckEula)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -381,7 +381,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithTaintedCompressedFiles
 
-		err := installer.AddPack(packPath, !CheckEula)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -480,7 +480,7 @@ func TestAddPack(t *testing.T) {
 
 		// Should NOT be installed if license is not agreed
 		ui.LicenseAgreed = &ui.Disagreed
-		err = installer.AddPack(packPath, CheckEula)
+		err = installer.AddPack(packPath, CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -524,7 +524,6 @@ func TestAddPack(t *testing.T) {
 
 		extractedLicensePath := packPath + ".LICENSE.txt"
 
-		ui.Extract = true
 		ui.LicenseAgreed = nil
 		addPack(t, packPath, ConfigType{
 			CheckEula:   true,
@@ -548,7 +547,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(err)
 
 		// Should NOT be installed if license is missing
-		err = installer.AddPack(packPath, CheckEula)
+		err = installer.AddPack(packPath, CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -559,6 +558,24 @@ func TestAddPack(t *testing.T) {
 		pack := packInfoToType(info)
 		assert.False(installer.Installation.PackIsInstalled(pack))
 	})
+
+	t.Run("test installing pack with missing license extracted", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-license-extracted"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packWithMissingLicense
+
+		extractedLicensePath := packPath + ".LICENSE.txt"
+
+		ui.Extract = true
+		ui.LicenseAgreed = nil
+		err := installer.AddPack(packPath, CheckEula, ExtractEula)
+		assert.NotNil(err)
+		assert.Equal(errs.ErrLicenseNotFound, err)
+		assert.False(utils.FileExists(extractedLicensePath))
+		os.Remove(extractedLicensePath)
+	})
 }
 
 func ExampleAddPack() {
@@ -568,7 +585,7 @@ func ExampleAddPack() {
 
 	packPath := packWithLicense
 	ui.LicenseAgreed = &ui.Agreed
-	_ = installer.AddPack(packPath, !CheckEula)
+	_ = installer.AddPack(packPath, !CheckEula, !ExtractEula)
 	// Output:
 	// Agreed to embedded license: test-add-pack-with-license-agreed-output/TheVendor/PackWithLicense/1.2.3/LICENSE.txt
 }

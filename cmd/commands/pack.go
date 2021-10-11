@@ -19,6 +19,9 @@ var PackCmd = &cobra.Command{
 // skipEula tells whether pack's license should be presented to the user or not for a yay-or-nay acceptance
 var skipEula bool
 
+// extractEula forces extraction of the embedded license only, not installing the pack
+var extractEula bool
+
 var packAddCmd = &cobra.Command{
 	Use:   "add <pack path>",
 	Short: "Installs Open-CMSIS-Pack packages",
@@ -30,7 +33,7 @@ The process consists of extracting all pack files into "CMSIS_PACK_ROOT/<vendor>
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Adding %v", args)
 		for _, packPath := range args {
-			if err := installer.AddPack(packPath, !skipEula); err != nil {
+			if err := installer.AddPack(packPath, !skipEula, extractEula); err != nil {
 				return err
 			}
 		}
@@ -65,5 +68,6 @@ to be actually removed, please use "--purge".`,
 func init() {
 	packRmCmd.Flags().BoolVarP(&purge, "purge", "p", false, "forces deletion of cached pack files")
 	packAddCmd.Flags().BoolVarP(&skipEula, "agree-embedded-license", "a", false, "agree with the embedded license of the pack")
+	packAddCmd.Flags().BoolVarP(&extractEula, "extract-embedded-license", "x", false, "extract the embedded license of the pack and aborts the installation")
 	PackCmd.AddCommand(packAddCmd, packRmCmd)
 }

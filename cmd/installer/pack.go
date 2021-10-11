@@ -204,6 +204,8 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 			fmt.Printf("Agreed to embedded license: %v", filepath.Join(packHomeDir, p.Pdsc.License))
 			fmt.Println()
 		}
+	} else if ui.Extract {
+		return errs.ErrLicenseNotFound
 	}
 
 	// Inflate all files
