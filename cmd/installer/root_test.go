@@ -193,6 +193,7 @@ var (
 
 	// Packs with license
 	packWithLicense        = filepath.Join(testDir, "TheVendor.PackWithLicense.1.2.3.pack")
+	packWithRTFLicense     = filepath.Join(testDir, "TheVendor.PackWithRTFLicense.1.2.3.pack")
 	packWithMissingLicense = filepath.Join(testDir, "TheVendor.PackWithMissingLicense.1.2.3.pack")
 
 	// PDSC packs
@@ -498,6 +499,18 @@ func TestAddPack(t *testing.T) {
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := packWithLicense
+		ui.LicenseAgreed = &ui.Agreed
+		addPack(t, packPath, ConfigType{
+			CheckEula: true,
+		})
+	})
+
+	t.Run("test installing pack with rtf license agreed", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-rtf-license-agreed"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packWithRTFLicense
 		ui.LicenseAgreed = &ui.Agreed
 		addPack(t, packPath, ConfigType{
 			CheckEula: true,

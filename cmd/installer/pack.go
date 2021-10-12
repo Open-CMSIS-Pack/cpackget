@@ -18,6 +18,7 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/ui"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
+	"github.com/lu4p/cat"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -286,7 +287,7 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 }
 
 // readEula reads in the pack's license into a string
-func (p *PackType) readEula() (string, error) {
+func (p *PackType) readEula() ([]byte, error) {
 	log.Debug("Reading EULA")
 
 	// License contains the license path inside the pack file
@@ -300,14 +301,14 @@ func (p *PackType) readEula() (string, error) {
 			_, err := utils.SecureCopy(buffer, reader)
 			if err != nil {
 				log.Error(err)
-				return "", err
+				return []byte{}, err
 			}
 
-			return buffer.String(), nil
+			return buffer.Bytes(), nil
 		}
 	}
 
-	return "", errs.ErrLicenseNotFound
+	return []byte{}, errs.ErrLicenseNotFound
 }
 
 // checkEula prints out the pack's license (if any) to the user and asks for
@@ -316,8 +317,14 @@ func (p *PackType) readEula() (string, error) {
 func (p *PackType) checkEula() (bool, error) {
 	log.Debug("Checking EULA")
 
-	eulaContents, err := p.readEula()
+	bytes, err := p.readEula()
 	if err != nil {
+		return false, err
+	}
+
+	eulaContents, err := cat.FromBytes(bytes)
+	if err != nil {
+		log.Error(err)
 		return false, err
 	}
 
@@ -337,5 +344,5 @@ func (p *PackType) extractEula() error {
 
 	log.Infof("Extracting embedded license to %v", eulaFileName)
 
-	return ioutil.WriteFile(eulaFileName, []byte(eulaContents), 0600)
+	return ioutil.WriteFile(eulaFileName, eulaContents, 0600)
 }
