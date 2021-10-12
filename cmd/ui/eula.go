@@ -41,6 +41,36 @@ type LicenseWindowType struct {
 // and waits for user confirmation.
 func DisplayAndWaitForEULA(licenseTitle, licenseContents string) (bool, error) {
 	promptText := "License Agreement: [A]ccept [D]ecline [E]xtract"
+
+	if !utils.IsTerminalInteractive() {
+		fmt.Printf("*** %v ***", licenseTitle)
+		fmt.Println()
+		fmt.Println(licenseContents)
+		fmt.Println()
+		fmt.Print(promptText)
+
+		if LicenseAgreed != nil {
+			return *LicenseAgreed, nil
+		}
+
+		if Extract {
+			return false, errs.ErrExtractEula
+		}
+
+		var input string
+		fmt.Scanln(&input)
+
+		if input == "a" || input == "A" {
+			return true, nil
+		}
+
+		if input == "e" || input == "E" {
+			return false, errs.ErrExtractEula
+		}
+
+		return false, nil
+	}
+
 	licenseWindow := NewLicenseWindow(licenseTitle, licenseContents, promptText)
 	if err := licenseWindow.Setup(); err != nil {
 		return false, err

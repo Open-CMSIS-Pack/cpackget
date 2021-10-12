@@ -255,6 +255,13 @@ func CountLines(content string) int {
 	}
 }
 
+// IsTerminalInteractive tells whether or not the current terminal is
+// capable of complex interactions
+func IsTerminalInteractive() bool {
+	fileInfo, _ := os.Stdout.Stat()
+	return (fileInfo.Mode() & os.ModeCharDevice) != 0
+}
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }

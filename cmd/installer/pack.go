@@ -14,11 +14,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/lu4p/cat"
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/ui"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
-	"github.com/lu4p/cat"
 	log "github.com/sirupsen/logrus"
 )
 

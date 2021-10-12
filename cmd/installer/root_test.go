@@ -591,18 +591,6 @@ func TestAddPack(t *testing.T) {
 	})
 }
 
-func ExampleAddPack() {
-	localTestingDir := "test-add-pack-with-license-agreed-output"
-	_ = installer.SetPackRoot(localTestingDir)
-	defer os.RemoveAll(localTestingDir)
-
-	packPath := packWithLicense
-	ui.LicenseAgreed = &ui.Agreed
-	_ = installer.AddPack(packPath, !CheckEula, !ExtractEula)
-	// Output:
-	// Agreed to embedded license: test-add-pack-with-license-agreed-output/TheVendor/PackWithLicense/1.2.3/LICENSE.txt
-}
-
 func TestRemovePack(t *testing.T) {
 
 	assert := assert.New(t)
