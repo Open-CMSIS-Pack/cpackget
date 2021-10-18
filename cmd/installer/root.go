@@ -8,13 +8,14 @@ import (
 	"path/filepath"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
+	"github.com/open-cmsis-pack/cpackget/cmd/ui"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	log "github.com/sirupsen/logrus"
 )
 
 // AddPack adds a pack to the pack installation directory structure
-func AddPack(packPath string) error {
+func AddPack(packPath string, checkEula, extractEula bool) error {
 	log.Debugf("Adding pack \"%v\"", packPath)
 
 	pack, err := preparePack(packPath, false)
@@ -22,7 +23,7 @@ func AddPack(packPath string) error {
 		return err
 	}
 
-	if pack.isInstalled {
+	if !extractEula && pack.isInstalled {
 		return errs.ErrPackAlreadyInstalled
 	}
 
@@ -30,7 +31,10 @@ func AddPack(packPath string) error {
 		return err
 	}
 
-	if err = pack.install(Installation); err != nil {
+	// Tells the UI to return right away with the [E]xtract option selected
+	ui.Extract = extractEula
+
+	if err = pack.install(Installation, checkEula || extractEula); err != nil {
 		return err
 	}
 

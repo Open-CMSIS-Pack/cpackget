@@ -444,3 +444,7 @@ func TestIsEmpty(t *testing.T) {
 func TestRandStringBytes(t *testing.T) {
 	assert.Equal(t, 10, len(utils.RandStringBytes(10)))
 }
+
+func TestCountLines(t *testing.T) {
+	assert.Equal(t, 3, utils.CountLines("this\nis\r\nacool\ncontent"))
+}

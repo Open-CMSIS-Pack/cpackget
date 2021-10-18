@@ -11,11 +11,13 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
+	"github.com/open-cmsis-pack/cpackget/cmd/ui"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	"github.com/stretchr/testify/assert"
@@ -86,13 +88,23 @@ func checkPackIsInstalled(t *testing.T, packPath string, isPublic bool) {
 	assert.True(utils.FileExists(installer.Installation.PackIdx))
 }
 
-func addPack(t *testing.T, packPath string, isPublic bool) {
+type ConfigType struct {
+	IsPublic    bool
+	CheckEula   bool
+	ExtractEula bool
+}
+
+func addPack(t *testing.T, packPath string, config ConfigType) {
 	assert := assert.New(t)
 
-	err := installer.AddPack(packPath)
+	err := installer.AddPack(packPath, config.CheckEula, config.ExtractEula)
 	assert.Nil(err)
 
-	checkPackIsInstalled(t, packPath, isPublic)
+	if config.ExtractEula {
+		return
+	}
+
+	checkPackIsInstalled(t, packPath, config.IsPublic)
 }
 
 func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool) {
@@ -139,12 +151,14 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 
 	// No touch on purging only
 	if !purgeOnly {
-		// Apparently Windows systems update of file modified times
-		// happens 64 times per second, and in some cases that is not
-		// enough for the time delta below to show a difference
-		// Ref: https://www.lochan.org/2005/keith-cl/useful/win32time.html#timingwin
-		// So let's sleep a bit before checking for file mod times
-		time.Sleep(1 * time.Second)
+		if runtime.GOOS == "windows" {
+			// Apparently Windows systems update of file modified times
+			// happens 64 times per second, and in some cases that is not
+			// enough for the time delta below to show a difference
+			// Ref: https://www.lochan.org/2005/keith-cl/useful/win32time.html#timingwin
+			// So let's sleep a bit before checking for file mod times
+			time.Sleep(1 * time.Second)
+		}
 
 		// Make sure the pack.idx file gets trouched
 		assert.True(packIdxModTime.Before(getPackIdxModTime()))
@@ -153,8 +167,10 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 
 var (
 	// Constant telling pack privacy
-	IsPublic  = true
-	NotPublic = false
+	IsPublic    = true
+	NotPublic   = false
+	CheckEula   = true
+	ExtractEula = true
 
 	// Available testing packs
 	testDir = filepath.Join("..", "..", "testdata", "integration")
@@ -174,6 +190,11 @@ var (
 	// Private packs
 	nonPublicLocalPack123  = filepath.Join(testDir, "1.2.3", "TheVendor.NonPublicLocalPack.1.2.3.pack")
 	nonPublicRemotePack123 = filepath.Join(testDir, "1.2.3", "TheVendor.NonPublicRemotePack.1.2.3.pack")
+
+	// Packs with license
+	packWithLicense        = filepath.Join(testDir, "TheVendor.PackWithLicense.1.2.3.pack")
+	packWithRTFLicense     = filepath.Join(testDir, "TheVendor.PackWithRTFLicense.1.2.3.pack")
+	packWithMissingLicense = filepath.Join(testDir, "TheVendor.PackWithMissingLicense.1.2.3.pack")
 
 	// PDSC packs
 	pdscPack123 = filepath.Join(testDir, "1.2.3", "TheVendor.PackName.pdsc")
@@ -203,7 +224,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := malformedPackName
 
-		err := installer.AddPack(packPath)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -220,7 +241,9 @@ func TestAddPack(t *testing.T) {
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := publicLocalPack123
-		addPack(t, packPath, IsPublic)
+		addPack(t, packPath, ConfigType{
+			IsPublic: true,
+		})
 
 		packIdx, err := os.Stat(installer.Installation.PackIdx)
 		assert.Nil(err)
@@ -228,7 +251,7 @@ func TestAddPack(t *testing.T) {
 
 		// Attempt installing it again, this time we should get an error
 		packPath = publicLocalPack123
-		err = installer.AddPack(packPath)
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
 		assert.NotNil(err)
 		assert.Equal(err, errs.ErrPackAlreadyInstalled)
 
@@ -245,7 +268,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packThatDoesNotExist
 
-		err := installer.AddPack(packPath)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -270,7 +293,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := notFoundServer.URL + "/" + packThatDoesNotExist
 
-		err := installer.AddPack(packPath)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -287,7 +310,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithCorruptZip
 
-		err := installer.AddPack(packPath)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -304,7 +327,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithMalformedURL
 
-		err := installer.AddPack(packPath)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -321,7 +344,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithoutPdscFileInside
 
-		err := installer.AddPack(packPath)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -341,7 +364,7 @@ func TestAddPack(t *testing.T) {
 
 		// Force a bad file path
 		installer.Installation.PackRoot = filepath.Join(string(os.PathSeparator), "CON")
-		err := installer.AddPack(packPath)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -359,11 +382,11 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithTaintedCompressedFiles
 
-		err := installer.AddPack(packPath)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 		// Sanity check
 		assert.NotNil(err)
-		assert.Equal(err, errs.ErrInsecureZipFileName)
+		assert.Equal(errs.ErrInsecureZipFileName, err)
 
 		// Make sure pack.idx never got touched
 		assert.False(utils.FileExists(installer.Installation.PackIdx))
@@ -376,7 +399,10 @@ func TestAddPack(t *testing.T) {
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
-		addPack(t, publicLocalPack123, IsPublic)
+		packPath := publicLocalPack123
+		addPack(t, packPath, ConfigType{
+			IsPublic: true,
+		})
 	})
 
 	t.Run("test installing public pack via remote file", func(t *testing.T) {
@@ -401,7 +427,9 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packServer.URL + "/" + packBasePath
 
-		addPack(t, packPath, IsPublic)
+		addPack(t, packPath, ConfigType{
+			IsPublic: true,
+		})
 	})
 
 	t.Run("test installing non-public pack via local file", func(t *testing.T) {
@@ -410,7 +438,10 @@ func TestAddPack(t *testing.T) {
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
-		addPack(t, nonPublicLocalPack123, NotPublic)
+		packPath := nonPublicLocalPack123
+		addPack(t, packPath, ConfigType{
+			IsPublic: false,
+		})
 	})
 
 	t.Run("test installing non-public pack via remote file", func(t *testing.T) {
@@ -419,7 +450,144 @@ func TestAddPack(t *testing.T) {
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
-		addPack(t, nonPublicRemotePack123, NotPublic)
+		packPath := nonPublicRemotePack123
+		addPack(t, packPath, ConfigType{
+			IsPublic: false,
+		})
+	})
+
+	// Test licenses
+	t.Run("test installing pack without license", func(t *testing.T) {
+		localTestingDir := "test-add-pack-without-license"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := nonPublicLocalPack123
+		addPack(t, packPath, ConfigType{
+			IsPublic: false,
+		})
+	})
+
+	t.Run("test installing pack with license disagreed", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-license-disagreed"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packWithLicense
+
+		info, err := utils.ExtractPackInfo(packPath, false)
+		assert.Nil(err)
+
+		// Should NOT be installed if license is not agreed
+		ui.LicenseAgreed = &ui.Disagreed
+		err = installer.AddPack(packPath, CheckEula, !ExtractEula)
+
+		// Sanity check
+		assert.NotNil(err)
+		assert.Equal(errs.ErrEula, err)
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
+
+		// Check in installer internals
+		pack := packInfoToType(info)
+		assert.False(installer.Installation.PackIsInstalled(pack))
+	})
+
+	t.Run("test installing pack with license agreed", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-license-agreed"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packWithLicense
+		ui.LicenseAgreed = &ui.Agreed
+		addPack(t, packPath, ConfigType{
+			CheckEula: true,
+		})
+	})
+
+	t.Run("test installing pack with rtf license agreed", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-rtf-license-agreed"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packWithRTFLicense
+		ui.LicenseAgreed = &ui.Agreed
+		addPack(t, packPath, ConfigType{
+			CheckEula: true,
+		})
+	})
+
+	t.Run("test installing pack with license agreement skipped", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-license-skipped"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packWithLicense
+		addPack(t, packPath, ConfigType{
+			CheckEula: false,
+		})
+	})
+
+	t.Run("test installing pack with license extracted", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-license-extracted"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packWithLicense
+
+		extractedLicensePath := packPath + ".LICENSE.txt"
+
+		ui.LicenseAgreed = nil
+		addPack(t, packPath, ConfigType{
+			CheckEula:   true,
+			ExtractEula: true,
+		})
+
+		assert.True(utils.FileExists(extractedLicensePath))
+		os.Remove(extractedLicensePath)
+	})
+
+	t.Run("test installing pack with missing license", func(t *testing.T) {
+		// Missing license means it is specified in the PDSC file, but the actual license
+		// file is not there
+		localTestingDir := "test-add-pack-with-missing-license"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packWithMissingLicense
+
+		info, err := utils.ExtractPackInfo(packPath, false)
+		assert.Nil(err)
+
+		// Should NOT be installed if license is missing
+		err = installer.AddPack(packPath, CheckEula, !ExtractEula)
+
+		// Sanity check
+		assert.NotNil(err)
+		assert.Equal(errs.ErrLicenseNotFound, err)
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
+
+		// Check in installer internals
+		pack := packInfoToType(info)
+		assert.False(installer.Installation.PackIsInstalled(pack))
+	})
+
+	t.Run("test installing pack with missing license extracted", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-license-extracted"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packWithMissingLicense
+
+		extractedLicensePath := packPath + ".LICENSE.txt"
+
+		ui.Extract = true
+		ui.LicenseAgreed = nil
+		err := installer.AddPack(packPath, CheckEula, ExtractEula)
+		assert.NotNil(err)
+		assert.Equal(errs.ErrLicenseNotFound, err)
+		assert.False(utils.FileExists(extractedLicensePath))
+		os.Remove(extractedLicensePath)
 	})
 }
 
@@ -459,18 +627,21 @@ func TestRemovePack(t *testing.T) {
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := publicLocalPack123
+		config := ConfigType{
+			IsPublic: true,
+		}
 
 		// Test all possible combinations, with or without version, with or without purging
-		addPack(t, packPath, IsPublic)
+		addPack(t, packPath, config)
 		removePack(t, packPath, true, IsPublic, true) // withVersion=true, purge=true
 
-		addPack(t, packPath, IsPublic)
+		addPack(t, packPath, config)
 		removePack(t, packPath, true, IsPublic, false) // withVersion=true, purge=false
 
-		addPack(t, packPath, IsPublic)
+		addPack(t, packPath, config)
 		removePack(t, packPath, false, IsPublic, true) // withVersion=false, purge=true
 
-		addPack(t, packPath, IsPublic)
+		addPack(t, packPath, config)
 		removePack(t, packPath, false, IsPublic, false) // withVersion=false, purge=false
 	})
 
@@ -481,18 +652,21 @@ func TestRemovePack(t *testing.T) {
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := nonPublicLocalPack123
+		config := ConfigType{
+			IsPublic: false,
+		}
 
 		// Test all possible combinations, with or without version, with or without purging
-		addPack(t, packPath, NotPublic)
+		addPack(t, packPath, config)
 		removePack(t, packPath, true, NotPublic, true) // withVersion=true, purge=true
 
-		addPack(t, packPath, NotPublic)
+		addPack(t, packPath, config)
 		removePack(t, packPath, true, NotPublic, false) // withVersion=true, purge=false
 
-		addPack(t, packPath, NotPublic)
+		addPack(t, packPath, config)
 		removePack(t, packPath, false, NotPublic, true) // withVersion=false, purge=true
 
-		addPack(t, packPath, NotPublic)
+		addPack(t, packPath, config)
 		removePack(t, packPath, false, IsPublic, false) // withVersion=false, purge=false
 	})
 
@@ -505,8 +679,11 @@ func TestRemovePack(t *testing.T) {
 		// Add a pack, add an updated version of the pack, then remove the first one
 		packPath := publicLocalPack123
 		updatedPackPath := publicLocalPack124
-		addPack(t, packPath, IsPublic)
-		addPack(t, updatedPackPath, IsPublic)
+		config := ConfigType{
+			IsPublic: true,
+		}
+		addPack(t, packPath, config)
+		addPack(t, updatedPackPath, config)
 
 		// Remove first one (old pack)
 		removePack(t, packPath, true, NotPublic, true) // withVersion=true, purge=true
@@ -520,7 +697,9 @@ func TestRemovePack(t *testing.T) {
 
 		// Add a pack, add an updated version of the pack, then remove the first one
 		packPath := publicLocalPack123
-		addPack(t, packPath, IsPublic)
+		addPack(t, packPath, ConfigType{
+			IsPublic: true,
+		})
 
 		// Remove it without purge
 		removePack(t, packPath, true, NotPublic, false) // withVersion=true, purge=true
@@ -542,8 +721,11 @@ func TestRemovePack(t *testing.T) {
 		// Add a pack, add an updated version of the pack, then remove the first one
 		packPath := publicLocalPack123
 		updatedPackPath := publicLocalPack124
-		addPack(t, packPath, IsPublic)
-		addPack(t, updatedPackPath, IsPublic)
+		config := ConfigType{
+			IsPublic: true,
+		}
+		addPack(t, packPath, config)
+		addPack(t, updatedPackPath, config)
 
 		// Remove all packs (withVersion=false), i.e. path will be "TheVendor.PackName"
 		removePack(t, packPath, false, IsPublic, true) // withVersion=false, purge=true

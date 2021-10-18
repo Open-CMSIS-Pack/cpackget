@@ -17,6 +17,7 @@ type PdscXML struct {
 	Vendor  string   `xml:"vendor"`
 	URL     string   `xml:"url"`
 	Name    string   `xml:"name"`
+	License string   `xml:"license"`
 
 	ReleasesTag struct {
 		XMLName  xml.Name     `xml:"releases"`
