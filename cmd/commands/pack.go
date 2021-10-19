@@ -66,13 +66,17 @@ The process consists of extracting all pack files into "CMSIS_PACK_ROOT/<vendor>
 		}
 
 		log.Infof("Adding %v", args)
+		var firstError error
 		for _, packPath := range args {
 			if err := installer.AddPack(packPath, !skipEula, extractEula); err != nil {
-				return err
+				if firstError == nil {
+					firstError = err
+				}
+				log.Error(err)
 			}
 		}
 
-		return nil
+		return firstError
 	},
 }
 
