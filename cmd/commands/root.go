@@ -18,6 +18,7 @@ import (
 var All = []*cobra.Command{
 	PackCmd,
 	PdscCmd,
+	IndexCmd,
 }
 
 // configureInstaller configures cpackget installer for adding or removing pack/pdsc
