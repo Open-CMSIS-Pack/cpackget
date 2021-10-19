@@ -70,6 +70,10 @@ func DownloadFile(URL string) (string, error) {
 	written, err := SecureCopy(io.MultiWriter(writers...), resp.Body)
 	log.Debugf("Downloaded %d bytes", written)
 
+	if err != nil {
+		_ = os.Remove(filePath)
+	}
+
 	return filePath, err
 }
 
