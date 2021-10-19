@@ -27,6 +27,8 @@ import (
 // before moving it to CMSIS_PACK_ROOT
 var CacheDir string
 
+var HTTPClient *http.Client
+
 // DownloadFile downloads a file from an URL and saves it locally under destionationFilePath
 func DownloadFile(URL string) (string, error) {
 	parsedURL, _ := url.Parse(URL)
@@ -45,7 +47,7 @@ func DownloadFile(URL string) (string, error) {
 	}
 	defer out.Close()
 
-	resp, err := http.Get(URL) // #nosec
+	resp, err := HTTPClient.Get(URL) // #nosec
 	if err != nil {
 		log.Error(err)
 		return "", errs.ErrFailedDownloadingFile
@@ -271,4 +273,5 @@ func IsTerminalInteractive() bool {
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+	HTTPClient = &http.Client{}
 }

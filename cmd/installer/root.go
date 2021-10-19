@@ -6,6 +6,7 @@ package installer
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/ui"
@@ -108,6 +109,29 @@ func RemovePdsc(pdscPath string) error {
 	}
 
 	return Installation.touchPackIdx()
+}
+
+// UpdatePublicIndex receives a index path and place it under .Web/index.pidx.
+func UpdatePublicIndex(indexPath string) error {
+	log.Debugf("Updating public index with \"%v\"", indexPath)
+
+	var err error
+	if !strings.HasPrefix(indexPath, "https://") {
+		return errs.ErrIndexPathNotSafe
+	}
+
+	indexPath, err = utils.DownloadFile(indexPath)
+	if err != nil {
+		return err
+	}
+
+	pidx := xml.NewPidxXML(indexPath)
+	if err := pidx.Read(); err != nil {
+		_ = os.Remove(indexPath)
+		return err
+	}
+
+	return utils.MoveFile(indexPath, filepath.Join(Installation.WebDir, "index.pidx"))
 }
 
 // Installation is a singleton variable that keeps the only reference
