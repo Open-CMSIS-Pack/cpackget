@@ -1,6 +1,6 @@
 # Having these will allow CI scripts to build for many OS's and ARCH's
-OS   := $(or ${OS},${OS},linux)
-ARCH := $(or ${ARCH},${ARCH},amd64)
+OS   := $(or $(OS),$(OS),linux)
+ARCH := $(or $(ARCH),$(ARCH),amd64)
 
 # Path to lint tool
 GOLINTER ?= golangci-lint
@@ -9,8 +9,9 @@ GOFORMATTER ?= gofmt
 # Determine binary file name
 BIN_NAME := cpackget
 PROG := build/$(BIN_NAME)
-ifneq (,$(findstring windows,$(OS)))
+ifneq (,$(findstring indows,$(OS)))
     PROG=build/$(BIN_NAME).exe
+    OS=windows
 endif
 
 SOURCES := $(wildcard cmd/*.go) $(wildcard cmd/*/*.go)
@@ -24,8 +25,8 @@ all:
 	@echo $$ make release
 	@echo
 	@echo Build for different OS's and ARCH's by defining these variables. Ex:
-	@echo $$ make OS=windows ARCH=amd64 build/$(BIN_NAME).exe  \# build for windows 64bits
-	@echo $$ make OS=darwin  ARCH=amd64 build/$(BIN_NAME)      \# build for MacOS 64bits
+	@echo $$ make OS=windows ARCH=amd64 build/$(BIN_NAME).exe
+	@echo $$ make OS=darwin  ARCH=amd64 build/$(BIN_NAME)
 	@echo
 	@echo Run tests
 	@echo $$ make test ARGS="<test args>"
@@ -60,30 +61,28 @@ format-check:
 	test ! -s format-check.out
 
 .PHONY: test release config
-test:
-	go test $(ARGS) ./cmd/...
+test: $(SOURCES)
+	cd cmd && go test $(ARGS) ./... -coverprofile ../cover.out
 
 test-all: format-check coverage-check lint
 
-coverage-report: 
-	go test ./cmd/... -coverprofile cover.out
+coverage-report: test
 	go tool cover -html=cover.out
 
-coverage-check:
+coverage-check: test
 	@echo Checking if test coverage is above 90%
-	go test ./cmd/... -coverprofile cover.out
 	test `go tool cover -func cover.out | tail -1 | awk '{print ($$3 + 0)*10}'` -gt 900
 
 test-public-index:
 	@./scripts/test-public-index
 
-test-xmllint-localrepository: build/cpackget
+test-xmllint-localrepository: $(PROG)
 	@./scripts/test-xmllint-localrepository
 
 test-on-windows:
 	@./scripts/test-on-windows
 
-release: test-all build/cpackget
+release: test-all $(PROG)
 	@./scripts/release
 
 config:
@@ -94,4 +93,4 @@ config:
 	# Install pre-commit hooks
 	cp scripts/pre-commit .git/hooks/pre-commit
 clean:
-	rm -rf build/*
+	rm -rf build
