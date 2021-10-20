@@ -53,4 +53,7 @@ var (
 
 	// Errors that can't be be predicted
 	ErrUnknownBehavior = errors.New("unknown behavior")
+
+	// Cmdline errors
+	ErrIncorrectCmdArgs = errors.New("incorrect setup of command line arguments")
 )
