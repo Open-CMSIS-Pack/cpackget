@@ -290,9 +290,12 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 func (p *PackType) readEula() ([]byte, error) {
 	log.Debug("Reading EULA")
 
+	licenseFileName := strings.Replace(p.Pdsc.License, "\\", "/", -1)
+
 	// License contains the license path inside the pack file
 	for _, file := range p.zipReader.File {
-		if file.Name == p.Pdsc.License {
+		possibleLicense := strings.Replace(file.Name, "\\", "/", -1)
+		if possibleLicense == licenseFileName {
 
 			reader, _ := file.Open()
 			defer reader.Close()
