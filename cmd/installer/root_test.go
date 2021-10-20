@@ -471,7 +471,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := nonPublicLocalPack123
 		addPack(t, packPath, ConfigType{
-			IsPublic: false,
+			CheckEula: true,
 		})
 	})
 
