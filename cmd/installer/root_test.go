@@ -202,6 +202,12 @@ var (
 
 	// Bad local_repository.pidx
 	badLocalRepositoryPidx = filepath.Join(testDir, "bad_local_repository.pidx")
+
+	// Sample public index.pidx
+	samplePublicIndex = filepath.Join(testDir, "SamplePublicIndex.pidx")
+
+	// Malformed index.pidx
+	malformedPublicIndex = filepath.Join("..", "..", "testdata", "MalformedPack.pidx")
 )
 
 // Tests should cover all possible scenarios for adding packs
@@ -828,5 +834,124 @@ func TestRemovePdsc(t *testing.T) {
 
 		err := installer.RemovePdsc(shortenPackPath(pdscPack123, true))
 		assert.Equal(errs.ErrPdscEntryNotFound, err)
+	})
+}
+
+func TestUpdatePublicIndex(t *testing.T) {
+
+	assert := assert.New(t)
+
+	t.Run("test add http server index.pidx", func(t *testing.T) {
+		localTestingDir := "test-add-http-server-index"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		httpServer := httptest.NewServer(
+			http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusNotFound)
+				},
+			),
+		)
+
+		indexPath := httpServer.URL + "/index.pidx"
+
+		err := installer.UpdatePublicIndex(indexPath)
+		assert.NotNil(err)
+		assert.Equal(errs.ErrIndexPathNotSafe, err)
+	})
+
+	t.Run("test add not found remote index.pidx", func(t *testing.T) {
+		localTestingDir := "test-add-not-found-remote-index"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		notFoundServer := httptest.NewTLSServer(
+			http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusNotFound)
+				},
+			),
+		)
+
+		indexPath := notFoundServer.URL + "/this-file-does-not-exist"
+
+		currClient := utils.HTTPClient
+		utils.HTTPClient = notFoundServer.Client()
+
+		err := installer.UpdatePublicIndex(indexPath)
+
+		utils.HTTPClient = currClient
+
+		assert.NotNil(err)
+		assert.Equal(errs.ErrBadRequest, err)
+	})
+
+	t.Run("test add malformed index.pidx", func(t *testing.T) {
+		localTestingDir := "test-add-malformed-index"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		indexContent, err := ioutil.ReadFile(malformedPublicIndex)
+		assert.Nil(err)
+
+		indexServer := httptest.NewTLSServer(
+			http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					reader := bytes.NewReader(indexContent)
+					_, err := io.Copy(w, reader)
+					assert.Nil(err)
+				},
+			),
+		)
+
+		indexPath := indexServer.URL + "/index.pidx"
+
+		currClient := utils.HTTPClient
+		utils.HTTPClient = indexServer.Client()
+
+		err = installer.UpdatePublicIndex(indexPath)
+
+		utils.HTTPClient = currClient
+
+		assert.NotNil(err)
+		assert.Equal(err.Error(), "XML syntax error on line 3: unexpected EOF")
+	})
+
+	t.Run("test add remote index.pidx", func(t *testing.T) {
+		localTestingDir := "test-add-remote-index"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		indexContent, err := ioutil.ReadFile(samplePublicIndex)
+		assert.Nil(err)
+		indexServer := httptest.NewTLSServer(
+			http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					reader := bytes.NewReader(indexContent)
+					_, err := io.Copy(w, reader)
+					assert.Nil(err)
+				},
+			),
+		)
+
+		indexPath := indexServer.URL + "/index.pidx"
+
+		currClient := utils.HTTPClient
+		utils.HTTPClient = indexServer.Client()
+
+		err = installer.UpdatePublicIndex(indexPath)
+
+		utils.HTTPClient = currClient
+
+		assert.Nil(err)
+
+		publicIndex := filepath.Join(localTestingDir, ".Web", "index.pidx")
+		assert.True(utils.FileExists(publicIndex))
+
+		copied, err2 := ioutil.ReadFile(publicIndex)
+		assert.Nil(err2)
+
+		assert.Equal(copied, indexContent)
 	})
 }

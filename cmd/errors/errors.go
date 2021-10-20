@@ -49,6 +49,7 @@ var (
 	// Security errors
 	ErrInsecureZipFileName = errors.New("zip file contains insecure characters: ../")
 	ErrFileTooBig          = errors.New("files cannot be over 20G")
+	ErrIndexPathNotSafe    = errors.New("index url path does not start with HTTPS")
 
 	// Errors that can't be be predicted
 	ErrUnknownBehavior = errors.New("unknown behavior")
