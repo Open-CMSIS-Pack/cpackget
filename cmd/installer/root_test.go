@@ -841,6 +841,20 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	assert := assert.New(t)
 
+	var Overwrite = true
+
+	var NewIndexServer = func(contentBytes []byte) *httptest.Server {
+		return httptest.NewTLSServer(
+			http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					reader := bytes.NewReader(contentBytes)
+					_, err := io.Copy(w, reader)
+					assert.Nil(err)
+				},
+			),
+		)
+	}
+
 	t.Run("test add http server index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-http-server-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir))
@@ -856,7 +870,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		indexPath := httpServer.URL + "/index.pidx"
 
-		err := installer.UpdatePublicIndex(indexPath)
+		err := installer.UpdatePublicIndex(indexPath, !Overwrite)
 		assert.NotNil(err)
 		assert.Equal(errs.ErrIndexPathNotSafe, err)
 	})
@@ -879,7 +893,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		currClient := utils.HTTPClient
 		utils.HTTPClient = notFoundServer.Client()
 
-		err := installer.UpdatePublicIndex(indexPath)
+		err := installer.UpdatePublicIndex(indexPath, !Overwrite)
 
 		utils.HTTPClient = currClient
 
@@ -895,22 +909,13 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexContent, err := ioutil.ReadFile(malformedPublicIndex)
 		assert.Nil(err)
 
-		indexServer := httptest.NewTLSServer(
-			http.HandlerFunc(
-				func(w http.ResponseWriter, r *http.Request) {
-					reader := bytes.NewReader(indexContent)
-					_, err := io.Copy(w, reader)
-					assert.Nil(err)
-				},
-			),
-		)
-
+		indexServer := NewIndexServer(indexContent)
 		indexPath := indexServer.URL + "/index.pidx"
 
 		currClient := utils.HTTPClient
 		utils.HTTPClient = indexServer.Client()
 
-		err = installer.UpdatePublicIndex(indexPath)
+		err = installer.UpdatePublicIndex(indexPath, !Overwrite)
 
 		utils.HTTPClient = currClient
 
@@ -925,31 +930,75 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		indexContent, err := ioutil.ReadFile(samplePublicIndex)
 		assert.Nil(err)
-		indexServer := httptest.NewTLSServer(
-			http.HandlerFunc(
-				func(w http.ResponseWriter, r *http.Request) {
-					reader := bytes.NewReader(indexContent)
-					_, err := io.Copy(w, reader)
-					assert.Nil(err)
-				},
-			),
-		)
+		indexServer := NewIndexServer(indexContent)
 
 		indexPath := indexServer.URL + "/index.pidx"
 
 		currClient := utils.HTTPClient
 		utils.HTTPClient = indexServer.Client()
 
-		err = installer.UpdatePublicIndex(indexPath)
+		err = installer.UpdatePublicIndex(indexPath, !Overwrite)
 
 		utils.HTTPClient = currClient
 
 		assert.Nil(err)
 
-		publicIndex := filepath.Join(localTestingDir, ".Web", "index.pidx")
-		assert.True(utils.FileExists(publicIndex))
+		assert.True(utils.FileExists(installer.Installation.PublicIndex))
 
-		copied, err2 := ioutil.ReadFile(publicIndex)
+		copied, err2 := ioutil.ReadFile(installer.Installation.PublicIndex)
+		assert.Nil(err2)
+
+		assert.Equal(copied, indexContent)
+	})
+
+	t.Run("test do not overwrite index.pidx", func(t *testing.T) {
+		localTestingDir := "test-do-not-overwrite-index"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		_ = utils.TouchFile(installer.Installation.PublicIndex)
+
+		indexContent, err := ioutil.ReadFile(samplePublicIndex)
+		assert.Nil(err)
+		indexServer := NewIndexServer(indexContent)
+
+		indexPath := indexServer.URL + "/index.pidx"
+
+		currClient := utils.HTTPClient
+		utils.HTTPClient = indexServer.Client()
+
+		err = installer.UpdatePublicIndex(indexPath, !Overwrite)
+
+		utils.HTTPClient = currClient
+
+		assert.NotNil(err)
+		assert.Equal(errs.ErrCannotOverwritePublicIndex, err)
+	})
+
+	t.Run("test overwrite index.pidx", func(t *testing.T) {
+		localTestingDir := "test-overwrite-index"
+		assert.Nil(installer.SetPackRoot(localTestingDir))
+		defer os.RemoveAll(localTestingDir)
+
+		_ = utils.TouchFile(installer.Installation.PublicIndex)
+
+		indexContent, err := ioutil.ReadFile(samplePublicIndex)
+		assert.Nil(err)
+		indexServer := NewIndexServer(indexContent)
+
+		indexPath := indexServer.URL + "/index.pidx"
+
+		currClient := utils.HTTPClient
+		utils.HTTPClient = indexServer.Client()
+
+		err = installer.UpdatePublicIndex(indexPath, Overwrite)
+
+		utils.HTTPClient = currClient
+
+		assert.Nil(err)
+		assert.True(utils.FileExists(installer.Installation.PublicIndex))
+
+		copied, err2 := ioutil.ReadFile(installer.Installation.PublicIndex)
 		assert.Nil(err2)
 
 		assert.Equal(copied, indexContent)
