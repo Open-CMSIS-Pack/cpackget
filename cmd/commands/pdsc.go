@@ -10,18 +10,16 @@ import (
 )
 
 var PdscCmd = &cobra.Command{
-	Use:   "pdsc",
-	Short: "Add/remove packs in the local file system via PDSC files.",
-	Long: `<pack-path> can be a local file or a file hosted somewhere else on the Internet.
-cpack will extract information from it and install the files in specific directories inside this machine.`,
+	Use:               "pdsc",
+	Short:             "Adds or removes Open-CMSIS-Pack packages in the local file system via PDSC files.",
 	PersistentPreRunE: configureInstaller,
 }
 
 var pdscAddCmd = &cobra.Command{
-	Use:   "add </path/to/TheVendor.ThePack.x.y.z.pdsc>",
-	Short: "Adds the pdsc to the local repository index",
-	Long: `<pack-path> can be a local file or a file hosted somewhere else on the Internet.
-cpack will extract information from it and install the files in specific directories inside this machine.`,
+	Use:   "add <path/to/TheVendor.ThePack.x.y.z.pdsc>",
+	Short: "Adds a pack via pdsc file to the local repository index",
+	Long: `Adds a pack via pdsc file specified in <path/to/TheVendor.ThePack.x.y.z.pdsc>.
+cpackget will add the pdsc entry to CMSIS_PACK_ROOT/.Local/local_repository.pidx.`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Info("Adding pdsc")
@@ -37,10 +35,9 @@ cpack will extract information from it and install the files in specific directo
 
 var pdscRmCmd = &cobra.Command{
 	Use:   "rm <pack-name>",
-	Short: "Remove ",
-	Long: `<pack-name> should be in the format of "PackVendor.PackName.PackVersion".
-This will remove the pack from the reference index files. If files need to be actually removed,
-please use "cpackget purge <pack-name>"`,
+	Short: "Removes a pack installed via pdsc file from the local repository index",
+	Long: `Removes the pack referenced by the pdsc file specified in <pack-name>, e.g. "PackVendor.PackName.x.y.z".
+cpackget will remove the pdsc entry from CMSIS_PACK_ROOT/.Local/local_repository.pidx."`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Info("Removing pdsc")

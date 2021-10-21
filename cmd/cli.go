@@ -28,7 +28,8 @@ func NewCli() *cobra.Command {
 
 	rootCmd := &cobra.Command{
 		Use:          "cpackget",
-		Short:        "This utility installs/removes CMSIS-Packs",
+		Short:        "This utility adds/removes CMSIS-Packs",
+		Long:         "Please refer to the upstream repository for further information: https://github.com/Open-CMSIS-Pack/cpackget.",
 		SilenceUsage: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if flags.version {
@@ -45,9 +46,9 @@ func NewCli() *cobra.Command {
 		defaultPackRoot = ".cpackget/"
 	}
 
-	rootCmd.Flags().BoolVarP(&flags.version, "version", "V", false, "Output the version number of cpackget and exit.")
-	rootCmd.PersistentFlags().CountP("verbosiness", "v", "Set verbosiness: None (Errors), -v (Info), -vv (Debugging).")
-	rootCmd.PersistentFlags().StringP("pack-root", "R", defaultPackRoot, "Specify pack root folder. Defaults to CMSIS_PACK_ROOT environment variable or current directory.")
+	rootCmd.Flags().BoolVarP(&flags.version, "version", "V", false, "Prints the version number of cpackget and exit")
+	rootCmd.PersistentFlags().CountP("verbosiness", "v", "Sets verbosiness level: None (Errors), -v (Info), -vv (Debugging)")
+	rootCmd.PersistentFlags().StringP("pack-root", "R", defaultPackRoot, "Specifies pack root folder. Defaults to CMSIS_PACK_ROOT environment variable or current directory")
 	_ = viper.BindPFlag("pack-root", rootCmd.PersistentFlags().Lookup("pack-root"))
 	_ = viper.BindPFlag("verbosiness", rootCmd.PersistentFlags().Lookup("verbosiness"))
 

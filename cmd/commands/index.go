@@ -10,13 +10,13 @@ import (
 )
 
 var IndexCmd = &cobra.Command{
-	Use:               "index <index-path>",
-	Short:             "Add public index",
-	Long:              "Add/overwrite the public index using the index path specified, it can be an local file or a URL",
+	Use:               "index <index url>",
+	Short:             "Updates public index",
+	Long:              "Updates the public index in CMSIS_PACK_ROOT/.Web/index.pidx using the file specified by the given url.",
 	PersistentPreRunE: configureInstaller,
 	Args:              cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Infof("Changing index %v", args)
+		log.Infof("Updating index %v", args)
 		indexPath := args[0]
 		return installer.UpdatePublicIndex(indexPath)
 	},

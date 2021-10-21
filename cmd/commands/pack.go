@@ -15,8 +15,8 @@ import (
 
 var PackCmd = &cobra.Command{
 	Use:               "pack",
-	Short:             "add/rm Open-CMSIS-Pack packages",
-	Long:              "Add or remove an Open-CMSIS-Pack from a local file or a file hosted somewhere else on the Internet.",
+	Short:             "Adds/Removes Open-CMSIS-Pack packages",
+	Long:              "Adds or removes Open-CMSIS-Pack packages from a local file or a file hosted somewhere else on the Internet.",
 	PersistentPreRunE: configureInstaller,
 }
 
@@ -30,12 +30,12 @@ var extractEula bool
 var packsListFileName string
 
 var packAddCmd = &cobra.Command{
-	Use:   "add <pack path>|-f <packs-list>",
-	Short: "Installs Open-CMSIS-Pack packages",
-	Long: `Installs a pack using the file specified in "<pack path>".
+	Use:   "add [<pack path> | -f <packs list>]",
+	Short: "Adds Open-CMSIS-Pack packages",
+	Long: `Adds a pack using the file specified in "<pack path>" or using packs URLs provided by "-f <packs list>".
 The file can be a local file or a file hosted somewhere else on the Internet.
-If it's hosted somewhere, cpackget will first download it. 
-The process consists of extracting all pack files into "CMSIS_PACK_ROOT/<vendor>/<packName>/<packVersion>/"`,
+If it's hosted somewhere, cpackget will first download it then extract all pack files into "CMSIS_PACK_ROOT/<vendor>/<packName>/<x.y.z>/"
+If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in the <packs list> file.`,
 	Args: cobra.MinimumNArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -85,11 +85,10 @@ var purge bool
 
 var packRmCmd = &cobra.Command{
 	Use:   "rm <pack reference>",
-	Short: "Uninstalls Open-CMSIS-Pack packages",
-	Long: `Uninstalls a pack using the reference "PackVendor.PackName[.x.y.z]",
-where the version "x.y.z" is optional. This will remove
-the pack from the reference index files. If files need
-to be actually removed, please use "--purge".`,
+	Short: "Removes Open-CMSIS-Pack packages",
+	Long: `Removes a pack using the reference "PackVendor.PackName[.x.y.z]".
+The version "x.y.z" is optional. This will remove the pack from the reference index files.
+Cache files (i.e. under CMSIS_PACK_ROOT/.Download/) are *NOT* removed. If cache files need to be actually removed, please use "--purge".`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Removing %v", args)
@@ -105,8 +104,8 @@ to be actually removed, please use "--purge".`,
 
 func init() {
 	packRmCmd.Flags().BoolVarP(&purge, "purge", "p", false, "forces deletion of cached pack files")
-	packAddCmd.Flags().BoolVarP(&skipEula, "agree-embedded-license", "a", false, "agree with the embedded license of the pack")
-	packAddCmd.Flags().BoolVarP(&extractEula, "extract-embedded-license", "x", false, "extract the embedded license of the pack and aborts the installation")
-	packAddCmd.Flags().StringVarP(&packsListFileName, "packs-list-filename", "f", "", "file with a list of packs urls, one per line")
+	packAddCmd.Flags().BoolVarP(&skipEula, "agree-embedded-license", "a", false, "agrees with the embedded license of the pack")
+	packAddCmd.Flags().BoolVarP(&extractEula, "extract-embedded-license", "x", false, "extracts the embedded license of the pack and aborts the installation")
+	packAddCmd.Flags().StringVarP(&packsListFileName, "packs-list-filename", "f", "", "specifies a file listing packs urls, one per line")
 	PackCmd.AddCommand(packAddCmd, packRmCmd)
 }
