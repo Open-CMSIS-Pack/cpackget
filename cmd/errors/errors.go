@@ -56,4 +56,7 @@ var (
 
 	// Cmdline errors
 	ErrIncorrectCmdArgs = errors.New("incorrect setup of command line arguments")
+
+	// Errors on installation strucuture
+	ErrCannotOverwritePublicIndex = errors.New("cannot overwrite original public index.pidx")
 )

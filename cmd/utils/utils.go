@@ -21,6 +21,7 @@ import (
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/html/charset"
 )
 
 // CacheDir is used for cpackget to temporarily host downloaded pack files
@@ -147,11 +148,10 @@ func ReadXML(path string, targetStruct interface{}) error {
 		return err
 	}
 
-	if err = xml.Unmarshal(contents, targetStruct); err != nil {
-		return err
-	}
-
-	return nil
+	reader := bytes.NewReader(contents)
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+	return decoder.Decode(targetStruct)
 }
 
 // WriteXML writes an XML struct to a file

@@ -291,6 +291,19 @@ func TestReadXML(t *testing.T) {
 
 		assert.Equal(dummy.Contents, contents)
 	})
+
+	t.Run("test read encoding ascii", func(t *testing.T) {
+		contents := "Dummy content"
+		xmlFileName := "dummy.xml"
+		xmlFileContent := []byte("<?xml version='1.0' encoding='ASCII'?><dummy><contents>" + contents + "</contents></dummy>")
+		assert.Nil(ioutil.WriteFile(xmlFileName, xmlFileContent, 0600))
+		defer os.Remove(xmlFileName)
+
+		dummy := dummyXML{}
+		assert.Nil(utils.ReadXML(xmlFileName, &dummy))
+
+		assert.Equal(dummy.Contents, contents)
+	})
 }
 
 func TestWriteXML(t *testing.T) {

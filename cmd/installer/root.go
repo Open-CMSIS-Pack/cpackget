@@ -112,8 +112,15 @@ func RemovePdsc(pdscPath string) error {
 }
 
 // UpdatePublicIndex receives a index path and place it under .Web/index.pidx.
-func UpdatePublicIndex(indexPath string) error {
+func UpdatePublicIndex(indexPath string, overwrite bool) error {
 	log.Debugf("Updating public index with \"%v\"", indexPath)
+
+	if utils.FileExists(Installation.PublicIndex) {
+		if !overwrite {
+			return errs.ErrCannotOverwritePublicIndex
+		}
+		log.Infof("Overwriting publix index file %v", Installation.PublicIndex)
+	}
 
 	var err error
 	if !strings.HasPrefix(indexPath, "https://") {
@@ -149,6 +156,7 @@ func SetPackRoot(packRoot string) error {
 	}
 	Installation.LocalPidx = xml.NewPidxXML(filepath.Join(Installation.LocalDir, "local_repository.pidx"))
 	Installation.PackIdx = filepath.Join(packRoot, "pack.idx")
+	Installation.PublicIndex = filepath.Join(Installation.WebDir, "index.pidx")
 
 	var err error
 	for _, dir := range []string{packRoot, Installation.DownloadDir, Installation.LocalDir, Installation.WebDir} {
@@ -182,6 +190,9 @@ type PacksInstallationType struct {
 	// WebDir stores "index.pidx" containing a list of PDSC tags with all
 	// publicly available packs.
 	WebDir string
+
+	// PublicIndex stores the path PackRoot/WebDir/index.pidx
+	PublicIndex string
 
 	// LocalPidx is a reference to "local_repository.pidx" that contains a flat
 	// list of PDSC tags representing all packs installed via PDSC files.
