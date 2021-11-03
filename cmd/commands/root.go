@@ -31,5 +31,5 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 	}
 	log.SetLevel(logLevels[verbosiness])
 
-	return installer.SetPackRoot(viper.GetString("pack-root"))
+	return installer.SetPackRoot(viper.GetString("pack-root"), false)
 }

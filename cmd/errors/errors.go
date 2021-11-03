@@ -36,6 +36,7 @@ var (
 	ErrEula                 = errors.New("user does not agree with the pack's license")
 	ErrExtractEula          = errors.New("user wants to extract embedded license only")
 	ErrLicenseNotFound      = errors.New("embedded license not found")
+	ErrPackRootNotFound     = errors.New("pack root not found")
 
 	// Errors related to network
 	ErrBadRequest            = errors.New("bad request")
@@ -48,6 +49,7 @@ var (
 	ErrFailedInflatingFile       = errors.New("fail to inflate file")
 	ErrFailedCreatingDirectory   = errors.New("fail to create directory")
 	ErrFileNotFound              = errors.New("file not found")
+	ErrDirectoryNotFound         = errors.New("directory not found")
 	ErrCopyingEqualPaths         = errors.New("failed copying files: source is the same as destination")
 	ErrMovingEqualPaths          = errors.New("failed moving files: source is the same as destination")
 

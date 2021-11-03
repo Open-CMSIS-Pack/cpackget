@@ -42,13 +42,10 @@ func NewCli() *cobra.Command {
 	}
 
 	defaultPackRoot := os.Getenv("CMSIS_PACK_ROOT")
-	if defaultPackRoot == "" {
-		defaultPackRoot = ".cpackget/"
-	}
 
 	rootCmd.Flags().BoolVarP(&flags.version, "version", "V", false, "Prints the version number of cpackget and exit")
 	rootCmd.PersistentFlags().CountP("verbosiness", "v", "Sets verbosiness level: None (Errors), -v (Info), -vv (Debugging)")
-	rootCmd.PersistentFlags().StringP("pack-root", "R", defaultPackRoot, "Specifies pack root folder. Defaults to CMSIS_PACK_ROOT environment variable or current directory")
+	rootCmd.PersistentFlags().StringP("pack-root", "R", defaultPackRoot, "Specifies pack root folder. Defaults to CMSIS_PACK_ROOT environment variable")
 	_ = viper.BindPFlag("pack-root", rootCmd.PersistentFlags().Lookup("pack-root"))
 	_ = viper.BindPFlag("verbosiness", rootCmd.PersistentFlags().Lookup("verbosiness"))
 

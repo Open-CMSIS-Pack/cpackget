@@ -89,6 +89,15 @@ func FileExists(filePath string) bool {
 	return !info.IsDir()
 }
 
+// DirExists checks if dirPath is an actual directory in the local file system
+func DirExists(dirPath string) bool {
+	info, err := os.Stat(dirPath)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return info.IsDir()
+}
+
 // EnsureDir recursevily creates a directory tree if it doesn't exist already
 func EnsureDir(dirName string) error {
 	log.Debugf("Ensuring \"%s\" directory exists", dirName)
