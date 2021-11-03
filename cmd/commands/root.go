@@ -18,7 +18,11 @@ var All = []*cobra.Command{
 	PackCmd,
 	PdscCmd,
 	IndexCmd,
+	InitCmd,
 }
+
+// createPackRoot is a flag that determines if the pack root should be created or not
+var createPackRoot bool
 
 // configureInstaller configures cpackget installer for adding or removing pack/pdsc
 func configureInstaller(cmd *cobra.Command, args []string) error {
@@ -31,5 +35,5 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 	}
 	log.SetLevel(logLevels[verbosiness])
 
-	return installer.SetPackRoot(viper.GetString("pack-root"), false)
+	return installer.SetPackRoot(viper.GetString("pack-root"), createPackRoot)
 }

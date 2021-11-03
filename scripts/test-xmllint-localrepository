@@ -8,7 +8,9 @@ PACK_ROOT=packroot
 
 rm -rf $PACK_ROOT
 
-./build/cpackget --pack-root $PACK_ROOT pdsc add testdata/devpack/1.2.3/TheVendor.DevPack.pdsc
+export CMSIS_PACK_ROOT=${PACK_ROOT}
+./build/cpackget init
+./build/cpackget pdsc add testdata/devpack/1.2.3/TheVendor.DevPack.pdsc
 
 xmllint --schema testdata/PackIndex.xsd $PACK_ROOT/.Local/local_repository.pidx --noout
 

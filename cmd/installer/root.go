@@ -150,7 +150,7 @@ var Installation *PacksInstallationType
 func SetPackRoot(packRoot string, create bool) error {
 	log.Infof("Using pack root: \"%v\"", packRoot)
 
-	if !utils.DirExists(packRoot) && !create {
+	if len(packRoot) == 0 || (!utils.DirExists(packRoot) && !create) {
 		return errs.ErrPackRootNotFound
 	}
 
