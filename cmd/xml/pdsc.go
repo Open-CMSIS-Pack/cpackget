@@ -24,7 +24,7 @@ type PdscXML struct {
 		Releases []ReleaseTag `xml:"release"`
 	} `xml:"releases"`
 
-	fileName string
+	FileName string
 }
 
 // ReleaseTag maps the <release> tag of a PDSC file.
@@ -38,7 +38,7 @@ type ReleaseTag struct {
 func NewPdscXML(fileName string) *PdscXML {
 	log.Debugf("Initializing PdscXML object for \"%s\"", fileName)
 	p := new(PdscXML)
-	p.fileName = fileName
+	p.FileName = fileName
 	return p
 }
 
@@ -62,8 +62,8 @@ func (p *PdscXML) Tag() PdscTag {
 	}
 }
 
-// Read reads the PDSC file specified in p.fileName into the PdscXML struct
+// Read reads the PDSC file specified in p.FileName into the PdscXML struct
 func (p *PdscXML) Read() error {
-	log.Debugf("Reading pdsc from file \"%s\"", p.fileName)
-	return utils.ReadXML(p.fileName, p)
+	log.Debugf("Reading pdsc from file \"%s\"", p.FileName)
+	return utils.ReadXML(p.FileName, p)
 }

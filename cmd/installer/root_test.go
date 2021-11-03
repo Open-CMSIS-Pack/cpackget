@@ -198,6 +198,9 @@ var (
 	packWithRTFLicense     = filepath.Join(testDir, "TheVendor.PackWithRTFLicense.1.2.3.pack")
 	packWithMissingLicense = filepath.Join(testDir, "TheVendor.PackWithMissingLicense.1.2.3.pack")
 
+	// Pack with subfolder in it, pdsc not in root folder
+	packWithSubFolder = filepath.Join(testDir, "TheVendor.PackWithSubFolder.1.2.3.pack")
+
 	// PDSC packs
 	pdscPack123 = filepath.Join(testDir, "1.2.3", "TheVendor.PackName.pdsc")
 	pdscPack124 = filepath.Join(testDir, "1.2.4", "TheVendor.PackName.pdsc")
@@ -596,6 +599,16 @@ func TestAddPack(t *testing.T) {
 		assert.Equal(errs.ErrLicenseNotFound, err)
 		assert.False(utils.FileExists(extractedLicensePath))
 		os.Remove(extractedLicensePath)
+	})
+
+	// Pack with the entire pack structure within another folder
+	t.Run("test installing pack within subfolder", func(t *testing.T) {
+		localTestingDir := "test-add-pack-within-subfolder"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packWithSubFolder
+		addPack(t, packPath, ConfigType{})
 	})
 }
 
@@ -1022,6 +1035,7 @@ func TestSetPackRoot(t *testing.T) {
 
 	t.Run("test initialize pack root", func(t *testing.T) {
 		localTestingDir := "valid-pack-root"
+		defer os.RemoveAll(localTestingDir)
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 
 		assert.True(utils.DirExists(localTestingDir))
