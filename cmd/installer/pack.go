@@ -110,7 +110,7 @@ func (p *PackType) validate() error {
 	log.Debug("Validating pack")
 	pdscFileName := fmt.Sprintf("%s.%s.pdsc", p.Vendor, p.Name)
 	for _, file := range p.zipReader.File {
-		if file.Name == pdscFileName {
+		if filepath.Base(file.Name) == pdscFileName {
 
 			// Read pack's pdsc
 			tmpPdscFileName := utils.RandStringBytes(10)
@@ -120,8 +120,13 @@ func (p *PackType) validate() error {
 				return err
 			}
 
-			p.Pdsc = xml.NewPdscXML(filepath.Join(tmpPdscFileName, pdscFileName))
-			return p.Pdsc.Read()
+			p.Pdsc = xml.NewPdscXML(filepath.Join(tmpPdscFileName, file.Name)) // #nosec
+			if err := p.Pdsc.Read(); err != nil {
+				return err
+			}
+
+			p.Pdsc.FileName = file.Name
+			return nil
 		}
 	}
 
@@ -225,7 +230,7 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	}
 
 	pdscFileName := fmt.Sprintf("%s.%s.pdsc", p.Vendor, p.Name)
-	pdscFilePath := filepath.Join(packHomeDir, pdscFileName)
+	pdscFilePath := filepath.Join(packHomeDir, p.Pdsc.FileName)
 	newPdscFileName := fmt.Sprintf("%s.%s.%s.pdsc", p.Vendor, p.Name, p.Version)
 
 	if !p.isPublic {

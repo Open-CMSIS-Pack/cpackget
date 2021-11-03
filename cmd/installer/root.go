@@ -146,8 +146,14 @@ func UpdatePublicIndex(indexPath string, overwrite bool) error {
 var Installation *PacksInstallationType
 
 // SetPackRoot sets the working directory of the packs installation
-func SetPackRoot(packRoot string) error {
-	log.Debugf("Setting pack installation working directory to \"%v\"", packRoot)
+// if create == true, cpackget will try to create needed resources
+func SetPackRoot(packRoot string, create bool) error {
+	log.Infof("Using pack root: \"%v\"", packRoot)
+
+	if len(packRoot) == 0 || (!utils.DirExists(packRoot) && !create) {
+		return errs.ErrPackRootNotFound
+	}
+
 	Installation = &PacksInstallationType{
 		PackRoot:    packRoot,
 		DownloadDir: filepath.Join(packRoot, ".Download"),
@@ -158,10 +164,17 @@ func SetPackRoot(packRoot string) error {
 	Installation.PackIdx = filepath.Join(packRoot, "pack.idx")
 	Installation.PublicIndex = filepath.Join(Installation.WebDir, "index.pidx")
 
-	var err error
 	for _, dir := range []string{packRoot, Installation.DownloadDir, Installation.LocalDir, Installation.WebDir} {
-		if err = utils.EnsureDir(dir); err != nil {
-			return err
+		log.Debugf("Making sure \"%v\" exists", dir)
+		exists := utils.DirExists(dir)
+		if !exists {
+			if !create {
+				return errs.ErrDirectoryNotFound
+			} else {
+				if err := utils.EnsureDir(dir); err != nil {
+					return err
+				}
+			}
 		}
 	}
 

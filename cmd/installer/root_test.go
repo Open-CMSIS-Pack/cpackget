@@ -172,6 +172,8 @@ var (
 	CheckEula   = true
 	ExtractEula = true
 
+	CreatePackRoot = true
+
 	// Available testing packs
 	testDir = filepath.Join("..", "..", "testdata", "integration")
 
@@ -195,6 +197,9 @@ var (
 	packWithLicense        = filepath.Join(testDir, "TheVendor.PackWithLicense.1.2.3.pack")
 	packWithRTFLicense     = filepath.Join(testDir, "TheVendor.PackWithRTFLicense.1.2.3.pack")
 	packWithMissingLicense = filepath.Join(testDir, "TheVendor.PackWithMissingLicense.1.2.3.pack")
+
+	// Pack with subfolder in it, pdsc not in root folder
+	packWithSubFolder = filepath.Join(testDir, "TheVendor.PackWithSubFolder.1.2.3.pack")
 
 	// PDSC packs
 	pdscPack123 = filepath.Join(testDir, "1.2.3", "TheVendor.PackName.pdsc")
@@ -225,7 +230,7 @@ func TestAddPack(t *testing.T) {
 	// Sanity tests
 	t.Run("test installing a pack with bad name", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-bad-name"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := malformedPackName
@@ -242,7 +247,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing a pack previously installed", func(t *testing.T) {
 		localTestingDir := "test-add-pack-previously-installed"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
@@ -269,7 +274,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing local pack that does not exist", func(t *testing.T) {
 		localTestingDir := "test-add-local-pack-that-does-not-exist"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := packThatDoesNotExist
@@ -286,7 +291,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing remote pack that does not exist", func(t *testing.T) {
 		localTestingDir := "test-add-remote-pack-that-does-not-exist"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		notFoundServer := httptest.NewServer(
@@ -311,7 +316,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing a pack with corrupt zip file", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-corrupt-zip"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := packWithCorruptZip
@@ -328,7 +333,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing a pack with bad URL format", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-malformed-url"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := packWithMalformedURL
@@ -345,7 +350,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing a pack with no PDSC file inside", func(t *testing.T) {
 		localTestingDir := "test-add-pack-without-pdsc-file"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := packWithoutPdscFileInside
@@ -362,7 +367,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing a pack that has problems with its directory", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-unaccessible-directory"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
@@ -382,7 +387,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing a pack with tainted compressed files", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-tainted-compressed-files"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
@@ -401,7 +406,7 @@ func TestAddPack(t *testing.T) {
 	// Test installing a combination of public/non-public local/remote packs
 	t.Run("test installing public pack via local file", func(t *testing.T) {
 		localTestingDir := "test-add-public-local-pack"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
@@ -413,7 +418,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing public pack via remote file", func(t *testing.T) {
 		localTestingDir := "test-add-public-remote-pack"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
@@ -440,7 +445,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing non-public pack via local file", func(t *testing.T) {
 		localTestingDir := "test-add-non-public-local-pack"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
@@ -452,7 +457,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing non-public pack via remote file", func(t *testing.T) {
 		localTestingDir := "test-add-non-public-remote-pack"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
@@ -465,7 +470,7 @@ func TestAddPack(t *testing.T) {
 	// Test licenses
 	t.Run("test installing pack without license", func(t *testing.T) {
 		localTestingDir := "test-add-pack-without-license"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
@@ -477,7 +482,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing pack with license disagreed", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-license-disagreed"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := packWithLicense
@@ -501,7 +506,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing pack with license agreed", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-license-agreed"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := packWithLicense
@@ -513,7 +518,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing pack with rtf license agreed", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-rtf-license-agreed"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := packWithRTFLicense
@@ -525,7 +530,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing pack with license agreement skipped", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-license-skipped"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := packWithLicense
@@ -536,7 +541,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing pack with license extracted", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-license-extracted"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := packWithLicense
@@ -557,7 +562,7 @@ func TestAddPack(t *testing.T) {
 		// Missing license means it is specified in the PDSC file, but the actual license
 		// file is not there
 		localTestingDir := "test-add-pack-with-missing-license"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := packWithMissingLicense
@@ -580,7 +585,7 @@ func TestAddPack(t *testing.T) {
 
 	t.Run("test installing pack with missing license extracted", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-license-extracted"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := packWithMissingLicense
@@ -595,6 +600,16 @@ func TestAddPack(t *testing.T) {
 		assert.False(utils.FileExists(extractedLicensePath))
 		os.Remove(extractedLicensePath)
 	})
+
+	// Pack with the entire pack structure within another folder
+	t.Run("test installing pack within subfolder", func(t *testing.T) {
+		localTestingDir := "test-add-pack-within-subfolder"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packWithSubFolder
+		addPack(t, packPath, ConfigType{})
+	})
 }
 
 func TestRemovePack(t *testing.T) {
@@ -604,7 +619,7 @@ func TestRemovePack(t *testing.T) {
 	// Sanity tests
 	t.Run("test removing a pack with malformed name", func(t *testing.T) {
 		localTestingDir := "test-remove-pack-with-bad-name"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		err := installer.RemovePack("TheVendor.PackName.no-a-valid-version", false)
@@ -616,7 +631,7 @@ func TestRemovePack(t *testing.T) {
 
 	t.Run("test removing a pack that is not installed", func(t *testing.T) {
 		localTestingDir := "test-remove-pack-not-installed"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		err := installer.RemovePack("TheVendor.PackName.1.2.3", false)
@@ -628,7 +643,7 @@ func TestRemovePack(t *testing.T) {
 
 	t.Run("test remove a public pack that was added", func(t *testing.T) {
 		localTestingDir := "test-remove-public-pack-that-was-added"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
@@ -653,7 +668,7 @@ func TestRemovePack(t *testing.T) {
 
 	t.Run("test remove a non-public pack that was added", func(t *testing.T) {
 		localTestingDir := "test-remove-nonpublic-pack-that-was-added"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
@@ -678,7 +693,7 @@ func TestRemovePack(t *testing.T) {
 
 	t.Run("test remove version of a pack", func(t *testing.T) {
 		localTestingDir := "test-remove-version-of-a-pack"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
@@ -697,7 +712,7 @@ func TestRemovePack(t *testing.T) {
 
 	t.Run("test remove a pack then purge", func(t *testing.T) {
 		localTestingDir := "test-remove-a-pack-then-purge"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
@@ -720,7 +735,7 @@ func TestRemovePack(t *testing.T) {
 
 	t.Run("test remove all versions at once", func(t *testing.T) {
 		localTestingDir := "test-remove-all-versions-at-once"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
@@ -745,7 +760,7 @@ func TestAddPdsc(t *testing.T) {
 	// Sanity tests
 	t.Run("test add pdsc with bad name", func(t *testing.T) {
 		localTestingDir := "test-add-pdsc-with-bad-name"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		err := installer.AddPdsc(malformedPackName)
@@ -754,7 +769,7 @@ func TestAddPdsc(t *testing.T) {
 
 	t.Run("test add pdsc with bad local_repository.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-pdsc-with-bad-local-repository"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.LocalPidx = xml.NewPidxXML(badLocalRepositoryPidx)
 		defer os.RemoveAll(localTestingDir)
 
@@ -765,7 +780,7 @@ func TestAddPdsc(t *testing.T) {
 
 	t.Run("test add a pdsc", func(t *testing.T) {
 		localTestingDir := "test-add-a-pdsc"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		err := installer.AddPdsc(pdscPack123)
@@ -776,7 +791,7 @@ func TestAddPdsc(t *testing.T) {
 
 	t.Run("test add a pdsc already installed", func(t *testing.T) {
 		localTestingDir := "test-add-a-pdsc-already-installed"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		err := installer.AddPdsc(pdscPack123)
@@ -788,7 +803,7 @@ func TestAddPdsc(t *testing.T) {
 
 	t.Run("test add new pdsc version", func(t *testing.T) {
 		localTestingDir := "test-add-new-pdsc-version"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		err := installer.AddPdsc(pdscPack123)
@@ -805,7 +820,7 @@ func TestRemovePdsc(t *testing.T) {
 
 	t.Run("test remove pdsc with bad name", func(t *testing.T) {
 		localTestingDir := "test-remove-pdsc-with-bad-name"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		err := installer.RemovePdsc(malformedPackName)
@@ -815,7 +830,7 @@ func TestRemovePdsc(t *testing.T) {
 
 	t.Run("test remove a pdsc", func(t *testing.T) {
 		localTestingDir := "test-remove-pdsc"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		// Add it first
@@ -829,7 +844,7 @@ func TestRemovePdsc(t *testing.T) {
 
 	t.Run("test remove a pdsc that does not exist", func(t *testing.T) {
 		localTestingDir := "test-remove-pdsc-that-does-not-exist"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		err := installer.RemovePdsc(shortenPackPath(pdscPack123, true))
@@ -857,7 +872,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test add http server index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-http-server-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		httpServer := httptest.NewServer(
@@ -877,7 +892,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test add not found remote index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-not-found-remote-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		notFoundServer := httptest.NewTLSServer(
@@ -903,7 +918,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test add malformed index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-malformed-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		indexContent, err := ioutil.ReadFile(malformedPublicIndex)
@@ -925,7 +940,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test add remote index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-remote-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		indexContent, err := ioutil.ReadFile(samplePublicIndex)
@@ -953,7 +968,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test do not overwrite index.pidx", func(t *testing.T) {
 		localTestingDir := "test-do-not-overwrite-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		_ = utils.TouchFile(installer.Installation.PublicIndex)
@@ -977,7 +992,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test overwrite index.pidx", func(t *testing.T) {
 		localTestingDir := "test-overwrite-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		_ = utils.TouchFile(installer.Installation.PublicIndex)
@@ -1002,5 +1017,33 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err2)
 
 		assert.Equal(copied, indexContent)
+	})
+}
+
+func TestSetPackRoot(t *testing.T) {
+
+	assert := assert.New(t)
+
+	t.Run("test fail to initialize empty pack root", func(t *testing.T) {
+		localTestingDir := ""
+		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot)
+		assert.Equal(errs.ErrPackRootNotFound, err)
+
+		err = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+		assert.Equal(errs.ErrPackRootNotFound, err)
+	})
+
+	t.Run("test initialize pack root", func(t *testing.T) {
+		localTestingDir := "valid-pack-root"
+		defer os.RemoveAll(localTestingDir)
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+
+		assert.True(utils.DirExists(localTestingDir))
+		assert.True(utils.DirExists(installer.Installation.DownloadDir))
+		assert.True(utils.DirExists(installer.Installation.WebDir))
+		assert.True(utils.DirExists(installer.Installation.LocalDir))
+
+		// Now just make sure it's usable, even when not forced to initialize
+		assert.Nil(installer.SetPackRoot(localTestingDir, !CreatePackRoot))
 	})
 }

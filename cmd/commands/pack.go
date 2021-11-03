@@ -44,7 +44,6 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 
 			file, err := os.Open(packsListFileName)
 			if err != nil {
-				log.Error(err)
 				return err
 			}
 			defer file.Close()
@@ -55,7 +54,6 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 			}
 
 			if err := scanner.Err(); err != nil {
-				log.Error(err)
 				return err
 			}
 		}
@@ -76,7 +74,10 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 			}
 		}
 
-		return firstError
+		if firstError == nil {
+			return nil
+		}
+		return errs.ErrAlreadyLogged
 	},
 }
 
