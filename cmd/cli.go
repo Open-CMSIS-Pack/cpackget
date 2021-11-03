@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/commands"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -32,13 +31,13 @@ func NewCli() *cobra.Command {
 		Long:          "Please refer to the upstream repository for further information: https://github.com/Open-CMSIS-Pack/cpackget.",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if flags.version {
 				printVersionAndLicense(cmd.OutOrStdout())
-				return
+				return nil
 			}
 
-			log.Error("Please choose a command. See --help")
+			return cmd.Help()
 		},
 	}
 
