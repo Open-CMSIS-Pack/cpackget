@@ -1006,3 +1006,30 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Equal(copied, indexContent)
 	})
 }
+
+func TestSetPackRoot(t *testing.T) {
+
+	assert := assert.New(t)
+
+	t.Run("test fail to initialize empty pack root", func(t *testing.T) {
+		localTestingDir := ""
+		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot)
+		assert.Equal(errs.ErrPackRootNotFound, err)
+
+		err = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+		assert.Equal(errs.ErrPackRootNotFound, err)
+	})
+
+	t.Run("test initialize pack root", func(t *testing.T) {
+		localTestingDir := "valid-pack-root"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+
+		assert.True(utils.DirExists(localTestingDir))
+		assert.True(utils.DirExists(installer.Installation.DownloadDir))
+		assert.True(utils.DirExists(installer.Installation.WebDir))
+		assert.True(utils.DirExists(installer.Installation.LocalDir))
+
+		// Now just make sure it's usable, even when not forced to initialize
+		assert.Nil(installer.SetPackRoot(localTestingDir, !CreatePackRoot))
+	})
+}
