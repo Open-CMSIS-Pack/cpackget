@@ -27,10 +27,11 @@ func NewCli() *cobra.Command {
 	cobra.OnInitialize(initCobra)
 
 	rootCmd := &cobra.Command{
-		Use:          "cpackget",
-		Short:        "This utility adds/removes CMSIS-Packs",
-		Long:         "Please refer to the upstream repository for further information: https://github.com/Open-CMSIS-Pack/cpackget.",
-		SilenceUsage: true,
+		Use:           "cpackget",
+		Short:         "This utility adds/removes CMSIS-Packs",
+		Long:          "Please refer to the upstream repository for further information: https://github.com/Open-CMSIS-Pack/cpackget.",
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			if flags.version {
 				printVersionAndLicense(cmd.OutOrStdout())

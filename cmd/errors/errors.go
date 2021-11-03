@@ -12,6 +12,11 @@ func Is(err, target error) bool {
 	return err == target
 }
 
+// AlreadyLogged returns true if the error log has already been logged
+func AlreadyLogged(err error) bool {
+	return err == ErrAlreadyLogged
+}
+
 var (
 	// Errors related to package file name
 	ErrBadPackName                 = errors.New("bad pack name: it should follow the standard PackVendor.PackName.PackVersion.pack")
@@ -59,4 +64,7 @@ var (
 
 	// Errors on installation strucuture
 	ErrCannotOverwritePublicIndex = errors.New("cannot overwrite original public index.pidx")
+
+	// Hack to allow multiple error logs while still avoiding duplicating the last error log
+	ErrAlreadyLogged = errors.New("already logged")
 )

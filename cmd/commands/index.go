@@ -22,7 +22,12 @@ If there's already an index file, cpackget won't overwrite it. Use "-f" to do so
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Updating index %v", args)
 		indexPath := args[0]
-		return installer.UpdatePublicIndex(indexPath, overwrite)
+		err := installer.UpdatePublicIndex(indexPath, overwrite)
+		if err != nil {
+			log.Error(err)
+		}
+
+		return err
 	},
 }
 
