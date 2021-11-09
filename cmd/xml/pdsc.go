@@ -32,6 +32,7 @@ type ReleaseTag struct {
 	XMLName xml.Name `xml:"release"`
 	Version string   `xml:"version,attr"`
 	Date    string   `xml:"Date,attr"`
+	URL     string   `xml:"url,attr"`
 }
 
 // NewPdscXML receives a PDSC file name to be later read into the PdscXML struct

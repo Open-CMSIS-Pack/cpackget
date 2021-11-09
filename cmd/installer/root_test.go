@@ -184,10 +184,14 @@ var (
 	packWithoutPdscFileInside      = filepath.Join(testDir, "PackWithout.PdscFileInside.1.2.3.pack")
 	packWithTaintedCompressedFiles = filepath.Join(testDir, "PackWith.TaintedFiles.1.2.3.pack")
 
+	// Packs with packid names only
+	publicRemotePack123PackID = "TheVendor.PublicRemotePack.1.2.3"
+	//publicRemotePackPackId = "TheVendor.PublicRemotePack"
+
 	// Public packs
 	publicLocalPack123  = filepath.Join(testDir, "1.2.3", "TheVendor.PublicLocalPack.1.2.3.pack")
 	publicLocalPack124  = filepath.Join(testDir, "1.2.4", "TheVendor.PublicLocalPack.1.2.4.pack")
-	publicRemotePack123 = filepath.Join(testDir, "1.2.3", "TheVendor.PublicRemotePack.1.2.3.pack")
+	publicRemotePack123 = filepath.Join(testDir, "1.2.3", publicRemotePack123PackID+".pack")
 
 	// Private packs
 	nonPublicLocalPack123  = filepath.Join(testDir, "1.2.3", "TheVendor.NonPublicLocalPack.1.2.3.pack")
@@ -226,6 +230,28 @@ var (
 func TestAddPack(t *testing.T) {
 
 	assert := assert.New(t)
+
+	//var newServer = func(contentBytes []byte) *httptest.Server {
+	//	return httptest.NewServer(
+	//		http.HandlerFunc(
+	//			func(w http.ResponseWriter, r *http.Request) {
+	//				reader := bytes.NewReader(contentBytes)
+	//				_, err := io.Copy(w, reader)
+	//				assert.Nil(err)
+	//			},
+	//		),
+	//	)
+	//}
+
+	//var new404Server = func() *httptest.Server {
+	//	return httptest.NewServer(
+	//		http.HandlerFunc(
+	//			func(w http.ResponseWriter, r *http.Request) {
+	//				w.WriteHeader(http.StatusNotFound)
+	//			},
+	//		),
+	//	)
+	//}
 
 	// Sanity tests
 	t.Run("test installing a pack with bad name", func(t *testing.T) {
@@ -610,6 +636,39 @@ func TestAddPack(t *testing.T) {
 		packPath := packWithSubFolder
 		addPack(t, packPath, ConfigType{})
 	})
+
+	// Install packs with pack id: Vendor.PackName[.x.y.z]
+	// install without a pack version
+	// install a pack that does not exist
+	//t.Run("test installing pack with pack id only", func(t *testing.T) {
+	//	localTestingDir := "test-add-pack-with-pack-id"
+	//	assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+	//	defer os.RemoveAll(localTestingDir)
+
+	//	// Create a server to serve the pack's pdsc file
+	//	zipContent, err := ioutil.ReadFile(publicRemotePack123PackId)
+	//	assert.Nil(err)
+	//	pdscServer := newServer(zipContent)
+
+	//	_, packBasePath := filepath.Split(publicRemotePack123)
+
+	//	packPath := packServer.URL + "/" + packBasePath
+
+	//	// create a public index
+	//	publicIndex := xml.NewPidxXML(installer.Installation.PublicIndex)
+	//	publicIndex.Read()
+
+	//	pdscTag := xml.PdscTag{
+	//		Vendor: "TheVendor",
+	//		URL: "lala",
+	//	}
+
+	//	//publicIndex.AddPdsc
+
+	//	addPack(t, packPath, ConfigType{
+	//		IsPublic: true,
+	//	})
+	//})
 }
 
 func TestRemovePack(t *testing.T) {
