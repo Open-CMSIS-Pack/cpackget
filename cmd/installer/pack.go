@@ -48,10 +48,12 @@ type PackType struct {
 
 // preparePack does some sanity validation regarding pack name
 // and check if it's public and if it's installed or not
-func preparePack(packPath string, short bool) (*PackType, error) {
+func preparePack(packPath string) (*PackType, error) {
 	pack := &PackType{
 		path: packPath,
 	}
+
+	var shortPath bool
 
 	// Clean out any possible query or user auth in the URL
 	// to help finding the correct path info
@@ -67,9 +69,12 @@ func preparePack(packPath string, short bool) (*PackType, error) {
 		url.RawQuery = ""
 
 		packPath = url.String()
+		shortPath = false
+	} else if !strings.HasSuffix(packPath, ".pack") && !strings.HasSuffix(packPath, ".zip") {
+		shortPath = true
 	}
 
-	info, err := utils.ExtractPackInfo(packPath, short)
+	info, err := utils.ExtractPackInfo(packPath, shortPath)
 	if err != nil {
 		return pack, err
 	}

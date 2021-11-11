@@ -19,7 +19,7 @@ import (
 func AddPack(packPath string, checkEula, extractEula bool) error {
 	log.Debugf("Adding pack \"%v\"", packPath)
 
-	pack, err := preparePack(packPath, false)
+	pack, err := preparePack(packPath)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func AddPack(packPath string, checkEula, extractEula bool) error {
 func RemovePack(packPath string, purge bool) error {
 	log.Debugf("Removing pack \"%v\"", packPath)
 
-	pack, err := preparePack(packPath, true)
+	pack, err := preparePack(packPath)
 	if err != nil {
 		return err
 	}
