@@ -199,4 +199,38 @@ func TestPidxXML(t *testing.T) {
 		assert.NotNil(err)
 		assert.Equal(err.Error(), "XML syntax error on line 3: unexpected EOF")
 	})
+
+	t.Run("test finding pdsc tag", func(t *testing.T) {
+		fileName := utils.RandStringBytes(10) + ".pidx"
+		defer os.Remove(fileName)
+
+		pdscTag1 := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "0.0.1",
+		}
+
+		pdscTag2 := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "0.0.2",
+		}
+
+		pidx := xml.NewPidxXML(fileName)
+		assert.Nil(pidx.Read())
+
+		assert.Nil(pidx.AddPdsc(pdscTag1))
+		assert.Nil(pidx.AddPdsc(pdscTag2))
+
+		foundTag := pidx.FindPdscTag(pdscTag1)
+		assert.NotNil(foundTag)
+		assert.Equal(*foundTag, pdscTag1)
+
+		pdscTag1.Version = ""
+		foundTag = pidx.FindPdscTag(pdscTag1)
+		assert.NotNil(foundTag)
+		assert.Equal(foundTag.Version, "0.0.1")
+	})
 }

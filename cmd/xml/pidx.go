@@ -96,9 +96,31 @@ func (p *PidxXML) HasPdsc(pdsc PdscTag) bool {
 	return ok
 }
 
-// Key returns this pdscTag unique key.
-func (p *PdscTag) Key() string {
-	return p.Vendor + "." + p.Name + "." + p.Version
+// FindPdscTag takes in a sample pdscTag and returns the actual PDSC tag inside this PidxXML.
+func (p *PidxXML) FindPdscTag(pdsc PdscTag) *PdscTag {
+	log.Debugf("Searching for pdsc \"%s\"", pdsc.Key())
+	if pdsc.Version != "" {
+		foundTag, ok := p.pdscList[pdsc.Key()]
+		if ok {
+			log.Debugf("\"%s\" contains \"%s\"", p.fileName, pdsc.Key())
+			return &foundTag
+		}
+
+		log.Debugf("\"%s\" does not contain \"%s\"", p.fileName, pdsc.Key())
+		return nil
+	}
+
+	targetKey := pdsc.Key()
+	for key := range p.pdscList {
+		if strings.Contains(key, targetKey) {
+			log.Debugf("\"%s\" contains \"%s\": \"%s\"", p.fileName, pdsc.Key(), key)
+			foundTag := p.pdscList[key]
+			return &foundTag
+		}
+	}
+
+	log.Debugf("\"%s\" does not contain \"%s\"", p.fileName, pdsc.Key())
+	return nil
 }
 
 // Read reads FileName into this PidxXML struct and allocates memory for all PDSC tags.
