@@ -75,4 +75,16 @@ func TestPdscXML(t *testing.T) {
 		assert.Equal(pdsc.Name, "DevPack")
 		assert.Equal(pdsc.LatestVersion(), "1.2.3")
 	})
+
+	t.Run("test finding release tag", func(t *testing.T) {
+		pdsc := xml.NewPdscXML("../../testdata/devpack/1.2.3/TheVendor.DevPack.pdsc")
+		assert.Nil(pdsc.Read())
+		releaseTag := pdsc.FindReleaseTagByVersion("1.2.3")
+		assert.NotNil(releaseTag)
+		assert.Equal(releaseTag.Version, "1.2.3")
+
+		releaseTag = pdsc.FindReleaseTagByVersion("")
+		assert.NotNil(releaseTag)
+		assert.Equal(releaseTag.Version, "1.2.3")
+	})
 }
