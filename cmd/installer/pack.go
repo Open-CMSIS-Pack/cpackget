@@ -36,6 +36,9 @@ type PackType struct {
 	// isDownloaded tells whether the file needed to be downloaded from a server
 	isDownloaded bool
 
+	// isPackID tells whether the path is in packID format: Vendor.PackName[.x.y.z]
+	isPackID bool
+
 	// path points to a file in the local system, whether or not it's local
 	path string
 
@@ -71,6 +74,7 @@ func preparePack(packPath string) (*PackType, error) {
 		packPath = url.String()
 		shortPath = false
 	} else if !strings.HasSuffix(packPath, ".pack") && !strings.HasSuffix(packPath, ".zip") {
+		pack.isPackID = true
 		shortPath = true
 	}
 
@@ -244,9 +248,17 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 
 	_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.DownloadDir, newPdscFileName))
 
-	packBackupPath := filepath.Join(Installation.DownloadDir, filepath.Base(p.path))
+	packBackupPath := filepath.Join(Installation.DownloadDir, fmt.Sprintf("%s.%s.%s.pack", p.Vendor, p.Name, p.Version))
 	if !p.isDownloaded {
 		return utils.CopyFile(p.path, packBackupPath)
+	}
+
+	if filepath.Base(p.path) != filepath.Base(packBackupPath) {
+		err := utils.MoveFile(p.path, packBackupPath)
+		if err != nil {
+			return err
+		}
+		p.path = packBackupPath
 	}
 
 	return nil

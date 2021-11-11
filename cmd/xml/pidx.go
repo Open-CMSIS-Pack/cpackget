@@ -164,3 +164,13 @@ func (p *PidxXML) Write() error {
 
 	return utils.WriteXML(p.fileName, p)
 }
+
+// Key returns this pdscTag unique key.
+func (p *PdscTag) Key() string {
+	return p.Vendor + "." + p.Name + "." + p.Version
+}
+
+// PackURL constructs a URL of a pack using the tag's attributes.
+func (p *PdscTag) PackURL() string {
+	return p.URL + p.Key() + ".pack"
+}

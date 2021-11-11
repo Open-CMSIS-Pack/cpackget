@@ -28,6 +28,13 @@ func AddPack(packPath string, checkEula, extractEula bool) error {
 		return errs.ErrPackAlreadyInstalled
 	}
 
+	if pack.isPackID {
+		pack.path, err = FindPackURL(pack)
+		if err != nil {
+			return err
+		}
+	}
+
 	if err = pack.fetch(); err != nil {
 		return err
 	}
@@ -141,6 +148,134 @@ func UpdatePublicIndex(indexPath string, overwrite bool) error {
 	return utils.MoveFile(indexPath, filepath.Join(Installation.WebDir, "index.pidx"))
 }
 
+// PublicIndexUpdated is used by ensurePublicIndexIsUpdated to determine if the
+// public index already got updated in this run of cpackget
+var PublicIndexUpdated bool
+
+// PublicIndexURL points to keil today, may be read via a config file in the future
+var PublicIndexURL = "https://www.keil.com/pack/index.pidx"
+
+// ensurePublicIndexIsUpdated makes sure that the .Web/index.pidx
+func EnsurePublicIndexIsUpdated(forceUpdate bool) error {
+	log.Debugf("Ensuring public index exists and it's up to date (force update? %v)", forceUpdate)
+
+	if PublicIndexUpdated {
+		return nil
+	}
+
+	if forceUpdate || !utils.FileExists(Installation.PublicIndex) {
+		log.Infof("\"%s\" is missing, retrieving a fresh one from %s", Installation.PublicIndex, PublicIndexURL)
+		if err := UpdatePublicIndex(PublicIndexURL, true /* overwrite */); err != nil {
+			return err
+		}
+
+		PublicIndexUpdated = true
+	}
+
+	Installation.PublicIndexXML = xml.NewPidxXML(Installation.PublicIndex)
+	return Installation.PublicIndexXML.Read()
+}
+
+// FindPackURL uses pack.path as packID and try to find the pack URL
+// Finding step are as follows:
+// 1. Find pack.Vendor, pack.Name, pack.Version(optional) in Installation.PublicIndex
+//    1.1. if pack.Version == "", move to step 2
+//    1.2. if Installation.PublicIndex does not exist, call UpdatePublicIndex("https://www.keil.com/pack/index.pidx", true /* overwrite */) and repeat step 1
+//    1.3. if not found, raise errs.ErrPackNotFoundInPublicIndex
+//    1.4. read the PDSC tag into pdscTag
+//    1.5. packURL = pdscTag.URL + pack.Vendor + "." + pack.Name + "." + pack.Version + ".pack"
+//    1.6. if HTTP HEAD for packURL is not 200, move to step 2
+//    1.7. return packURL
+// 2. Find pack.Vendor, pack.Name in Installation.PublicIndex
+//    2.1. same as 1.2
+//    2.2. same as 1.3
+//    2.3. same as 1.4
+//    2.4. pdscURL = pdscTag.URL + pack.Vendor + "." + pack.Name + ".pdsc"
+//    2.5. if HTTP HEAD for pdscURL is not 200, raise errs.ErrPackPdscURLCannotBeFound
+//    2.6. read the PDSC file into pdscXML
+//    2.7. releastTag = pdscXML.FindReleaseTagByVersion(pack.Version) // if pack.Version == "", it'll return the most recent one
+//    2.8. if releaseTag == nil, raise errs.ErrPackVersionNotFoundInPdsc
+//    2.8. if releaseTag.URL == "", raise errs.ErrPackURLCannotBeFound
+//    2.9. return releaseTag.URL
+func FindPackURL(pack *PackType) (string, error) {
+	log.Debugf("Finding URL for \"%v\"", pack.path)
+
+	findPdscTag := func(pack *PackType) (*xml.PdscTag, error) {
+		pdscTag := Installation.PublicIndexXML.FindPdscTag(pack.PdscTag) // maybe _, ok := err.(*fs.PathError)
+		if pdscTag == nil {
+			// Public index may be outdated, force updating it
+			if err := EnsurePublicIndexIsUpdated(true); err != nil {
+				return nil, err
+			}
+
+			pdscTag := Installation.PublicIndexXML.FindPdscTag(pack.PdscTag)
+			if pdscTag == nil {
+				return nil, errs.ErrPackNotFoundInPublicIndex
+			}
+		}
+
+		return pdscTag, nil
+	}
+
+	if err := EnsurePublicIndexIsUpdated(false /* don't force */); err != nil {
+		return "", err
+	}
+
+	// First attempt to retrieve packURL straight out of .Web/index.pidx
+	pdscTag, err := findPdscTag(pack)
+	if err != nil {
+		return "", err
+	}
+
+	packURL := pdscTag.PackURL()
+	if utils.URLExists(packURL) {
+		pack.Version = pdscTag.Version
+		return packURL, nil
+	}
+
+	// Failed to find URL the easy way. Now do the hard way, through releases tag
+
+	// Get pack's pdsc file
+	packPdscFileName := filepath.Join(Installation.WebDir, pack.Vendor+"."+pack.Name+".pdsc")
+	if !utils.FileExists(packPdscFileName) {
+		packPdscURL := pdscTag.URL + filepath.Base(packPdscFileName)
+		log.Infof("\"%s\" not found, fetching it from \"%s\"", packPdscFileName, packPdscURL)
+
+		packPdscDownloadFilePath, err := utils.DownloadFile(packPdscURL)
+		if err != nil {
+			log.Error(err)
+			return "", errs.ErrPackPdscCannotBeFound
+		}
+
+		if err := utils.MoveFile(packPdscDownloadFilePath, packPdscFileName); err != nil {
+			return "", err
+		}
+	}
+
+	packPdscXML := xml.NewPdscXML(packPdscFileName)
+	if err := packPdscXML.Read(); err != nil {
+		return "", err
+	}
+
+	releaseTag := packPdscXML.FindReleaseTagByVersion(pack.Version)
+	if releaseTag == nil {
+		log.Errorf("Pack version \"%s\" was not found in \"%s\"", pack.Version, packPdscFileName)
+		return "", errs.ErrPackVersionNotFoundInPdsc
+	}
+
+	// Nowhere else to look for pack URL
+	if releaseTag.URL == "" {
+		return "", errs.ErrPackURLCannotBeFound
+	}
+
+	// Set the pack version, if empty
+	if pack.Version == "" {
+		pack.Version = releaseTag.Version
+	}
+
+	return releaseTag.URL, nil
+}
+
 // Installation is a singleton variable that keeps the only reference
 // to PacksInstallationType
 var Installation *PacksInstallationType
@@ -206,6 +341,9 @@ type PacksInstallationType struct {
 
 	// PublicIndex stores the path PackRoot/WebDir/index.pidx
 	PublicIndex string
+
+	// PublicIndexXML stores a xml.PidxXML reference for PackRoot/WebDir/index.pidx
+	PublicIndexXML *xml.PidxXML
 
 	// LocalPidx is a reference to "local_repository.pidx" that contains a flat
 	// list of PDSC tags representing all packs installed via PDSC files.

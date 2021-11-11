@@ -66,6 +66,10 @@ var (
 
 	// Errors on installation strucuture
 	ErrCannotOverwritePublicIndex = errors.New("cannot overwrite original public index.pidx")
+	ErrPackNotFoundInPublicIndex  = errors.New("pack not found in the public index.pidx")
+	ErrPackPdscCannotBeFound      = errors.New("the URL for the pack pdsc file seems not to exist or it didn't return the file")
+	ErrPackVersionNotFoundInPdsc  = errors.New("pack version not found in the pdsc file")
+	ErrPackURLCannotBeFound       = errors.New("URL for the pack cannot be determined")
 
 	// Hack to allow multiple error logs while still avoiding duplicating the last error log
 	ErrAlreadyLogged = errors.New("already logged")
