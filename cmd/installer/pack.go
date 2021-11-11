@@ -42,6 +42,9 @@ type PackType struct {
 	// path points to a file in the local system, whether or not it's local
 	path string
 
+	// Subfolder stores the subfolder this pack is in the compressed file.
+	Subfolder string
+
 	// pdsc holds a pointer to the PDSC file already parsed as XML
 	Pdsc *xml.PdscXML
 
@@ -121,11 +124,19 @@ func (p *PackType) validate() error {
 	for _, file := range p.zipReader.File {
 		if filepath.Base(file.Name) == pdscFileName {
 
+			// Check if pack was compressed in a subfolder
+			subfoldersCount := strings.Count(file.Name, "/") + strings.Count(file.Name, "\\")
+			if subfoldersCount > 1 {
+				return errs.ErrPdscFileTooDeepInPack
+			} else if subfoldersCount == 0 {
+				p.Subfolder = filepath.Dir(file.Name)
+			}
+
 			// Read pack's pdsc
 			tmpPdscFileName := utils.RandStringBytes(10)
 			defer os.RemoveAll(tmpPdscFileName)
 
-			if err := utils.SecureInflateFile(file, tmpPdscFileName); err != nil {
+			if err := utils.SecureInflateFile(file, tmpPdscFileName, ""); err != nil {
 				return err
 			}
 
@@ -232,7 +243,7 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 
 	log.Debugf("Extracting files from \"%s\" to \"%s\"", p.path, packHomeDir)
 	for _, file := range p.zipReader.File {
-		err = utils.SecureInflateFile(file, packHomeDir)
+		err = utils.SecureInflateFile(file, packHomeDir, p.Subfolder)
 		if err != nil {
 			return err
 		}

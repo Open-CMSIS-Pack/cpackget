@@ -44,7 +44,7 @@ func TestSecureInflateFile(t *testing.T) {
 	t.Run("test fail to inflate tainted file names", func(t *testing.T) {
 		zipFile := &zip.File{}
 		zipFile.Name = filepath.Join("..", "tainted-file")
-		err := utils.SecureInflateFile(zipFile, "")
+		err := utils.SecureInflateFile(zipFile, "", "")
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrInsecureZipFileName))
 	})
@@ -53,7 +53,7 @@ func TestSecureInflateFile(t *testing.T) {
 		dirName := "test-inflate-zip-dir"
 		zipFile := &zip.File{}
 		zipFile.Name = dirName + string(os.PathSeparator)
-		err := utils.SecureInflateFile(zipFile, "")
+		err := utils.SecureInflateFile(zipFile, "", "")
 		assert.Nil(err)
 		defer os.Remove(dirName)
 
@@ -67,7 +67,7 @@ func TestSecureInflateFile(t *testing.T) {
 		dirName := "test-inflate-zip-dir-forward-slash"
 		zipFile := &zip.File{}
 		zipFile.Name = dirName + "/"
-		err := utils.SecureInflateFile(zipFile, "")
+		err := utils.SecureInflateFile(zipFile, "", "")
 		assert.Nil(err)
 		defer os.Remove(dirName)
 
@@ -92,7 +92,7 @@ func TestSecureInflateFile(t *testing.T) {
 
 		// Inflate all files
 		for _, file := range zipReader.File {
-			assert.Nil(utils.SecureInflateFile(file, outDir))
+			assert.Nil(utils.SecureInflateFile(file, outDir, ""))
 		}
 
 		// Make sure files are OK
