@@ -27,16 +27,17 @@ var (
 	ErrBadPackURL                  = errors.New("bad pack url: the url provided for this pack is malformed")
 
 	// Errors related to package content
-	ErrPdscFileNotFound     = errors.New("pdsc not found")
-	ErrPackAlreadyInstalled = errors.New("pack already installed")
-	ErrPackNotInstalled     = errors.New("pack not installed")
-	ErrPackNotPurgeable     = errors.New("pack not purgeable")
-	ErrPdscEntryExists      = errors.New("pdsc already in index")
-	ErrPdscEntryNotFound    = errors.New("pdsc not found in index")
-	ErrEula                 = errors.New("user does not agree with the pack's license")
-	ErrExtractEula          = errors.New("user wants to extract embedded license only")
-	ErrLicenseNotFound      = errors.New("embedded license not found")
-	ErrPackRootNotFound     = errors.New("pack root not found")
+	ErrPdscFileNotFound      = errors.New("pdsc not found")
+	ErrPackAlreadyInstalled  = errors.New("pack already installed")
+	ErrPackNotInstalled      = errors.New("pack not installed")
+	ErrPackNotPurgeable      = errors.New("pack not purgeable")
+	ErrPdscEntryExists       = errors.New("pdsc already in index")
+	ErrPdscEntryNotFound     = errors.New("pdsc not found in index")
+	ErrEula                  = errors.New("user does not agree with the pack's license")
+	ErrExtractEula           = errors.New("user wants to extract embedded license only")
+	ErrLicenseNotFound       = errors.New("embedded license not found")
+	ErrPackRootNotFound      = errors.New("pack root not found")
+	ErrPdscFileTooDeepInPack = errors.New("pdsc file is too deep in pack file")
 
 	// Errors related to network
 	ErrBadRequest            = errors.New("bad request")
@@ -66,6 +67,10 @@ var (
 
 	// Errors on installation strucuture
 	ErrCannotOverwritePublicIndex = errors.New("cannot overwrite original public index.pidx")
+	ErrPackNotFoundInPublicIndex  = errors.New("pack not found in the public index.pidx")
+	ErrPackPdscCannotBeFound      = errors.New("the URL for the pack pdsc file seems not to exist or it didn't return the file")
+	ErrPackVersionNotFoundInPdsc  = errors.New("pack version not found in the pdsc file")
+	ErrPackURLCannotBeFound       = errors.New("URL for the pack cannot be determined")
 
 	// Hack to allow multiple error logs while still avoiding duplicating the last error log
 	ErrAlreadyLogged = errors.New("already logged")

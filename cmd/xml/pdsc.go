@@ -32,6 +32,7 @@ type ReleaseTag struct {
 	XMLName xml.Name `xml:"release"`
 	Version string   `xml:"version,attr"`
 	Date    string   `xml:"Date,attr"`
+	URL     string   `xml:"url,attr"`
 }
 
 // NewPdscXML receives a PDSC file name to be later read into the PdscXML struct
@@ -50,6 +51,24 @@ func (p *PdscXML) LatestVersion() string {
 		return releases[0].Version
 	}
 	return ""
+}
+
+// FindReleaseTagByVersion iterates over the PDSC file's releases tag and returns
+// the release that matching version.
+func (p *PdscXML) FindReleaseTagByVersion(version string) *ReleaseTag {
+	releases := p.ReleasesTag.Releases
+	if len(releases) > 0 {
+		if version == "" {
+			return &releases[0]
+		}
+
+		for _, releaseTag := range releases {
+			if releaseTag.Version == version {
+				return &releaseTag
+			}
+		}
+	}
+	return nil
 }
 
 // Tag returns a PdscTag representation of a PDSC file.

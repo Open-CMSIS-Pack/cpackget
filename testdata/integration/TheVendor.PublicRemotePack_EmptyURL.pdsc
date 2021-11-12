@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+   <vendor>TheVendor</vendor>
+   <url>http://vendor.com/packs/</url>
+   <name>PublicRemotePack</name>
+   <description>Sample pack just for testing</description>
+   <releases>
+      <!-- url attribute is intentionlly omitted -->
+      <release version="1.2.3" date="2016-09-15">New release.</release>
+   </releases>
+</package>

@@ -52,15 +52,25 @@ func SecureCopy(dst io.Writer, src io.Reader) (int64, error) {
 
 // SecureInflateFile avoids potentions file traversal vulnerabilities when inflating
 // compressed files. It avoids extracting files with "../"
-func SecureInflateFile(file *zip.File, destinationDir string) error {
+// if stripPrefix is provided, use that to strip file.Name files
+func SecureInflateFile(file *zip.File, destinationDir, stripPrefix string) error {
 	log.Debugf("Inflating \"%s\"", file.Name)
 
 	if strings.Contains(file.Name, "../") || strings.Contains(file.Name, "..\\") {
 		return errs.ErrInsecureZipFileName
 	}
 
-	if strings.HasSuffix(file.Name, "/") || strings.HasSuffix(file.Name, "\\") {
-		return EnsureDir(filepath.Join(destinationDir, file.Name)) // #nosec
+	// Strip prefix if needed
+	fileName := strings.TrimPrefix(file.Name, stripPrefix)
+	if fileName[0:1] == "/" || fileName[0:1] == "\\" {
+		fileName = fileName[1:]
+		if len(fileName) <= 1 {
+			return nil
+		}
+	}
+
+	if strings.HasSuffix(fileName, "/") || strings.HasSuffix(fileName, "\\") {
+		return EnsureDir(filepath.Join(destinationDir, fileName)) // #nosec
 	}
 
 	// Some zipped files look like this
@@ -69,7 +79,7 @@ func SecureInflateFile(file *zip.File, destinationDir string) error {
 	// And the directory will get created separately
 	// But there are zipped files without that, hence the snipped below
 	// ensures all file's path are created prior to inflating the actual file
-	fileDir, _ := filepath.Split(file.Name)
+	fileDir, _ := filepath.Split(fileName)
 	fileDir = filepath.Join(destinationDir, fileDir) + string(os.PathSeparator)
 	if err := EnsureDir(fileDir); err != nil {
 		return err
@@ -78,7 +88,7 @@ func SecureInflateFile(file *zip.File, destinationDir string) error {
 	reader, _ := file.Open()
 	defer reader.Close()
 
-	filePath := filepath.Join(destinationDir, file.Name) // #nosec
+	filePath := filepath.Join(destinationDir, fileName) // #nosec
 	out, err := os.Create(filePath)
 	if err != nil {
 		log.Error(err)

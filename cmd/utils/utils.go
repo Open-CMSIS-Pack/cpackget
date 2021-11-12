@@ -280,6 +280,17 @@ func IsTerminalInteractive() bool {
 	return (fileInfo.Mode() & os.ModeCharDevice) != 0
 }
 
+// URLExists checks whether a HEAD request to url is valid or not.
+func URLExists(url string) bool {
+	resp, err := HTTPClient.Head(url)
+	if err == nil {
+		exists := resp.StatusCode/100 == 2
+		resp.Body.Close()
+		return exists
+	}
+	return false
+}
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 	HTTPClient = &http.Client{}

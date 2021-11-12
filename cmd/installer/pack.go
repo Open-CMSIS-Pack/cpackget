@@ -36,8 +36,14 @@ type PackType struct {
 	// isDownloaded tells whether the file needed to be downloaded from a server
 	isDownloaded bool
 
+	// isPackID tells whether the path is in packID format: Vendor.PackName[.x.y.z]
+	isPackID bool
+
 	// path points to a file in the local system, whether or not it's local
 	path string
+
+	// Subfolder stores the subfolder this pack is in the compressed file.
+	Subfolder string
 
 	// pdsc holds a pointer to the PDSC file already parsed as XML
 	Pdsc *xml.PdscXML
@@ -48,10 +54,12 @@ type PackType struct {
 
 // preparePack does some sanity validation regarding pack name
 // and check if it's public and if it's installed or not
-func preparePack(packPath string, short bool) (*PackType, error) {
+func preparePack(packPath string) (*PackType, error) {
 	pack := &PackType{
 		path: packPath,
 	}
+
+	var shortPath bool
 
 	// Clean out any possible query or user auth in the URL
 	// to help finding the correct path info
@@ -67,9 +75,13 @@ func preparePack(packPath string, short bool) (*PackType, error) {
 		url.RawQuery = ""
 
 		packPath = url.String()
+		shortPath = false
+	} else if !strings.HasSuffix(packPath, ".pack") && !strings.HasSuffix(packPath, ".zip") {
+		pack.isPackID = true
+		shortPath = true
 	}
 
-	info, err := utils.ExtractPackInfo(packPath, short)
+	info, err := utils.ExtractPackInfo(packPath, shortPath)
 	if err != nil {
 		return pack, err
 	}
@@ -112,11 +124,19 @@ func (p *PackType) validate() error {
 	for _, file := range p.zipReader.File {
 		if filepath.Base(file.Name) == pdscFileName {
 
+			// Check if pack was compressed in a subfolder
+			subfoldersCount := strings.Count(file.Name, "/") + strings.Count(file.Name, "\\")
+			if subfoldersCount > 1 {
+				return errs.ErrPdscFileTooDeepInPack
+			} else if subfoldersCount == 0 {
+				p.Subfolder = filepath.Dir(file.Name)
+			}
+
 			// Read pack's pdsc
 			tmpPdscFileName := utils.RandStringBytes(10)
 			defer os.RemoveAll(tmpPdscFileName)
 
-			if err := utils.SecureInflateFile(file, tmpPdscFileName); err != nil {
+			if err := utils.SecureInflateFile(file, tmpPdscFileName, ""); err != nil {
 				return err
 			}
 
@@ -184,7 +204,6 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 		log.Errorf("Can't decompress \"%s\": %s", p.path, err)
 		return errs.ErrFailedDecompressingFile
 	}
-	defer p.zipReader.Close()
 
 	if err = p.validate(); err != nil {
 		return err
@@ -223,11 +242,15 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 
 	log.Debugf("Extracting files from \"%s\" to \"%s\"", p.path, packHomeDir)
 	for _, file := range p.zipReader.File {
-		err = utils.SecureInflateFile(file, packHomeDir)
+		err = utils.SecureInflateFile(file, packHomeDir, p.Subfolder)
 		if err != nil {
+			defer p.zipReader.Close()
 			return err
 		}
 	}
+
+	// Close zip file so Windows can't complain if we rename it
+	p.zipReader.Close()
 
 	pdscFileName := fmt.Sprintf("%s.%s.pdsc", p.Vendor, p.Name)
 	pdscFilePath := filepath.Join(packHomeDir, p.Pdsc.FileName)
@@ -239,9 +262,17 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 
 	_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.DownloadDir, newPdscFileName))
 
-	packBackupPath := filepath.Join(Installation.DownloadDir, filepath.Base(p.path))
+	packBackupPath := filepath.Join(Installation.DownloadDir, fmt.Sprintf("%s.%s.%s.pack", p.Vendor, p.Name, p.Version))
 	if !p.isDownloaded {
 		return utils.CopyFile(p.path, packBackupPath)
+	}
+
+	if filepath.Base(p.path) != filepath.Base(packBackupPath) {
+		err := utils.MoveFile(p.path, packBackupPath)
+		if err != nil {
+			return err
+		}
+		p.path = packBackupPath
 	}
 
 	return nil
