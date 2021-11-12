@@ -997,7 +997,6 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(err)
 
 			pack := packInfoToType(packInfo)
-			fmt.Printf("paaaaaaaaaaaaaack %v\n", pack)
 			assert.True(installer.Installation.PackIsInstalled(pack))
 
 			packID := fmt.Sprintf("%s.%s.%s", pack.Vendor, pack.Name, pack.Version)

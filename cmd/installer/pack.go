@@ -204,7 +204,6 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 		log.Errorf("Can't decompress \"%s\": %s", p.path, err)
 		return errs.ErrFailedDecompressingFile
 	}
-	defer p.zipReader.Close()
 
 	if err = p.validate(); err != nil {
 		return err
@@ -245,9 +244,13 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	for _, file := range p.zipReader.File {
 		err = utils.SecureInflateFile(file, packHomeDir, p.Subfolder)
 		if err != nil {
+			defer p.zipReader.Close()
 			return err
 		}
 	}
+
+	// Close zip file so Windows can't complain if we rename it
+	p.zipReader.Close()
 
 	pdscFileName := fmt.Sprintf("%s.%s.pdsc", p.Vendor, p.Name)
 	pdscFilePath := filepath.Join(packHomeDir, p.Pdsc.FileName)
