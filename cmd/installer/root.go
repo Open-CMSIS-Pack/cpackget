@@ -126,7 +126,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool) error {
 		if !overwrite {
 			return errs.ErrCannotOverwritePublicIndex
 		}
-		log.Infof("Overwriting publix index file %v", Installation.PublicIndex)
+		log.Infof("Overwriting public index file %v", Installation.PublicIndex)
 	}
 
 	var err error
