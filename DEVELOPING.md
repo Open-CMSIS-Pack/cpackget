@@ -19,7 +19,7 @@ Follow steps below to start developing for `cpackget`:
 `make test-all`
 
 6. Make sure it builds
-`make build/cpackget`
+`make build/cpackget` (Linux/MacOS) or `make build/cpackget.exe` (Windows)
 
 7. Done! You can now start changing the source code, please refer to [contributing guide](CONTRIBUTING.md) to start contributing to the project
 
