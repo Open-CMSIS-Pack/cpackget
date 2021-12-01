@@ -6,12 +6,17 @@ ARCH := $(or $(ARCH),$(ARCH),amd64)
 GOLINTER ?= golangci-lint
 GOFORMATTER ?= gofmt
 
+# CRLF config
+# ref: https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings#platform-all
+CRLF=input
+
 # Determine binary file name
 BIN_NAME := cpackget
 PROG := build/$(BIN_NAME)
 ifneq (,$(findstring indows,$(OS)))
     PROG=build/$(BIN_NAME).exe
     OS=windows
+    CRLF=true
 endif
 
 SOURCES := $(wildcard cmd/*.go) $(wildcard cmd/*/*.go)
@@ -89,6 +94,9 @@ config:
 	@echo "Configuring local environment"
 	@go version 2>/dev/null || echo "Need Golang: https://golang.org/doc/install"
 	@golangci-lint version 2>/dev/null || echo "Need GolangCi-Lint: https://golangci-lint.run/usage/install/#local-installation"
+
+	# Configure correct line endings
+	git config --global core.autocrlf $(CRLF)
 
 	# Install pre-commit hooks
 	cp scripts/pre-commit .git/hooks/pre-commit
