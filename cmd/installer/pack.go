@@ -385,3 +385,28 @@ func (p *PackType) extractEula() error {
 
 	return ioutil.WriteFile(eulaFileName, eulaContents, 0600)
 }
+
+// PackID retuns the most generic name of a pack: Vendor.PackName
+func (p *PackType) PackID() string {
+	return p.Vendor + "." + p.Name
+}
+
+// PackIDWithVersion returns the packID with version: Vendor.PackName.x.y.z
+func (p *PackType) PackIDWithVersion() string {
+	return p.PackID() + "." + p.Version
+}
+
+// PackFileName returns a string with how the pack file name would be: Vendor.PackName.x.y.z.pack
+func (p *PackType) PackFileName() string {
+	return p.PackIDWithVersion() + ".pack"
+}
+
+// PdscFileName returns a string with how the pack's pdsc file name would be: Vendor.PackName.pdsc
+func (p *PackType) PdscFileName() string {
+	return p.PackID() + ".pdsc"
+}
+
+// PdscFileNameWithVersion returns a string with how the pack's pdsc file name would be: Vendor.PackName.x.y.z.pdsc
+func (p *PackType) PdscFileNameWithVersion() string {
+	return p.PackIDWithVersion() + ".pdsc"
+}

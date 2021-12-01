@@ -4,15 +4,9 @@
 package installer_test
 
 import (
-	"bytes"
-	"fmt"
-	"io"
 	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -23,39 +17,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Tests should cover all possible scenarios for adding packs
-// +----------------+--------+------------+
-// | origin/privacy | public | non-public |
-// +----------------+--------+------------+
-// | local          |        |            |
-// +----------------+--------+------------+
-// | remote         |        |            |
-// +----------------+--------+------------+
+// Tests should cover all possible scenarios for adding packs. Here are all possible ones:
+// cpackget pack add Vendor.PackName                               # packID without version
+// cpackget pack add Vendor.PackName.x.y.z                         # packID with version
+// cpackget pack add Vendor.PackName.x.y.z.pack                    # pack file name
+// cpackget pack add https://vendor.com/Vendor.PackName.x.y.z.pack # pack URL
+//
+// So it doesn't really matter how the pack is specified, cpackget should
+// handle is as normal.
 func TestAddPack(t *testing.T) {
 
 	assert := assert.New(t)
-
-	var newServer = func(contentBytes []byte) *httptest.Server {
-		return httptest.NewTLSServer(
-			http.HandlerFunc(
-				func(w http.ResponseWriter, r *http.Request) {
-					reader := bytes.NewReader(contentBytes)
-					_, err := io.Copy(w, reader)
-					assert.Nil(err)
-				},
-			),
-		)
-	}
-
-	var new404Server = func() *httptest.Server {
-		return httptest.NewServer(
-			http.HandlerFunc(
-				func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusNotFound)
-				},
-			),
-		)
-	}
 
 	// Sanity tests
 	t.Run("test installing a pack with bad name", func(t *testing.T) {
@@ -124,15 +96,9 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
-		notFoundServer := httptest.NewServer(
-			http.HandlerFunc(
-				func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusNotFound)
-				},
-			),
-		)
+		notFoundServer := NewServer()
 
-		packPath := notFoundServer.URL + "/" + packThatDoesNotExist
+		packPath := notFoundServer.URL() + packThatDoesNotExist
 
 		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
@@ -254,19 +220,12 @@ func TestAddPack(t *testing.T) {
 
 		zipContent, err := ioutil.ReadFile(publicRemotePack123)
 		assert.Nil(err)
-		packServer := httptest.NewServer(
-			http.HandlerFunc(
-				func(w http.ResponseWriter, r *http.Request) {
-					reader := bytes.NewReader(zipContent)
-					_, err := io.Copy(w, reader)
-					assert.Nil(err)
-				},
-			),
-		)
+		packServer := NewServer()
+		packServer.AddRoute("*", zipContent)
 
 		_, packBasePath := filepath.Split(publicRemotePack123)
 
-		packPath := packServer.URL + "/" + packBasePath
+		packPath := packServer.URL() + packBasePath
 
 		addPack(t, packPath, ConfigType{
 			IsPublic: true,
@@ -453,20 +412,13 @@ func TestAddPack(t *testing.T) {
 			// Fake public index server
 			publicIndexContent, err := ioutil.ReadFile(emptyPublicIndex)
 			assert.Nil(err)
-			publicIndexServer := newServer(publicIndexContent)
+			publicIndexServer := NewServer()
+			publicIndexServer.AddRoute("*", publicIndexContent)
 
-			// Swap public index url and http client
-			currentPublicIndexURL := installer.PublicIndexURL
-			currentClient := utils.HTTPClient
-			utils.HTTPClient = publicIndexServer.Client()
-			installer.PublicIndexURL = publicIndexServer.URL + "/index.pidx"
+			installer.PublicIndexURL = publicIndexServer.URL() + "index.pidx"
 			installer.PublicIndexUpdated = false
 
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
-
-			// Restore public index url and http client
-			installer.PublicIndexURL = currentPublicIndexURL
-			utils.HTTPClient = currentClient
 
 			assert.NotNil(err)
 			assert.Equal(err, errs.ErrPackNotFoundInPublicIndex)
@@ -486,16 +438,10 @@ func TestAddPack(t *testing.T) {
 			// Fake public index server
 			publicIndexContent, err := ioutil.ReadFile(emptyPublicIndex)
 			assert.Nil(err)
-			publicIndexServer := newServer(publicIndexContent)
+			publicIndexServer := NewServer()
+			publicIndexServer.AddRoute("index.pidx", publicIndexContent)
 
-			// Fake pdsc file server
-			notFoundPdscServer := new404Server()
-
-			// Swap public index url and http client
-			currentPublicIndexURL := installer.PublicIndexURL
-			currentClient := utils.HTTPClient
-			utils.HTTPClient = publicIndexServer.Client()
-			installer.PublicIndexURL = publicIndexServer.URL + "/index.pidx"
+			installer.PublicIndexURL = publicIndexServer.URL() + "index.pidx"
 			installer.PublicIndexUpdated = false
 
 			// Force updating the public index
@@ -505,15 +451,11 @@ func TestAddPack(t *testing.T) {
 			packInfo, err := utils.ExtractPackInfo(packPath, true)
 			assert.Nil(err)
 			packPdscTag := xml.PdscTag{Vendor: packInfo.Vendor, Name: packInfo.Pack, Version: packInfo.Version}
-			packPdscTag.URL = notFoundPdscServer.URL + "/"
+			packPdscTag.URL = publicIndexServer.URL()
 			err = installer.Installation.PublicIndexXML.AddPdsc(packPdscTag)
 			assert.Nil(err)
 
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
-
-			// Restore public index url and http client
-			installer.PublicIndexURL = currentPublicIndexURL
-			utils.HTTPClient = currentClient
 
 			assert.NotNil(err)
 			assert.Equal(err, errs.ErrPackPdscCannotBeFound)
@@ -535,57 +477,38 @@ func TestAddPack(t *testing.T) {
 			// Get pack info
 			packInfo, err := utils.ExtractPackInfo(packPath, true)
 			assert.Nil(err)
+			if packInfo.Version == "" {
+				packInfo.Version = "1.2.3"
+			}
+			pack := packInfoToType(packInfo)
 
-			// Fake public index server
 			publicIndexContent, err := ioutil.ReadFile(emptyPublicIndex)
 			assert.Nil(err)
-			publicIndexServer := newServer(publicIndexContent)
-
-			// Fake pdsc file server
-			// should serve pdsc file
-			// should return 404 on packPath.pack
 			pdscContent, err := ioutil.ReadFile(pdscPack123MissingVersion)
 			assert.Nil(err)
-			pdscServer := httptest.NewTLSServer(
-				http.HandlerFunc(
-					func(w http.ResponseWriter, r *http.Request) {
-						// Fail if trying to get url directly from pdsc.URL + packID
-						if strings.Contains(r.URL.Path, ".pack") {
-							w.WriteHeader(http.StatusNotFound)
-						} else {
-							reader := bytes.NewReader(pdscContent)
-							_, err := io.Copy(w, reader)
-							assert.Nil(err)
-						}
-					},
-				),
-			)
 
-			// Swap public index url and http client
-			currentPublicIndexURL := installer.PublicIndexURL
-			currentClient := utils.HTTPClient
-			utils.HTTPClient = publicIndexServer.Client()
-			installer.PublicIndexURL = publicIndexServer.URL + "/index.pidx"
+			// Fake server
+			// should serve index.pidx file
+			// should serve pdsc file
+			// should return 404 on packPath.pack
+			server := NewServer()
+			server.AddRoute("index.pidx", publicIndexContent)
+			server.AddRoute(pack.PdscFileName(), pdscContent)
+			server.AddRoute(pack.PackFileName(), nil)
+
+			installer.PublicIndexURL = server.URL() + "index.pidx"
 			installer.PublicIndexUpdated = false
 
 			// Force updating the public index
 			assert.Nil(installer.EnsurePublicIndexIsUpdated(true))
 
 			// Tweak the URL for the pack's pdsc
-			version := packInfo.Version
-			if version == "" {
-				version = "1.2.3"
-			}
-			packPdscTag := xml.PdscTag{Vendor: packInfo.Vendor, Name: packInfo.Pack, Version: version}
-			packPdscTag.URL = pdscServer.URL + "/"
+			packPdscTag := xml.PdscTag{Vendor: packInfo.Vendor, Name: packInfo.Pack, Version: packInfo.Version}
+			packPdscTag.URL = server.URL()
 			err = installer.Installation.PublicIndexXML.AddPdsc(packPdscTag)
 			assert.Nil(err)
 
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
-
-			// Restore public index url and http client
-			installer.PublicIndexURL = currentPublicIndexURL
-			utils.HTTPClient = currentClient
 
 			assert.NotNil(err)
 			assert.Equal(err, errs.ErrPackVersionNotFoundInPdsc)
@@ -602,52 +525,41 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			defer os.RemoveAll(localTestingDir)
 
+			packInfo, err := utils.ExtractPackInfo(packPath, true)
+			assert.Nil(err)
+			if packInfo.Version == "" {
+				packInfo.Version = "1.2.3"
+			}
+			pack := packInfoToType(packInfo)
+
 			// Fake public index server
 			publicIndexContent, err := ioutil.ReadFile(emptyPublicIndex)
 			assert.Nil(err)
-			publicIndexServer := newServer(publicIndexContent)
-
-			// Fake pdsc file server
 			pdscContent, err := ioutil.ReadFile(pdscPack123EmptyURL)
 			assert.Nil(err)
-			pdscServer := httptest.NewTLSServer(
-				http.HandlerFunc(
-					func(w http.ResponseWriter, r *http.Request) {
-						// Fail if trying to get url directly from pdsc.URL + packID
-						if strings.Contains(r.URL.Path, ".pack") {
-							w.WriteHeader(http.StatusNotFound)
-						} else {
-							reader := bytes.NewReader(pdscContent)
-							_, err := io.Copy(w, reader)
-							assert.Nil(err)
-						}
-					},
-				),
-			)
 
-			// Swap public index url and http client
-			currentPublicIndexURL := installer.PublicIndexURL
-			currentClient := utils.HTTPClient
-			utils.HTTPClient = publicIndexServer.Client()
-			installer.PublicIndexURL = publicIndexServer.URL + "/index.pidx"
+			// Fake server
+			// should serve index.pidx file
+			// should serve pdsc file
+			// should return 404 on packPath.pack
+			server := NewServer()
+			server.AddRoute("index.pidx", publicIndexContent)
+			server.AddRoute(pack.PdscFileName(), pdscContent)
+			server.AddRoute(pack.PackFileName(), nil)
+
+			installer.PublicIndexURL = server.URL() + "index.pidx"
 			installer.PublicIndexUpdated = false
 
 			// Force updating the public index
 			assert.Nil(installer.EnsurePublicIndexIsUpdated(true))
 
 			// Tweak the URL for the pack's pdsc
-			packInfo, err := utils.ExtractPackInfo(packPath, true)
-			assert.Nil(err)
 			packPdscTag := xml.PdscTag{Vendor: packInfo.Vendor, Name: packInfo.Pack, Version: packInfo.Version}
-			packPdscTag.URL = pdscServer.URL + "/"
+			packPdscTag.URL = server.URL()
 			err = installer.Installation.PublicIndexXML.AddPdsc(packPdscTag)
 			assert.Nil(err)
 
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
-
-			// Restore public index url and http client
-			installer.PublicIndexURL = currentPublicIndexURL
-			utils.HTTPClient = currentClient
 
 			assert.NotNil(err)
 			assert.Equal(err, errs.ErrPackURLCannotBeFound)
@@ -664,22 +576,31 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			defer os.RemoveAll(localTestingDir)
 
-			// Fake public index server
-			publicIndexContent, err := ioutil.ReadFile(emptyPublicIndex)
-			assert.Nil(err)
-			publicIndexServer := newServer(publicIndexContent)
-
-			// Fake pack server, used to define url in release tag
-			packContent, err := ioutil.ReadFile(publicRemotePack123)
-			assert.Nil(err)
-			packServer := newServer(packContent)
-
 			// Prep pack info
 			packInfo, err := utils.ExtractPackInfo(packPath, true)
 			assert.Nil(err)
+			pack := packInfoToType(packInfo)
+			if pack.Version == "" {
+				pack.Version = "1.2.3"
+			}
+
+			// Fake public index server
+			publicIndexContent, err := ioutil.ReadFile(emptyPublicIndex)
+			assert.Nil(err)
+			packContent, err := ioutil.ReadFile(publicRemotePack123)
+			assert.Nil(err)
+
+			// Fake server
+			// should serve index.pidx file
+			// should return 404 on packPath.pack
+			// should serve pack.zip with the pack content
+			server := NewServer()
+			server.AddRoute("index.pidx", publicIndexContent)
+			server.AddRoute("pack.zip", packContent)
+			server.AddRoute(pack.PackFileName(), nil)
 
 			// Prep the release tag
-			releaseTag := xml.ReleaseTag{URL: packServer.URL + "/pack.zip", Version: "1.2.3"}
+			releaseTag := xml.ReleaseTag{URL: server.URL() + "pack.zip", Version: "1.2.3"}
 			if packInfo.Version != "" {
 				releaseTag.Version = packInfo.Version
 			}
@@ -692,26 +613,9 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(err)
 			pdscContent, err := ioutil.ReadFile(pdscFilePath)
 			assert.Nil(err)
-			pdscServer := httptest.NewTLSServer(
-				http.HandlerFunc(
-					func(w http.ResponseWriter, r *http.Request) {
-						// Fail if trying to get url directly from pdsc.URL + packID
-						if strings.Contains(r.URL.Path, ".pack") {
-							w.WriteHeader(http.StatusNotFound)
-						} else {
-							reader := bytes.NewReader(pdscContent)
-							_, err := io.Copy(w, reader)
-							assert.Nil(err)
-						}
-					},
-				),
-			)
+			server.AddRoute(pack.PdscFileName(), pdscContent)
 
-			// Swap public index url and http client
-			currentPublicIndexURL := installer.PublicIndexURL
-			currentClient := utils.HTTPClient
-			utils.HTTPClient = publicIndexServer.Client()
-			installer.PublicIndexURL = publicIndexServer.URL + "/index.pidx"
+			installer.PublicIndexURL = server.URL() + "index.pidx"
 			installer.PublicIndexUpdated = false
 
 			// Force updating the public index
@@ -719,37 +623,26 @@ func TestAddPack(t *testing.T) {
 
 			// Tweak the URL for the pack's pdsc
 			packPdscTag := xml.PdscTag{Vendor: packInfo.Vendor, Name: packInfo.Pack, Version: packInfo.Version}
-			packPdscTag.URL = pdscServer.URL + "/"
+			packPdscTag.URL = server.URL()
 			err = installer.Installation.PublicIndexXML.AddPdsc(packPdscTag)
 			assert.Nil(err)
 
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
 			assert.Nil(err)
 
-			pack := packInfoToType(packInfo)
 			assert.True(installer.Installation.PackIsInstalled(pack))
 
-			// Fill in pack.Version
-			_, err = installer.FindPackURL(pack)
-			assert.Nil(err)
-
-			packID := fmt.Sprintf("%s.%s.%s", pack.Vendor, pack.Name, pack.Version)
-
 			// Make sure there's a copy of the pack file in .Download/
-			assert.True(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, packID+".pack")))
+			assert.True(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, pack.PackFileName())))
 
 			// Make sure there's a versioned copy of the PDSC file in .Download/
-			assert.True(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, packID+".pdsc")))
+			assert.True(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, pack.PdscFileNameWithVersion())))
 
 			// Make sure the pack.idx file gets created
 			assert.True(utils.FileExists(installer.Installation.PackIdx))
 
 			// Check that the index got updated
 			assert.True(installer.PublicIndexUpdated)
-
-			// Restore public index url and http client
-			installer.PublicIndexURL = currentPublicIndexURL
-			utils.HTTPClient = currentClient
 		})
 
 		t.Run("test installing pack with pack id directly from index.pidx "+packBasePath, func(t *testing.T) {
@@ -757,28 +650,28 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			defer os.RemoveAll(localTestingDir)
 
-			// Fake public index server
-			publicIndexContent, err := ioutil.ReadFile(samplePublicIndex)
-			assert.Nil(err)
-			publicIndexServer := newServer(publicIndexContent)
-
-			// Fake pack server, used to define url in release tag
-			packContent, err := ioutil.ReadFile(publicRemotePack123)
-			assert.Nil(err)
-			packServer := newServer(packContent)
-
 			// Prep pack info
 			packInfo, err := utils.ExtractPackInfo(packPath, true)
 			assert.Nil(err)
 			if packInfo.Version == "" {
 				packInfo.Version = "1.2.3"
 			}
+			pack := packInfoToType(packInfo)
 
-			// Swap public index url and http client
-			currentPublicIndexURL := installer.PublicIndexURL
-			currentClient := utils.HTTPClient
-			utils.HTTPClient = publicIndexServer.Client()
-			installer.PublicIndexURL = publicIndexServer.URL + "/index.pidx"
+			// Fake public index server
+			publicIndexContent, err := ioutil.ReadFile(samplePublicIndex)
+			assert.Nil(err)
+			packContent, err := ioutil.ReadFile(publicRemotePack123)
+			assert.Nil(err)
+
+			// Fake server
+			// should serve index.pidx file
+			// should serve packPath
+			server := NewServer()
+			server.AddRoute("index.pidx", publicIndexContent)
+			server.AddRoute(pack.PackFileName(), packContent)
+
+			installer.PublicIndexURL = server.URL() + "index.pidx"
 			installer.PublicIndexUpdated = false
 
 			// Force updating the public index
@@ -786,36 +679,29 @@ func TestAddPack(t *testing.T) {
 
 			// Tweak the URL for the pack's pdsc
 			packPdscTag := xml.PdscTag{Vendor: packInfo.Vendor, Name: packInfo.Pack, Version: packInfo.Version}
-			packPdscTag.URL = packServer.URL + "/"
+			packPdscTag.URL = server.URL()
 			err = installer.Installation.PublicIndexXML.AddPdsc(packPdscTag)
 			assert.Nil(err)
 
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
 			assert.Nil(err)
 
-			pack := packInfoToType(packInfo)
 			assert.True(installer.Installation.PackIsInstalled(pack))
 
-			packID := fmt.Sprintf("%s.%s.%s", pack.Vendor, pack.Name, pack.Version)
-
 			// Make sure there's a copy of the pack file in .Download/
-			assert.True(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, packID+".pack")))
+			assert.True(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, pack.PackFileName())))
 
 			// Make sure there's a versioned copy of the PDSC file in .Download/
-			assert.True(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, packID+".pdsc")))
+			assert.True(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, pack.PdscFileNameWithVersion())))
 
 			// Make sure the pack pdsc file did NOT get downloaded
-			assert.False(utils.FileExists(filepath.Join(installer.Installation.WebDir, pack.Vendor+"."+pack.Name+".pdsc")))
+			assert.False(utils.FileExists(filepath.Join(installer.Installation.WebDir, pack.PdscFileName())))
 
 			// Make sure the pack.idx file gets created
 			assert.True(utils.FileExists(installer.Installation.PackIdx))
 
 			// Check that the index got updated
 			assert.True(installer.PublicIndexUpdated)
-
-			// Restore public index url and http client
-			installer.PublicIndexURL = currentPublicIndexURL
-			utils.HTTPClient = currentClient
 		})
 
 	}

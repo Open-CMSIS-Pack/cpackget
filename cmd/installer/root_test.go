@@ -222,6 +222,64 @@ var (
 	malformedPublicIndex = filepath.Join("..", "..", "testdata", "MalformedPack.pidx")
 )
 
+type Server struct {
+	routes      map[string][]byte
+	httpsServer *httptest.Server
+}
+
+func (s *Server) URL() string {
+	return s.httpsServer.URL + "/"
+}
+
+func (s *Server) AddRoute(route string, content []byte) {
+	s.routes[route] = content
+}
+
+// NewServer is a generic dev server that takes in a routes map and returns 404 if the route[path] is nil
+// Ex:
+// server := NewHttpsServer(map[string][]byte{
+// 	"*": []byte("Default content"),
+// 	"should-return-404": nil,
+// })
+//
+// Acessing server.URL should return "Default content"
+// Acessing server.URL + "/should-return-404" should return HTTP 404
+func NewServer() Server {
+	server := Server{}
+	server.routes = make(map[string][]byte)
+	server.httpsServer = httptest.NewTLSServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				path := r.URL.Path
+				if len(path) > 1 {
+					path = path[1:]
+				}
+				content, ok := server.routes[path]
+				if !ok {
+					defaultContent, ok := server.routes["*"]
+					if !ok {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+
+					content = defaultContent
+				}
+
+				if content == nil {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
+				reader := bytes.NewReader(content)
+				_, _ = io.Copy(w, reader)
+			},
+		),
+	)
+
+	utils.HTTPClient = server.httpsServer.Client()
+	return server
+}
+
 func TestUpdatePublicIndex(t *testing.T) {
 
 	assert := assert.New(t)
