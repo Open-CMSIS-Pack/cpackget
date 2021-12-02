@@ -400,6 +400,17 @@ func TestAddPack(t *testing.T) {
 		addPack(t, packPath, ConfigType{})
 	})
 
+	t.Run("test installing pack within too many subfolders", func(t *testing.T) {
+		localTestingDir := "test-add-pack-within-too-many-subfolder"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packWithSubSubFolder
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
+		assert.NotNil(err)
+		assert.Equal(err, errs.ErrPdscFileTooDeepInPack)
+	})
+
 	// Install packs with pack id: Vendor.PackName[.x.y.z]
 	for _, packPath := range []string{publicRemotePack123PackID, publicRemotePackPackID} {
 		packBasePath := filepath.Base(packPath)

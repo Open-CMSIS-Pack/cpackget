@@ -205,7 +205,8 @@ var (
 	packWithMissingLicense = filepath.Join(testDir, "TheVendor.PackWithMissingLicense.1.2.3.pack")
 
 	// Pack with subfolder in it, pdsc not in root folder
-	packWithSubFolder = filepath.Join(testDir, "TheVendor.PackWithSubFolder.1.2.3.pack")
+	packWithSubFolder    = filepath.Join(testDir, "TheVendor.PackWithSubFolder.1.2.3.pack")
+	packWithSubSubFolder = filepath.Join(testDir, "TheVendor.PackWithSubSubFolder.1.2.3.pack")
 
 	// PDSC packs
 	pdscPack123 = filepath.Join(testDir, "1.2.3", "TheVendor.PackName.pdsc")
