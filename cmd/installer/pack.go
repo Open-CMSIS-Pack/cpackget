@@ -120,7 +120,7 @@ func (p *PackType) fetch() error {
 // to be installed.
 func (p *PackType) validate() error {
 	log.Debug("Validating pack")
-	pdscFileName := fmt.Sprintf("%s.%s.pdsc", p.Vendor, p.Name)
+	pdscFileName := p.PdscFileName()
 	for _, file := range p.zipReader.File {
 		if filepath.Base(file.Name) == pdscFileName {
 
@@ -252,9 +252,9 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	// Close zip file so Windows can't complain if we rename it
 	p.zipReader.Close()
 
-	pdscFileName := fmt.Sprintf("%s.%s.pdsc", p.Vendor, p.Name)
-	pdscFilePath := filepath.Join(packHomeDir, p.Pdsc.FileName)
-	newPdscFileName := fmt.Sprintf("%s.%s.%s.pdsc", p.Vendor, p.Name, p.Version)
+	pdscFileName := p.PdscFileName()
+	pdscFilePath := filepath.Join(packHomeDir, pdscFileName)
+	newPdscFileName := p.PdscFileNameWithVersion()
 
 	if !p.isPublic {
 		_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.LocalDir, pdscFileName))
@@ -262,7 +262,7 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 
 	_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.DownloadDir, newPdscFileName))
 
-	packBackupPath := filepath.Join(Installation.DownloadDir, fmt.Sprintf("%s.%s.%s.pack", p.Vendor, p.Name, p.Version))
+	packBackupPath := filepath.Join(Installation.DownloadDir, p.PackFileName())
 	if !p.isDownloaded {
 		return utils.CopyFile(p.path, packBackupPath)
 	}
