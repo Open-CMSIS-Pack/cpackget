@@ -128,7 +128,7 @@ func (p *PackType) validate() error {
 			subfoldersCount := strings.Count(file.Name, "/") + strings.Count(file.Name, "\\")
 			if subfoldersCount > 1 {
 				return errs.ErrPdscFileTooDeepInPack
-			} else if subfoldersCount == 0 {
+			} else if subfoldersCount == 1 {
 				p.Subfolder = filepath.Dir(file.Name)
 			}
 
