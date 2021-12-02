@@ -365,10 +365,13 @@ func (p *PacksInstallationType) touchPackIdx() error {
 // PackIsInstalled checks whether a given pack is already installed or not
 func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 	installationDir := filepath.Join(p.PackRoot, pack.Vendor, pack.Name, pack.Version)
-	if _, err := os.Stat(installationDir); !os.IsNotExist(err) {
-		return true
+	if !utils.DirExists(installationDir) {
+		return false
 	}
-	return false
+	if pack.Version != "" {
+		return utils.FileExists(filepath.Join(installationDir, pack.PdscFileName()))
+	}
+	return true
 }
 
 // packIsPublic checks whether the pack is public or not.
