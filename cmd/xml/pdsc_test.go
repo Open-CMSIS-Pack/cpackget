@@ -87,4 +87,24 @@ func TestPdscXML(t *testing.T) {
 		assert.NotNil(releaseTag)
 		assert.Equal(releaseTag.Version, "1.2.3")
 	})
+
+	t.Run("test building pack url", func(t *testing.T) {
+		var url = "http://the.url"
+		var name = "TheName"
+		var vendor = "TheVendor"
+		var version = "0.0.1"
+		pdscXML := xml.PdscXML{
+			Vendor: vendor,
+			URL:    url,
+			Name:   name,
+		}
+		release := xml.ReleaseTag{
+			Version: version,
+		}
+		pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, release)
+
+		expectedURL := url + "/" + vendor + "." + name + "." + version + ".pack"
+		assert.Equal(expectedURL, pdscXML.PackURL(""))
+		assert.Equal(expectedURL, pdscXML.PackURL(version))
+	})
 }

@@ -86,3 +86,17 @@ func (p *PdscXML) Read() error {
 	log.Debugf("Reading pdsc from file \"%s\"", p.FileName)
 	return utils.ReadXML(p.FileName, p)
 }
+
+// PackURL returns a url for the Pack described in this PDSC file
+func (p *PdscXML) PackURL(version string) string {
+	baseURL := p.URL
+	if baseURL[len(baseURL)-1] != '/' {
+		baseURL += "/"
+	}
+
+	if version == "" {
+		version = p.LatestVersion()
+	}
+
+	return baseURL + p.Vendor + "." + p.Name + "." + version + ".pack"
+}
