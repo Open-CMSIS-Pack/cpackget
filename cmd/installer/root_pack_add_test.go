@@ -256,6 +256,39 @@ func TestAddPack(t *testing.T) {
 		})
 	})
 
+	// Test that cpackget will attempt to retrieve the PDSC file of public packs and place it under .Web/
+	t.Run("test installing public pack retrieving pdsc file", func(t *testing.T) {
+		localTestingDir := "test-add-public-pack-retrieving-pdsc-file"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := publicLocalPack123
+		packInfo, err := utils.ExtractPackInfo(packPath, false)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+
+		packPdscFilePath := filepath.Join(filepath.Dir(packPath), pack.PdscFileName())
+		packPdscContent, err := ioutil.ReadFile(packPdscFilePath)
+		assert.Nil(err)
+
+		pdscServer := NewServer()
+		pdscServer.AddRoute(pack.PdscFileName(), packPdscContent)
+
+		packPdscTag := xml.PdscTag{
+			URL:     pdscServer.URL(),
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
+		addPack(t, packPath, ConfigType{
+			IsPublic: true,
+		})
+	})
+
 	// Test licenses
 	t.Run("test installing pack without license", func(t *testing.T) {
 		localTestingDir := "test-add-pack-without-license"
@@ -415,48 +448,13 @@ func TestAddPack(t *testing.T) {
 	for _, packPath := range []string{publicRemotePack123PackID, publicRemotePackPackID} {
 		packBasePath := filepath.Base(packPath)
 
-		t.Run("test installing pack with pack id not found in public index "+packBasePath, func(t *testing.T) {
-			localTestingDir := "test-add-pack-with-pack-id-not-found-in-public-index-" + packBasePath
-			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-			defer os.RemoveAll(localTestingDir)
-
-			// Fake public index server
-			publicIndexContent, err := ioutil.ReadFile(emptyPublicIndex)
-			assert.Nil(err)
-			publicIndexServer := NewServer()
-			publicIndexServer.AddRoute("*", publicIndexContent)
-
-			installer.PublicIndexURL = publicIndexServer.URL() + "index.pidx"
-			installer.PublicIndexUpdated = false
-
-			err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
-
-			assert.NotNil(err)
-			assert.Equal(err, errs.ErrPackNotFoundInPublicIndex)
-
-			// Check that the index got updated
-			assert.True(installer.PublicIndexUpdated)
-
-			// Make sure pack.idx never got touched
-			assert.False(utils.FileExists(installer.Installation.PackIdx))
-		})
-
 		t.Run("test installing pack with pack id pdsc file not found "+packBasePath, func(t *testing.T) {
 			localTestingDir := "test-add-pack-with-pack-id-pdsc-file-not-found-" + packBasePath
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			defer os.RemoveAll(localTestingDir)
 
 			// Fake public index server
-			publicIndexContent, err := ioutil.ReadFile(emptyPublicIndex)
-			assert.Nil(err)
 			publicIndexServer := NewServer()
-			publicIndexServer.AddRoute("index.pidx", publicIndexContent)
-
-			installer.PublicIndexURL = publicIndexServer.URL() + "index.pidx"
-			installer.PublicIndexUpdated = false
-
-			// Force updating the public index
-			assert.Nil(installer.EnsurePublicIndexIsUpdated(true))
 
 			// Tweak the URL for the pack's pdsc
 			packInfo, err := utils.ExtractPackInfo(packPath, true)
@@ -471,9 +469,6 @@ func TestAddPack(t *testing.T) {
 			assert.NotNil(err)
 			assert.Equal(err, errs.ErrPackPdscCannotBeFound)
 
-			// Check that the index got updated
-			assert.True(installer.PublicIndexUpdated)
-
 			// Make sure pack.idx never got touched
 			assert.False(utils.FileExists(installer.Installation.PackIdx))
 		})
@@ -485,105 +480,24 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			defer os.RemoveAll(localTestingDir)
 
-			// Get pack info
 			packInfo, err := utils.ExtractPackInfo(packPath, true)
 			assert.Nil(err)
-			if packInfo.Version == "" {
-				packInfo.Version = "1.2.3"
-			}
 			pack := packInfoToType(packInfo)
 
-			publicIndexContent, err := ioutil.ReadFile(emptyPublicIndex)
-			assert.Nil(err)
-			pdscContent, err := ioutil.ReadFile(pdscPack123MissingVersion)
-			assert.Nil(err)
-
-			// Fake server
-			// should serve index.pidx file
-			// should serve pdsc file
-			// should return 404 on packPath.pack
-			server := NewServer()
-			server.AddRoute("index.pidx", publicIndexContent)
-			server.AddRoute(pack.PdscFileName(), pdscContent)
-			server.AddRoute(pack.PackFileName(), nil)
-
-			installer.PublicIndexURL = server.URL() + "index.pidx"
-			installer.PublicIndexUpdated = false
-
-			// Force updating the public index
-			assert.Nil(installer.EnsurePublicIndexIsUpdated(true))
-
-			// Tweak the URL for the pack's pdsc
-			packPdscTag := xml.PdscTag{Vendor: packInfo.Vendor, Name: packInfo.Pack, Version: packInfo.Version}
-			packPdscTag.URL = server.URL()
-			err = installer.Installation.PublicIndexXML.AddPdsc(packPdscTag)
-			assert.Nil(err)
+			// Place the bogus pdsc file in .Web/
+			assert.Nil(utils.CopyFile(pdscPack123MissingVersion, filepath.Join(installer.Installation.WebDir, pack.PdscFileName())))
 
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 			assert.NotNil(err)
 			assert.Equal(err, errs.ErrPackVersionNotFoundInPdsc)
 
-			// Check that the index got updated
-			assert.True(installer.PublicIndexUpdated)
-
 			// Make sure pack.idx never got touched
 			assert.False(utils.FileExists(installer.Installation.PackIdx))
 		})
 
-		t.Run("test installing pack with pack id empty release url "+packBasePath, func(t *testing.T) {
-			localTestingDir := "test-add-pack-with-pack-id-empty-release-url-" + packBasePath
-			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-			defer os.RemoveAll(localTestingDir)
-
-			packInfo, err := utils.ExtractPackInfo(packPath, true)
-			assert.Nil(err)
-			if packInfo.Version == "" {
-				packInfo.Version = "1.2.3"
-			}
-			pack := packInfoToType(packInfo)
-
-			// Fake public index server
-			publicIndexContent, err := ioutil.ReadFile(emptyPublicIndex)
-			assert.Nil(err)
-			pdscContent, err := ioutil.ReadFile(pdscPack123EmptyURL)
-			assert.Nil(err)
-
-			// Fake server
-			// should serve index.pidx file
-			// should serve pdsc file
-			// should return 404 on packPath.pack
-			server := NewServer()
-			server.AddRoute("index.pidx", publicIndexContent)
-			server.AddRoute(pack.PdscFileName(), pdscContent)
-			server.AddRoute(pack.PackFileName(), nil)
-
-			installer.PublicIndexURL = server.URL() + "index.pidx"
-			installer.PublicIndexUpdated = false
-
-			// Force updating the public index
-			assert.Nil(installer.EnsurePublicIndexIsUpdated(true))
-
-			// Tweak the URL for the pack's pdsc
-			packPdscTag := xml.PdscTag{Vendor: packInfo.Vendor, Name: packInfo.Pack, Version: packInfo.Version}
-			packPdscTag.URL = server.URL()
-			err = installer.Installation.PublicIndexXML.AddPdsc(packPdscTag)
-			assert.Nil(err)
-
-			err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
-
-			assert.NotNil(err)
-			assert.Equal(err, errs.ErrPackURLCannotBeFound)
-
-			// Check that the index got updated
-			assert.True(installer.PublicIndexUpdated)
-
-			// Make sure pack.idx never got touched
-			assert.False(utils.FileExists(installer.Installation.PackIdx))
-		})
-
-		t.Run("test installing pack with pack id "+packBasePath, func(t *testing.T) {
-			localTestingDir := "test-add-pack-with-pack-id-" + packBasePath
+		t.Run("test installing pack with pack id using release url"+packBasePath, func(t *testing.T) {
+			localTestingDir := "test-add-pack-with-pack-id-using-release-url" + packBasePath
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			defer os.RemoveAll(localTestingDir)
 
@@ -591,129 +505,129 @@ func TestAddPack(t *testing.T) {
 			packInfo, err := utils.ExtractPackInfo(packPath, true)
 			assert.Nil(err)
 			pack := packInfoToType(packInfo)
-			if pack.Version == "" {
-				pack.Version = "1.2.3"
-			}
 
-			// Fake public index server
-			publicIndexContent, err := ioutil.ReadFile(emptyPublicIndex)
-			assert.Nil(err)
+			// Prep the pdsc file to go in .Web/
+			packPdscFilePath := filepath.Join(installer.Installation.WebDir, pack.PdscFileName())
+			assert.Nil(utils.CopyFile(pdscPack123MissingVersion, packPdscFilePath))
+
 			packContent, err := ioutil.ReadFile(publicRemotePack123)
 			assert.Nil(err)
 
 			// Fake server
-			// should serve index.pidx file
-			// should return 404 on packPath.pack
 			// should serve pack.zip with the pack content
 			server := NewServer()
-			server.AddRoute("index.pidx", publicIndexContent)
 			server.AddRoute("pack.zip", packContent)
-			server.AddRoute(pack.PackFileName(), nil)
 
 			// Prep the release tag
 			releaseTag := xml.ReleaseTag{URL: server.URL() + "pack.zip", Version: "1.2.3"}
-			if packInfo.Version != "" {
-				releaseTag.Version = packInfo.Version
+			if pack.Version != "" {
+				releaseTag.Version = pack.Version
 			}
 
-			// Prepare the pdsc file
-			pdscXML := xml.NewPdscXML(pdscPack123MissingVersion)
+			// Inject the tag into the pdsc file
+			pdscXML := xml.NewPdscXML(packPdscFilePath)
+			assert.Nil(pdscXML.Read())
 			pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, releaseTag)
-			pdscFilePath := filepath.Join(localTestingDir, filepath.Base(pdscPack123MissingVersion))
-			err = utils.WriteXML(pdscFilePath, pdscXML)
-			assert.Nil(err)
-			pdscContent, err := ioutil.ReadFile(pdscFilePath)
-			assert.Nil(err)
-			server.AddRoute(pack.PdscFileName(), pdscContent)
-
-			installer.PublicIndexURL = server.URL() + "index.pidx"
-			installer.PublicIndexUpdated = false
-
-			// Force updating the public index
-			assert.Nil(installer.EnsurePublicIndexIsUpdated(true))
-
-			// Tweak the URL for the pack's pdsc
-			packPdscTag := xml.PdscTag{Vendor: packInfo.Vendor, Name: packInfo.Pack, Version: packInfo.Version}
-			packPdscTag.URL = server.URL()
-			err = installer.Installation.PublicIndexXML.AddPdsc(packPdscTag)
-			assert.Nil(err)
+			assert.Nil(utils.WriteXML(pdscXML.FileName, pdscXML))
 
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
 			assert.Nil(err)
 
-			assert.True(installer.Installation.PackIsInstalled(pack))
-
-			// Make sure there's a copy of the pack file in .Download/
-			assert.True(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, pack.PackFileName())))
-
-			// Make sure there's a versioned copy of the PDSC file in .Download/
-			assert.True(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, pack.PdscFileNameWithVersion())))
-
-			// Make sure the pack.idx file gets created
-			assert.True(utils.FileExists(installer.Installation.PackIdx))
-
-			// Check that the index got updated
-			assert.True(installer.PublicIndexUpdated)
+			pack.Version = "1.2.3"
+			pack.IsPublic = true
+			checkPackIsInstalled(t, pack)
 		})
 
-		t.Run("test installing pack with pack id directly from index.pidx "+packBasePath, func(t *testing.T) {
-			localTestingDir := "test-add-pack-with-pack-id-directly-from-index.pidx-" + packBasePath
+		t.Run("test installing pack with pack id using pdsc url "+packBasePath, func(t *testing.T) {
+			localTestingDir := "test-add-pack-with-pack-id-using-pdsc-url-" + packBasePath
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			defer os.RemoveAll(localTestingDir)
 
 			// Prep pack info
 			packInfo, err := utils.ExtractPackInfo(packPath, true)
 			assert.Nil(err)
-			if packInfo.Version == "" {
-				packInfo.Version = "1.2.3"
-			}
 			pack := packInfoToType(packInfo)
+			pack.Version = "1.2.3"
 
-			// Fake public index server
-			publicIndexContent, err := ioutil.ReadFile(samplePublicIndex)
-			assert.Nil(err)
+			// Prep the pdsc file to go in .Web/
+			packPdscFilePath := filepath.Join(installer.Installation.WebDir, pack.PdscFileName())
+			assert.Nil(utils.CopyFile(pdscPack123MissingVersion, packPdscFilePath))
+
 			packContent, err := ioutil.ReadFile(publicRemotePack123)
 			assert.Nil(err)
 
 			// Fake server
-			// should serve index.pidx file
-			// should serve packPath
+			// should serve pack.zip with the pack content
 			server := NewServer()
-			server.AddRoute("index.pidx", publicIndexContent)
 			server.AddRoute(pack.PackFileName(), packContent)
 
-			installer.PublicIndexURL = server.URL() + "index.pidx"
-			installer.PublicIndexUpdated = false
+			// Prep the release tag
+			releaseTag := xml.ReleaseTag{Version: "1.2.3"}
 
-			// Force updating the public index
-			assert.Nil(installer.EnsurePublicIndexIsUpdated(true))
-
-			// Tweak the URL for the pack's pdsc
-			packPdscTag := xml.PdscTag{Vendor: packInfo.Vendor, Name: packInfo.Pack, Version: packInfo.Version}
-			packPdscTag.URL = server.URL()
-			err = installer.Installation.PublicIndexXML.AddPdsc(packPdscTag)
-			assert.Nil(err)
+			// Inject the tag into the pdsc file
+			pdscXML := xml.NewPdscXML(packPdscFilePath)
+			assert.Nil(pdscXML.Read())
+			pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, releaseTag)
+			pdscXML.URL = server.URL()
+			assert.Nil(utils.WriteXML(pdscXML.FileName, pdscXML))
 
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
 			assert.Nil(err)
 
-			assert.True(installer.Installation.PackIsInstalled(pack))
-
-			// Make sure there's a copy of the pack file in .Download/
-			assert.True(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, pack.PackFileName())))
-
-			// Make sure there's a versioned copy of the PDSC file in .Download/
-			assert.True(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, pack.PdscFileNameWithVersion())))
-
-			// Make sure the pack pdsc file did NOT get downloaded
-			assert.False(utils.FileExists(filepath.Join(installer.Installation.WebDir, pack.PdscFileName())))
-
-			// Make sure the pack.idx file gets created
-			assert.True(utils.FileExists(installer.Installation.PackIdx))
-
-			// Check that the index got updated
-			assert.True(installer.PublicIndexUpdated)
+			pack.IsPublic = true
+			checkPackIsInstalled(t, pack)
 		})
 
 	}
+
+	t.Run("test installing non-public pack via packID", func(t *testing.T) {
+		localTestingDir := "test-add-non-public-local-packid"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		defer os.RemoveAll(localTestingDir)
+
+		pack123Path := nonPublicLocalPack123
+		pack124Path := nonPublicLocalPack124
+		pack123ID := nonPublicLocalPack123PackID
+		//pack124ID := nonPublicLocalPack124PackID
+
+		pack124Info, err := utils.ExtractPackInfo(pack124Path, false)
+		assert.Nil(err)
+		pack124 := packInfoToType(pack124Info)
+
+		pack123Info, err := utils.ExtractPackInfo(pack123Path, false)
+		assert.Nil(err)
+		pack123 := packInfoToType(pack123Info)
+
+		pack123Content, err := ioutil.ReadFile(pack123Path)
+		assert.Nil(err)
+
+		server := NewServer()
+		server.AddRoute(pack123.PackFileName(), pack123Content)
+
+		// Attempt to install with PackID only first time, with no success (no pdsc in .Local)
+		err = installer.AddPack(pack123ID, !CheckEula, !ExtractEula)
+		assert.Equal(err, errs.ErrPackURLCannotBeFound)
+
+		// Add the pack via file, then remove it just to leave the pdsc in .Local
+		addPack(t, pack124Path, ConfigType{
+			IsPublic: false,
+		})
+
+		// The 1.2.4 pack's PDSC does NOT contain the 1.2.3 release tag on purpose
+		// so an attemp to install it should raise an error
+		err = installer.AddPack(pack123ID, !CheckEula, !ExtractEula)
+		assert.Equal(err, errs.ErrPackVersionNotFoundInPdsc)
+
+		// Tweak the URL to retrieve version 1.2.3 and inject the 1.2.3 tag
+		pdscXML := xml.NewPdscXML(filepath.Join(installer.Installation.LocalDir, pack124.PdscFileName()))
+		assert.Nil(pdscXML.Read())
+		pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, xml.ReleaseTag{Version: "1.2.3"})
+		pdscXML.URL = server.URL()
+		assert.Nil(utils.WriteXML(pdscXML.FileName, pdscXML))
+
+		err = installer.AddPack(pack123ID, !CheckEula, !ExtractEula)
+		assert.Nil(err)
+		checkPackIsInstalled(t, pack123)
+	})
 }

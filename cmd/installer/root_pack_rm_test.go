@@ -48,7 +48,7 @@ func TestRemovePack(t *testing.T) {
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
 
-		packPath := publicLocalPack123
+		packPath := publicLocalPack124
 		config := ConfigType{
 			IsPublic: true,
 		}
@@ -134,8 +134,8 @@ func TestRemovePack(t *testing.T) {
 		assert.Equal(errs.ErrPackNotPurgeable, err)
 	})
 
-	t.Run("test remove all versions at once", func(t *testing.T) {
-		localTestingDir := "test-remove-all-versions-at-once"
+	t.Run("test remove latest version", func(t *testing.T) {
+		localTestingDir := "test-remove-latest-versions"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
@@ -149,7 +149,26 @@ func TestRemovePack(t *testing.T) {
 		addPack(t, packPath, config)
 		addPack(t, updatedPackPath, config)
 
-		// Remove all packs (withVersion=false), i.e. path will be "TheVendor.PackName"
+		// Remove latest pack (withVersion=false), i.e. path will be "TheVendor.PackName"
 		removePack(t, packPath, false, IsPublic, true) // withVersion=false, purge=true
 	})
+
+	// t.Run("test remove all versions at once", func(t *testing.T) {
+	// 	localTestingDir := "test-remove-all-versions-at-once"
+	// 	assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+	// 	installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+	// 	defer os.RemoveAll(localTestingDir)
+
+	// 	// Add a pack, add an updated version of the pack, then remove the first one
+	// 	packPath := publicLocalPack123
+	// 	updatedPackPath := publicLocalPack124
+	// 	config := ConfigType{
+	// 		IsPublic: true,
+	// 	}
+	// 	addPack(t, packPath, config)
+	// 	addPack(t, updatedPackPath, config)
+
+	// 	// Remove latest pack (withVersion=false), i.e. path will be "TheVendor.PackName"
+	// 	removePack(t, packPath, false, IsPublic, true) // withVersion=false, purge=true
+	// })
 }

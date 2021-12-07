@@ -27,8 +27,8 @@ import (
 type PackType struct {
 	xml.PdscTag
 
-	// isPublic tells whether the pack exists in the public index or not
-	isPublic bool
+	// IsPublic tells whether the pack exists in the public index or not
+	IsPublic bool
 
 	// isInstalled tells whether the pack is already installed
 	isInstalled bool
@@ -90,7 +90,50 @@ func preparePack(packPath string) (*PackType, error) {
 	pack.Name = info.Pack
 	pack.Vendor = info.Vendor
 	pack.Version = info.Version
-	pack.isPublic = Installation.packIsPublic(pack)
+
+	if pack.IsPublic, err = Installation.packIsPublic(pack); err != nil {
+		return pack, err
+	}
+
+	// Make sure to that the version exist in the pdsc
+	if pack.IsPublic {
+		pdscFilePath := filepath.Join(Installation.WebDir, pack.PdscFileName())
+		pdscXML := xml.NewPdscXML(pdscFilePath)
+		if err := pdscXML.Read(); err != nil {
+			return pack, err
+		}
+
+		releaseTag := pdscXML.FindReleaseTagByVersion(pack.Version)
+		if releaseTag == nil {
+			log.Errorf("The pack's pdsc (%s) has no release tag matching version \"%s\"", pdscFilePath, pack.Version)
+			return pack, errs.ErrPackVersionNotFoundInPdsc
+		}
+
+		if pack.Version == "" {
+			pack.Version = releaseTag.Version
+		}
+	} else {
+		localPdscFilePath := filepath.Join(Installation.LocalDir, pack.PdscFileName())
+		if !utils.FileExists(localPdscFilePath) {
+			return pack, nil
+		}
+
+		pdscXML := xml.NewPdscXML(localPdscFilePath)
+		if err := pdscXML.Read(); err != nil {
+			return pack, err
+		}
+
+		releaseTag := pdscXML.FindReleaseTagByVersion(pack.Version)
+		if releaseTag == nil {
+			log.Errorf("The pack's pdsc (%s) has no release tag matching version \"%s\"", localPdscFilePath, pack.Version)
+			return pack, errs.ErrPackVersionNotFoundInPdsc
+		}
+
+		if pack.Version == "" {
+			pack.Version = releaseTag.Version
+		}
+	}
+
 	pack.isInstalled = Installation.PackIsInstalled(pack)
 
 	return pack, nil
@@ -256,7 +299,7 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	pdscFilePath := filepath.Join(packHomeDir, pdscFileName)
 	newPdscFileName := p.PdscFileNameWithVersion()
 
-	if !p.isPublic {
+	if !p.IsPublic {
 		_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.LocalDir, pdscFileName))
 	}
 
@@ -302,8 +345,8 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 		}
 
 		// Remove local pdsc file if pack is not public and if there are no more versions of this pack installed
-		if !p.isPublic {
-			localPdscFileName := p.Vendor + "." + p.Name + ".pdsc"
+		if !p.IsPublic {
+			localPdscFileName := p.PdscFileName()
 			filePath := filepath.Join(Installation.LocalDir, localPdscFileName)
 			if err := os.Remove(filePath); err != nil {
 				return err
