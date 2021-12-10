@@ -27,8 +27,8 @@ import (
 type PackType struct {
 	xml.PdscTag
 
-	// isPublic tells whether the pack exists in the public index or not
-	isPublic bool
+	// IsPublic tells whether the pack exists in the public index or not
+	IsPublic bool
 
 	// isInstalled tells whether the pack is already installed
 	isInstalled bool
@@ -90,7 +90,50 @@ func preparePack(packPath string) (*PackType, error) {
 	pack.Name = info.Pack
 	pack.Vendor = info.Vendor
 	pack.Version = info.Version
-	pack.isPublic = Installation.packIsPublic(pack)
+
+	if pack.IsPublic, err = Installation.packIsPublic(pack); err != nil {
+		return pack, err
+	}
+
+	// Make sure to that the version exist in the pdsc
+	if pack.IsPublic {
+		pdscFilePath := filepath.Join(Installation.WebDir, pack.PdscFileName())
+		pdscXML := xml.NewPdscXML(pdscFilePath)
+		if err := pdscXML.Read(); err != nil {
+			return pack, err
+		}
+
+		releaseTag := pdscXML.FindReleaseTagByVersion(pack.Version)
+		if releaseTag == nil {
+			log.Errorf("The pack's pdsc (%s) has no release tag matching version \"%s\"", pdscFilePath, pack.Version)
+			return pack, errs.ErrPackVersionNotFoundInPdsc
+		}
+
+		if pack.Version == "" {
+			pack.Version = releaseTag.Version
+		}
+	} else {
+		localPdscFilePath := filepath.Join(Installation.LocalDir, pack.PdscFileName())
+		if !utils.FileExists(localPdscFilePath) {
+			return pack, nil
+		}
+
+		pdscXML := xml.NewPdscXML(localPdscFilePath)
+		if err := pdscXML.Read(); err != nil {
+			return pack, err
+		}
+
+		releaseTag := pdscXML.FindReleaseTagByVersion(pack.Version)
+		if releaseTag == nil {
+			log.Errorf("The pack's pdsc (%s) has no release tag matching version \"%s\"", localPdscFilePath, pack.Version)
+			return pack, errs.ErrPackVersionNotFoundInPdsc
+		}
+
+		if pack.Version == "" {
+			pack.Version = releaseTag.Version
+		}
+	}
+
 	pack.isInstalled = Installation.PackIsInstalled(pack)
 
 	return pack, nil
@@ -120,7 +163,7 @@ func (p *PackType) fetch() error {
 // to be installed.
 func (p *PackType) validate() error {
 	log.Debug("Validating pack")
-	pdscFileName := fmt.Sprintf("%s.%s.pdsc", p.Vendor, p.Name)
+	pdscFileName := p.PdscFileName()
 	for _, file := range p.zipReader.File {
 		if filepath.Base(file.Name) == pdscFileName {
 
@@ -128,7 +171,7 @@ func (p *PackType) validate() error {
 			subfoldersCount := strings.Count(file.Name, "/") + strings.Count(file.Name, "\\")
 			if subfoldersCount > 1 {
 				return errs.ErrPdscFileTooDeepInPack
-			} else if subfoldersCount == 0 {
+			} else if subfoldersCount == 1 {
 				p.Subfolder = filepath.Dir(file.Name)
 			}
 
@@ -252,17 +295,17 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	// Close zip file so Windows can't complain if we rename it
 	p.zipReader.Close()
 
-	pdscFileName := fmt.Sprintf("%s.%s.pdsc", p.Vendor, p.Name)
-	pdscFilePath := filepath.Join(packHomeDir, p.Pdsc.FileName)
-	newPdscFileName := fmt.Sprintf("%s.%s.%s.pdsc", p.Vendor, p.Name, p.Version)
+	pdscFileName := p.PdscFileName()
+	pdscFilePath := filepath.Join(packHomeDir, pdscFileName)
+	newPdscFileName := p.PdscFileNameWithVersion()
 
-	if !p.isPublic {
+	if !p.IsPublic {
 		_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.LocalDir, pdscFileName))
 	}
 
 	_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.DownloadDir, newPdscFileName))
 
-	packBackupPath := filepath.Join(Installation.DownloadDir, fmt.Sprintf("%s.%s.%s.pack", p.Vendor, p.Name, p.Version))
+	packBackupPath := filepath.Join(Installation.DownloadDir, p.PackFileName())
 	if !p.isDownloaded {
 		return utils.CopyFile(p.path, packBackupPath)
 	}
@@ -302,8 +345,8 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 		}
 
 		// Remove local pdsc file if pack is not public and if there are no more versions of this pack installed
-		if !p.isPublic {
-			localPdscFileName := p.Vendor + "." + p.Name + ".pdsc"
+		if !p.IsPublic {
+			localPdscFileName := p.PdscFileName()
 			filePath := filepath.Join(Installation.LocalDir, localPdscFileName)
 			if err := os.Remove(filePath); err != nil {
 				return err
@@ -384,4 +427,29 @@ func (p *PackType) extractEula() error {
 	log.Infof("Extracting embedded license to %v", eulaFileName)
 
 	return ioutil.WriteFile(eulaFileName, eulaContents, 0600)
+}
+
+// PackID retuns the most generic name of a pack: Vendor.PackName
+func (p *PackType) PackID() string {
+	return p.Vendor + "." + p.Name
+}
+
+// PackIDWithVersion returns the packID with version: Vendor.PackName.x.y.z
+func (p *PackType) PackIDWithVersion() string {
+	return p.PackID() + "." + p.Version
+}
+
+// PackFileName returns a string with how the pack file name would be: Vendor.PackName.x.y.z.pack
+func (p *PackType) PackFileName() string {
+	return p.PackIDWithVersion() + ".pack"
+}
+
+// PdscFileName returns a string with how the pack's pdsc file name would be: Vendor.PackName.pdsc
+func (p *PackType) PdscFileName() string {
+	return p.PackID() + ".pdsc"
+}
+
+// PdscFileNameWithVersion returns a string with how the pack's pdsc file name would be: Vendor.PackName.x.y.z.pdsc
+func (p *PackType) PdscFileNameWithVersion() string {
+	return p.PackIDWithVersion() + ".pdsc"
 }

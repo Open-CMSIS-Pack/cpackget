@@ -77,6 +77,17 @@ func TestSecureInflateFile(t *testing.T) {
 		assert.True(info.IsDir())
 	})
 
+	t.Run("test inflating a directory that got striped", func(t *testing.T) {
+		dirName := "test-inflate-zip-dir-that-got-striped"
+		zipFile := &zip.File{}
+		zipFile.Name = dirName + "/"
+		err := utils.SecureInflateFile(zipFile, "", dirName)
+		assert.Nil(err)
+
+		// Make sure directory did NOT get created
+		assert.False(utils.DirExists(dirName))
+	})
+
 	t.Run("test inflating a file", func(t *testing.T) {
 		// Archive:  testdata/utils/test-secureinflatefile.zip
 		//   Length      Date    Time    Name

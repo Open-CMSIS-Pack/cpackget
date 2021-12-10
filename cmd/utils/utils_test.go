@@ -141,12 +141,12 @@ func TestEnsureDir(t *testing.T) {
 			assert.Nil(err)
 		}()
 
+		assert.False(utils.DirExists(dirName))
+
 		assert.Nil(utils.EnsureDir(dirName))
 
 		// Make sure it really exists
-		stat, err := os.Stat(dirName)
-		assert.Nil(err)
-		assert.True(stat.IsDir())
+		assert.True(utils.DirExists(dirName))
 	})
 }
 

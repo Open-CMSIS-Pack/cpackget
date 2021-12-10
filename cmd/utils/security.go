@@ -77,7 +77,7 @@ func SecureInflateFile(file *zip.File, destinationDir, stripPrefix string) error
 	// 1. zipped-dir/
 	// 2. zipped-dir/file
 	// And the directory will get created separately
-	// But there are zipped files without that, hence the snipped below
+	// But there are zipped files without that, hence the snippet below
 	// ensures all file's path are created prior to inflating the actual file
 	fileDir, _ := filepath.Split(fileName)
 	fileDir = filepath.Join(destinationDir, fileDir) + string(os.PathSeparator)
