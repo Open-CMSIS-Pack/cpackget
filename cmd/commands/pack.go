@@ -63,7 +63,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 			return errs.ErrIncorrectCmdArgs
 		}
 
-		log.Infof("Adding %v", args)
+		log.Debugf("Specified packs %v", args)
 		var firstError error
 		for _, packPath := range args {
 			if err := installer.AddPack(packPath, !skipEula, extractEula); err != nil {
