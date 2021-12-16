@@ -22,11 +22,36 @@ func printVersionAndLicense(file io.Writer) {
 	fmt.Fprintf(file, "%v\n", License)
 }
 
+// UsageTemplate returns usage template for the command.
+var usageTemplate = `Usage:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if gt (len .Aliases) 0}}
+
+Aliases:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+Examples:
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}
+
+Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+Flags:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+
+Global Flags:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+
+Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+`
+
 func NewCli() *cobra.Command {
 	cobra.OnInitialize(initCobra)
 
 	rootCmd := &cobra.Command{
-		Use:           "cpackget",
+		Use:           "cpackget [command] [flags]",
 		Short:         "This utility adds/removes CMSIS-Packs",
 		Long:          "Please refer to the upstream repository for further information: https://github.com/Open-CMSIS-Pack/cpackget.",
 		SilenceUsage:  true,
@@ -40,6 +65,8 @@ func NewCli() *cobra.Command {
 			return cmd.Help()
 		},
 	}
+
+	rootCmd.SetUsageTemplate(usageTemplate)
 
 	defaultPackRoot := os.Getenv("CMSIS_PACK_ROOT")
 
