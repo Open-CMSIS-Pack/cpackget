@@ -19,6 +19,7 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/ui"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
+	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -284,7 +285,9 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	}
 
 	log.Debugf("Extracting files from \"%s\" to \"%s\"", p.path, packHomeDir)
+	progress := progressbar.Default(int64(len(p.zipReader.File)), "I: Extracting files to "+packHomeDir)
 	for _, file := range p.zipReader.File {
+		_ = progress.Add(1)
 		err = utils.SecureInflateFile(file, packHomeDir, p.Subfolder)
 		if err != nil {
 			defer p.zipReader.Close()
