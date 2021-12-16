@@ -45,10 +45,10 @@ func NewCli() *cobra.Command {
 
 	rootCmd.Flags().BoolVarP(&flags.version, "version", "V", false, "Prints the version number of cpackget and exit")
 	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "Run cpackget silently, printing only error messages")
-	rootCmd.PersistentFlags().BoolP("verbosiness", "v", false, "Sets verbosiness level: None (Errors + Info + Warnings), -v (all + Debugging). Specify \"-q\" for no messages")
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Sets verboseness level: None (Errors + Info + Warnings), -v (all + Debugging). Specify \"-q\" for no messages")
 	rootCmd.PersistentFlags().StringP("pack-root", "R", defaultPackRoot, "Specifies pack root folder. Defaults to CMSIS_PACK_ROOT environment variable")
 	_ = viper.BindPFlag("pack-root", rootCmd.PersistentFlags().Lookup("pack-root"))
-	_ = viper.BindPFlag("verbosiness", rootCmd.PersistentFlags().Lookup("verbosiness"))
+	_ = viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 	_ = viper.BindPFlag("quiet", rootCmd.PersistentFlags().Lookup("quiet"))
 
 	for _, cmd := range commands.All {

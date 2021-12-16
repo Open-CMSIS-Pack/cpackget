@@ -25,10 +25,10 @@ var createPackRoot bool
 
 // configureInstaller configures cpackget installer for adding or removing pack/pdsc
 func configureInstaller(cmd *cobra.Command, args []string) error {
-	verbosiness := viper.GetBool("verbosiness")
+	verbosiness := viper.GetBool("verbose")
 	quiet := viper.GetBool("quiet")
 	if quiet && verbosiness {
-		return errors.New("both \"-q\" and \"-v\" were specified, please pick only one verbosiness option")
+		return errors.New("both \"-q\" and \"-v\" were specified, please pick only one verboseness option")
 	}
 
 	log.SetLevel(log.InfoLevel)
