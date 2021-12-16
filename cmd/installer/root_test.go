@@ -167,7 +167,9 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 			// enough for the time delta below to show a difference
 			// Ref: https://www.lochan.org/2005/keith-cl/useful/win32time.html#timingwin
 			// So let's sleep a bit before checking for file mod times
-			time.Sleep(1 * time.Second)
+			// Sleeping for 1 second still caused interemittent results on Windows,
+			// bumping this up to 3 seconds
+			time.Sleep(3 * time.Second)
 		}
 
 		// Make sure the pack.idx file gets trouched
