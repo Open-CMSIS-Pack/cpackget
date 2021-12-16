@@ -19,12 +19,13 @@ import (
 
 // AddPack adds a pack to the pack installation directory structure
 func AddPack(packPath string, checkEula, extractEula bool) error {
-	log.Debugf("Adding pack \"%v\"", packPath)
 
 	pack, err := preparePack(packPath)
 	if err != nil {
 		return err
 	}
+
+	log.Infof("Adding pack \"%s.%s.%s\"", pack.Vendor, pack.Name, pack.Version)
 
 	if !extractEula && pack.isInstalled {
 		return errs.ErrPackAlreadyInstalled
