@@ -64,7 +64,7 @@ func DownloadFile(URL string) (string, error) {
 	if log.GetLevel() != log.ErrorLevel {
 		progressWriter := progressbar.DefaultBytes(
 			resp.ContentLength,
-			"Downloading "+fileBase,
+			"I: Downloading "+fileBase,
 		)
 		writers = append(writers, progressWriter)
 	}
