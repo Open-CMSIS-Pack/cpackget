@@ -5,7 +5,6 @@ package commands
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	log "github.com/sirupsen/logrus"
@@ -26,14 +25,21 @@ var createPackRoot bool
 
 // configureInstaller configures cpackget installer for adding or removing pack/pdsc
 func configureInstaller(cmd *cobra.Command, args []string) error {
-	logLevels := []log.Level{log.ErrorLevel, log.InfoLevel, log.DebugLevel}
-	maxVerbosiness := len(logLevels) - 1
-	verbosiness := viper.GetInt("verbosiness")
-	if verbosiness > maxVerbosiness {
-		errorMessage := fmt.Sprintf("Max verbosiness count is %v", maxVerbosiness)
-		return errors.New(errorMessage)
+	verbosiness := viper.GetBool("verbose")
+	quiet := viper.GetBool("quiet")
+	if quiet && verbosiness {
+		return errors.New("both \"-q\" and \"-v\" were specified, please pick only one verboseness option")
 	}
-	log.SetLevel(logLevels[verbosiness])
+
+	log.SetLevel(log.InfoLevel)
+
+	if quiet {
+		log.SetLevel(log.ErrorLevel)
+	}
+
+	if verbosiness {
+		log.SetLevel(log.DebugLevel)
+	}
 
 	return installer.SetPackRoot(viper.GetString("pack-root"), createPackRoot)
 }
