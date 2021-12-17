@@ -133,7 +133,7 @@ func CopyFile(source, destination string) error {
 	}
 	defer destinationFile.Close()
 
-	_, err = io.Copy(destinationFile, sourceFile)
+	_, err = SecureCopy(destinationFile, sourceFile)
 	return err
 }
 
