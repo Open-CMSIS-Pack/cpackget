@@ -29,6 +29,10 @@ const DownloadBufferSize = 4096
 func SecureCopy(dst io.Writer, src io.Reader) (int64, error) {
 	bytesRead := int64(0)
 	for {
+		if ShouldAbortFunction != nil && ShouldAbortFunction() {
+			return bytesRead, errs.ErrTerminatedByUser
+		}
+
 		partialRead, err := io.CopyN(dst, src, DownloadBufferSize)
 
 		// Check if copy limit has explode before checking for errors

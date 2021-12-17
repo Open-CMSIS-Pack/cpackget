@@ -36,6 +36,26 @@ func TestSecureCopy(t *testing.T) {
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrFileTooBig))
 	})
+
+	t.Run("test abort copy due to user termination request", func(t *testing.T) {
+		// Fake a user termination request
+		utils.ShouldAbortFunction = func() bool {
+			return true
+		}
+
+		// Reset it at the end
+		defer func() {
+			utils.ShouldAbortFunction = nil
+		}()
+
+		var outBuffer bytes.Buffer
+		writer := bufio.NewWriter(&outBuffer)
+		reader := strings.NewReader("some content")
+
+		_, err := utils.SecureCopy(writer, reader)
+		assert.NotNil(err)
+		assert.True(errs.Is(err, errs.ErrTerminatedByUser))
+	})
 }
 
 func TestSecureInflateFile(t *testing.T) {

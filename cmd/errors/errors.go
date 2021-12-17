@@ -73,4 +73,7 @@ var (
 
 	// Hack to allow multiple error logs while still avoiding duplicating the last error log
 	ErrAlreadyLogged = errors.New("already logged")
+
+	// Error/Flag to detect when a user has requested early termination
+	ErrTerminatedByUser = errors.New("terminated by user request")
 )

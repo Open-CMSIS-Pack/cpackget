@@ -30,6 +30,10 @@ var CacheDir string
 
 var HTTPClient *http.Client
 
+// ShouldAbortFunction is a function that determines whether early termination was requested
+// by the user
+var ShouldAbortFunction func() bool
+
 // DownloadFile downloads a file from an URL and saves it locally under destionationFilePath
 func DownloadFile(URL string) (string, error) {
 	parsedURL, _ := url.Parse(URL)

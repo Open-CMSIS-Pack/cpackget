@@ -7,12 +7,15 @@ import (
 	"os"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 func main() {
 	log.SetFormatter(new(LogFormatter))
 	log.SetOutput(os.Stdout)
+
+	utils.ShouldAbortFunction = startSignalWatcher()
 
 	cmd := NewCli()
 	err := cmd.Execute()
@@ -22,4 +25,6 @@ func main() {
 		}
 		os.Exit(-1)
 	}
+
+	stopSignalWatcher()
 }
