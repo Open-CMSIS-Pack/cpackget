@@ -5,6 +5,7 @@ package utils
 
 import (
 	"archive/zip"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -30,6 +31,8 @@ func SecureCopy(dst io.Writer, src io.Reader) (int64, error) {
 	bytesRead := int64(0)
 	for {
 		if ShouldAbortFunction != nil && ShouldAbortFunction() {
+			// Break a line after user types Ctrl+C
+			fmt.Println()
 			return bytesRead, errs.ErrTerminatedByUser
 		}
 
