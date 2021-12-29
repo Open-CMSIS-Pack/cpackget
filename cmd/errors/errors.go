@@ -28,7 +28,6 @@ var (
 
 	// Errors related to package content
 	ErrPdscFileNotFound      = errors.New("pdsc not found")
-	ErrPackAlreadyInstalled  = errors.New("pack already installed")
 	ErrPackNotInstalled      = errors.New("pack not installed")
 	ErrPackNotPurgeable      = errors.New("pack not purgeable")
 	ErrPdscEntryExists       = errors.New("pdsc already in index")
@@ -36,7 +35,7 @@ var (
 	ErrEula                  = errors.New("user does not agree with the pack's license")
 	ErrExtractEula           = errors.New("user wants to extract embedded license only")
 	ErrLicenseNotFound       = errors.New("embedded license not found")
-	ErrPackRootNotFound      = errors.New("pack root not found")
+	ErrPackRootNotFound      = errors.New("no CMSIS Pack Root directory specified. Either the environment CMSIS_PACK_ROOT needs to be set or the path specified using the command line option -R/--pack-root string")
 	ErrPdscFileTooDeepInPack = errors.New("pdsc file is too deep in pack file")
 
 	// Errors related to network
@@ -66,7 +65,7 @@ var (
 	ErrIncorrectCmdArgs = errors.New("incorrect setup of command line arguments")
 
 	// Errors on installation strucuture
-	ErrCannotOverwritePublicIndex = errors.New("cannot overwrite original public index.pidx")
+	ErrCannotOverwritePublicIndex = errors.New("cannot replace \"index.pidx\", use the flag \"-f/--force\" to force overwritting it")
 	ErrPackPdscCannotBeFound      = errors.New("the URL for the pack pdsc file seems not to exist or it didn't return the file")
 	ErrPackVersionNotFoundInPdsc  = errors.New("pack version not found in the pdsc file")
 	ErrPackURLCannotBeFound       = errors.New("URL for the pack cannot be determined. Please consider updating the public index. Ex: cpackget --force index https://keil.com/pack/index.pidx")
