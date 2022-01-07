@@ -70,7 +70,10 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 				if firstError == nil {
 					firstError = err
 				}
-				log.Error(err)
+
+				if !errs.AlreadyLogged(err) {
+					log.Error(err)
+				}
 			}
 		}
 

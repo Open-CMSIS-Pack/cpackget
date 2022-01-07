@@ -66,7 +66,7 @@ func TestAddPack(t *testing.T) {
 		packPath = publicLocalPack123
 		err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
 		assert.NotNil(err)
-		assert.Equal(err, errs.ErrPackAlreadyInstalled)
+		assert.Equal(err, errs.ErrAlreadyLogged)
 
 		// Make sure pack.idx did NOT get touched
 		packIdx, err = os.Stat(installer.Installation.PackIdx)
