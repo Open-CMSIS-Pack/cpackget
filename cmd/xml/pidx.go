@@ -96,6 +96,11 @@ func (p *PidxXML) HasPdsc(pdsc PdscTag) bool {
 	return ok
 }
 
+// ListPdscs returns a map of PdscTags in the pidx document
+func (p *PidxXML) ListPdscs() map[string]PdscTag {
+	return p.pdscList
+}
+
 // FindPdscTag takes in a sample pdscTag and returns the actual PDSC tag inside this PidxXML.
 func (p *PidxXML) FindPdscTag(pdsc PdscTag) *PdscTag {
 	log.Debugf("Searching for pdsc \"%s\"", pdsc.Key())

@@ -29,6 +29,12 @@ var extractEula bool
 // packsListFileName is the file name where a list of pack urls is present
 var packsListFileName string
 
+// listPublic tells whether listing all packs in the public index
+var listPublic bool
+
+// listCached tells whether listing all cached packs
+var listCached bool
+
 var packAddCmd = &cobra.Command{
 	Use:   "add [<pack path> | -f <packs list>]",
 	Short: "Adds Open-CMSIS-Pack packages",
@@ -106,10 +112,22 @@ Cache files (i.e. under CMSIS_PACK_ROOT/.Download/) are *NOT* removed. If cache 
 	},
 }
 
+var packListCmd = &cobra.Command{
+	Use:   "list [--cached|--public]",
+	Short: "Lists installed packs",
+	Long:  `Lists all installed packs and optionally cached pack files`,
+	Args:  cobra.MaximumNArgs(0),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return installer.ListInstalledPacks(listCached, listPublic)
+	},
+}
+
 func init() {
 	packRmCmd.Flags().BoolVarP(&purge, "purge", "p", false, "forces deletion of cached pack files")
 	packAddCmd.Flags().BoolVarP(&skipEula, "agree-embedded-license", "a", false, "agrees with the embedded license of the pack")
 	packAddCmd.Flags().BoolVarP(&extractEula, "extract-embedded-license", "x", false, "extracts the embedded license of the pack and aborts the installation")
 	packAddCmd.Flags().StringVarP(&packsListFileName, "packs-list-filename", "f", "", "specifies a file listing packs urls, one per line")
-	PackCmd.AddCommand(packAddCmd, packRmCmd)
+	packListCmd.Flags().BoolVarP(&listCached, "cached", "c", false, "lists only cached packs")
+	packListCmd.Flags().BoolVarP(&listPublic, "public", "p", false, "lists packs in the public index")
+	PackCmd.AddCommand(packAddCmd, packRmCmd, packListCmd)
 }
