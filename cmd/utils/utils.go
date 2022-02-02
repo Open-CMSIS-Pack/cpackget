@@ -74,6 +74,7 @@ func DownloadFile(URL string) (string, error) {
 	log.Debugf("Downloaded %d bytes", written)
 
 	if err != nil {
+		out.Close()
 		_ = os.Remove(filePath)
 	}
 
