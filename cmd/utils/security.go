@@ -23,6 +23,10 @@ var MaxDownloadSize = int64(20 * 1024 * 1024 * 1024)
 // file per iteration. It is 4kb
 const DownloadBufferSize = 4096
 
+// ShouldAbortFunction is a function that determines whether early termination was requested
+// by the user
+var ShouldAbortFunction func() bool
+
 // SecureCopy avoids potential DoS vulnerabilities when
 // downloading a stream from a remote origin or decompressing
 // a file.

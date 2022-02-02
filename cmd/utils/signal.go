@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* Copyright Contributors to the cpackget project. */
 
-package main
+package utils
 
 import (
 	"os"
@@ -21,12 +21,14 @@ var terminationRequested bool
 
 // startSignalWatcher spins off a thread monitoring termination signals
 // and retuns a function that returns whether termination was requested
-func startSignalWatcher() func() bool {
+func StartSignalWatcher() {
 	log.Debug("Starting monitoring thread")
 
 	// Create a channel to receive signals and pass to the monitoring thread
 	sigs = make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM) // SA1016: syscall.SIGKILL cannot be trapped
+	signal.Notify(sigs, os.Interrupt, syscall.SIGINT, syscall.SIGTERM) // SA1016: syscall.SIGKILL cannot be trapped
+
+	terminationRequested = false
 
 	// Spin off the monitoring thread
 	go func() {
@@ -35,15 +37,15 @@ func startSignalWatcher() func() bool {
 		terminationRequested = true
 	}()
 
-	// Returns a function that needs running to check if a termination request
+	// Function that needs running to check if a termination request
 	// has been triggered
-	return func() bool {
+	ShouldAbortFunction = func() bool {
 		return terminationRequested
 	}
 }
 
 // stopSignalWatcher sends a fake signal to the monitoring thread
 // making it terminate
-func stopSignalWatcher() {
+func StopSignalWatcher() {
 	sigs <- syscall.SIGTERM
 }

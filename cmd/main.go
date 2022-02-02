@@ -15,7 +15,7 @@ func main() {
 	log.SetFormatter(new(LogFormatter))
 	log.SetOutput(os.Stdout)
 
-	utils.ShouldAbortFunction = startSignalWatcher()
+	utils.StartSignalWatcher()
 
 	cmd := NewCli()
 	err := cmd.Execute()
@@ -26,5 +26,5 @@ func main() {
 		os.Exit(-1)
 	}
 
-	stopSignalWatcher()
+	utils.StopSignalWatcher()
 }
