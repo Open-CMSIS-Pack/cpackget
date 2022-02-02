@@ -630,4 +630,76 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(err)
 		checkPackIsInstalled(t, pack123)
 	})
+
+	t.Run("test installing a pack that got cancelled during download", func(t *testing.T) {
+		localTestingDir := "test-add-pack-cancelled-during-download"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		defer os.RemoveAll(localTestingDir)
+
+		// Fake a user termination request
+		utils.ShouldAbortFunction = func() bool {
+			return true
+		}
+
+		// Reset it at the end
+		defer func() {
+			utils.ShouldAbortFunction = nil
+		}()
+
+		zipContent, err := ioutil.ReadFile(publicRemotePack123)
+		assert.Nil(err)
+		packServer := NewServer()
+		packServer.AddRoute("*", zipContent)
+
+		_, packBasePath := filepath.Split(publicRemotePack123)
+
+		packPath := packServer.URL() + packBasePath
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
+		assert.NotNil(err)
+		assert.Equal(errs.ErrTerminatedByUser, err)
+
+		// Make sure there's no pack file in the .Download
+		assert.False(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, packBasePath)))
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
+	})
+
+	t.Run("test installing a pack that got cancelled during extraction", func(t *testing.T) {
+		localTestingDir := "test-add-cancelled-during-extraction"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		defer os.RemoveAll(localTestingDir)
+
+		// Fake a user termination request
+		skipAbortingOnPdscCopy := -1
+		utils.ShouldAbortFunction = func() bool {
+			skipAbortingOnPdscCopy += 1
+			return skipAbortingOnPdscCopy > 1
+		}
+
+		// Reset it at the end
+		defer func() {
+			utils.ShouldAbortFunction = nil
+		}()
+
+		packPath := publicLocalPack123
+
+		packInfo, err := utils.ExtractPackInfo(packPath, false)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
+		assert.NotNil(err)
+		assert.Equal(errs.ErrTerminatedByUser, err)
+
+		// Make sure there's no pack folder in Vendor/PackName/x.y.z/, Vendor/PackName/ and Vendor/
+		assert.False(utils.DirExists(filepath.Join(installer.Installation.PackRoot, pack.Vendor, pack.Name, pack.Version)))
+		assert.False(utils.DirExists(filepath.Join(installer.Installation.PackRoot, pack.Vendor, pack.Name)))
+		assert.False(utils.DirExists(filepath.Join(installer.Installation.PackRoot, pack.Vendor)))
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
+	})
 }

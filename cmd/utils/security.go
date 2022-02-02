@@ -5,6 +5,7 @@ package utils
 
 import (
 	"archive/zip"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -22,6 +23,10 @@ var MaxDownloadSize = int64(20 * 1024 * 1024 * 1024)
 // file per iteration. It is 4kb
 const DownloadBufferSize = 4096
 
+// ShouldAbortFunction is a function that determines whether early termination was requested
+// by the user
+var ShouldAbortFunction func() bool
+
 // SecureCopy avoids potential DoS vulnerabilities when
 // downloading a stream from a remote origin or decompressing
 // a file.
@@ -29,6 +34,12 @@ const DownloadBufferSize = 4096
 func SecureCopy(dst io.Writer, src io.Reader) (int64, error) {
 	bytesRead := int64(0)
 	for {
+		if ShouldAbortFunction != nil && ShouldAbortFunction() {
+			// Break a line after user types Ctrl+C
+			fmt.Println()
+			return bytesRead, errs.ErrTerminatedByUser
+		}
+
 		partialRead, err := io.CopyN(dst, src, DownloadBufferSize)
 
 		// Check if copy limit has explode before checking for errors

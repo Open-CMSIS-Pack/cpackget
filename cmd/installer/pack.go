@@ -148,6 +148,10 @@ func (p *PackType) fetch() error {
 	var err error
 	if strings.HasPrefix(p.path, "http") {
 		p.path, err = utils.DownloadFile(p.path)
+		if err == errs.ErrTerminatedByUser {
+			log.Infof("Aborting pack download. Removing \"%s\"", p.path)
+		}
+
 		p.isDownloaded = true
 		return err
 	}
@@ -291,6 +295,13 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 		err = utils.SecureInflateFile(file, packHomeDir, p.Subfolder)
 		if err != nil {
 			defer p.zipReader.Close()
+
+			if err == errs.ErrTerminatedByUser {
+				log.Infof("Aborting pack extraction. Removing \"%s\"", packHomeDir)
+				if newErr := p.uninstall(installation); newErr != nil {
+					log.Error(err)
+				}
+			}
 			return err
 		}
 	}

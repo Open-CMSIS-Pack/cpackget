@@ -74,6 +74,7 @@ func DownloadFile(URL string) (string, error) {
 	log.Debugf("Downloaded %d bytes", written)
 
 	if err != nil {
+		out.Close()
 		_ = os.Remove(filePath)
 	}
 
@@ -129,7 +130,7 @@ func CopyFile(source, destination string) error {
 	}
 	defer destinationFile.Close()
 
-	_, err = io.Copy(destinationFile, sourceFile)
+	_, err = SecureCopy(destinationFile, sourceFile)
 	return err
 }
 
