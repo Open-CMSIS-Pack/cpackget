@@ -5,6 +5,7 @@ package installer_test
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -12,14 +13,25 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
+
+// Copy of cmd/log.go
+type LogFormatter struct{}
+
+func (s *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
+	level := strings.ToUpper(entry.Level.String())
+	msg := fmt.Sprintf("%s: %s\n", level[0:1], entry.Message)
+	return []byte(msg), nil
+}
 
 func packInfoToType(info utils.PackInfo) *installer.PackType {
 	pack := &installer.PackType{}
@@ -449,4 +461,9 @@ func TestSetPackRoot(t *testing.T) {
 		// Now just make sure it's usable, even when not forced to initialize
 		assert.Nil(installer.SetPackRoot(localTestingDir, !CreatePackRoot))
 	})
+}
+
+func init() {
+	log.SetLevel(log.InfoLevel)
+	log.SetFormatter(new(LogFormatter))
 }

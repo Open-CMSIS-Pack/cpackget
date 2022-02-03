@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -155,6 +156,123 @@ func UpdatePublicIndex(indexPath string, overwrite bool) error {
 	}
 
 	return utils.MoveFile(indexPath, filepath.Join(Installation.WebDir, "index.pidx"))
+}
+
+// ListInstalledPacks generates a list of all packs present in the pack root folder
+func ListInstalledPacks(listCached, listPublic bool) error {
+	log.Debugf("Listing packs")
+	if listPublic {
+		log.Info("Listing packs from the public index")
+		pdscMap := Installation.PublicIndexXML.ListPdscs()
+
+		// Sort by keys
+		keys := make([]string, len(pdscMap))
+		i := 0
+		for k := range pdscMap {
+			keys[i] = k
+			i++
+		}
+
+		if i == 0 {
+			log.Info("(no packs in public index)")
+			return nil
+		}
+
+		sort.Slice(keys, func(i, j int) bool {
+			return strings.ToLower(keys[i]) < strings.ToLower(keys[j])
+		})
+		// List all available packs from the index
+		for _, pdscKey := range keys {
+			pdscTag := pdscMap[pdscKey]
+			logMessage := pdscKey
+			packFilePath := filepath.Join(Installation.DownloadDir, pdscTag.Key()) + ".pack"
+
+			if Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}) {
+				logMessage += " (installed)"
+			} else if utils.FileExists(packFilePath) {
+				logMessage += " (cached)"
+			}
+			log.Info(logMessage)
+		}
+	} else if listCached {
+		log.Info("Listing cached packs")
+		pattern := filepath.Join(Installation.DownloadDir, "*.pack")
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			return err
+		}
+
+		if len(matches) == 0 {
+			log.Info("(no packs cached)")
+			return nil
+		}
+
+		sort.Slice(matches, func(i, j int) bool {
+			return strings.ToLower(matches[i]) < strings.ToLower(matches[j])
+		})
+		for _, packFilePath := range matches {
+			packInfo, err := utils.ExtractPackInfo(packFilePath, false)
+			if err != nil {
+				log.Errorf("A pack in the cache folder has malformed pack name: %s", packFilePath)
+				return errs.ErrUnknownBehavior
+			}
+
+			pdscTag := xml.PdscTag{
+				Vendor:  packInfo.Vendor,
+				Name:    packInfo.Pack,
+				Version: packInfo.Version,
+			}
+
+			logMessage := pdscTag.Key()
+			if Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}) {
+				logMessage += " (installed)"
+			}
+
+			log.Info(logMessage)
+		}
+	} else {
+		log.Info("Listing installed packs")
+		pattern := filepath.Join(Installation.PackRoot, "*", "*", "*", "*.pdsc")
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			return err
+		}
+
+		if len(matches) == 0 {
+			log.Info("(no packs installed)")
+			return nil
+		}
+
+		sort.Slice(matches, func(i, j int) bool {
+			return strings.ToLower(matches[i]) < strings.ToLower(matches[j])
+		})
+		for _, pdscFilePath := range matches {
+
+			// Transform pdscFilePath into packName
+			pdscFilePath = strings.Replace(pdscFilePath, Installation.PackRoot, "", -1)
+			packName, _ := filepath.Split(pdscFilePath)
+			packName = strings.Replace(packName, "/", " ", -1)
+			packName = strings.Replace(packName, "\\", " ", -1)
+			packName = strings.Trim(packName, " ")
+			packName = strings.Replace(packName, " ", ".", -1) + ".pack"
+
+			packInfo, err := utils.ExtractPackInfo(packName, false)
+			if err != nil {
+				log.Errorf("A pack in the cache folder has malformed pack name: %s", packName)
+				return errs.ErrUnknownBehavior
+			}
+
+			pdscTag := xml.PdscTag{
+				Vendor:  packInfo.Vendor,
+				Name:    packInfo.Pack,
+				Version: packInfo.Version,
+			}
+
+			log.Info(pdscTag.Key())
+		}
+	}
+
+	return nil
 }
 
 // FindPackURL uses pack.path as packID and try to find the pack URL
