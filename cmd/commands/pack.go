@@ -16,7 +16,7 @@ import (
 var PackCmd = &cobra.Command{
 	Use:               "pack",
 	Short:             "Adds/Removes Open-CMSIS-Pack packages",
-	Long:              "Adds or removes Open-CMSIS-Pack packages from a local file or a file hosted somewhere else on the Internet.",
+	Long:              "Adds/Removes Open-CMSIS-Pack packages from a local file or a file hosted somewhere else on the Internet.",
 	PersistentPreRunE: configureInstaller,
 }
 
