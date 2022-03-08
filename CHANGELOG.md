@@ -1,3 +1,13 @@
+# v0.3.0
+
+This v0.3.0 release makes cpackget more verbose by default. This will
+show pack installation progress on both downloading and decompressing.
+
+It also supports gracefully ending an installation when hitting CTRL+C. 
+
+Finally this release supports installing packs using only the pack name,
+e.g. "ARM.CMSIS" or "ARM.CMSIS.5.7.0" in case a specific version is required.
+
 # v0.2.0
 
 This v0.2.0 release makes cpackget capable of replacing cp_init and cp_install
