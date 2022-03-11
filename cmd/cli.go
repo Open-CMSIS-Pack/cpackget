@@ -18,8 +18,8 @@ var flags struct {
 }
 
 func printVersionAndLicense(file io.Writer) {
-	fmt.Fprintf(file, "cpackget version %v\n", Version)
-	fmt.Fprintf(file, "%v\n", License)
+	fmt.Fprintf(file, "cpackget version %v\n", version)
+	fmt.Fprintf(file, "%v\n", license)
 }
 
 // UsageTemplate returns usage template for the command.
