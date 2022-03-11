@@ -1,3 +1,9 @@
+# v0.3.1
+
+This v0.3.1 release contains a tiny typo fix that prevented
+cpackget's version from being injected to its binary, thus
+causing it not to display the version of cpackget.
+
 # v0.3.0
 
 This v0.3.0 release makes cpackget more verbose by default. This will
