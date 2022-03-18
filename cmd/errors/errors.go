@@ -36,6 +36,7 @@ var (
 	ErrExtractEula           = errors.New("user wants to extract embedded license only")
 	ErrLicenseNotFound       = errors.New("embedded license not found")
 	ErrPackRootNotFound      = errors.New("no CMSIS Pack Root directory specified. Either the environment CMSIS_PACK_ROOT needs to be set or the path specified using the command line option -R/--pack-root string")
+	ErrPackRootDoesNotExist  = errors.New("the specified CMSIS Pack Root directory does NOT exist! Please take a moment to review if the value is correct or create a new one via `cpackget init` command")
 	ErrPdscFileTooDeepInPack = errors.New("pdsc file is too deep in pack file")
 
 	// Errors related to network
