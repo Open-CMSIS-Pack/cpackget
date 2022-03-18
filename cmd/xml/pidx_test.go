@@ -201,7 +201,7 @@ func TestPidxXML(t *testing.T) {
 	})
 
 	t.Run("test finding pdsc tag", func(t *testing.T) {
-		fileName := utils.RandStringBytes(10) + ".pidx"
+		fileName := "test-finding-pdsc-tag.pidx"
 		defer os.Remove(fileName)
 
 		pdscTag1 := xml.PdscTag{
