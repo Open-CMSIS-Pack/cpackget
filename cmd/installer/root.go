@@ -247,6 +247,7 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 			return strings.ToLower(matches[i]) < strings.ToLower(matches[j])
 		})
 		for _, pdscFilePath := range matches {
+			log.Debug(pdscFilePath)
 
 			// Transform pdscFilePath into packName
 			pdscFilePath = strings.Replace(pdscFilePath, Installation.PackRoot, "", -1)
@@ -344,10 +345,16 @@ var Installation *PacksInstallationType
 // SetPackRoot sets the working directory of the packs installation
 // if create == true, cpackget will try to create needed resources
 func SetPackRoot(packRoot string, create bool) error {
+	if len(packRoot) == 0 {
+		log.Infof("Using pack root: \"%v\"", packRoot)
+		return errs.ErrPackRootNotFound
+	}
+
+	packRoot = filepath.Clean(packRoot)
 	log.Infof("Using pack root: \"%v\"", packRoot)
 
-	if len(packRoot) == 0 || (!utils.DirExists(packRoot) && !create) {
-		return errs.ErrPackRootNotFound
+	if !utils.DirExists(packRoot) && !create {
+		return errs.ErrPackRootDoesNotExist
 	}
 
 	Installation = &PacksInstallationType{

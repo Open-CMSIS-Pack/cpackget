@@ -435,10 +435,20 @@ func TestUpdatePublicIndex(t *testing.T) {
 	})
 }
 
+func checkPackRoot(t *testing.T, path string) {
+	assert := assert.New(t)
+
+	assert.True(utils.DirExists(path))
+	assert.True(utils.DirExists(installer.Installation.DownloadDir))
+	assert.True(utils.DirExists(installer.Installation.WebDir))
+	assert.True(utils.DirExists(installer.Installation.LocalDir))
+}
+
 func TestSetPackRoot(t *testing.T) {
 
 	assert := assert.New(t)
 
+	// Sanity tests
 	t.Run("test fail to initialize empty pack root", func(t *testing.T) {
 		localTestingDir := ""
 		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot)
@@ -448,19 +458,36 @@ func TestSetPackRoot(t *testing.T) {
 		assert.Equal(errs.ErrPackRootNotFound, err)
 	})
 
+	t.Run("test fail to use non-existing directory", func(t *testing.T) {
+		localTestingDir := "non-existing-dir"
+		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot)
+		assert.Equal(errs.ErrPackRootDoesNotExist, err)
+	})
+
 	t.Run("test initialize pack root", func(t *testing.T) {
 		localTestingDir := "valid-pack-root"
 		defer os.RemoveAll(localTestingDir)
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 
-		assert.True(utils.DirExists(localTestingDir))
-		assert.True(utils.DirExists(installer.Installation.DownloadDir))
-		assert.True(utils.DirExists(installer.Installation.WebDir))
-		assert.True(utils.DirExists(installer.Installation.LocalDir))
+		checkPackRoot(t, localTestingDir)
 
 		// Now just make sure it's usable, even when not forced to initialize
 		assert.Nil(installer.SetPackRoot(localTestingDir, !CreatePackRoot))
 	})
+
+	// Define a few paths to try out per operating system
+	paths := generatePaths(t)
+	for description, path := range paths {
+		t.Run("test "+description, func(t *testing.T) {
+			defer os.RemoveAll(path)
+			assert.Nil(installer.SetPackRoot(path, CreatePackRoot))
+
+			checkPackRoot(t, path)
+
+			// Now just make sure it's usable, even when not forced to initialize
+			assert.Nil(installer.SetPackRoot(path, !CreatePackRoot))
+		})
+	}
 }
 
 func init() {
