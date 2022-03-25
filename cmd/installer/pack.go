@@ -96,7 +96,7 @@ func preparePack(packPath string) (*PackType, error) {
 		return pack, err
 	}
 
-	// Make sure to that the version exist in the pdsc
+	// Make sure that the version exists in the pdsc
 	if pack.IsPublic {
 		pdscFilePath := filepath.Join(Installation.WebDir, pack.PdscFileName())
 		pdscXML := xml.NewPdscXML(pdscFilePath)
