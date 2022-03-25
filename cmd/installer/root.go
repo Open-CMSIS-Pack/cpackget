@@ -92,7 +92,7 @@ func RemovePack(packPath string, purge bool) error {
 func AddPdsc(pdscPath string) error {
 	log.Debugf("Adding pdsc \"%v\"", pdscPath)
 
-	pdsc, err := preparePdsc(pdscPath, false)
+	pdsc, err := preparePdsc(pdscPath)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func AddPdsc(pdscPath string) error {
 func RemovePdsc(pdscPath string) error {
 	log.Debugf("Removing pdsc \"%v\"", pdscPath)
 
-	pdsc, err := preparePdsc(pdscPath, true)
+	pdsc, err := preparePdsc(pdscPath)
 	if err != nil {
 		return err
 	}
@@ -211,7 +211,7 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 			return strings.ToLower(matches[i]) < strings.ToLower(matches[j])
 		})
 		for _, packFilePath := range matches {
-			packInfo, err := utils.ExtractPackInfo(packFilePath, false)
+			packInfo, err := utils.ExtractPackInfo(packFilePath)
 			if err != nil {
 				log.Errorf("A pack in the cache folder has malformed pack name: %s", packFilePath)
 				return errs.ErrUnknownBehavior
@@ -257,7 +257,7 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 			packName = strings.Trim(packName, " ")
 			packName = strings.Replace(packName, " ", ".", -1) + ".pack"
 
-			packInfo, err := utils.ExtractPackInfo(packName, false)
+			packInfo, err := utils.ExtractPackInfo(packName)
 			if err != nil {
 				log.Errorf("A pack in the cache folder has malformed pack name: %s", packName)
 				return errs.ErrUnknownBehavior

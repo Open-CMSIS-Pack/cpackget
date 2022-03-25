@@ -263,7 +263,7 @@ func TestAddPack(t *testing.T) {
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := publicLocalPack123
-		packInfo, err := utils.ExtractPackInfo(packPath, false)
+		packInfo, err := utils.ExtractPackInfo(packPath)
 		assert.Nil(err)
 		pack := packInfoToType(packInfo)
 
@@ -309,7 +309,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithLicense
 
-		info, err := utils.ExtractPackInfo(packPath, false)
+		info, err := utils.ExtractPackInfo(packPath)
 		assert.Nil(err)
 
 		// Should NOT be installed if license is not agreed
@@ -389,7 +389,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithMissingLicense
 
-		info, err := utils.ExtractPackInfo(packPath, false)
+		info, err := utils.ExtractPackInfo(packPath)
 		assert.Nil(err)
 
 		// Should NOT be installed if license is missing
@@ -457,7 +457,7 @@ func TestAddPack(t *testing.T) {
 			publicIndexServer := NewServer()
 
 			// Tweak the URL for the pack's pdsc
-			packInfo, err := utils.ExtractPackInfo(packPath, true)
+			packInfo, err := utils.ExtractPackInfo(packPath)
 			assert.Nil(err)
 			packPdscTag := xml.PdscTag{Vendor: packInfo.Vendor, Name: packInfo.Pack, Version: packInfo.Version}
 			packPdscTag.URL = publicIndexServer.URL()
@@ -480,7 +480,7 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			defer os.RemoveAll(localTestingDir)
 
-			packInfo, err := utils.ExtractPackInfo(packPath, true)
+			packInfo, err := utils.ExtractPackInfo(packPath)
 			assert.Nil(err)
 			pack := packInfoToType(packInfo)
 
@@ -502,7 +502,7 @@ func TestAddPack(t *testing.T) {
 			defer os.RemoveAll(localTestingDir)
 
 			// Prep pack info
-			packInfo, err := utils.ExtractPackInfo(packPath, true)
+			packInfo, err := utils.ExtractPackInfo(packPath)
 			assert.Nil(err)
 			pack := packInfoToType(packInfo)
 
@@ -544,7 +544,7 @@ func TestAddPack(t *testing.T) {
 			defer os.RemoveAll(localTestingDir)
 
 			// Prep pack info
-			packInfo, err := utils.ExtractPackInfo(packPath, true)
+			packInfo, err := utils.ExtractPackInfo(packPath)
 			assert.Nil(err)
 			pack := packInfoToType(packInfo)
 			pack.Version = "1.2.3"
@@ -591,11 +591,11 @@ func TestAddPack(t *testing.T) {
 		pack123ID := nonPublicLocalPack123PackID
 		//pack124ID := nonPublicLocalPack124PackID
 
-		pack124Info, err := utils.ExtractPackInfo(pack124Path, false)
+		pack124Info, err := utils.ExtractPackInfo(pack124Path)
 		assert.Nil(err)
 		pack124 := packInfoToType(pack124Info)
 
-		pack123Info, err := utils.ExtractPackInfo(pack123Path, false)
+		pack123Info, err := utils.ExtractPackInfo(pack123Path)
 		assert.Nil(err)
 		pack123 := packInfoToType(pack123Info)
 
@@ -686,7 +686,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := publicLocalPack123
 
-		packInfo, err := utils.ExtractPackInfo(packPath, false)
+		packInfo, err := utils.ExtractPackInfo(packPath)
 		assert.Nil(err)
 		pack := packInfoToType(packInfo)
 

@@ -100,7 +100,6 @@ type ConfigType struct {
 	IsPublic    bool
 	CheckEula   bool
 	ExtractEula bool
-	IsPackID    bool
 }
 
 func addPack(t *testing.T, packPath string, config ConfigType) {
@@ -113,7 +112,7 @@ func addPack(t *testing.T, packPath string, config ConfigType) {
 		return
 	}
 
-	info, err := utils.ExtractPackInfo(packPath, config.IsPackID)
+	info, err := utils.ExtractPackInfo(packPath)
 	assert.Nil(err)
 
 	// Check in installer internals
@@ -134,7 +133,7 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 	// [http://vendor.com|path/to]/TheVendor.PackName.x.y.z -> TheVendor.PackName[.x.y.z]
 	shortPackPath := shortenPackPath(packPath, withVersion)
 
-	info, err := utils.ExtractPackInfo(shortPackPath, true /*short=true*/)
+	info, err := utils.ExtractPackInfo(shortPackPath)
 	assert.Nil(err)
 
 	// Check in installer internals

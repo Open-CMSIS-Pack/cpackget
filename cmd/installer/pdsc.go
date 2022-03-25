@@ -23,13 +23,13 @@ type PdscType struct {
 
 // preparePdsc does some sanity validation regarding pdsc name
 // and check if it's already installed or not
-func preparePdsc(pdscPath string, short bool) (*PdscType, error) {
+func preparePdsc(pdscPath string) (*PdscType, error) {
 	var err error
 	pdsc := &PdscType{
 		path: pdscPath,
 	}
 
-	info, err := utils.ExtractPackInfo(pdscPath, short)
+	info, err := utils.ExtractPackInfo(pdscPath)
 	if err != nil {
 		return pdsc, err
 	}

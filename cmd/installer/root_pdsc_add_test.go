@@ -24,7 +24,7 @@ func TestAddPdsc(t *testing.T) {
 		defer os.RemoveAll(localTestingDir)
 
 		err := installer.AddPdsc(malformedPackName)
-		assert.Equal(errs.ErrBadPackNameInvalidExtension, err)
+		assert.Equal(errs.ErrBadPackName, err)
 	})
 
 	t.Run("test add pdsc with bad local_repository.pidx", func(t *testing.T) {

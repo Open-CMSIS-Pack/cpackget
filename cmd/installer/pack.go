@@ -60,8 +60,6 @@ func preparePack(packPath string) (*PackType, error) {
 		path: packPath,
 	}
 
-	var shortPath bool
-
 	// Clean out any possible query or user auth in the URL
 	// to help finding the correct path info
 	if strings.HasPrefix(packPath, "http") {
@@ -76,13 +74,11 @@ func preparePack(packPath string) (*PackType, error) {
 		url.RawQuery = ""
 
 		packPath = url.String()
-		shortPath = false
 	} else if !strings.HasSuffix(packPath, ".pack") && !strings.HasSuffix(packPath, ".zip") {
 		pack.isPackID = true
-		shortPath = true
 	}
 
-	info, err := utils.ExtractPackInfo(packPath, shortPath)
+	info, err := utils.ExtractPackInfo(packPath)
 	if err != nil {
 		return pack, err
 	}
