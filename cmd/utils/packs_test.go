@@ -55,9 +55,10 @@ func TestExtractPackInfo(t *testing.T) {
 			name: "test short path successfully extract pack info",
 			path: "TheVendor.ThePack.0.0.1",
 			expected: utils.PackInfo{
-				Vendor:  "TheVendor",
-				Pack:    "ThePack",
-				Version: "0.0.1",
+				Vendor:       "TheVendor",
+				Pack:         "ThePack",
+				Version:      "0.0.1",
+				ExactVersion: true,
 			},
 		},
 		{
@@ -68,7 +69,44 @@ func TestExtractPackInfo(t *testing.T) {
 				Pack:   "ThePack",
 			},
 		},
-
+		{
+			name: "test extract pack info using legacy format without version",
+			path: "TheVendor::ThePack",
+			expected: utils.PackInfo{
+				Vendor: "TheVendor",
+				Pack:   "ThePack",
+			},
+		},
+		{
+			name: "test extract pack info using legacy format with exact version",
+			path: "TheVendor::ThePack@1.0.0",
+			expected: utils.PackInfo{
+				Vendor:       "TheVendor",
+				Pack:         "ThePack",
+				Version:      "1.0.0",
+				ExactVersion: true,
+			},
+		},
+		{
+			name: "test extract pack info using legacy format with minimum version",
+			path: "TheVendor::ThePack>=1.0.0",
+			expected: utils.PackInfo{
+				Vendor:       "TheVendor",
+				Pack:         "ThePack",
+				Version:      "1.0.0",
+				ExactVersion: false,
+			},
+		},
+		{
+			name: "test extract pack info using legacy format with minimum version alternative syntax",
+			path: "TheVendor::ThePack@~1.0.0",
+			expected: utils.PackInfo{
+				Vendor:       "TheVendor",
+				Pack:         "ThePack",
+				Version:      "1.0.0",
+				ExactVersion: false,
+			},
+		},
 		{
 			name: "test pdsc path with bad vendor name",
 			path: "not-a-valid-vendor-name?.ThePack.pdsc",

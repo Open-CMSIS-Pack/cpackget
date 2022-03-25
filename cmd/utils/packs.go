@@ -41,7 +41,13 @@ var packFileNameRegex = regexp.MustCompile(packFileNamePattern)
 // packIDPattern is one of the following:
 // - Vendor.Pack
 // - Vendor.Pack.x.y.z
-var packIDPattern = fmt.Sprintf(`^(?P<vendor>%s)\.(?P<pack>%s)(?:\.(?P<version>%s))?$`, namePattern, namePattern, versionPattern)
+// - Vendor::Pack
+// - Vendor::Pack@x.y.z
+// - Vendor::Pack@~x.y.z
+// - Vendor::Pack>=x.y.z
+var dottedPackIDPattern = fmt.Sprintf(`^(?P<vendor>%s)\.(?P<pack>%s)(?:\.(?P<version>%s))?$`, namePattern, namePattern, versionPattern)
+var legacyPackIDPattern = fmt.Sprintf(`^(?P<vendor>%s)::(?P<pack>%s)(?:(@|@~|>=)(?P<version>%s))?$`, namePattern, namePattern, versionPattern)
+var packIDPattern = fmt.Sprintf(`(?:%s|%s)`, dottedPackIDPattern, legacyPackIDPattern)
 
 // packIDRegex pre-compiles packIdPattern
 var packIDRegex = regexp.MustCompile(packIDPattern)
@@ -109,6 +115,7 @@ func IsPackVersionValid(packVersion string) bool {
 // PackInfo defines a basic pack information set
 type PackInfo struct {
 	Location, Vendor, Pack, Version, Extension string
+	ExactVersion                               bool
 }
 
 // ExtractPackInfo takes in a path to a pack and extracts the needed information.
@@ -131,18 +138,25 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 
 	// Most common scenario should be the use of packId
 	matches := matchPackID(packName)
-	if len(matches) == 3 || len(matches) == 4 {
+	if len(matches) > 0 {
 		info.Vendor = matches[1]
 		info.Pack = matches[2]
+
 		if len(matches) == 4 {
+			// 4 matches: [Vendor.Pack.x.y.z, Vendor, Pack, x.y.z ] (dotted version)
 			info.Version = matches[3]
+			info.ExactVersion = true
+		} else if len(matches) == 5 {
+			// 5 matches: [Vendor::Pack(@|@~|>=)x.y.z, Vendor, Pack, (@|@~|>=), x.y.z] (legacy version)
+			info.ExactVersion = matches[3] == "@"
+			info.Version = matches[4]
 		}
 		return info, nil
 	}
 
 	// It's known that packPath is either a file or an url
 	matches = matchPackFileName(packName)
-	if len(matches) != 5 && len(matches) != 4 {
+	if len(matches) == 0 {
 		// packPath is neither packId nor a valid pack file name
 		return info, errs.ErrBadPackName
 	}
