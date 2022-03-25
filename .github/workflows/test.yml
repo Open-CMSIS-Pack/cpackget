@@ -52,7 +52,7 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
       - name: Install xmllint
-        run: sudo apt-get install libxml2-utils
+        run: sudo apt-get update && sudo apt-get install libxml2-utils
       - name: Check if local_repository.pidx is valid
         run: |
           make test-xmllint-localrepository
