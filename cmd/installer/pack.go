@@ -40,6 +40,10 @@ type PackType struct {
 	// isPackID tells whether the path is in packID format: Vendor.PackName[.x.y.z]
 	isPackID bool
 
+	// exactVersion tells wether this pack identifier is specifying an exact version
+	// or is requesting a newer one, e.g. >=x.y.z
+	exactVersion bool
+
 	// path points to a file in the local system, whether or not it's local
 	path string
 
@@ -74,8 +78,6 @@ func preparePack(packPath string) (*PackType, error) {
 		url.RawQuery = ""
 
 		packPath = url.String()
-	} else if !strings.HasSuffix(packPath, ".pack") && !strings.HasSuffix(packPath, ".zip") {
-		pack.isPackID = true
 	}
 
 	info, err := utils.ExtractPackInfo(packPath)
@@ -87,6 +89,8 @@ func preparePack(packPath string) (*PackType, error) {
 	pack.Name = info.Pack
 	pack.Vendor = info.Vendor
 	pack.Version = info.Version
+	pack.isPackID = info.IsPackID
+	pack.exactVersion = info.ExactVersion
 
 	if pack.IsPublic, err = Installation.packIsPublic(pack); err != nil {
 		return pack, err

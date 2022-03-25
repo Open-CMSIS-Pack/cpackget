@@ -59,22 +59,25 @@ func TestExtractPackInfo(t *testing.T) {
 				Pack:         "ThePack",
 				Version:      "0.0.1",
 				ExactVersion: true,
+				IsPackID:     true,
 			},
 		},
 		{
 			name: "test short path successfully extract pack info without version",
 			path: "TheVendor.ThePack",
 			expected: utils.PackInfo{
-				Vendor: "TheVendor",
-				Pack:   "ThePack",
+				Vendor:   "TheVendor",
+				Pack:     "ThePack",
+				IsPackID: true,
 			},
 		},
 		{
 			name: "test extract pack info using legacy format without version",
 			path: "TheVendor::ThePack",
 			expected: utils.PackInfo{
-				Vendor: "TheVendor",
-				Pack:   "ThePack",
+				Vendor:   "TheVendor",
+				Pack:     "ThePack",
+				IsPackID: true,
 			},
 		},
 		{
@@ -85,6 +88,7 @@ func TestExtractPackInfo(t *testing.T) {
 				Pack:         "ThePack",
 				Version:      "1.0.0",
 				ExactVersion: true,
+				IsPackID:     true,
 			},
 		},
 		{
@@ -95,6 +99,7 @@ func TestExtractPackInfo(t *testing.T) {
 				Pack:         "ThePack",
 				Version:      "1.0.0",
 				ExactVersion: false,
+				IsPackID:     true,
 			},
 		},
 		{
@@ -105,6 +110,7 @@ func TestExtractPackInfo(t *testing.T) {
 				Pack:         "ThePack",
 				Version:      "1.0.0",
 				ExactVersion: false,
+				IsPackID:     true,
 			},
 		},
 		{

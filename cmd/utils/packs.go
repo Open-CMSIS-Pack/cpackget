@@ -115,7 +115,7 @@ func IsPackVersionValid(packVersion string) bool {
 // PackInfo defines a basic pack information set
 type PackInfo struct {
 	Location, Vendor, Pack, Version, Extension string
-	ExactVersion                               bool
+	ExactVersion, IsPackID                     bool
 }
 
 // ExtractPackInfo takes in a path to a pack and extracts the needed information.
@@ -139,6 +139,7 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 	// Most common scenario should be the use of packId
 	matches := matchPackID(packName)
 	if len(matches) > 0 {
+		info.IsPackID = true
 		info.Vendor = matches[1]
 		info.Pack = matches[2]
 
