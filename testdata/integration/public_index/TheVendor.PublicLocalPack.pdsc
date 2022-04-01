@@ -8,5 +8,7 @@
       <release version="1.2.4" date="2016-09-14">New release 2.</release>
       <release version="1.2.3" date="2016-09-15">New release.</release>
       <release version="1.2.2">Initial release.</release>
+      <release version="0.1.1">Beta release</release>
+      <release version="0.1.0">Alpha release.</release>
    </releases>
 </package>

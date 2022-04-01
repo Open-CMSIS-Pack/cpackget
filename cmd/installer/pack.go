@@ -21,6 +21,7 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/mod/semver"
 )
 
 // PackType is the struct that represents the installation of a
@@ -42,7 +43,10 @@ type PackType struct {
 
 	// exactVersion tells wether this pack identifier is specifying an exact version
 	// or is requesting a newer one, e.g. >=x.y.z
-	exactVersion bool
+	versionModifier int
+
+	// targetVersion is the most recent version of a pack in case exactVersion==true
+	targetVersion string
 
 	// path points to a file in the local system, whether or not it's local
 	path string
@@ -89,50 +93,11 @@ func preparePack(packPath string) (*PackType, error) {
 	pack.Name = info.Pack
 	pack.Vendor = info.Vendor
 	pack.Version = info.Version
+	pack.versionModifier = info.VersionModifier
 	pack.isPackID = info.IsPackID
-	pack.exactVersion = info.ExactVersion
 
 	if pack.IsPublic, err = Installation.packIsPublic(pack); err != nil {
 		return pack, err
-	}
-
-	// Make sure that the version exists in the pdsc
-	if pack.IsPublic {
-		pdscFilePath := filepath.Join(Installation.WebDir, pack.PdscFileName())
-		pdscXML := xml.NewPdscXML(pdscFilePath)
-		if err := pdscXML.Read(); err != nil {
-			return pack, err
-		}
-
-		releaseTag := pdscXML.FindReleaseTagByVersion(pack.Version)
-		if releaseTag == nil {
-			log.Errorf("The pack's pdsc (%s) has no release tag matching version \"%s\"", pdscFilePath, pack.Version)
-			return pack, errs.ErrPackVersionNotFoundInPdsc
-		}
-
-		if pack.Version == "" {
-			pack.Version = releaseTag.Version
-		}
-	} else {
-		localPdscFilePath := filepath.Join(Installation.LocalDir, pack.PdscFileName())
-		if !utils.FileExists(localPdscFilePath) {
-			return pack, nil
-		}
-
-		pdscXML := xml.NewPdscXML(localPdscFilePath)
-		if err := pdscXML.Read(); err != nil {
-			return pack, err
-		}
-
-		releaseTag := pdscXML.FindReleaseTagByVersion(pack.Version)
-		if releaseTag == nil {
-			log.Errorf("The pack's pdsc (%s) has no release tag matching version \"%s\"", localPdscFilePath, pack.Version)
-			return pack, errs.ErrPackVersionNotFoundInPdsc
-		}
-
-		if pack.Version == "" {
-			pack.Version = releaseTag.Version
-		}
 	}
 
 	pack.isInstalled = Installation.PackIsInstalled(pack)
@@ -257,7 +222,7 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 		return err
 	}
 
-	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.Version)
+	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.GetVersion())
 
 	if len(p.Pdsc.License) > 0 {
 		if checkEula {
@@ -346,7 +311,7 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 	log.Debugf("Uninstalling \"%v\"", p.path)
 
 	// Remove Vendor/Pack/x.y.z
-	packPath := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.Version)
+	packPath := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.GetVersion())
 	if err := os.RemoveAll(packPath); err != nil {
 		return err
 	}
@@ -443,6 +408,39 @@ func (p *PackType) extractEula() error {
 	return ioutil.WriteFile(eulaFileName, eulaContents, 0600)
 }
 
+// resolveVersionModifier takes into account eventual versionModifiers (@, @~ and >=) to determine
+// which version of a pack should be targeted for installation
+func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
+	log.Debugf("Resolving version modifier for \"%s\" using PDSC \"%s\"", p.path, pdscXML.FileName)
+
+	if p.versionModifier == utils.ExactVersion {
+		p.targetVersion = p.Version
+		log.Debugf("- resolved(@) as %s", p.targetVersion)
+		return
+	}
+
+	if p.versionModifier == utils.LatestVersion ||
+		p.versionModifier == utils.AnyVersion ||
+		p.versionModifier == utils.GreaterVersion {
+		p.targetVersion = pdscXML.LatestVersion()
+		log.Debugf("- resolved(@latest, >=) as %s", p.targetVersion)
+		return
+	}
+
+	// The trickiest one is @~, because it needs to be the latest
+	// release matching the major number.
+	// The releases in the PDSC file are sorted from latest to oldest
+	for _, version := range pdscXML.AllReleases() {
+		sameMajor := semver.Major("v"+version) == semver.Major("v"+p.Version)
+		if sameMajor && semver.Compare("v"+version, "v"+p.Version) >= 0 {
+			p.targetVersion = version
+			log.Debugf("- resolved (@~) as %s", p.targetVersion)
+			return
+		}
+	}
+	log.Warn("Could not resolve version modifier")
+}
+
 // PackID retuns the most generic name of a pack: Vendor.PackName
 func (p *PackType) PackID() string {
 	return p.Vendor + "." + p.Name
@@ -450,7 +448,7 @@ func (p *PackType) PackID() string {
 
 // PackIDWithVersion returns the packID with version: Vendor.PackName.x.y.z
 func (p *PackType) PackIDWithVersion() string {
-	return p.PackID() + "." + p.Version
+	return p.PackID() + "." + p.GetVersion()
 }
 
 // PackFileName returns a string with how the pack file name would be: Vendor.PackName.x.y.z.pack
@@ -466,4 +464,13 @@ func (p *PackType) PdscFileName() string {
 // PdscFileNameWithVersion returns a string with how the pack's pdsc file name would be: Vendor.PackName.x.y.z.pdsc
 func (p *PackType) PdscFileNameWithVersion() string {
 	return p.PackIDWithVersion() + ".pdsc"
+}
+
+// GetVersion makes sure to get the latest version for the pack
+// after parsing possible version modifiers (@~, >=)
+func (p *PackType) GetVersion() string {
+	if p.versionModifier != utils.ExactVersion {
+		return p.targetVersion
+	}
+	return p.Version
 }

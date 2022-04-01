@@ -46,7 +46,7 @@ var packFileNameRegex = regexp.MustCompile(packFileNamePattern)
 // - Vendor::Pack@~x.y.z
 // - Vendor::Pack>=x.y.z
 var dottedPackIDPattern = fmt.Sprintf(`^(?P<vendor>%s)\.(?P<pack>%s)(?:\.(?P<version>%s))?$`, namePattern, namePattern, versionPattern)
-var legacyPackIDPattern = fmt.Sprintf(`^(?P<vendor>%s)::(?P<pack>%s)(?:(@|@~|>=)(?P<version>%s))?$`, namePattern, namePattern, versionPattern)
+var legacyPackIDPattern = fmt.Sprintf(`^(?P<vendor>%s)::(?P<pack>%s)(?:(@|@~|>=)(?P<version>%s|latest))?$`, namePattern, namePattern, versionPattern)
 var packIDPattern = fmt.Sprintf(`(?:%s|%s)`, dottedPackIDPattern, legacyPackIDPattern)
 
 // packIDRegex pre-compiles packIdPattern
@@ -112,10 +112,36 @@ func IsPackVersionValid(packVersion string) bool {
 	return versionRegex.MatchString(packVersion)
 }
 
+// The version modifiers below are helpers to determine how to
+// interpret the version specified by the packID.
+const (
+	// Examples: Vendor::PackName@x.y.z, Vendor.PackName.x.y.z
+	ExactVersion int = 0
+
+	// Example: Vendor::PackName@latest
+	LatestVersion = 1
+
+	// Examples: Vendor::PackName, Vendor.PackName
+	AnyVersion = 2
+
+	// Example: Vendor::PackName>=x.y.z
+	GreaterVersion = 3
+
+	// Example: Vendor::PackName@~x.y.z (the greatest version of the pack keeping the same major number)
+	GreatestCompatibleVersion = 4
+)
+
+var versionModMap = map[string]int{
+	"@":  ExactVersion,
+	"@~": GreatestCompatibleVersion,
+	">=": GreaterVersion,
+}
+
 // PackInfo defines a basic pack information set
 type PackInfo struct {
 	Location, Vendor, Pack, Version, Extension string
-	ExactVersion, IsPackID                     bool
+	IsPackID                                   bool
+	VersionModifier                            int
 }
 
 // ExtractPackInfo takes in a path to a pack and extracts the needed information.
@@ -142,16 +168,28 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 		info.IsPackID = true
 		info.Vendor = matches[1]
 		info.Pack = matches[2]
+		info.VersionModifier = AnyVersion
 
 		if len(matches) == 4 {
-			// 4 matches: [Vendor.Pack.x.y.z, Vendor, Pack, x.y.z ] (dotted version)
+			// 4 matches: [Vendor.Pack.x.y.z, Vendor, Pack, x.y.z] (dotted version)
 			info.Version = matches[3]
-			info.ExactVersion = true
-		} else if len(matches) == 5 {
-			// 5 matches: [Vendor::Pack(@|@~|>=)x.y.z, Vendor, Pack, (@|@~|>=), x.y.z] (legacy version)
-			info.ExactVersion = matches[3] == "@"
-			info.Version = matches[4]
+			info.VersionModifier = ExactVersion
+			return info, nil
 		}
+
+		if len(matches) == 5 {
+			// 5 matches: [Vendor::Pack(@|@~|>=)x.y.z, Vendor, Pack, (@|@~|>=), x.y.z] (legacy version)
+			versionModifier := matches[3]
+			version := matches[4]
+
+			info.VersionModifier = versionModMap[versionModifier]
+			if version == "latest" {
+				info.VersionModifier = LatestVersion
+			}
+
+			info.Version = version
+		}
+
 		return info, nil
 	}
 

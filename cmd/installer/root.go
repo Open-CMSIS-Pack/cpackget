@@ -16,6 +16,7 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/mod/semver"
 )
 
 // AddPack adds a pack to the pack installation directory structure
@@ -26,10 +27,10 @@ func AddPack(packPath string, checkEula, extractEula bool) error {
 		return err
 	}
 
-	log.Infof("Adding pack \"%s.%s.%s\"", pack.Vendor, pack.Name, pack.Version)
+	log.Infof("Adding pack \"%s\"", packPath)
 
 	if !extractEula && pack.isInstalled {
-		log.Errorf("pack %s.%s.%s is already installed here: %s", pack.Vendor, pack.Name, pack.Version, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.Version))
+		log.Errorf("pack %s is already installed here: %s", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersion()))
 		return errs.ErrAlreadyLogged
 	}
 
@@ -301,16 +302,18 @@ func FindPackURL(pack *PackType) (string, error) {
 			return "", err
 		}
 
-		// The releaseTag should've been checked before this point
-		releaseTag := packPdscXML.FindReleaseTagByVersion(pack.Version)
+		// Figures out which pack release to fetch and assign that to pack.targetVersion
+		pack.resolveVersionModifier(packPdscXML)
+
+		releaseTag := packPdscXML.FindReleaseTagByVersion(pack.targetVersion)
 		if releaseTag == nil {
-			return "", errs.ErrUnknownBehavior
+			return "", errs.ErrPackVersionNotFoundInPdsc
 		}
 		if releaseTag.URL != "" {
 			return releaseTag.URL, nil
 		}
 
-		return packPdscXML.PackURL(pack.Version), nil
+		return packPdscXML.PackURL(pack.targetVersion), nil
 	}
 
 	// if pack.IsPublic == false, it doesn't mean yet it's an actual non-Public pack, need to check in .Local
@@ -324,18 +327,19 @@ func FindPackURL(pack *PackType) (string, error) {
 		return "", err
 	}
 
-	releaseTag := packPdscXML.FindReleaseTagByVersion(pack.Version)
+	// Figures out which pack release to fetch and assign that to pack.targetVersion
+	pack.resolveVersionModifier(packPdscXML)
+
+	releaseTag := packPdscXML.FindReleaseTagByVersion(pack.targetVersion)
 	if releaseTag == nil {
 		return "", errs.ErrPackVersionNotFoundInPdsc
 	}
-
-	pack.Version = releaseTag.Version
 
 	if releaseTag.URL != "" {
 		return releaseTag.URL, nil
 	}
 
-	return packPdscXML.PackURL(pack.Version), nil
+	return packPdscXML.PackURL(pack.targetVersion), nil
 }
 
 // Installation is a singleton variable that keeps the only reference
@@ -433,14 +437,97 @@ func (p *PacksInstallationType) touchPackIdx() error {
 
 // PackIsInstalled checks whether a given pack is already installed or not
 func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
+	log.Debugf("Checking if %s is installed", pack.PackIDWithVersion())
 
-	installationDir := filepath.Join(p.PackRoot, pack.Vendor, pack.Name, pack.Version)
-	dirExists := utils.DirExists(installationDir)
-	if pack.Version == "" {
-		return dirExists
+	// First make sure there's at least one version of the pack installed
+	installationDir := filepath.Join(p.PackRoot, pack.Vendor, pack.Name)
+	if !utils.DirExists(installationDir) {
+		return false
 	}
 
-	return dirExists && utils.FileExists(filepath.Join(installationDir, pack.PdscFileName()))
+	// Empty version means any version (pack.VersionModifier == utils.AnyVersion)
+	if pack.Version == "" {
+		return true
+	}
+
+	// Exact version is easy, just find a matching installation folder
+	if pack.versionModifier == utils.ExactVersion {
+		packDir := filepath.Join(installationDir, pack.Version)
+		log.Debugf("Checking if \"%s\" exists", packDir)
+		return utils.DirExists(packDir)
+	}
+
+	// Now get all versions installed and check if it satisfies the versionModifier condition
+	installedVersions := []string{}
+	installedDirs, err := utils.ListDir(installationDir, "")
+	if err != nil {
+		log.Warnf("Could not list installed packs in \"%s\": %v", installationDir, err)
+		return false
+	}
+
+	for _, path := range installedDirs {
+		base := filepath.Base(path)
+		installedVersions = append(installedVersions, base)
+	}
+
+	// Check if greater version is specified
+	if pack.versionModifier == utils.GreaterVersion {
+		log.Debugf("Checking for installed packs >=%s", pack.Version)
+		for _, version := range installedVersions {
+			log.Debugf("- checking if %s >= %s", version, pack.Version)
+			if semver.Compare("v"+version, "v"+pack.Version) >= 0 {
+				log.Debugf("- found newer version %s", version)
+				pack.targetVersion = version
+				return true
+			}
+		}
+
+		log.Debugf("- no version matched")
+		return false
+	}
+
+	// Check if there is a greater version with same Major number
+	if pack.versionModifier == utils.GreatestCompatibleVersion {
+		log.Debugf("Checking for installed packs @~%s", pack.Version)
+		for _, version := range installedVersions {
+			log.Debugf("- checking against: %s", version)
+			sameMajor := semver.Major("v"+version) == semver.Major("v"+pack.Version)
+			if sameMajor && semver.Compare("v"+version, "v"+pack.Version) >= 0 {
+				pack.targetVersion = version
+				return true
+			}
+		}
+
+		return false
+	}
+
+	log.Debug("Checking if the latest version is installed")
+
+	// Specified versionModifier == LatestVersion
+	// so cpackget needs to know first the latest available
+	// version for that pack to then check if it's installed
+	var pdscFilePath string
+	var pdscLookupDir string
+	if pack.IsPublic {
+		pdscLookupDir = Installation.WebDir
+	} else {
+		pdscLookupDir = Installation.LocalDir
+	}
+
+	pdscFilePath = filepath.Join(pdscLookupDir, pack.PdscFileName())
+	pdscXML := xml.NewPdscXML(pdscFilePath)
+	if err := pdscXML.Read(); err != nil {
+		log.Debugf("Could not retrieve pack's PDSC file from \"%s\"", pdscFilePath)
+		return false
+	}
+
+	latestVersion := pdscXML.LatestVersion()
+	packDir := filepath.Join(installationDir, latestVersion)
+	found := utils.DirExists(packDir)
+	if found {
+		pack.targetVersion = latestVersion
+	}
+	return found
 }
 
 // packIsPublic checks whether the pack is public or not.

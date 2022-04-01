@@ -214,10 +214,22 @@ var (
 	nonPublicLocalPack123PackID = nonPublicLocalPackPackID + ".1.2.3"
 	nonPublicLocalPack124PackID = nonPublicLocalPackPackID + ".1.2.4"
 
+	// Packs with legacy packid names
+	publicRemotePackLegacyPackID                               = "TheVendor::PublicRemotePack"
+	publicLocalPackLegacyPackID                                = "TheVendor::PublicLocalPack"
+	publicRemotePack123LegacyPackID                            = publicRemotePackLegacyPackID + "@1.2.3"
+	publicLocalPack123WithMinimumVersionLegacyPackID           = publicLocalPackLegacyPackID + ">=1.2.3"
+	publicLocalPack010WithMinimumCompatibleVersionLegacyPackID = publicLocalPackLegacyPackID + "@~0.1.0"
+	publicLocalPack011WithMinimumCompatibleVersionLegacyPackID = publicLocalPackLegacyPackID + "@~0.1.1"
+	publicLocalPackLatestVersionLegacyPackID                   = publicLocalPackLegacyPackID + "@latest"
+
 	// Pdsc files to test out installing packs with pack id only
 	pdscPack123MissingVersion = filepath.Join(testDir, "TheVendor.PublicRemotePack_VersionNotAvailable.pdsc")
 
 	// Public packs
+	publicLocalPack010  = filepath.Join(testDir, "0.1.0", "TheVendor.PublicLocalPack.0.1.0.pack")
+	publicLocalPack011  = filepath.Join(testDir, "0.1.1", "TheVendor.PublicLocalPack.0.1.1.pack")
+	publicLocalPack122  = filepath.Join(testDir, "1.2.2", "TheVendor.PublicLocalPack.1.2.2.pack")
 	publicLocalPack123  = filepath.Join(testDir, "1.2.3", "TheVendor.PublicLocalPack.1.2.3.pack")
 	publicLocalPack124  = filepath.Join(testDir, "1.2.4", "TheVendor.PublicLocalPack.1.2.4.pack")
 	publicRemotePack123 = filepath.Join(testDir, "1.2.3", publicRemotePack123PackID+".pack")
@@ -237,8 +249,9 @@ var (
 	packWithSubSubFolder = filepath.Join(testDir, "TheVendor.PackWithSubSubFolder.1.2.3.pack")
 
 	// PDSC packs
-	pdscPack123 = filepath.Join(testDir, "1.2.3", "TheVendor.PackName.pdsc")
-	pdscPack124 = filepath.Join(testDir, "1.2.4", "TheVendor.PackName.pdsc")
+	pdscPack123         = filepath.Join(testDir, "1.2.3", "TheVendor.PackName.pdsc")
+	pdscPack124         = filepath.Join(testDir, "1.2.4", "TheVendor.PackName.pdsc")
+	pdscPublicLocalPack = filepath.Join(testDir, "public_index", "TheVendor.PublicLocalPack.pdsc")
 
 	// Bad local_repository.pidx
 	badLocalRepositoryPidx = filepath.Join(testDir, "bad_local_repository.pidx")
@@ -490,6 +503,10 @@ func TestSetPackRoot(t *testing.T) {
 }
 
 func init() {
-	log.SetLevel(log.InfoLevel)
+	logLevel := log.InfoLevel
+	if os.Getenv("LOG_LEVEL") == "debug" {
+		logLevel = log.DebugLevel
+	}
+	log.SetLevel(logLevel)
 	log.SetFormatter(new(LogFormatter))
 }
