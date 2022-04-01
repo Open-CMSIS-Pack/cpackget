@@ -221,16 +221,18 @@ func TestPidxXML(t *testing.T) {
 		pidx := xml.NewPidxXML(fileName)
 		assert.Nil(pidx.Read())
 
+		// Find with empty version
 		assert.Nil(pidx.AddPdsc(pdscTag1))
-		assert.Nil(pidx.AddPdsc(pdscTag2))
-
+		pdscTag1.Version = ""
 		foundTag := pidx.FindPdscTag(pdscTag1)
 		assert.NotNil(foundTag)
-		assert.Equal(*foundTag, pdscTag1)
-
-		pdscTag1.Version = ""
-		foundTag = pidx.FindPdscTag(pdscTag1)
-		assert.NotNil(foundTag)
 		assert.Equal(foundTag.Version, "0.0.1")
+
+		// Find with specified version
+		assert.Nil(pidx.AddPdsc(pdscTag2))
+		foundTag = pidx.FindPdscTag(pdscTag2)
+		assert.NotNil(foundTag)
+		assert.Equal(*foundTag, pdscTag2)
+
 	})
 }
