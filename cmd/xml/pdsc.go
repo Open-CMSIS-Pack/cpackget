@@ -53,6 +53,18 @@ func (p *PdscXML) LatestVersion() string {
 	return ""
 }
 
+// AllReleases returns a slice of strings containing all available releases in this Pdsc file
+func (p *PdscXML) AllReleases() []string {
+	allReleases := []string{}
+	if len(p.ReleasesTag.Releases) > 0 {
+		for _, releaseTag := range p.ReleasesTag.Releases {
+			allReleases = append(allReleases, releaseTag.Version)
+		}
+	}
+
+	return allReleases
+}
+
 // FindReleaseTagByVersion iterates over the PDSC file's releases tag and returns
 // the release that matching version.
 func (p *PdscXML) FindReleaseTagByVersion(version string) *ReleaseTag {
@@ -90,7 +102,8 @@ func (p *PdscXML) Read() error {
 // PackURL returns a url for the Pack described in this PDSC file
 func (p *PdscXML) PackURL(version string) string {
 	baseURL := p.URL
-	if baseURL[len(baseURL)-1] != '/' {
+	lenBaseURL := len(baseURL)
+	if lenBaseURL > 0 && baseURL[len(baseURL)-1] != '/' {
 		baseURL += "/"
 	}
 
