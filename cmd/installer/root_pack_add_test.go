@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -20,6 +21,10 @@ import (
 // Tests should cover all possible scenarios for adding packs. Here are all possible ones:
 // cpackget pack add Vendor.PackName                               # packID without version
 // cpackget pack add Vendor.PackName.x.y.z                         # packID with version
+// cpackget pack add Vendor::PackName                              # packID using legacy syntax
+// cpackget pack add Vendor::PackName@x.y.z                        # packID using legacy syntax specifying an exact version
+// cpackget pack add Vendor::PackName@~x.y.z                       # packID using legacy syntax specifying a minumum compatible version
+// cpackget pack add Vendor::PackName>=x.y.z                       # packID using legacy syntax specifying a minumum version
 // cpackget pack add Vendor.PackName.x.y.z.pack                    # pack file name
 // cpackget pack add https://vendor.com/Vendor.PackName.x.y.z.pack # pack URL
 //
@@ -263,7 +268,7 @@ func TestAddPack(t *testing.T) {
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := publicLocalPack123
-		packInfo, err := utils.ExtractPackInfo(packPath, false)
+		packInfo, err := utils.ExtractPackInfo(packPath)
 		assert.Nil(err)
 		pack := packInfoToType(packInfo)
 
@@ -309,7 +314,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithLicense
 
-		info, err := utils.ExtractPackInfo(packPath, false)
+		info, err := utils.ExtractPackInfo(packPath)
 		assert.Nil(err)
 
 		// Should NOT be installed if license is not agreed
@@ -389,7 +394,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithMissingLicense
 
-		info, err := utils.ExtractPackInfo(packPath, false)
+		info, err := utils.ExtractPackInfo(packPath)
 		assert.Nil(err)
 
 		// Should NOT be installed if license is missing
@@ -445,11 +450,13 @@ func TestAddPack(t *testing.T) {
 	})
 
 	// Install packs with pack id: Vendor.PackName[.x.y.z]
-	for _, packPath := range []string{publicRemotePack123PackID, publicRemotePackPackID} {
-		packBasePath := filepath.Base(packPath)
+	for _, packPath := range []string{publicRemotePack123PackID, publicRemotePackPackID, publicRemotePackLegacyPackID, publicRemotePack123LegacyPackID} {
 
-		t.Run("test installing pack with pack id pdsc file not found "+packBasePath, func(t *testing.T) {
-			localTestingDir := "test-add-pack-with-pack-id-pdsc-file-not-found-" + packBasePath
+		safePackPath := strings.ReplaceAll(packPath, "::", "..")
+		safePackPath = strings.ReplaceAll(safePackPath, "@", "-at-")
+
+		t.Run("test installing pack with pack id pdsc file not found "+packPath, func(t *testing.T) {
+			localTestingDir := "test-add-pack-with-pack-id-pdsc-file-not-found-" + safePackPath
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			defer os.RemoveAll(localTestingDir)
 
@@ -457,7 +464,7 @@ func TestAddPack(t *testing.T) {
 			publicIndexServer := NewServer()
 
 			// Tweak the URL for the pack's pdsc
-			packInfo, err := utils.ExtractPackInfo(packPath, true)
+			packInfo, err := utils.ExtractPackInfo(packPath)
 			assert.Nil(err)
 			packPdscTag := xml.PdscTag{Vendor: packInfo.Vendor, Name: packInfo.Pack, Version: packInfo.Version}
 			packPdscTag.URL = publicIndexServer.URL()
@@ -475,12 +482,12 @@ func TestAddPack(t *testing.T) {
 
 		// This also tests the case where the URL in the pdsc tag serves the correct
 		// pdsc file, but DOES NOT serve a pack file
-		t.Run("test installing pack with pack id version not found "+packBasePath, func(t *testing.T) {
-			localTestingDir := "test-add-pack-with-pack-id-version-not-found-" + packBasePath
+		t.Run("test installing pack with pack id version not found "+packPath, func(t *testing.T) {
+			localTestingDir := "test-add-pack-with-pack-id-version-not-found-" + safePackPath
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			defer os.RemoveAll(localTestingDir)
 
-			packInfo, err := utils.ExtractPackInfo(packPath, true)
+			packInfo, err := utils.ExtractPackInfo(packPath)
 			assert.Nil(err)
 			pack := packInfoToType(packInfo)
 
@@ -490,19 +497,19 @@ func TestAddPack(t *testing.T) {
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
 
 			assert.NotNil(err)
-			assert.Equal(err, errs.ErrPackVersionNotFoundInPdsc)
+			assert.Equal(errs.ErrPackVersionNotFoundInPdsc, err)
 
 			// Make sure pack.idx never got touched
 			assert.False(utils.FileExists(installer.Installation.PackIdx))
 		})
 
-		t.Run("test installing pack with pack id using release url"+packBasePath, func(t *testing.T) {
-			localTestingDir := "test-add-pack-with-pack-id-using-release-url" + packBasePath
+		t.Run("test installing pack with pack id using release url"+packPath, func(t *testing.T) {
+			localTestingDir := "test-add-pack-with-pack-id-using-release-url" + safePackPath
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			defer os.RemoveAll(localTestingDir)
 
 			// Prep pack info
-			packInfo, err := utils.ExtractPackInfo(packPath, true)
+			packInfo, err := utils.ExtractPackInfo(packPath)
 			assert.Nil(err)
 			pack := packInfoToType(packInfo)
 
@@ -538,13 +545,13 @@ func TestAddPack(t *testing.T) {
 			checkPackIsInstalled(t, pack)
 		})
 
-		t.Run("test installing pack with pack id using pdsc url "+packBasePath, func(t *testing.T) {
-			localTestingDir := "test-add-pack-with-pack-id-using-pdsc-url-" + packBasePath
+		t.Run("test installing pack with pack id using pdsc url "+packPath, func(t *testing.T) {
+			localTestingDir := "test-add-pack-with-pack-id-using-pdsc-url-" + safePackPath
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			defer os.RemoveAll(localTestingDir)
 
 			// Prep pack info
-			packInfo, err := utils.ExtractPackInfo(packPath, true)
+			packInfo, err := utils.ExtractPackInfo(packPath)
 			assert.Nil(err)
 			pack := packInfoToType(packInfo)
 			pack.Version = "1.2.3"
@@ -591,11 +598,11 @@ func TestAddPack(t *testing.T) {
 		pack123ID := nonPublicLocalPack123PackID
 		//pack124ID := nonPublicLocalPack124PackID
 
-		pack124Info, err := utils.ExtractPackInfo(pack124Path, false)
+		pack124Info, err := utils.ExtractPackInfo(pack124Path)
 		assert.Nil(err)
 		pack124 := packInfoToType(pack124Info)
 
-		pack123Info, err := utils.ExtractPackInfo(pack123Path, false)
+		pack123Info, err := utils.ExtractPackInfo(pack123Path)
 		assert.Nil(err)
 		pack123 := packInfoToType(pack123Info)
 
@@ -686,7 +693,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := publicLocalPack123
 
-		packInfo, err := utils.ExtractPackInfo(packPath, false)
+		packInfo, err := utils.ExtractPackInfo(packPath)
 		assert.Nil(err)
 		pack := packInfoToType(packInfo)
 
@@ -701,5 +708,494 @@ func TestAddPack(t *testing.T) {
 
 		// Make sure pack.idx never got touched
 		assert.False(utils.FileExists(installer.Installation.PackIdx))
+	})
+
+	//
+	// Tests below cover the following syntax for both public and local packs:
+	// - TheVendor::PackName
+	// - TheVendor::PackName@latest
+	// - TheVendor::PackName@1.2.3
+	// - TheVendor::PackName@~1.2.3
+	// - TheVendor::PackName>=1.2.3
+
+	t.Run("test installing a pack with a minimum version specified and newer version pre-installed", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. There's already a pack 1.2.4 installed
+		// 2. An attempt to install a pack with >=1.2.3
+		// 3. No installation should proceed because the pre-installed 1.2.4 pack already satisfies the >=1.2.3 condition
+
+		localTestingDir := "test-installing-pack-with-minimum-version-new-pre-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Inject pdsc into .Web folder
+		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
+		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		// Install 1.2.4
+		addPack(t, publicLocalPack124, ConfigType{
+			IsPublic: true,
+		})
+
+		// Install >=1.2.3 and make sure nothing gets installed
+		packIdx, err := os.Stat(installer.Installation.PackIdx)
+		assert.Nil(err)
+		packIdxModTime := packIdx.ModTime()
+
+		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula)
+		assert.NotNil(err)
+		assert.Equal(errs.ErrAlreadyLogged, err)
+
+		// Make sure pack.idx did NOT get touched
+		packIdx, err = os.Stat(installer.Installation.PackIdx)
+		assert.Nil(err)
+		assert.Equal(packIdxModTime, packIdx.ModTime())
+	})
+
+	t.Run("test installing a pack with a minimum version specified without any pre-installed version", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. There are no packs installed
+		// 2. An attempt to install a pack with >=1.2.3
+		// 3. Then pack 1.2.4 should be installed because that's the latest available
+
+		localTestingDir := "test-installing-pack-with-minimum-version-none-pre-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Inject pdsc into .Web folder
+		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
+		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		// Prepare URLs for downloading the pack
+		pack124 := installer.PackType{}
+		pack124.Vendor = "TheVendor"
+		pack124.Name = "PublicLocalPack"
+		pack124.Version = "1.2.4"
+		pack124.IsPublic = true
+
+		// Prep server
+		pack124Content, err := ioutil.ReadFile(publicLocalPack124)
+		assert.Nil(err)
+		server := NewServer()
+		server.AddRoute(pack124.PackFileName(), pack124Content)
+
+		// Inject URL into pdsc
+		pdscXML := xml.NewPdscXML(packPdscFilePath)
+		assert.Nil(pdscXML.Read())
+		pdscXML.URL = server.URL()
+		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
+
+		// Install >=1.2.3
+		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula)
+		assert.Nil(err)
+
+		// Check that 1.2.4 is installed
+		checkPackIsInstalled(t, &pack124)
+	})
+
+	t.Run("test installing a pack with a minimum version specified and older version pre-installed", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. Version 1.2.2 is installed
+		// 2. An attempt to install a pack with >=1.2.3
+		// 3. Then pack 1.2.4 should be installed because the pre-installed 1.2.2 does not satisfy >=1.2.3
+
+		localTestingDir := "test-installing-pack-with-minimum-version-older-pre-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Inject pdsc into .Web folder
+		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
+		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		// Pre-install 1.2.2
+		addPack(t, publicLocalPack122, ConfigType{
+			IsPublic: true,
+		})
+
+		// Prepare URLs for downloading pack 1.2.4
+		pack124 := installer.PackType{}
+		pack124.Vendor = "TheVendor"
+		pack124.Name = "PublicLocalPack"
+		pack124.Version = "1.2.4"
+		pack124.IsPublic = true
+
+		// Prep server
+		pack124Content, err := ioutil.ReadFile(publicLocalPack124)
+		assert.Nil(err)
+		server := NewServer()
+		server.AddRoute(pack124.PackFileName(), pack124Content)
+
+		// Inject URL into pdsc
+		pdscXML := xml.NewPdscXML(packPdscFilePath)
+		assert.Nil(pdscXML.Read())
+		pdscXML.URL = server.URL()
+		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
+
+		// Install >=1.2.3
+		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula)
+		assert.Nil(err)
+
+		// Check that 1.2.4 is installed
+		checkPackIsInstalled(t, &pack124)
+	})
+
+	t.Run("test installing a pack with a minimum compatible version specified and newer major version pre-installed", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. There's already a pack 1.2.4 installed
+		// 2. An attempt to install a pack with @~0.1.0
+		// 3. Should install 0.1.1 because it's the latest compatible version with 0.1.0
+
+		localTestingDir := "test-installing-pack-with-minimum-compatible-version-new-major-pre-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Inject pdsc into .Web folder
+		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
+		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		// Install 1.2.4
+		addPack(t, publicLocalPack124, ConfigType{
+			IsPublic: true,
+		})
+
+		// Prepare URLs for downloading pack 0.1.1
+		pack011 := installer.PackType{}
+		pack011.Vendor = "TheVendor"
+		pack011.Name = "PublicLocalPack"
+		pack011.Version = "0.1.1"
+		pack011.IsPublic = true
+
+		// Prep server
+		pack011Content, err := ioutil.ReadFile(publicLocalPack011)
+		assert.Nil(err)
+		server := NewServer()
+		server.AddRoute(pack011.PackFileName(), pack011Content)
+
+		// Inject URL into pdsc
+		pdscXML := xml.NewPdscXML(packPdscFilePath)
+		assert.Nil(pdscXML.Read())
+		pdscXML.URL = server.URL()
+		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
+
+		// Install @~0.1.0
+		err = installer.AddPack(publicLocalPack010WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula)
+		assert.Nil(err)
+
+		// Check that 0.1.1 is installed
+		checkPackIsInstalled(t, &pack011)
+	})
+
+	t.Run("test installing a pack with a minimum compatible version specified without any pre-installed version", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. There are no packs installed
+		// 2. An attempt to install a pack with @~0.1.0
+		// 3. Should install 0.1.1 because it's the latest compatible version with 0.1.0
+
+		localTestingDir := "test-installing-pack-with-minimum-compatible-none-pre-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Inject pdsc into .Web folder
+		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
+		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		// Prepare URLs for downloading pack 0.1.1
+		pack011 := installer.PackType{}
+		pack011.Vendor = "TheVendor"
+		pack011.Name = "PublicLocalPack"
+		pack011.Version = "0.1.1"
+		pack011.IsPublic = true
+
+		// Prep server
+		pack011Content, err := ioutil.ReadFile(publicLocalPack011)
+		assert.Nil(err)
+		server := NewServer()
+		server.AddRoute(pack011.PackFileName(), pack011Content)
+
+		// Inject URL into pdsc
+		pdscXML := xml.NewPdscXML(packPdscFilePath)
+		assert.Nil(pdscXML.Read())
+		pdscXML.URL = server.URL()
+		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
+
+		// Install @~0.1.0
+		err = installer.AddPack(publicLocalPack010WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula)
+		assert.Nil(err)
+
+		// Check that 0.1.1 is installed
+		checkPackIsInstalled(t, &pack011)
+	})
+
+	t.Run("test installing a pack with a minimum compatible version specified and older version pre-installed", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. There's already a pack 0.1.0 installed
+		// 2. An attempt to install a pack with @~0.1.1
+		// 3. Should install 0.1.1 because it's the more recent compatible version if compared to with 0.1.0
+
+		localTestingDir := "test-installing-pack-with-minimum-compatible-version-older-pre-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Inject pdsc into .Web folder
+		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
+		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		// Install 0.1.0
+		addPack(t, publicLocalPack010, ConfigType{
+			IsPublic: true,
+		})
+
+		// Prepare URLs for downloading pack 0.1.1
+		pack011 := installer.PackType{}
+		pack011.Vendor = "TheVendor"
+		pack011.Name = "PublicLocalPack"
+		pack011.Version = "0.1.1"
+		pack011.IsPublic = true
+
+		// Prep server
+		pack011Content, err := ioutil.ReadFile(publicLocalPack011)
+		assert.Nil(err)
+		server := NewServer()
+		server.AddRoute(pack011.PackFileName(), pack011Content)
+
+		// Inject URL into pdsc
+		pdscXML := xml.NewPdscXML(packPdscFilePath)
+		assert.Nil(pdscXML.Read())
+		pdscXML.URL = server.URL()
+		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
+
+		// Install @~0.1.0
+		err = installer.AddPack(publicLocalPack011WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula)
+		assert.Nil(err)
+
+		// Check that 0.1.1 is installed
+		checkPackIsInstalled(t, &pack011)
+	})
+
+	t.Run("test installing a pack with a minimum compatible version specified and exact version pre-installed", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. There's already a pack 0.1.1 installed
+		// 2. An attempt to install a pack with @~0.1.1
+		// 3. Should not do anything
+
+		localTestingDir := "test-installing-pack-with-minimum-compatible-version-same-pre-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Inject pdsc into .Web folder
+		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
+		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		// Install 0.1.1
+		addPack(t, publicLocalPack011, ConfigType{
+			IsPublic: true,
+		})
+
+		// Install @~0.1.1 and make sure nothing gets installed
+		packIdx, err := os.Stat(installer.Installation.PackIdx)
+		assert.Nil(err)
+		packIdxModTime := packIdx.ModTime()
+
+		err = installer.AddPack(publicLocalPack011WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula)
+		assert.NotNil(err)
+		assert.Equal(errs.ErrAlreadyLogged, err)
+
+		// Make sure pack.idx did NOT get touched
+		packIdx, err = os.Stat(installer.Installation.PackIdx)
+		assert.Nil(err)
+		assert.Equal(packIdxModTime, packIdx.ModTime())
+	})
+
+	t.Run("test installing a pack with @latest version specified without any pre-installed version", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. There are no packs installed
+		// 2. An attempt to install a pack with @latest
+		// 3. Then pack 1.2.4 should be installed because it's the latest one
+
+		localTestingDir := "test-installing-pack-with-at-latest-version-none-pre-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Inject pdsc into .Web folder
+		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
+		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		// Prepare URLs for downloading pack 1.2.4
+		pack124 := installer.PackType{}
+		pack124.Vendor = "TheVendor"
+		pack124.Name = "PublicLocalPack"
+		pack124.Version = "1.2.4"
+		pack124.IsPublic = true
+
+		// Prep server
+		pack124Content, err := ioutil.ReadFile(publicLocalPack124)
+		assert.Nil(err)
+		server := NewServer()
+		server.AddRoute(pack124.PackFileName(), pack124Content)
+
+		// Inject URL into pdsc
+		pdscXML := xml.NewPdscXML(packPdscFilePath)
+		assert.Nil(pdscXML.Read())
+		pdscXML.URL = server.URL()
+		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
+
+		// Install @latest
+		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula)
+		assert.Nil(err)
+
+		// Check that 1.2.4 is installed
+		checkPackIsInstalled(t, &pack124)
+	})
+
+	t.Run("test installing a pack with @latest version specified and any pre-installed version", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. Version 1.2.3 is installed
+		// 2. An attempt to install a pack with @latest
+		// 3. Then pack 1.2.4 should be installed because it's more up-to-date than 1.2.3
+
+		localTestingDir := "test-installing-pack-with-at-latest-version-none-pre-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Inject pdsc into .Web folder
+		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
+		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		// Pre-install 1.2.3
+		addPack(t, publicLocalPack123, ConfigType{
+			IsPublic: true,
+		})
+
+		// Prepare URLs for downloading pack 1.2.4
+		pack124 := installer.PackType{}
+		pack124.Vendor = "TheVendor"
+		pack124.Name = "PublicLocalPack"
+		pack124.Version = "1.2.4"
+		pack124.IsPublic = true
+
+		// Prep server
+		pack124Content, err := ioutil.ReadFile(publicLocalPack124)
+		assert.Nil(err)
+		server := NewServer()
+		server.AddRoute(pack124.PackFileName(), pack124Content)
+
+		// Inject URL into pdsc
+		pdscXML := xml.NewPdscXML(packPdscFilePath)
+		assert.Nil(pdscXML.Read())
+		pdscXML.URL = server.URL()
+		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
+
+		// Install @latest
+		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula)
+		assert.Nil(err)
+
+		// Check that 1.2.4 is installed
+		checkPackIsInstalled(t, &pack124)
+	})
+
+	t.Run("test installing a pack with @latest version specified and most updated pre-installed version", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. There's already a pack 1.2.4 installed
+		// 2. An attempt to install a pack with @latest
+		// 3. No installation should proceed because the pre-installed 1.2.4 pack already satisfies the @latest condition
+
+		localTestingDir := "test-installing-pack-with-at-latest-version-latest-pre-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Inject pdsc into .Web folder
+		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
+		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		// Install 1.2.4
+		addPack(t, publicLocalPack124, ConfigType{
+			IsPublic: true,
+		})
+
+		// Install @latest and make sure nothing gets installed
+		packIdx, err := os.Stat(installer.Installation.PackIdx)
+		assert.Nil(err)
+		packIdxModTime := packIdx.ModTime()
+
+		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula)
+		assert.NotNil(err)
+		assert.Equal(errs.ErrAlreadyLogged, err)
+
+		// Make sure pack.idx did NOT get touched
+		packIdx, err = os.Stat(installer.Installation.PackIdx)
+		assert.Nil(err)
+		assert.Equal(packIdxModTime, packIdx.ModTime())
+	})
+
+	// Now test for local packs, just to increase coverage
+
+	t.Run("test installing a local pack with a minimum version specified and newer version pre-installed", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. There's already a pack 1.2.2 installed
+		// 2. An attempt to install a pack with >=1.2.3
+		// 3. Then pack 1.2.4 should be installed because that's the latest available
+
+		localTestingDir := "test-installing-local-pack-with-minimum-version-new-pre-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Install 1.2.2
+		addPack(t, publicLocalPack122, ConfigType{})
+
+		// Inject the URL for downloading 1.2.4 in .Local/
+		packPdscFilePath := filepath.Join(installer.Installation.LocalDir, filepath.Base(pdscPublicLocalPack))
+
+		// Prepare URLs for downloading the pack
+		pack124 := installer.PackType{}
+		pack124.Vendor = "TheVendor"
+		pack124.Name = "PublicLocalPack"
+		pack124.Version = "1.2.4"
+
+		// Prep server
+		pack124Content, err := ioutil.ReadFile(publicLocalPack124)
+		assert.Nil(err)
+		server := NewServer()
+		server.AddRoute(pack124.PackFileName(), pack124Content)
+
+		// Inject URL into pdsc
+		pdscXML := xml.NewPdscXML(packPdscFilePath)
+		assert.Nil(pdscXML.Read())
+		pdscXML.URL = server.URL()
+		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
+
+		// Install >=1.2.3
+		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula)
+		assert.Nil(err)
+
+		// Check that 1.2.4 is installed
+		checkPackIsInstalled(t, &pack124)
+	})
+
+	t.Run("test installing a local pack with @latest version specified and matching version pre-installed", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. There's already a pack 1.2.4 installed
+		// 2. An attempt to install a pack with @latest
+		// 3. Should do nothing
+
+		localTestingDir := "test-installing-local-pack-with-at-latest-version-matching-pre-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Install 1.2.4
+		addPack(t, publicLocalPack124, ConfigType{})
+
+		// Install @latest and make sure nothing gets installed
+		packIdx, err := os.Stat(installer.Installation.PackIdx)
+		assert.Nil(err)
+		packIdxModTime := packIdx.ModTime()
+
+		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula)
+		assert.NotNil(err)
+		assert.Equal(errs.ErrAlreadyLogged, err)
+
+		// Make sure pack.idx did NOT get touched
+		packIdx, err = os.Stat(installer.Installation.PackIdx)
+		assert.Nil(err)
+		assert.Equal(packIdxModTime, packIdx.ModTime())
 	})
 }

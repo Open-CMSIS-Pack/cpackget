@@ -27,7 +27,7 @@ func TestRemovePack(t *testing.T) {
 
 		// Sanity check
 		assert.NotNil(err)
-		assert.Equal(err, errs.ErrBadPackNameInvalidVersion)
+		assert.Equal(err, errs.ErrBadPackName)
 	})
 
 	t.Run("test removing a pack that is not installed", func(t *testing.T) {

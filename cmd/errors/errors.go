@@ -19,12 +19,8 @@ func AlreadyLogged(err error) bool {
 
 var (
 	// Errors related to package file name
-	ErrBadPackName                 = errors.New("bad pack name: it should follow the standard PackVendor.PackName.PackVersion.pack")
-	ErrBadPackNameInvalidVendor    = errors.New("bad pack name: pack vendor should be a string containing letters")
-	ErrBadPackNameInvalidName      = errors.New("bad pack name: pack name should be a string containing letters")
-	ErrBadPackNameInvalidVersion   = errors.New("bad pack name: pack version should be versioned like 0.0.0, and optionally have a suffix containing letters")
-	ErrBadPackNameInvalidExtension = errors.New("bad pack name: pack extension should be \"pdsc\", \"pack\" or \"zip\"")
-	ErrBadPackURL                  = errors.New("bad pack url: the url provided for this pack is malformed")
+	ErrBadPackName = errors.New("bad pack name: it should be one of the following formats: Vendor.Pack, Vendor.Pack.x.y.z, Vendor.Pack.x.y.z.pack, or Vendor.Pack.pdsc")
+	ErrBadPackURL  = errors.New("bad pack url: the url provided for this pack is malformed")
 
 	// Errors related to package content
 	ErrPdscFileNotFound      = errors.New("pdsc not found")

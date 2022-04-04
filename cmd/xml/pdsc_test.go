@@ -4,6 +4,7 @@
 package xml_test
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
@@ -28,6 +29,8 @@ func TestPdscXML(t *testing.T) {
 			Name:   "TheName",
 		}
 
+		assert.Nil(pdscXML.FindReleaseTagByVersion(""))
+
 		// It is OK to have an empty LatestVersion() (or is it?)
 		latest = pdscXML.LatestVersion()
 		assert.Equal(latest, "")
@@ -43,6 +46,28 @@ func TestPdscXML(t *testing.T) {
 
 		latest = pdscXML.LatestVersion()
 		assert.Equal(latest, "0.0.2")
+	})
+
+	t.Run("test list all versions", func(t *testing.T) {
+		pdscXML := xml.PdscXML{
+			Vendor: "TheVendor",
+			URL:    "http://the.url/",
+			Name:   "TheName",
+		}
+
+		release1 := xml.ReleaseTag{
+			Version: "0.0.1",
+		}
+		release2 := xml.ReleaseTag{
+			Version: "0.0.2",
+		}
+		pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, release2)
+		pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, release1)
+
+		allVersions := pdscXML.AllReleases()
+		sort.Strings(allVersions)
+		expected := []string{"0.0.1", "0.0.2"}
+		assert.Equal(expected, allVersions)
 	})
 
 	t.Run("test pdscXML to pdscTag generation", func(t *testing.T) {

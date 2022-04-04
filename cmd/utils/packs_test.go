@@ -18,7 +18,6 @@ type testCase struct {
 	path     string
 	expected utils.PackInfo
 	err      error
-	short    bool
 }
 
 func absPath(filePath string) string {
@@ -32,111 +31,129 @@ func TestExtractPackInfo(t *testing.T) {
 	localFilePrefix := "file://localhost/"
 
 	var tests = []testCase{
-		// Cases where short=true
 		{
-			name:  "test short path bad pack name",
-			path:  "this-is-not-a-valid-pack-name",
-			short: true,
-			err:   errs.ErrBadPackName,
+			name: "test short path bad pack name",
+			path: "this-is-not-a-valid-pack-name",
+			err:  errs.ErrBadPackName,
 		},
 		{
-			name:  "test short path bad pack name with invalid version",
-			path:  "TheVendor.ThePack.not-a-valid-version",
-			short: true,
-			err:   errs.ErrBadPackNameInvalidVersion,
+			name: "test short path bad pack name with invalid version",
+			path: "TheVendor.ThePack.not-a-valid-version",
+			err:  errs.ErrBadPackName,
 		},
 		{
-			name:  "test short path bad pack name with invalid vendor name",
-			path:  "not-a-valid-vendor?.ThePack",
-			short: true,
-			err:   errs.ErrBadPackNameInvalidName,
+			name: "test short path bad pack name with invalid vendor name",
+			path: "not-a-valid-vendor?.ThePack",
+			err:  errs.ErrBadPackName,
 		},
 		{
-			name:  "test short path bad pack name with invalid pack name",
-			path:  "TheVendor.not-a-valid-pack-name?",
-			short: true,
-			err:   errs.ErrBadPackNameInvalidName,
+			name: "test short path bad pack name with invalid pack name",
+			path: "TheVendor.not-a-valid-pack-name?",
+			err:  errs.ErrBadPackName,
 		},
 		{
-			name:  "test short path successfully extract pack info",
-			path:  "TheVendor.ThePack.0.0.1",
-			short: true,
+			name: "test short path successfully extract pack info",
+			path: "TheVendor.ThePack.0.0.1",
 			expected: utils.PackInfo{
-				Vendor:  "TheVendor",
-				Pack:    "ThePack",
-				Version: "0.0.1",
+				Vendor:          "TheVendor",
+				Pack:            "ThePack",
+				Version:         "0.0.1",
+				VersionModifier: utils.ExactVersion,
+				IsPackID:        true,
 			},
 		},
 		{
-			name:  "test short path successfully extract pack info without version",
-			path:  "TheVendor.ThePack",
-			short: true,
+			name: "test short path successfully extract pack info without version",
+			path: "TheVendor.ThePack",
 			expected: utils.PackInfo{
-				Vendor: "TheVendor",
-				Pack:   "ThePack",
+				Vendor:          "TheVendor",
+				Pack:            "ThePack",
+				VersionModifier: utils.AnyVersion,
+				IsPackID:        true,
 			},
 		},
-
-		// Tests with full paths (short=false)
 		{
-			name: "test path with bad extension",
-			path: "only-check-for-extension.txt",
-			err:  errs.ErrBadPackNameInvalidExtension,
+			name: "test extract pack info using legacy format without version",
+			path: "TheVendor::ThePack",
+			expected: utils.PackInfo{
+				Vendor:          "TheVendor",
+				Pack:            "ThePack",
+				VersionModifier: utils.AnyVersion,
+				IsPackID:        true,
+			},
 		},
 		{
-			name: "test path with bad name pack extension",
-			path: "not-a-valid-pack-name.pack",
-			err:  errs.ErrBadPackName,
+			name: "test extract pack info using legacy format with exact version",
+			path: "TheVendor::ThePack@1.0.0",
+			expected: utils.PackInfo{
+				Vendor:          "TheVendor",
+				Pack:            "ThePack",
+				Version:         "1.0.0",
+				VersionModifier: utils.ExactVersion,
+				IsPackID:        true,
+			},
 		},
 		{
-			name: "test path with bad name zip extension",
-			path: "not-a-valid-pack-name.zip",
-			err:  errs.ErrBadPackName,
+			name: "test extract pack info using legacy format with minimum version",
+			path: "TheVendor::ThePack>=1.0.0",
+			expected: utils.PackInfo{
+				Vendor:          "TheVendor",
+				Pack:            "ThePack",
+				Version:         "1.0.0",
+				VersionModifier: utils.GreaterVersion,
+				IsPackID:        true,
+			},
 		},
 		{
-			name: "test path with bad name pdsc extension",
-			path: "not-a-valid-pack-name.pdsc",
-			err:  errs.ErrBadPackName,
+			name: "test extract pack info using legacy format with minimum version alternative syntax",
+			path: "TheVendor::ThePack@~1.0.0",
+			expected: utils.PackInfo{
+				Vendor:          "TheVendor",
+				Pack:            "ThePack",
+				Version:         "1.0.0",
+				VersionModifier: utils.GreatestCompatibleVersion,
+				IsPackID:        true,
+			},
 		},
 		{
 			name: "test pdsc path with bad vendor name",
 			path: "not-a-valid-vendor-name?.ThePack.pdsc",
-			err:  errs.ErrBadPackNameInvalidVendor,
+			err:  errs.ErrBadPackName,
 		},
 		{
 			name: "test pack path with bad vendor name",
 			path: "not-a-valid-vendor-name?.ThePack.0.0.1.pack",
-			err:  errs.ErrBadPackNameInvalidVendor,
+			err:  errs.ErrBadPackName,
 		},
 		{
 			name: "test zip path with bad vendor name",
 			path: "not-a-valid-vendor-name?.ThePack.0.0.1.pdsc",
-			err:  errs.ErrBadPackNameInvalidVendor,
+			err:  errs.ErrBadPackName,
 		},
 		{
 			name: "test pdsc path with bad pack name",
 			path: "TheVendor.not-a-valid-pack-name?.pdsc",
-			err:  errs.ErrBadPackNameInvalidName,
+			err:  errs.ErrBadPackName,
 		},
 		{
 			name: "test pack path with bad pack name",
 			path: "TheVendor.not-a-valid-pack-name?.0.0.1.pack",
-			err:  errs.ErrBadPackNameInvalidName,
+			err:  errs.ErrBadPackName,
 		},
 		{
 			name: "test zip path with bad pack name",
 			path: "TheVendor.not-a-valid-pack-name?.0.0.1.zip",
-			err:  errs.ErrBadPackNameInvalidName,
+			err:  errs.ErrBadPackName,
 		},
 		{
 			name: "test pack path with bad version",
 			path: "TheVendor.ThePack.not-a-valid-version?.pack",
-			err:  errs.ErrBadPackNameInvalidVersion,
+			err:  errs.ErrBadPackName,
 		},
 		{
 			name: "test zip path with bad version",
 			path: "TheVendor.ThePack.not-a-valid-version?.zip",
-			err:  errs.ErrBadPackNameInvalidVersion,
+			err:  errs.ErrBadPackName,
 		},
 		{
 			name: "test path with with http URL",
@@ -145,7 +162,7 @@ func TestExtractPackInfo(t *testing.T) {
 				Vendor:    "TheVendor",
 				Pack:      "ThePack",
 				Version:   "0.0.1",
-				Extension: ".pack",
+				Extension: "pack",
 				Location:  "http://vendor.com/",
 			},
 		},
@@ -156,7 +173,7 @@ func TestExtractPackInfo(t *testing.T) {
 				Vendor:    "TheVendor",
 				Pack:      "ThePack",
 				Version:   "0.0.1",
-				Extension: ".pack",
+				Extension: "pack",
 				Location:  localFilePrefix + filepath.Join(cwd, "relative", "path", "to") + string(os.PathSeparator),
 			},
 		},
@@ -167,7 +184,7 @@ func TestExtractPackInfo(t *testing.T) {
 				Vendor:    "TheVendor",
 				Pack:      "ThePack",
 				Version:   "0.0.1",
-				Extension: ".pack",
+				Extension: "pack",
 				Location:  localFilePrefix + absPath(filepath.Join(cwd, "..", "path", "to")) + string(os.PathSeparator),
 			},
 		},
@@ -175,7 +192,7 @@ func TestExtractPackInfo(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			info, err := utils.ExtractPackInfo(test.path, test.short)
+			info, err := utils.ExtractPackInfo(test.path)
 			if test.err != nil {
 				assert.True(errs.Is(err, test.err))
 			} else {
