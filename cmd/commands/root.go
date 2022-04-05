@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -39,6 +40,13 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 
 	if verbosiness {
 		log.SetLevel(log.DebugLevel)
+	}
+
+	proxy := viper.GetString("proxy")
+	if proxy != "" {
+		if err := utils.ConfigureProxy(viper.GetString("proxy")); err != nil {
+			return err
+		}
 	}
 
 	return installer.SetPackRoot(viper.GetString("pack-root"), createPackRoot)

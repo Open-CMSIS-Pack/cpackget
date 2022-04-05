@@ -70,12 +70,19 @@ func NewCli() *cobra.Command {
 
 	defaultPackRoot := os.Getenv("CMSIS_PACK_ROOT")
 
+	defaultProxyAddress := os.Getenv("HTTPS_PROXY")
+	if defaultProxyAddress == "" {
+		defaultProxyAddress = os.Getenv("HTTP_PROXY")
+	}
+
 	rootCmd.Flags().BoolVarP(&flags.version, "version", "V", false, "Prints the version number of cpackget and exit")
 	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "Run cpackget silently, printing only error messages")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Sets verboseness level: None (Errors + Info + Warnings), -v (all + Debugging). Specify \"-q\" for no messages")
 	rootCmd.PersistentFlags().StringP("pack-root", "R", defaultPackRoot, "Specifies pack root folder. Defaults to CMSIS_PACK_ROOT environment variable")
+	rootCmd.PersistentFlags().StringP("proxy", "X", defaultProxyAddress, "Specifies a proxy address. Defaults to HTTP(S)_PROXY environment variable")
 	_ = viper.BindPFlag("pack-root", rootCmd.PersistentFlags().Lookup("pack-root"))
 	_ = viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
+	_ = viper.BindPFlag("proxy", rootCmd.PersistentFlags().Lookup("proxy"))
 	_ = viper.BindPFlag("quiet", rootCmd.PersistentFlags().Lookup("quiet"))
 
 	for _, cmd := range commands.All {
