@@ -142,7 +142,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool) error {
 
 	var err error
 	if !strings.HasPrefix(indexPath, "https://") {
-		return errs.ErrIndexPathNotSafe
+		log.Warnf("Non-HTTPS url: \"%s\"", indexPath)
 	}
 
 	indexPath, err = utils.DownloadFile(indexPath)
