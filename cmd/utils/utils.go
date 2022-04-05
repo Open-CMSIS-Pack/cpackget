@@ -281,6 +281,22 @@ func IsTerminalInteractive() bool {
 	return (fileInfo.Mode() & os.ModeCharDevice) != 0
 }
 
+// ConfigureProxy allows setting up a proxy behind cpackget
+func ConfigureProxy(proxyString string) error {
+	proxyURL, err := url.Parse(proxyString)
+	if err != nil {
+		return err
+	}
+
+	HTTPClient = &http.Client{
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+			Proxy:             http.ProxyURL(proxyURL),
+		},
+	}
+	return nil
+}
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 	HTTPClient = &http.Client{}
