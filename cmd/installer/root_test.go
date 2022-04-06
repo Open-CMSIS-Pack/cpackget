@@ -327,25 +327,26 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	var Overwrite = true
 
-	t.Run("test add http server index.pidx", func(t *testing.T) {
-		localTestingDir := "test-add-http-server-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		defer os.RemoveAll(localTestingDir)
+	// Re-enable this test when a flag --enforce-security is implemented
+	// t.Run("test add http server index.pidx", func(t *testing.T) {
+	// 	localTestingDir := "test-add-http-server-index"
+	// 	assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+	// 	defer os.RemoveAll(localTestingDir)
 
-		httpServer := httptest.NewServer(
-			http.HandlerFunc(
-				func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusNotFound)
-				},
-			),
-		)
+	// 	httpServer := httptest.NewServer(
+	// 		http.HandlerFunc(
+	// 			func(w http.ResponseWriter, r *http.Request) {
+	// 				w.WriteHeader(http.StatusNotFound)
+	// 			},
+	// 		),
+	// 	)
 
-		indexPath := httpServer.URL + "/index.pidx"
+	// 	indexPath := httpServer.URL + "/index.pidx"
 
-		err := installer.UpdatePublicIndex(indexPath, Overwrite)
-		assert.NotNil(err)
-		assert.Equal(errs.ErrIndexPathNotSafe, err)
-	})
+	// 	err := installer.UpdatePublicIndex(indexPath, Overwrite)
+	// 	assert.NotNil(err)
+	// 	assert.Equal(errs.ErrIndexPathNotSafe, err)
+	// })
 
 	t.Run("test add not found remote index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-not-found-remote-index"
