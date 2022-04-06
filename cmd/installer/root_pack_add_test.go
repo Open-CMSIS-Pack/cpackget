@@ -204,6 +204,23 @@ func TestAddPack(t *testing.T) {
 		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
+	t.Run("test installing a pack with version not present in the pdsc file", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-version-not-present-in-the-pdsc-file"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := pack123MissingVersion
+
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
+
+		// Sanity check
+		assert.NotNil(err)
+		assert.Equal(err, errs.ErrPackVersionNotFoundInPdsc)
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
+	})
+
 	// Test installing a combination of public/non-public local/remote packs
 	t.Run("test installing public pack via local file", func(t *testing.T) {
 		localTestingDir := "test-add-public-local-pack"

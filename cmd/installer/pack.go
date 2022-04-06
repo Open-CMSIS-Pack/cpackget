@@ -158,6 +158,15 @@ func (p *PackType) validate() error {
 				return err
 			}
 
+			// Sanity check: make sure the version being installed actually exists in the PDSC file
+			version := p.GetVersion()
+			log.Debugf("Making sure %s contains the version %s", pdscFileName, version)
+			releaseTag := p.Pdsc.FindReleaseTagByVersion(version)
+			if releaseTag == nil {
+				log.Errorf("The pack's pdsc (%s) has no release tag matching version \"%s\"", pdscFileName, version)
+				return errs.ErrPackVersionNotFoundInPdsc
+			}
+
 			p.Pdsc.FileName = file.Name
 			return nil
 		}
