@@ -221,6 +221,23 @@ func TestAddPack(t *testing.T) {
 		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
+	t.Run("test installing a pack with version not the latest in the pdsc file", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-version-not-the-latest-in-the-pdsc-file"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := pack123VersionNotLatest
+
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula)
+
+		// Sanity check
+		assert.NotNil(err)
+		assert.Equal(err, errs.ErrPackVersionNotLatestReleasePdsc)
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
+	})
+
 	// Test installing a combination of public/non-public local/remote packs
 	t.Run("test installing public pack via local file", func(t *testing.T) {
 		localTestingDir := "test-add-public-local-pack"
@@ -1174,10 +1191,12 @@ func TestAddPack(t *testing.T) {
 		server := NewServer()
 		server.AddRoute(pack124.PackFileName(), pack124Content)
 
-		// Inject URL into pdsc
+		// Inject URL and 1.2.4. release tag into pdsc
 		pdscXML := xml.NewPdscXML(packPdscFilePath)
 		assert.Nil(pdscXML.Read())
 		pdscXML.URL = server.URL()
+		releaseTag := xml.ReleaseTag{Version: "1.2.4"}
+		pdscXML.ReleasesTag.Releases = append([]xml.ReleaseTag{releaseTag}, pdscXML.ReleasesTag.Releases...)
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
 		// Install >=1.2.3
