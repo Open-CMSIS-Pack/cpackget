@@ -225,6 +225,8 @@ var (
 
 	// Pdsc files to test out installing packs with pack id only
 	pdscPack123MissingVersion = filepath.Join(testDir, "TheVendor.PublicRemotePack_VersionNotAvailable.pdsc")
+	pack123MissingVersion     = filepath.Join(testDir, "TheVendor.LocalPackWithMissingVersion.1.2.3.pack")
+	pack123VersionNotLatest   = filepath.Join(testDir, "TheVendor.LocalPackWithVersionNotLatest.1.2.3.pack")
 
 	// Public packs
 	publicLocalPack010  = filepath.Join(testDir, "0.1.0", "TheVendor.PublicLocalPack.0.1.0.pack")
