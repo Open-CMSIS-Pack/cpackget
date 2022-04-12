@@ -1,5 +1,7 @@
-# Having these will allow CI scripts to build for many OS's and ARCH's
-OS   := $(or $(OS),$(OS),linux)
+# Default to building for the host
+OS ?= $(shell uname)
+
+# Having this will allow CI scripts to build for many OS's and ARCH's
 ARCH := $(or $(ARCH),$(ARCH),amd64)
 
 # Path to lint tool
@@ -12,6 +14,11 @@ PROG := build/$(BIN_NAME)
 ifneq (,$(findstring indows,$(OS)))
     PROG=build/$(BIN_NAME).exe
     OS=windows
+else ifneq (,$(findstring Darwin,$(OS)))
+    OS=darwin
+else
+    # Default to Linux
+    OS=linux
 endif
 
 SOURCES := $(wildcard cmd/*.go) $(wildcard cmd/*/*.go)
