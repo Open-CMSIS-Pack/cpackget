@@ -617,8 +617,53 @@ func TestAddPack(t *testing.T) {
 			pack.IsPublic = true
 			checkPackIsInstalled(t, pack)
 		})
-
 	}
+
+	t.Run("test installing pack with pack id using pdsc url when version is not the latest in index.pidx", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-pack-id-using-pdsc-url-version-not-the-latest"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Prep pack info
+		packPath := publicLocalPack123
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+
+		// Fake server
+		// should serve *.pack and *.pdsc
+		server := NewServer()
+
+		packContent, err := ioutil.ReadFile(packPath)
+		assert.Nil(err)
+
+		packPdscXML := xml.NewPdscXML(filepath.Join(filepath.Dir(packPath), pack.PdscFileName()))
+		assert.Nil(packPdscXML.Read())
+		packPdscXML.URL = server.URL()
+		assert.Nil(utils.WriteXML(pack.PdscFileName(), packPdscXML))
+		defer os.Remove(pack.PdscFileName())
+		packPdscContent, err := ioutil.ReadFile(pack.PdscFileName())
+		assert.Nil(err)
+
+		server.AddRoute(pack.PackFileName(), packContent)
+		server.AddRoute(pack.PdscFileName(), packPdscContent)
+
+		// Inject the pdsc tag into .Web/index.pix pointing to a version above of
+		// the version being installed
+		packPdscTag := xml.PdscTag{
+			URL:     server.URL(),
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: "1.2.4",
+		}
+
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
+		addPack(t, pack.PackIDWithVersion(), ConfigType{
+			IsPublic: true,
+		})
+	})
 
 	t.Run("test installing non-public pack via packID", func(t *testing.T) {
 		localTestingDir := "test-add-non-public-local-packid"

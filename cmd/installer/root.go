@@ -558,7 +558,8 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType) (bool, error) {
 	log.Debugf("Not found \"%s\" in \"%s\"", pack.PdscFileName(), p.WebDir)
 
 	// Try to retrieve the packs's PDSC file out of the index.pidx
-	pdscTag := p.PublicIndexXML.FindPdscTag(pack.PdscTag)
+	searchPdscTag := xml.PdscTag{Vendor: pack.Vendor, Name: pack.Name}
+	pdscTag := p.PublicIndexXML.FindPdscTag(searchPdscTag)
 	if pdscTag == nil {
 		log.Debugf("Not found \"%s\" tag in \"%s\"", pack.PdscFileName(), p.PublicIndex)
 		return false, nil
