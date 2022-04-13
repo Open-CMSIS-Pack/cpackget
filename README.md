@@ -71,10 +71,14 @@ Install a pack version that can be downloaded using a web link:
 * `cpackget pack add https://vendor.com/example/Vendor.PackName.x.y.z.pack`
 
 Install a pack version from the public package index. The download url will be looked up by the tool:
-* `cpackget pack add Vendor.PackName.x.y.z`
+* `cpackget pack add Vendor.PackName.x.y.z` or `cpackget pack add Vendor::PackName@x.y.z`
 
 Install the latest published version of a public package listed in the package index:
-* `cpackget pack add Vendor.PackName`
+* `cpackget pack add Vendor.PackName` or `cpackget pack add Vendor::PackName`
+
+Install packs using version modifiers:
+* `cpackget pack add Vendor::PackName>=x.y.z`, check if there is any version greater than or equal to x.y.z, install latest otherwise
+* `cpackget pack add Vendor::PackName@~x.y.z`, check if there is any version greater than or equal to x.y.z 
 
 Install the pack versions specified in the ascii file. Each line specifies a single pack.
 * `cpackget pack add -f list-of-packs.txt`
@@ -103,10 +107,10 @@ named `LICENSE.txt`, cpackget would extract it to `.Download/Vendor.PackName.x.y
 The commands below demonstrate how to remove packs.
 
 Remove pack `Vendor.PackName` version `x.y.z` only, leave others untouched
-* `cpackget pack rm Vendor.PackName.x.y.z`
+* `cpackget pack rm Vendor.PackName.x.y.z` or `cpackget pack rm Vendor::PackName@x.y.z`
 
 Remove all versions of pack `Vendor.PackName`
-* `cpackget pack rm Vendor.PackName`
+* `cpackget pack rm Vendor.PackName` or `cpackget pack rm Vendor::PackName`
 
 Same as above, except that now it also removes the cached pack file.
 * `cpackget pack rm --purge Vendor.PackName`: using `--purge` triggers removal of any downloaded files.
@@ -114,12 +118,29 @@ Same as above, except that now it also removes the cached pack file.
 And for removing packs that were installed via PDSC files, consider the example commands below:
 
 Remove pack `Vendor.PackName` version `x.y.z` only, from the local packs.
-* `cpackget pdsc rm Vendor.PackName.x.y.z`
+* `cpackget pdsc rm Vendor.PackName.x.y.z` or `cpackget pdsc rm Vendor::PackName@x.y.z`
 
 Remove all versions of pack `Vendor.PackName`, from the local packs.
-* `cpackget pdsc rm Vendor.PackName`
+* `cpackget pdsc rm Vendor.PackName` or `cpackget pdsc rm Vendor::PackName`
 
 Note that removing packs does not require pack of PDSC file location specification, e.g. no need to provide the path for the PDSC file or the URL of the pack.
+
+### Working behind a proxy
+
+Some use cases might require network access via a proxy. This can be done via environment variables that are used
+by `cpackget`:
+
+```bash
+# Windows
+% set HTTP_PROXY=http://my-proxy         # proxy used for HTTP requests
+% set HTTPS_PROXY=https://my-https-proxy # proxy used for HTTPS requests
+
+# Unix
+$ export HTTP_PROXY=http://my-proxy         # proxy used for HTTP requests
+$ export HTTPS_PROXY=https://my-https-proxy # proxy used for HTTPS requests
+```
+
+Then **all** HTTP/HTTPS requests will be going through the specified proxy.
 
 ## Contributing to cpackget tool
 
