@@ -372,18 +372,24 @@ func SetPackRoot(packRoot string, create bool) error {
 	Installation.PublicIndex = filepath.Join(Installation.WebDir, "index.pidx")
 	Installation.PublicIndexXML = xml.NewPidxXML(Installation.PublicIndex)
 
+	missingDirs := []string{}
 	for _, dir := range []string{packRoot, Installation.DownloadDir, Installation.LocalDir, Installation.WebDir} {
 		log.Debugf("Making sure \"%v\" exists", dir)
 		exists := utils.DirExists(dir)
 		if !exists {
 			if !create {
-				return errs.ErrDirectoryNotFound
+				missingDirs = append(missingDirs, dir)
 			} else {
 				if err := utils.EnsureDir(dir); err != nil {
 					return err
 				}
 			}
 		}
+	}
+
+	if len(missingDirs) > 0 {
+		log.Errorf("Directory(ies) \"%s\" are missing! Was %s initialized correctly?", strings.Join(missingDirs[:], ", "), packRoot)
+		return errs.ErrAlreadyLogged
 	}
 
 	// Make sure utils.DownloadFile always downloads files to .Download/
