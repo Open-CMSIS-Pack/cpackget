@@ -30,8 +30,8 @@ func AddPack(packPath string, checkEula, extractEula bool) error {
 	log.Infof("Adding pack \"%s\"", packPath)
 
 	if !extractEula && pack.isInstalled {
-		log.Errorf("pack %s is already installed here: %s", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersion()))
-		return errs.ErrAlreadyLogged
+		log.Infof("pack %s is already installed here: %s", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersion()))
+		return nil
 	}
 
 	if pack.isPackID {
