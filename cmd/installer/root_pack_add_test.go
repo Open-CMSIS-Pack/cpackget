@@ -67,11 +67,10 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(err)
 		packIdxModTime := packIdx.ModTime()
 
-		// Attempt installing it again, this time we should get an error
+		// Attempt installing it again, this time it should noop
 		packPath = publicLocalPack123
 		err = installer.AddPack(packPath, !CheckEula, !ExtractEula)
-		assert.NotNil(err)
-		assert.Equal(err, errs.ErrAlreadyLogged)
+		assert.Nil(err)
 
 		// Make sure pack.idx did NOT get touched
 		packIdx, err = os.Stat(installer.Installation.PackIdx)
@@ -777,8 +776,7 @@ func TestAddPack(t *testing.T) {
 		packIdxModTime := packIdx.ModTime()
 
 		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula)
-		assert.NotNil(err)
-		assert.Equal(errs.ErrAlreadyLogged, err)
+		assert.Nil(err)
 
 		// Make sure pack.idx did NOT get touched
 		packIdx, err = os.Stat(installer.Installation.PackIdx)
@@ -1031,8 +1029,7 @@ func TestAddPack(t *testing.T) {
 		packIdxModTime := packIdx.ModTime()
 
 		err = installer.AddPack(publicLocalPack011WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula)
-		assert.NotNil(err)
-		assert.Equal(errs.ErrAlreadyLogged, err)
+		assert.Nil(err)
 
 		// Make sure pack.idx did NOT get touched
 		packIdx, err = os.Stat(installer.Installation.PackIdx)
@@ -1152,8 +1149,7 @@ func TestAddPack(t *testing.T) {
 		packIdxModTime := packIdx.ModTime()
 
 		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula)
-		assert.NotNil(err)
-		assert.Equal(errs.ErrAlreadyLogged, err)
+		assert.Nil(err)
 
 		// Make sure pack.idx did NOT get touched
 		packIdx, err = os.Stat(installer.Installation.PackIdx)
@@ -1226,8 +1222,7 @@ func TestAddPack(t *testing.T) {
 		packIdxModTime := packIdx.ModTime()
 
 		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula)
-		assert.NotNil(err)
-		assert.Equal(errs.ErrAlreadyLogged, err)
+		assert.Nil(err)
 
 		// Make sure pack.idx did NOT get touched
 		packIdx, err = os.Stat(installer.Installation.PackIdx)
