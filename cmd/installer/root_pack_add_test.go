@@ -406,7 +406,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithLicense
 
-		extractedLicensePath := packPath + ".LICENSE.txt"
+		extractedLicensePath := filepath.Join(installer.Installation.DownloadDir, filepath.Base(packPath)+".LICENSE.txt")
 
 		ui.LicenseAgreed = nil
 		addPack(t, packPath, ConfigType{

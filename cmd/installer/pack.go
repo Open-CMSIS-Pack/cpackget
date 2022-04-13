@@ -239,13 +239,14 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	}
 
 	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.GetVersion())
+	packBackupPath := filepath.Join(Installation.DownloadDir, p.PackFileName())
 
 	if len(p.Pdsc.License) > 0 {
 		if checkEula {
 			ok, err := p.checkEula()
 			if err != nil {
 				if err == errs.ErrExtractEula {
-					return p.extractEula()
+					return p.extractEula(packBackupPath)
 				}
 				return err
 			}
@@ -300,7 +301,6 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 
 	_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.DownloadDir, newPdscFileName))
 
-	packBackupPath := filepath.Join(Installation.DownloadDir, p.PackFileName())
 	if !p.isDownloaded {
 		return utils.CopyFile(p.path, packBackupPath)
 	}
@@ -409,7 +409,7 @@ func (p *PackType) checkEula() (bool, error) {
 }
 
 // extractEula extracts the pack's License to a file next to the pack's location
-func (p *PackType) extractEula() error {
+func (p *PackType) extractEula(packPath string) error {
 	log.Debug("Extracting EULA")
 
 	eulaContents, err := p.readEula()
@@ -417,7 +417,7 @@ func (p *PackType) extractEula() error {
 		return err
 	}
 
-	eulaFileName := p.path + "." + path.Base(p.Pdsc.License)
+	eulaFileName := packPath + "." + path.Base(p.Pdsc.License)
 
 	log.Infof("Extracting embedded license to %v", eulaFileName)
 

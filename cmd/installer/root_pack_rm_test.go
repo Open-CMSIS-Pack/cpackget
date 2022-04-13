@@ -10,6 +10,7 @@ import (
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -132,6 +133,37 @@ func TestRemovePack(t *testing.T) {
 		// Make sure pack is not purgeable
 		err := installer.RemovePack(shortenPackPath(packPath, false), true) // withVersion=false, purge=true
 		assert.Equal(errs.ErrPackNotPurgeable, err)
+	})
+
+	t.Run("test purge a pack with license", func(t *testing.T) {
+		localTestingDir := "test-purge-pack-with-license"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packWithLicense
+
+		shortPackPath := shortenPackPath(packPath, false) // withVersion=true
+
+		licenseFilePath := filepath.Join(installer.Installation.DownloadDir, filepath.Base(packPath)+".LICENSE.txt")
+
+		// Add a pack
+		addPack(t, packPath, ConfigType{})
+		assert.False(utils.FileExists(licenseFilePath))
+
+		// Now extract its license license
+		addPack(t, packPath, ConfigType{
+			ExtractEula: true,
+		})
+		assert.True(utils.FileExists(licenseFilePath))
+
+		// Purge it
+		removePack(t, packPath, true, NotPublic, true) // withVersion=true, purge=true
+
+		// Make sure pack is not purgeable
+		err := installer.RemovePack(shortPackPath, true) // purge=true
+		assert.Equal(errs.ErrPackNotPurgeable, err)
+
+		assert.False(utils.FileExists(licenseFilePath))
 	})
 
 	t.Run("test remove latest version", func(t *testing.T) {
