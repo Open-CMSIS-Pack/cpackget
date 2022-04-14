@@ -271,9 +271,18 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	}
 
 	log.Debugf("Extracting files from \"%s\" to \"%s\"", p.path, packHomeDir)
-	progress := progressbar.Default(int64(len(p.zipReader.File)), "I: Extracting files to "+packHomeDir)
+
+	var progress *progressbar.ProgressBar
+	if utils.IsTerminalInteractive() {
+		progress = progressbar.Default(int64(len(p.zipReader.File)), "I: Extracting files to "+packHomeDir)
+	} else {
+		log.Infof("Extracting files to %s...", packHomeDir)
+	}
+
 	for _, file := range p.zipReader.File {
-		_ = progress.Add(1)
+		if utils.IsTerminalInteractive() {
+			_ = progress.Add(1)
+		}
 		err = utils.SecureInflateFile(file, packHomeDir, p.Subfolder)
 		if err != nil {
 			defer p.zipReader.Close()
