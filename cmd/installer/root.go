@@ -244,33 +244,52 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 			return nil
 		}
 
+		numErrors := 0
 		sort.Slice(matches, func(i, j int) bool {
 			return strings.ToLower(matches[i]) < strings.ToLower(matches[j])
 		})
 		for _, pdscFilePath := range matches {
 			log.Debug(pdscFilePath)
 
-			// Transform pdscFilePath into packName
+			// Transform pdscFilePath into packName, which is printed out
 			pdscFilePath = strings.Replace(pdscFilePath, Installation.PackRoot, "", -1)
 			packName, _ := filepath.Split(pdscFilePath)
 			packName = strings.Replace(packName, "/", " ", -1)
 			packName = strings.Replace(packName, "\\", " ", -1)
 			packName = strings.Trim(packName, " ")
-			packName = strings.Replace(packName, " ", ".", -1) + ".pack"
+			packName = strings.Replace(packName, " ", ".", -1)
+			message := packName
 
-			packInfo, err := utils.ExtractPackInfo(packName)
-			if err != nil {
-				log.Errorf("A pack in the cache folder has malformed pack name: %s", packName)
-				return errs.ErrUnknownBehavior
+			// Validate names
+			errors := []string{}
+			packNameBits := strings.SplitN(packName, ".", 3)
+			vendor := packNameBits[0]
+			name := packNameBits[1]
+			version := packNameBits[2]
+
+			if !utils.IsPackVendorNameValid(vendor) {
+				errors = append(errors, "vendor")
 			}
 
-			pdscTag := xml.PdscTag{
-				Vendor:  packInfo.Vendor,
-				Name:    packInfo.Pack,
-				Version: packInfo.Version,
+			if !utils.IsPackNameValid(name) {
+				errors = append(errors, "pack name")
 			}
 
-			log.Info(pdscTag.Key())
+			if !utils.IsPackVersionValid(version) {
+				errors = append(errors, "pack version")
+			}
+
+			if len(errors) > 0 {
+				message += " - error: " + strings.Join(errors[:], ", ") + " incorrect format"
+				numErrors += 1
+				log.Error(message)
+			} else {
+				log.Info(message)
+			}
+		}
+
+		if numErrors > 0 {
+			log.Warnf("%d error(s) detected", numErrors)
 		}
 	}
 

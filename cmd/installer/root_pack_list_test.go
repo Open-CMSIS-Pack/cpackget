@@ -171,3 +171,40 @@ func ExampleListInstalledPacks_listInstalled() {
 	// I: Listing installed packs
 	// I: TheVendor.PublicLocalPack.1.2.4
 }
+
+func ExampleListInstalledPacks_listMalformedInstalledPacks() {
+	localTestingDir := "test-list-malformed-installed-packs"
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	defer os.RemoveAll(localTestingDir)
+
+	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
+	_ = utils.CopyFile(pdscFilePath, filepath.Join(installer.Installation.WebDir, "TheVendor.PublicLocalPack.pdsc"))
+	_ = installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+		Vendor:  "TheVendor",
+		Name:    "PublicLocalPack",
+		Version: "1.2.3",
+	})
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula)
+
+	// Temper with the installation folder
+	currVendorFolder := filepath.Join(localTestingDir, "TheVendor")
+	currPackNameFolder := filepath.Join(localTestingDir, "TheVendor", "PublicLocalPack")
+	currVersionFolder := filepath.Join(localTestingDir, "TheVendor", "PublicLocalPack", "1.2.3")
+
+	temperedVendorFolder := filepath.Join(localTestingDir, "_TheVendor")
+	temperedPackNameFolder := filepath.Join(localTestingDir, "TheVendor", "_PublicLocalPack")
+	temperedVersionFolder := filepath.Join(localTestingDir, "TheVendor", "PublicLocalPack", "1.2.3.4")
+
+	// Order matters
+	_ = utils.MoveFile(currVersionFolder, temperedVersionFolder)
+	_ = utils.MoveFile(currPackNameFolder, temperedPackNameFolder)
+	_ = utils.MoveFile(currVendorFolder, temperedVendorFolder)
+
+	log.SetOutput(os.Stdout)
+	defer log.SetOutput(ioutil.Discard)
+	_ = installer.ListInstalledPacks(!ListCached, !ListPublic)
+	// Output:
+	// I: Listing installed packs
+	// E: _TheVendor._PublicLocalPack.1.2.3.4 - error: vendor, pack name, pack version incorrect format
+	// W: 1 error(s) detected
+}
