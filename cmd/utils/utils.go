@@ -62,11 +62,14 @@ func DownloadFile(URL string) (string, error) {
 
 	writers := []io.Writer{out}
 	if log.GetLevel() != log.ErrorLevel {
-		progressWriter := progressbar.DefaultBytes(
-			resp.ContentLength,
-			"I: Downloading "+fileBase,
-		)
-		writers = append(writers, progressWriter)
+		if IsTerminalInteractive() {
+			length := resp.ContentLength
+			message := "I: Downloading " + fileBase
+			progressWriter := progressbar.DefaultBytes(length, message)
+			writers = append(writers, progressWriter)
+		} else {
+			log.Infof("Downloading %s...", fileBase)
+		}
 	}
 
 	// Download file in smaller bits straight to a local file
