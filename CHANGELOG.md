@@ -1,3 +1,18 @@
+# v0.4.0
+
+This v0.4 release contains:
+
+Bug fixes
+- Continue listing packs despite malformed pack names
+- Do not raise error when installing a pack already installed
+- Do not raise error when using non HTTPS url for updating index.pix
+
+New features
+- Avoid displaying progress bar on non-interactive terminals
+- Remove extracted licenses when purging
+- Add notes on how to configure cpackget behind a proxy
+- Support YML pack notation e.g. "ARM::CMSIS@5.7.0"
+
 # v0.3.1
 
 This v0.3.1 release contains a tiny typo fix that prevented
