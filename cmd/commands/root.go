@@ -13,10 +13,10 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	viperType "github.com/spf13/viper"
 )
 
-// All contains all available commands for cpackget
+// AllCommands contains all available commands for cpackget
 var AllCommands = []*cobra.Command{
 	PackCmd,
 	PdscCmd,
@@ -27,6 +27,8 @@ var AllCommands = []*cobra.Command{
 // createPackRoot is a flag that determines if the pack root should be created or not
 var createPackRoot bool
 
+var viper *viperType.Viper
+
 // configureInstaller configures cpackget installer for adding or removing pack/pdsc
 func configureInstaller(cmd *cobra.Command, args []string) error {
 	verbosiness := viper.GetBool("verbose")
@@ -36,6 +38,7 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 	}
 
 	log.SetLevel(log.InfoLevel)
+	log.SetOutput(cmd.OutOrStdout())
 
 	if quiet {
 		log.SetLevel(log.ErrorLevel)
@@ -85,8 +88,6 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 `
 
 func NewCli() *cobra.Command {
-	cobra.OnInitialize(initCobra)
-
 	rootCmd := &cobra.Command{
 		Use:           "cpackget [command] [flags]",
 		Short:         "This utility adds/removes CMSIS-Packs",
@@ -107,6 +108,8 @@ func NewCli() *cobra.Command {
 
 	defaultPackRoot := os.Getenv("CMSIS_PACK_ROOT")
 
+	viper = viperType.New()
+
 	rootCmd.Flags().BoolVarP(&flags.version, "version", "V", false, "Prints the version number of cpackget and exit")
 	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "Run cpackget silently, printing only error messages")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Sets verboseness level: None (Errors + Info + Warnings), -v (all + Debugging). Specify \"-q\" for no messages")
@@ -120,8 +123,4 @@ func NewCli() *cobra.Command {
 	}
 
 	return rootCmd
-}
-
-func initCobra() {
-	viper.AutomaticEnv()
 }
