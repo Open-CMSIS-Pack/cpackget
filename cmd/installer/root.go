@@ -91,7 +91,7 @@ func RemovePack(packPath string, purge bool) error {
 
 // AddPdsc adds a pack via PDSC file
 func AddPdsc(pdscPath string) error {
-	log.Debugf("Adding pdsc \"%v\"", pdscPath)
+	log.Infof("Adding pdsc \"%v\"", pdscPath)
 
 	pdsc, err := preparePdsc(pdscPath)
 	if err != nil {

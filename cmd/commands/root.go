@@ -22,6 +22,7 @@ var AllCommands = []*cobra.Command{
 	PdscCmd,
 	IndexCmd,
 	InitCmd,
+	AddCmd,
 }
 
 // createPackRoot is a flag that determines if the pack root should be created or not

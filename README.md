@@ -22,10 +22,9 @@ Usage:
 
 Available Commands:
   help        Help about any command
-  index       Updates public index
-  init        Initializes a pack root folder
-  pack        Adds/Removes Open-CMSIS-Pack packages
-  pdsc        Adds/Removes Open-CMSIS-Pack packages in the local file system via PDSC files.
+  index       Update public index
+  init        Initialize a pack root folder
+  add         Add Open-CMSIS-Pack packages
 
 Flags:
   -h, --help               help for cpackget
@@ -44,7 +43,7 @@ For example, if one wanted help removing a pack, running `cpackget pack rm --hel
 
 If cpackget is going to work on an existing pack root folder, there are two ways to specify it:
 
-1. `export CMSIS_PACK_ROOT=path/to/pack-root; cpackget pack add ARM.CMSIS`
+1. `export CMSIS_PACK_ROOT=path/to/pack-root; cpackget add ARM.CMSIS`
 2. `cpackget --pack-root path/to/pack-root pack add ARM.CMSIS`
 
 To create a new pack root folder with an up-to-date index file of publicly available Open-CMSIS-Pack packs run:
@@ -65,26 +64,26 @@ If later it is needed to update the public index file, just run `cpackget index 
 The commands below demonstrate how to add packs:
 
 Install a pack version that is present in the file system already:
-* `cpackget pack add path/to/Vendor.PackName.x.y.z.pack`
+* `cpackget add path/to/Vendor.PackName.x.y.z.pack`
 
 Install a pack version that can be downloaded using a web link:
-* `cpackget pack add https://vendor.com/example/Vendor.PackName.x.y.z.pack`
+* `cpackget add https://vendor.com/example/Vendor.PackName.x.y.z.pack`
 
 Install a pack version from the public package index. The download url will be looked up by the tool:
-* `cpackget pack add Vendor.PackName.x.y.z` or `cpackget pack add Vendor::PackName@x.y.z`
+* `cpackget add Vendor.PackName.x.y.z` or `cpackget pack add Vendor::PackName@x.y.z`
 
 Install the latest published version of a public package listed in the package index:
-* `cpackget pack add Vendor.PackName` or `cpackget pack add Vendor::PackName`
+* `cpackget add Vendor.PackName` or `cpackget pack add Vendor::PackName`
 
 Install packs using version modifiers:
-* `cpackget pack add Vendor::PackName>=x.y.z`, check if there is any version greater than or equal to x.y.z, install latest otherwise
-* `cpackget pack add Vendor::PackName@~x.y.z`, check if there is any version greater than or equal to x.y.z 
+* `cpackget add Vendor::PackName>=x.y.z`, check if there is any version greater than or equal to x.y.z, install latest otherwise
+* `cpackget add Vendor::PackName@~x.y.z`, check if there is any version greater than or equal to x.y.z 
 
 Install the pack versions specified in the ascii file. Each line specifies a single pack.
-* `cpackget pack add -f list-of-packs.txt`
+* `cpackget add -f list-of-packs.txt`
 
 The command below is an example how to add packs via PDSC files:
-* `cpackget pdsc add path/to/Vendor.PackName.pdsc`
+* `cpackget add path/to/Vendor.PackName.pdsc`
 
 Note that for adding packs via PDSC files is not possible to provide an URL as input. Only local files are allowed.
 
@@ -93,11 +92,11 @@ Note that for adding packs via PDSC files is not possible to provide an URL as i
 Some packs come with licenses and by default cpackget will prompt the user for agreement. This can be avoided
 by using the `--agree-embedded-license` flag:
 
-* `cpackget pack add --agree-embedded-license Vendor.PackName`
+* `cpackget add --agree-embedded-license Vendor.PackName`
 
 Also there are cases where users might want to only extract the pack's license and not install it:
 
-* `cpackget pack add --extract-embedded-license Vendor.PackName`
+* `cpackget add --extract-embedded-license Vendor.PackName`
 
 The extracted license file will be placed next to the pack's. For example if Vendor.PackName.x.y.z had a licese file
 named `LICENSE.txt`, cpackget would extract it to `.Download/Vendor.PackName.x.y.z.LICENSE.txt`.
