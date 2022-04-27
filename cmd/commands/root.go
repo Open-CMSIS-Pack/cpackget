@@ -23,6 +23,7 @@ var AllCommands = []*cobra.Command{
 	IndexCmd,
 	InitCmd,
 	AddCmd,
+	RmCmd,
 	ListCmd,
 }
 

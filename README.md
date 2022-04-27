@@ -25,6 +25,8 @@ Available Commands:
   index       Update public index
   init        Initialize a pack root folder
   add         Add Open-CMSIS-Pack packages
+  rm          Remove Open-CMSIS-Pack packages
+  list        List installed packs
 
 Flags:
   -h, --help               help for cpackget
@@ -36,7 +38,7 @@ Flags:
 Use "cpackget [command] --help" for more information about a command.
 ```
 
-For example, if one wanted help removing a pack, running `cpackget pack rm --help` would print out useful information on the subject.
+For example, if one wanted help removing a pack, running `cpackget rm --help` would print out useful information on the subject.
 
 
 ### Sepecifying the working pack root folder
@@ -122,21 +124,21 @@ named `LICENSE.txt`, cpackget would extract it to `.Download/Vendor.PackName.x.y
 The commands below demonstrate how to remove packs.
 
 Remove pack `Vendor.PackName` version `x.y.z` only, leave others untouched
-* `cpackget pack rm Vendor.PackName.x.y.z` or `cpackget pack rm Vendor::PackName@x.y.z`
+* `cpackget rm Vendor.PackName.x.y.z` or `cpackget rm Vendor::PackName@x.y.z`
 
 Remove all versions of pack `Vendor.PackName`
-* `cpackget pack rm Vendor.PackName` or `cpackget pack rm Vendor::PackName`
+* `cpackget rm Vendor.PackName` or `cpackget rm Vendor::PackName`
 
 Same as above, except that now it also removes the cached pack file.
-* `cpackget pack rm --purge Vendor.PackName`: using `--purge` triggers removal of any downloaded files.
+* `cpackget rm --purge Vendor.PackName`: using `--purge` triggers removal of any downloaded files.
 
 And for removing packs that were installed via PDSC files, consider the example commands below:
 
 Remove pack `Vendor.PackName` version `x.y.z` only, from the local packs.
-* `cpackget pdsc rm Vendor.PackName.x.y.z` or `cpackget pdsc rm Vendor::PackName@x.y.z`
+* `cpackget rm Vendor.PackName.x.y.z` or `cpackget rm Vendor::PackName@x.y.z`
 
 Remove all versions of pack `Vendor.PackName`, from the local packs.
-* `cpackget pdsc rm Vendor.PackName` or `cpackget pdsc rm Vendor::PackName`
+* `cpackget rm Vendor.PackName` or `cpackget rm Vendor::PackName`
 
 Note that removing packs does not require pack of PDSC file location specification, e.g. no need to provide the path for the PDSC file or the URL of the pack.
 
