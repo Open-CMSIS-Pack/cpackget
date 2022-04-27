@@ -87,6 +87,22 @@ The command below is an example how to add packs via PDSC files:
 
 Note that for adding packs via PDSC files is not possible to provide an URL as input. Only local files are allowed.
 
+### Listing installed packs
+
+One could get a list of all installed packs by running the list command:
+* `cpackget list`
+
+This will include all packs that got installed via `cpackget add` command, including packs
+that were added via PDSC file.
+
+There are also a couple of flags that allow listing extra information.
+
+List all cached packs, that are present in the ".Download/" folder:
+* `cpackget list --cached`
+
+List all packs present in index.pidx:
+* `cpackget list --public`
+
 ### Accepting the End User License Agreement (EULA) from the command line
 
 Some packs come with licenses and by default cpackget will prompt the user for agreement. This can be avoided

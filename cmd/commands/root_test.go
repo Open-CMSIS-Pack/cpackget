@@ -32,6 +32,7 @@ type TestCase struct {
 	setUpFunc      func(t *TestCase)
 	tearDownFunc   func()
 	validationFunc func(t *testing.T)
+	assert         *assert.Assertions
 }
 
 type Server struct {
@@ -119,6 +120,7 @@ func runTests(t *testing.T, tests []TestCase) {
 
 	for i := range tests {
 		test := tests[i]
+		test.assert = assert
 		t.Run(test.name, func(t *testing.T) {
 			if test.createPackRoot {
 				localTestingDir := strings.ReplaceAll(test.name, " ", "_")

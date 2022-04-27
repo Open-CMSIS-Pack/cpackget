@@ -243,6 +243,17 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 			return err
 		}
 
+		// Add packs listed in .Local/local_repository.pidx to the list
+		if err := Installation.LocalPidx.Read(); err != nil {
+			log.Error(err)
+		} else {
+			installedPdscs := Installation.LocalPidx.ListPdscs()
+			for key, pdsc := range installedPdscs {
+				entry := filepath.Join(Installation.PackRoot, pdsc.Vendor, pdsc.Name, pdsc.Version, key) + ".pdsc"
+				matches = append(matches, entry)
+			}
+		}
+
 		if len(matches) == 0 {
 			log.Info("(no packs installed)")
 			return nil

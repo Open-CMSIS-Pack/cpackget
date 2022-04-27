@@ -136,7 +136,7 @@ func (p *PidxXML) Read() error {
 
 	// Create a new empty l
 	if !utils.FileExists(p.fileName) {
-		log.Warnf("\"%v\" not found. Creating a new one.", p.fileName)
+		log.Debugf("\"%v\" not found. Creating a new one.", p.fileName)
 		p.SchemaVersion = "1.1.0"
 		vendorName := path.Base(p.fileName)
 		p.Vendor = strings.TrimSuffix(vendorName, filepath.Ext(vendorName))

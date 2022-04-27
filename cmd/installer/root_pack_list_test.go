@@ -164,11 +164,15 @@ func ExampleListInstalledPacks_listInstalled() {
 	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula)
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/)
 
+	// Install a pack via PDSC file
+	_ = installer.AddPdsc(pdscPack123)
+
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(ioutil.Discard)
 	_ = installer.ListInstalledPacks(!ListCached, !ListPublic)
 	// Output:
 	// I: Listing installed packs
+	// I: TheVendor.PackName.1.2.3
 	// I: TheVendor.PublicLocalPack.1.2.4
 }
 
