@@ -43,14 +43,14 @@ var packCmdTests = []TestCase{
 		name:           "test adding pack file",
 		args:           []string{"pack", "add", packFilePath},
 		createPackRoot: true,
-		expectedStdout: []string{"Adding pack \\\"" + packFilePath},
+		expectedStdout: []string{"Adding pack", filepath.Base(packFilePath)},
 	},
 	{
 		name:           "test adding packs listed in file",
 		args:           []string{"pack", "add", "-f", fileWithPacksListed},
 		createPackRoot: true,
 		expectedStdout: []string{"Parsing packs urls via file " + fileWithPacksListed,
-			"Adding pack \\\"" + packFilePath},
+			"Adding pack", filepath.Base(packFilePath)},
 		setUpFunc: func(t *TestCase) {
 			f, _ := os.Create(fileWithPacksListed)
 			_, _ = f.WriteString(packFilePath)

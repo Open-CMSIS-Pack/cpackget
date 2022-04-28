@@ -5,6 +5,7 @@ package commands_test
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -29,20 +30,20 @@ var addCmdTests = []TestCase{
 		name:           "test adding pack file",
 		args:           []string{"add", packFilePath},
 		createPackRoot: true,
-		expectedStdout: []string{"Adding pack \\\"" + packFilePath},
+		expectedStdout: []string{"Adding pack", filepath.Base(packFilePath)},
 	},
 	{
 		name:           "test adding pack via pdsc file",
 		args:           []string{"add", pdscFilePath},
 		createPackRoot: true,
-		expectedStdout: []string{"Adding pdsc \\\"" + pdscFilePath},
+		expectedStdout: []string{"Adding pdsc", filepath.Base(pdscFilePath)},
 	},
 	{
 		name:           "test adding packs listed in file",
 		args:           []string{"add", "-f", fileWithPacksListed},
 		createPackRoot: true,
 		expectedStdout: []string{"Parsing packs urls via file " + fileWithPacksListed,
-			"Adding pack \\\"" + packFilePath},
+			"Adding pack", filepath.Base(packFilePath)},
 		setUpFunc: func(t *TestCase) {
 			f, _ := os.Create(fileWithPacksListed)
 			_, _ = f.WriteString(packFilePath)
