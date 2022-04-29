@@ -99,6 +99,10 @@ func AddPdsc(pdscPath string) error {
 	}
 
 	if err := pdsc.install(Installation); err != nil {
+		if err == errs.ErrPdscEntryExists {
+			log.Info(err)
+			return nil
+		}
 		return err
 	}
 
