@@ -58,7 +58,7 @@ func TestAddPdsc(t *testing.T) {
 		assert.Nil(err)
 
 		err = installer.AddPdsc(pdscPack123)
-		assert.Equal(errs.ErrPdscEntryExists, err)
+		assert.Nil(err)
 	})
 
 	t.Run("test add new pdsc version", func(t *testing.T) {
