@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/commands"
 	"github.com/spf13/cobra"
@@ -18,8 +19,7 @@ var flags struct {
 }
 
 func printVersionAndLicense(file io.Writer) {
-	fmt.Fprintf(file, "cpackget version %v\n", version)
-	fmt.Fprintf(file, "%v\n", license)
+	fmt.Fprintf(file, "cpackget version %v %s\n", strings.ReplaceAll(version, "v", ""), copyRight)
 }
 
 // UsageTemplate returns usage template for the command.
