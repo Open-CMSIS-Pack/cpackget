@@ -1,3 +1,9 @@
+# v0.4.1
+
+This v0.4.1 release contains a small bug fix that
+prevents cpackget from raising an error when installing
+a pack via PDSC file that is already installed
+
 # v0.4.0
 
 This v0.4 release contains:
