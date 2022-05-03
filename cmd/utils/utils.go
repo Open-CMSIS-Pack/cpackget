@@ -41,13 +41,6 @@ func DownloadFile(URL string) (string, error) {
 		return filePath, nil
 	}
 
-	out, err := os.Create(filePath)
-	if err != nil {
-		log.Error(err)
-		return "", errs.ErrFailedCreatingFile
-	}
-	defer out.Close()
-
 	resp, err := HTTPClient.Get(URL) // #nosec
 	if err != nil {
 		log.Error(err)
@@ -59,6 +52,13 @@ func DownloadFile(URL string) (string, error) {
 		log.Errorf("bad status: %s", resp.Status)
 		return "", errs.ErrBadRequest
 	}
+
+	out, err := os.Create(filePath)
+	if err != nil {
+		log.Error(err)
+		return "", errs.ErrFailedCreatingFile
+	}
+	defer out.Close()
 
 	writers := []io.Writer{out}
 	if log.GetLevel() != log.ErrorLevel {
