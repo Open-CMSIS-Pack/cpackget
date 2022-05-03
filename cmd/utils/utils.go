@@ -284,6 +284,16 @@ func IsTerminalInteractive() bool {
 	return (fileInfo.Mode() & os.ModeCharDevice) != 0
 }
 
+func CleanPath(path string) string {
+	cleanPath := filepath.Clean(path)
+	windowsLeadingSlashRegex := regexp.MustCompile(`^[\\/][a-zA-Z]:[\\/]`)
+	if windowsLeadingSlashRegex.MatchString(cleanPath) {
+		log.Info("blaaaaa")
+		cleanPath = cleanPath[1:]
+	}
+	return cleanPath
+}
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 	HTTPClient = &http.Client{}

@@ -461,3 +461,9 @@ func TestRandStringBytes(t *testing.T) {
 func TestCountLines(t *testing.T) {
 	assert.Equal(t, 3, utils.CountLines("this\nis\r\nacool\ncontent"))
 }
+
+func TestCleanPath(t *testing.T) {
+	expected := fmt.Sprintf("c:%csome%cpath", os.PathSeparator, os.PathSeparator)
+	result := utils.CleanPath(fmt.Sprintf("%cc:%csome%cpath", os.PathSeparator, os.PathSeparator, os.PathSeparator))
+	assert.Equal(t, expected, result)
+}
