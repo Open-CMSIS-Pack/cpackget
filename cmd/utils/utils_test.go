@@ -26,7 +26,15 @@ func TestDownloadFile(t *testing.T) {
 	t.Run("test fail to create temporary file", func(t *testing.T) {
 		oldCache := utils.CacheDir
 		utils.CacheDir = "non-existant-path"
-		_, err := utils.DownloadFile("http://fake.com/file.txt")
+		goodResponse := []byte("all good")
+		goodServer := httptest.NewServer(
+			http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprint(w, string(goodResponse))
+				},
+			),
+		)
+		_, err := utils.DownloadFile(goodServer.URL + "/file.txt")
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrFailedCreatingFile))
 		utils.CacheDir = oldCache
@@ -43,7 +51,6 @@ func TestDownloadFile(t *testing.T) {
 
 	t.Run("test fail with bad http request", func(t *testing.T) {
 		fileName := "file.txt"
-		defer os.Remove(fileName)
 
 		notFoundServer := httptest.NewServer(
 			http.HandlerFunc(
@@ -56,6 +63,7 @@ func TestDownloadFile(t *testing.T) {
 		_, err := utils.DownloadFile(notFoundServer.URL + "/" + fileName)
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrBadRequest))
+		assert.False(utils.FileExists(fileName))
 	})
 
 	t.Run("test fail to read data stream", func(t *testing.T) {
