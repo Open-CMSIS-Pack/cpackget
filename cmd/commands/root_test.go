@@ -6,6 +6,7 @@ package commands_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -17,8 +18,18 @@ import (
 
 	"github.com/open-cmsis-pack/cpackget/cmd/commands"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
+
+// Copy of cmd/log.go
+type LogFormatter struct{}
+
+func (s *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
+	level := strings.ToUpper(entry.Level.String())
+	msg := fmt.Sprintf("%s: %s\n", level[0:1], entry.Message)
+	return []byte(msg), nil
+}
 
 var testingDir = filepath.Join("..", "..", "testdata", "integration")
 
@@ -176,4 +187,13 @@ func runTests(t *testing.T, tests []TestCase) {
 
 func TestRootCmd(t *testing.T) {
 	runTests(t, rootCmdTests)
+}
+
+func init() {
+	logLevel := log.InfoLevel
+	if os.Getenv("LOG_LEVEL") == "debug" {
+		logLevel = log.DebugLevel
+	}
+	log.SetLevel(logLevel)
+	log.SetFormatter(new(LogFormatter))
 }
