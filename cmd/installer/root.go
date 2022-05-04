@@ -190,7 +190,7 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 		// List all available packs from the index
 		for _, pdscKey := range keys {
 			pdscTag := pdscMap[pdscKey]
-			logMessage := pdscKey
+			logMessage := pdscTag.YamlPackID()
 			packFilePath := filepath.Join(Installation.DownloadDir, pdscTag.Key()) + ".pack"
 
 			if Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}) {
@@ -217,6 +217,7 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 			return strings.ToLower(matches[i]) < strings.ToLower(matches[j])
 		})
 		for _, packFilePath := range matches {
+			packFilePath = strings.ReplaceAll(packFilePath, ".pack", "")
 			packInfo, err := utils.ExtractPackInfo(packFilePath)
 			if err != nil {
 				log.Errorf("A pack in the cache folder has malformed pack name: %s", packFilePath)
@@ -229,7 +230,7 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 				Version: packInfo.Version,
 			}
 
-			logMessage := pdscTag.Key()
+			logMessage := pdscTag.YamlPackID()
 			if Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}) {
 				logMessage += " (installed)"
 			}
@@ -321,7 +322,7 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 				errors = append(errors, "pack version")
 			}
 
-			message := pack.Key()
+			message := pack.YamlPackID()
 
 			// Print the PDSC path on packs installed via PDSC file
 			if pack.isPdscInstalled {

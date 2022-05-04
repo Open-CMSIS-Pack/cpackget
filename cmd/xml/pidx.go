@@ -175,6 +175,12 @@ func (p *PdscTag) Key() string {
 	return p.Vendor + "." + p.Name + "." + p.Version
 }
 
+// YamlPackId formats the packId as specified in
+// https://github.com/Open-CMSIS-Pack/devtools/blob/tools/toolbox/0.10.0/tools/projmgr/docs/Manual/YML-Format.md#pack-name-conventions
+func (p *PdscTag) YamlPackID() string {
+	return p.Vendor + "::" + p.Name + "@" + p.Version
+}
+
 // PackURL constructs a URL of a pack using the tag's attributes.
 func (p *PdscTag) PackURL() string {
 	return p.URL + p.Key() + ".pack"

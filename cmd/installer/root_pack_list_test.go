@@ -102,9 +102,9 @@ func ExampleListInstalledPacks_list() {
 	_ = installer.ListInstalledPacks(ListCached, ListPublic)
 	// Output:
 	// I: Listing packs from the public index
-	// I: TheVendor.PublicLocalPack.1.2.3 (cached)
-	// I: TheVendor.PublicLocalPack.1.2.4 (installed)
-	// I: TheVendor.PublicLocalPack.1.2.5
+	// I: TheVendor::PublicLocalPack@1.2.3 (cached)
+	// I: TheVendor::PublicLocalPack@1.2.4 (installed)
+	// I: TheVendor::PublicLocalPack@1.2.5
 }
 
 func ExampleListInstalledPacks_listCached() {
@@ -138,8 +138,8 @@ func ExampleListInstalledPacks_listCached() {
 	_ = installer.ListInstalledPacks(ListCached, !ListPublic)
 	// Output:
 	// I: Listing cached packs
-	// I: TheVendor.PublicLocalPack.1.2.3
-	// I: TheVendor.PublicLocalPack.1.2.4 (installed)
+	// I: TheVendor::PublicLocalPack@1.2.3
+	// I: TheVendor::PublicLocalPack@1.2.4 (installed)
 }
 
 func TestListInstalledPacks(t *testing.T) {
@@ -184,8 +184,8 @@ func TestListInstalledPacks(t *testing.T) {
 		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic))
 		stdout := buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
-		assert.Contains(stdout, fmt.Sprintf("I: TheVendor.PackName.1.2.3 (installed via %s)", expectedPdscAbsPath))
-		assert.Contains(stdout, "I: TheVendor.PublicLocalPack.1.2.4")
+		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.3 (installed via %s)", expectedPdscAbsPath))
+		assert.Contains(stdout, "I: TheVendor::PublicLocalPack@1.2.4")
 	})
 
 	t.Run("test listing local packs with updated version", func(t *testing.T) {
@@ -213,7 +213,7 @@ func TestListInstalledPacks(t *testing.T) {
 		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic))
 		stdout := buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
-		assert.Contains(stdout, fmt.Sprintf("I: TheVendor.PackName.1.2.3 (installed via %s)", expectedPdscAbsPath))
+		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.3 (installed via %s)", expectedPdscAbsPath))
 
 		// Now update the version inside the PDSC file and expect it to be listed
 		pdscXML := xml.NewPdscXML(pdscPath)
@@ -223,7 +223,7 @@ func TestListInstalledPacks(t *testing.T) {
 		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic))
 		stdout = buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
-		assert.Contains(stdout, fmt.Sprintf("I: TheVendor.PackName.1.2.4 (installed via %s)", expectedPdscAbsPath))
+		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.4 (installed via %s)", expectedPdscAbsPath))
 	})
 }
 
@@ -260,6 +260,6 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 	_ = installer.ListInstalledPacks(!ListCached, !ListPublic)
 	// Output:
 	// I: Listing installed packs
-	// E: _TheVendor._PublicLocalPack.1.2.3.4 - error: vendor, pack name, pack version incorrect format
+	// E: _TheVendor::_PublicLocalPack@1.2.3.4 - error: vendor, pack name, pack version incorrect format
 	// W: 1 error(s) detected
 }
