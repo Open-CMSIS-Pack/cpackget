@@ -25,14 +25,14 @@ var rmCmdTests = []TestCase{
 		name:           "test removing pack that does not exist",
 		args:           []string{"rm", "DoesNotExist.Pack.1.2.3"},
 		createPackRoot: true,
-		expectedStdout: []string{"Removing [DoesNotExist.Pack.1.2.3]"},
-		expectedErr:    errs.ErrPackNotInstalled,
+		expectedStdout: []string{"Removing [DoesNotExist.Pack.1.2.3]", "pack not installed"},
+		expectedErr:    errs.ErrAlreadyLogged,
 	},
 	{
 		name:           "test removing pack",
-		args:           []string{"rm", "Vendor.Pack.1.2.3", "Vendor.PackInstalledViaPdsc.1.2.3"},
+		args:           []string{"rm", "Vendor.Pack.1.2.3", "Vendor.PackInstalledViaPdsc.pdsc"},
 		createPackRoot: true,
-		expectedStdout: []string{"Removing [Vendor.Pack.1.2.3 Vendor.PackInstalledViaPdsc.1.2.3]"},
+		expectedStdout: []string{"Removing [Vendor.Pack.1.2.3 Vendor.PackInstalledViaPdsc.pdsc]"},
 		setUpFunc: func(t *TestCase) {
 			packRoot := os.Getenv("CMSIS_PACK_ROOT")
 			packFolder := filepath.Join(packRoot, "Vendor", "Pack", "1.2.3")

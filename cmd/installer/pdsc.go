@@ -4,6 +4,10 @@
 package installer
 
 import (
+	"path/filepath"
+	"strings"
+
+	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	log "github.com/sirupsen/logrus"
@@ -85,5 +89,38 @@ func (p *PdscType) install(installation *PacksInstallationType) error {
 //     If version is ommited, remove all pdsc tags belonging to this pack
 func (p *PdscType) uninstall(installation *PacksInstallationType) error {
 	log.Debugf("Unistalling \"%s\"", p.path)
-	return Installation.LocalPidx.RemovePdsc(p.PdscTag)
+
+	tags := installation.LocalPidx.FindPdscTags(xml.PdscTag{
+		Vendor: p.Vendor,
+		Name:   p.Name,
+	})
+
+	if len(tags) == 0 {
+		return errs.ErrPdscEntryNotFound
+	}
+
+	toRemove := []xml.PdscTag{}
+	dirName := filepath.Dir(p.path)
+	if dirName == "" || dirName == "." {
+		toRemove = tags
+	} else {
+		targetPath := strings.ReplaceAll(dirName, "\\", "/")
+		for _, tag := range tags {
+			tagURL := strings.ReplaceAll(tag.URL, "\\", "/")
+			if strings.Contains(tagURL, targetPath) {
+				toRemove = append(toRemove, tag)
+			}
+		}
+	}
+
+	if len(toRemove) == 0 {
+		return errs.ErrPdscEntryNotFound
+	}
+
+	for _, tag := range toRemove {
+		if err := installation.LocalPidx.RemovePdsc(tag); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -123,6 +123,10 @@ func RemovePdsc(pdscPath string) error {
 		return err
 	}
 
+	// preparePdsc will fill in the full path for this PDSC file path
+	// in the URL field, that is not needed for removing
+	pdsc.URL = ""
+
 	if err = pdsc.uninstall(Installation); err != nil {
 		return err
 	}
