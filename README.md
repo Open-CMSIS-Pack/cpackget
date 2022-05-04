@@ -22,10 +22,11 @@ Usage:
 
 Available Commands:
   help        Help about any command
-  index       Updates public index
-  init        Initializes a pack root folder
-  pack        Adds/Removes Open-CMSIS-Pack packages
-  pdsc        Adds/Removes Open-CMSIS-Pack packages in the local file system via PDSC files.
+  index       Update public index
+  init        Initialize a pack root folder
+  add         Add Open-CMSIS-Pack packages
+  rm          Remove Open-CMSIS-Pack packages
+  list        List installed packs
 
 Flags:
   -h, --help               help for cpackget
@@ -37,14 +38,14 @@ Flags:
 Use "cpackget [command] --help" for more information about a command.
 ```
 
-For example, if one wanted help removing a pack, running `cpackget pack rm --help` would print out useful information on the subject.
+For example, if one wanted help removing a pack, running `cpackget rm --help` would print out useful information on the subject.
 
 
 ### Sepecifying the working pack root folder
 
 If cpackget is going to work on an existing pack root folder, there are two ways to specify it:
 
-1. `export CMSIS_PACK_ROOT=path/to/pack-root; cpackget pack add ARM.CMSIS`
+1. `export CMSIS_PACK_ROOT=path/to/pack-root; cpackget add ARM.CMSIS`
 2. `cpackget --pack-root path/to/pack-root pack add ARM.CMSIS`
 
 To create a new pack root folder with an up-to-date index file of publicly available Open-CMSIS-Pack packs run:
@@ -65,39 +66,55 @@ If later it is needed to update the public index file, just run `cpackget index 
 The commands below demonstrate how to add packs:
 
 Install a pack version that is present in the file system already:
-* `cpackget pack add path/to/Vendor.PackName.x.y.z.pack`
+* `cpackget add path/to/Vendor.PackName.x.y.z.pack`
 
 Install a pack version that can be downloaded using a web link:
-* `cpackget pack add https://vendor.com/example/Vendor.PackName.x.y.z.pack`
+* `cpackget add https://vendor.com/example/Vendor.PackName.x.y.z.pack`
 
 Install a pack version from the public package index. The download url will be looked up by the tool:
-* `cpackget pack add Vendor.PackName.x.y.z` or `cpackget pack add Vendor::PackName@x.y.z`
+* `cpackget add Vendor.PackName.x.y.z` or `cpackget pack add Vendor::PackName@x.y.z`
 
 Install the latest published version of a public package listed in the package index:
-* `cpackget pack add Vendor.PackName` or `cpackget pack add Vendor::PackName`
+* `cpackget add Vendor.PackName` or `cpackget pack add Vendor::PackName`
 
 Install packs using version modifiers:
-* `cpackget pack add Vendor::PackName>=x.y.z`, check if there is any version greater than or equal to x.y.z, install latest otherwise
-* `cpackget pack add Vendor::PackName@~x.y.z`, check if there is any version greater than or equal to x.y.z 
+* `cpackget add Vendor::PackName>=x.y.z`, check if there is any version greater than or equal to x.y.z, install latest otherwise
+* `cpackget add Vendor::PackName@~x.y.z`, check if there is any version greater than or equal to x.y.z 
 
 Install the pack versions specified in the ascii file. Each line specifies a single pack.
-* `cpackget pack add -f list-of-packs.txt`
+* `cpackget add -f list-of-packs.txt`
 
 The command below is an example how to add packs via PDSC files:
-* `cpackget pdsc add path/to/Vendor.PackName.pdsc`
+* `cpackget add path/to/Vendor.PackName.pdsc`
 
 Note that for adding packs via PDSC files is not possible to provide an URL as input. Only local files are allowed.
+
+### Listing installed packs
+
+One could get a list of all installed packs by running the list command:
+* `cpackget list`
+
+This will include all packs that got installed via `cpackget add` command, including packs
+that were added via PDSC file.
+
+There are also a couple of flags that allow listing extra information.
+
+List all cached packs, that are present in the ".Download/" folder:
+* `cpackget list --cached`
+
+List all packs present in index.pidx:
+* `cpackget list --public`
 
 ### Accepting the End User License Agreement (EULA) from the command line
 
 Some packs come with licenses and by default cpackget will prompt the user for agreement. This can be avoided
 by using the `--agree-embedded-license` flag:
 
-* `cpackget pack add --agree-embedded-license Vendor.PackName`
+* `cpackget add --agree-embedded-license Vendor.PackName`
 
 Also there are cases where users might want to only extract the pack's license and not install it:
 
-* `cpackget pack add --extract-embedded-license Vendor.PackName`
+* `cpackget add --extract-embedded-license Vendor.PackName`
 
 The extracted license file will be placed next to the pack's. For example if Vendor.PackName.x.y.z had a licese file
 named `LICENSE.txt`, cpackget would extract it to `.Download/Vendor.PackName.x.y.z.LICENSE.txt`.
@@ -107,21 +124,21 @@ named `LICENSE.txt`, cpackget would extract it to `.Download/Vendor.PackName.x.y
 The commands below demonstrate how to remove packs.
 
 Remove pack `Vendor.PackName` version `x.y.z` only, leave others untouched
-* `cpackget pack rm Vendor.PackName.x.y.z` or `cpackget pack rm Vendor::PackName@x.y.z`
+* `cpackget rm Vendor.PackName.x.y.z` or `cpackget rm Vendor::PackName@x.y.z`
 
 Remove all versions of pack `Vendor.PackName`
-* `cpackget pack rm Vendor.PackName` or `cpackget pack rm Vendor::PackName`
+* `cpackget rm Vendor.PackName` or `cpackget rm Vendor::PackName`
 
 Same as above, except that now it also removes the cached pack file.
-* `cpackget pack rm --purge Vendor.PackName`: using `--purge` triggers removal of any downloaded files.
+* `cpackget rm --purge Vendor.PackName`: using `--purge` triggers removal of any downloaded files.
 
 And for removing packs that were installed via PDSC files, consider the example commands below:
 
 Remove pack `Vendor.PackName` version `x.y.z` only, from the local packs.
-* `cpackget pdsc rm Vendor.PackName.x.y.z` or `cpackget pdsc rm Vendor::PackName@x.y.z`
+* `cpackget rm Vendor.PackName.x.y.z` or `cpackget rm Vendor::PackName@x.y.z`
 
 Remove all versions of pack `Vendor.PackName`, from the local packs.
-* `cpackget pdsc rm Vendor.PackName` or `cpackget pdsc rm Vendor::PackName`
+* `cpackget rm Vendor.PackName` or `cpackget rm Vendor::PackName`
 
 Note that removing packs does not require pack of PDSC file location specification, e.g. no need to provide the path for the PDSC file or the URL of the pack.
 

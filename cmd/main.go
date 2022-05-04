@@ -6,6 +6,7 @@ package main
 import (
 	"os"
 
+	"github.com/open-cmsis-pack/cpackget/cmd/commands"
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
@@ -17,7 +18,9 @@ func main() {
 
 	utils.StartSignalWatcher()
 
-	cmd := NewCli()
+	commands.Version = version
+	commands.CopyRight = copyRight
+	cmd := commands.NewCli()
 	err := cmd.Execute()
 	if err != nil {
 		if !errs.AlreadyLogged(err) {

@@ -14,6 +14,7 @@ import (
 )
 
 var PackCmd = &cobra.Command{
+	Deprecated:        "Consider running `cpackget add|rm|list` instead",
 	Use:               "pack",
 	Short:             "Adds/Removes Open-CMSIS-Pack packages",
 	Long:              "Adds/Removes Open-CMSIS-Pack packages from a local file or a file hosted somewhere else on the Internet.",

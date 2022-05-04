@@ -4,15 +4,19 @@
 package installer_test
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+	"testing"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -138,38 +142,89 @@ func ExampleListInstalledPacks_listCached() {
 	// I: TheVendor.PublicLocalPack.1.2.4 (installed)
 }
 
-func ExampleListInstalledPacks_listInstalled() {
-	localTestingDir := "test-list-installed-packs"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
-	defer os.RemoveAll(localTestingDir)
+func TestListInstalledPacks(t *testing.T) {
+	assert := assert.New(t)
 
-	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
-	_ = utils.CopyFile(pdscFilePath, filepath.Join(installer.Installation.WebDir, "TheVendor.PublicLocalPack.pdsc"))
-	_ = installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
-		Vendor:  "TheVendor",
-		Name:    "PublicLocalPack",
-		Version: "1.2.3",
-	})
-	_ = installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
-		Vendor:  "TheVendor",
-		Name:    "PublicLocalPack",
-		Version: "1.2.4",
-	})
-	_ = installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
-		Vendor:  "TheVendor",
-		Name:    "PublicLocalPack",
-		Version: "1.2.5",
-	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula)
-	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula)
-	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/)
+	t.Run("test listing all installed packs", func(t *testing.T) {
+		localTestingDir := "test-list-installed-packs"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
 
-	log.SetOutput(os.Stdout)
-	defer log.SetOutput(ioutil.Discard)
-	_ = installer.ListInstalledPacks(!ListCached, !ListPublic)
-	// Output:
-	// I: Listing installed packs
-	// I: TheVendor.PublicLocalPack.1.2.4
+		pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
+		assert.Nil(utils.CopyFile(pdscFilePath, filepath.Join(installer.Installation.WebDir, "TheVendor.PublicLocalPack.pdsc")))
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:  "TheVendor",
+			Name:    "PublicLocalPack",
+			Version: "1.2.3",
+		}))
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:  "TheVendor",
+			Name:    "PublicLocalPack",
+			Version: "1.2.4",
+		}))
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:  "TheVendor",
+			Name:    "PublicLocalPack",
+			Version: "1.2.5",
+		}))
+		assert.Nil(installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula))
+		assert.Nil(installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula))
+		assert.Nil(installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/))
+
+		// Install a pack via PDSC file
+		assert.Nil(installer.AddPdsc(pdscPack123))
+
+		expectedPdscAbsPath, err := os.Getwd()
+		assert.Nil(err)
+		expectedPdscAbsPath = utils.CleanPath(filepath.Join(expectedPdscAbsPath, pdscPack123))
+
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+		defer log.SetOutput(ioutil.Discard)
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic))
+		stdout := buf.String()
+		assert.Contains(stdout, "I: Listing installed packs")
+		assert.Contains(stdout, fmt.Sprintf("I: TheVendor.PackName.1.2.3 (installed via %s)", expectedPdscAbsPath))
+		assert.Contains(stdout, "I: TheVendor.PublicLocalPack.1.2.4")
+	})
+
+	t.Run("test listing local packs with updated version", func(t *testing.T) {
+		localTestingDir := "test-list-installed-local-packs-with-updated-version"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// This test checks that cpackget lists whatever the latest version is in the actual PDSC file
+		// for a local pack installed via PDSC
+		pdscPath := filepath.Base(pdscPack123)
+		defer os.Remove(pdscPath)
+
+		assert.Nil(utils.CopyFile(pdscPack123, pdscPath))
+
+		// Install a pack via PDSC file
+		assert.Nil(installer.AddPdsc(pdscPath))
+
+		expectedPdscAbsPath, err := os.Getwd()
+		assert.Nil(err)
+		expectedPdscAbsPath = utils.CleanPath(filepath.Join(expectedPdscAbsPath, pdscPath))
+
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+		defer log.SetOutput(ioutil.Discard)
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic))
+		stdout := buf.String()
+		assert.Contains(stdout, "I: Listing installed packs")
+		assert.Contains(stdout, fmt.Sprintf("I: TheVendor.PackName.1.2.3 (installed via %s)", expectedPdscAbsPath))
+
+		// Now update the version inside the PDSC file and expect it to be listed
+		pdscXML := xml.NewPdscXML(pdscPath)
+		assert.Nil(pdscXML.Read())
+		pdscXML.ReleasesTag.Releases[0].Version = "1.2.4"
+		assert.Nil(utils.WriteXML(pdscPath, pdscXML))
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic))
+		stdout = buf.String()
+		assert.Contains(stdout, "I: Listing installed packs")
+		assert.Contains(stdout, fmt.Sprintf("I: TheVendor.PackName.1.2.4 (installed via %s)", expectedPdscAbsPath))
+	})
 }
 
 func ExampleListInstalledPacks_listMalformedInstalledPacks() {

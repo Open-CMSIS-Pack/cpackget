@@ -4,6 +4,7 @@
 package installer
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 	"path"
@@ -91,7 +92,7 @@ func RemovePack(packPath string, purge bool) error {
 
 // AddPdsc adds a pack via PDSC file
 func AddPdsc(pdscPath string) error {
-	log.Debugf("Adding pdsc \"%v\"", pdscPath)
+	log.Infof("Adding pdsc \"%v\"", pdscPath)
 
 	pdsc, err := preparePdsc(pdscPath)
 	if err != nil {
@@ -237,55 +238,107 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 		}
 	} else {
 		log.Info("Listing installed packs")
+
+		type installedPack struct {
+			xml.PdscTag
+			pdscPath        string
+			isPdscInstalled bool
+			err             error
+		}
+		installedPacks := []installedPack{}
+
+		// First, get installed packs from *.pack files
 		pattern := filepath.Join(Installation.PackRoot, "*", "*", "*", "*.pdsc")
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
 			return err
 		}
+		for _, match := range matches {
+			pdscPath := strings.Replace(match, Installation.PackRoot, "", -1)
+			packName, _ := filepath.Split(pdscPath)
+			packName = strings.Replace(packName, "/", " ", -1)
+			packName = strings.Replace(packName, "\\", " ", -1)
+			packName = strings.Trim(packName, " ")
+			packName = strings.Replace(packName, " ", ".", -1)
 
-		if len(matches) == 0 {
+			packNameBits := strings.SplitN(packName, ".", 3)
+
+			pack := installedPack{pdscPath: match}
+			pack.Vendor = packNameBits[0]
+			pack.Name = packNameBits[1]
+			pack.Version = packNameBits[2]
+			installedPacks = append(installedPacks, pack)
+		}
+
+		// Add packs listed in .Local/local_repository.pidx to the list
+		if err := Installation.LocalPidx.Read(); err != nil {
+			log.Error(err)
+		} else {
+			installedPdscs := Installation.LocalPidx.ListPdscs()
+			for _, pdsc := range installedPdscs {
+				pack := installedPack{PdscTag: pdsc, isPdscInstalled: true}
+				pack.pdscPath = pdsc.URL + pack.Vendor + "/" + pack.Name + ".pdsc"
+
+				parsedURL, err := url.ParseRequestURI(pdsc.URL)
+				pack.err = err
+				if pack.err != nil {
+					installedPacks = append(installedPacks, pack)
+					continue
+				}
+
+				pack.pdscPath = filepath.Join(utils.CleanPath(parsedURL.Path), pack.Vendor+"."+pack.Name+".pdsc")
+				pdscXML := xml.NewPdscXML(pack.pdscPath)
+				pack.err = pdscXML.Read()
+				if pack.err == nil {
+					pack.Version = pdscXML.LatestVersion()
+				}
+				installedPacks = append(installedPacks, pack)
+			}
+		}
+
+		if len(installedPacks) == 0 {
 			log.Info("(no packs installed)")
 			return nil
 		}
 
 		numErrors := 0
-		sort.Slice(matches, func(i, j int) bool {
-			return strings.ToLower(matches[i]) < strings.ToLower(matches[j])
+		sort.Slice(installedPacks, func(i, j int) bool {
+			return strings.ToLower(installedPacks[i].Key()) < strings.ToLower(installedPacks[j].Key())
 		})
-		for _, pdscFilePath := range matches {
-			log.Debug(pdscFilePath)
-
-			// Transform pdscFilePath into packName, which is printed out
-			pdscFilePath = strings.Replace(pdscFilePath, Installation.PackRoot, "", -1)
-			packName, _ := filepath.Split(pdscFilePath)
-			packName = strings.Replace(packName, "/", " ", -1)
-			packName = strings.Replace(packName, "\\", " ", -1)
-			packName = strings.Trim(packName, " ")
-			packName = strings.Replace(packName, " ", ".", -1)
-			message := packName
+		for _, pack := range installedPacks {
+			errors := []string{}
 
 			// Validate names
-			errors := []string{}
-			packNameBits := strings.SplitN(packName, ".", 3)
-			vendor := packNameBits[0]
-			name := packNameBits[1]
-			version := packNameBits[2]
-
-			if !utils.IsPackVendorNameValid(vendor) {
+			if !utils.IsPackVendorNameValid(pack.Vendor) {
 				errors = append(errors, "vendor")
 			}
 
-			if !utils.IsPackNameValid(name) {
+			if !utils.IsPackNameValid(pack.Name) {
 				errors = append(errors, "pack name")
 			}
 
-			if !utils.IsPackVersionValid(version) {
+			if !utils.IsPackVersionValid(pack.Version) {
 				errors = append(errors, "pack version")
 			}
 
+			message := pack.Key()
+
+			// Print the PDSC path on packs installed via PDSC file
+			if pack.isPdscInstalled {
+				message += fmt.Sprintf(" (installed via %s)", pack.pdscPath)
+			}
+
+			// Append errors to the message, if any
 			if len(errors) > 0 {
-				message += " - error: " + strings.Join(errors[:], ", ") + " incorrect format"
 				numErrors += 1
+				message += " - error: " + strings.Join(errors[:], ", ") + " incorrect format"
+				if pack.err != nil {
+					message += fmt.Sprintf(", %v", pack.err)
+				}
+				log.Error(message)
+			} else if pack.err != nil {
+				numErrors += 1
+				message += fmt.Sprintf(" - error: %v", pack.err)
 				log.Error(message)
 			} else {
 				log.Info(message)

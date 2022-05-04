@@ -10,6 +10,7 @@ import (
 )
 
 var PdscCmd = &cobra.Command{
+	Deprecated:        "Consider running `cpackget add|rm|list` instead",
 	Use:               "pdsc",
 	Short:             "Adds or removes Open-CMSIS-Pack packages in the local file system via PDSC files.",
 	PersistentPreRunE: configureInstaller,
