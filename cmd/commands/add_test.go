@@ -23,7 +23,7 @@ var addCmdTests = []TestCase{
 		name:           "test adding pack missing file",
 		args:           []string{"add", "DoesNotExist.Pack.1.2.3.pack"},
 		createPackRoot: true,
-		expectedStdout: []string{"File \\\"DoesNotExist.Pack.1.2.3.pack\\\" does't exist"},
+		expectedStdout: []string{"File", "DoesNotExist.Pack.1.2.3.pack", "does't exist"},
 		expectedErr:    errs.ErrFileNotFound,
 	},
 	{
