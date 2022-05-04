@@ -17,7 +17,7 @@ var listCmdTests = []TestCase{
 		name:           "test listing installed packs",
 		args:           []string{"list"},
 		createPackRoot: true,
-		expectedStdout: []string{"Vendor.Pack.1.2.3", "Vendor.PackInstalledViaPdsc.1.2.3"},
+		expectedStdout: []string{"Vendor::Pack@1.2.3", "Vendor::PackInstalledViaPdsc@1.2.3"},
 		setUpFunc: func(t *TestCase) {
 			packRoot := os.Getenv("CMSIS_PACK_ROOT")
 			packFolder := filepath.Join(packRoot, "Vendor", "Pack", "1.2.3")

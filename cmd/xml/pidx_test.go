@@ -27,6 +27,17 @@ func TestPdscTag(t *testing.T) {
 
 		assert.Equal(pdscTag.Key(), "TheVendor.ThePack.0.0.1")
 	})
+
+	t.Run("test PdscTag YamlPackID", func(t *testing.T) {
+		pdscTag := xml.PdscTag{
+			Vendor:  "TheVendor",
+			Name:    "ThePack",
+			Version: "0.0.1",
+			URL:     "http://vendor.com/",
+		}
+
+		assert.Equal(pdscTag.YamlPackID(), "TheVendor::ThePack@0.0.1")
+	})
 }
 
 func TestPidxXML(t *testing.T) {
