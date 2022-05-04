@@ -80,6 +80,19 @@ func (p *PdscType) install(installation *PacksInstallationType) error {
 		return err
 	}
 
+	searchTag := xml.PdscTag{
+		Vendor: tag.Vendor,
+		Name:   tag.Name,
+	}
+	foundTags := installation.LocalPidx.FindPdscTags(searchTag)
+	if len(foundTags) > 0 {
+		for _, foundTag := range foundTags {
+			if foundTag.URL == tag.URL {
+				return errs.ErrPdscEntryExists
+			}
+		}
+	}
+
 	return Installation.LocalPidx.AddPdsc(tag)
 }
 
