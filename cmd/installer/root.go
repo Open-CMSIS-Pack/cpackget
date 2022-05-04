@@ -169,27 +169,18 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 	log.Debugf("Listing packs")
 	if listPublic {
 		log.Info("Listing packs from the public index")
-		pdscMap := Installation.PublicIndexXML.ListPdscs()
+		pdscTags := Installation.PublicIndexXML.ListPdscTags()
 
-		// Sort by keys
-		keys := make([]string, len(pdscMap))
-		i := 0
-		for k := range pdscMap {
-			keys[i] = k
-			i++
-		}
-
-		if i == 0 {
+		if len(pdscTags) == 0 {
 			log.Info("(no packs in public index)")
 			return nil
 		}
 
-		sort.Slice(keys, func(i, j int) bool {
-			return strings.ToLower(keys[i]) < strings.ToLower(keys[j])
+		sort.Slice(pdscTags, func(i, j int) bool {
+			return strings.ToLower(pdscTags[i].Key()) < strings.ToLower(pdscTags[j].Key())
 		})
 		// List all available packs from the index
-		for _, pdscKey := range keys {
-			pdscTag := pdscMap[pdscKey]
+		for _, pdscTag := range pdscTags {
 			logMessage := pdscTag.YamlPackID()
 			packFilePath := filepath.Join(Installation.DownloadDir, pdscTag.Key()) + ".pack"
 
@@ -275,7 +266,7 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 		if err := Installation.LocalPidx.Read(); err != nil {
 			log.Error(err)
 		} else {
-			installedPdscs := Installation.LocalPidx.ListPdscs()
+			installedPdscs := Installation.LocalPidx.ListPdscTags()
 			for _, pdsc := range installedPdscs {
 				pack := installedPack{PdscTag: pdsc, isPdscInstalled: true}
 				pack.pdscPath = pdsc.URL + pack.Vendor + "/" + pack.Name + ".pdsc"
@@ -636,11 +627,15 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType) (bool, error) {
 
 	// Try to retrieve the packs's PDSC file out of the index.pidx
 	searchPdscTag := xml.PdscTag{Vendor: pack.Vendor, Name: pack.Name}
-	pdscTag := p.PublicIndexXML.FindPdscTag(searchPdscTag)
-	if pdscTag == nil {
+	pdscTags := p.PublicIndexXML.FindPdscTags(searchPdscTag)
+	if len(pdscTags) == 0 {
 		log.Debugf("Not found \"%s\" tag in \"%s\"", pack.PdscFileName(), p.PublicIndex)
 		return false, nil
 	}
+
+	// Sometimes a pidx file might have multiple pdsc tags for same key
+	// which is not the case here, so we'll take only the first one
+	pdscTag := pdscTags[0]
 
 	// Download it to .Web/
 	pdscFileURL, err := url.Parse(pdscTag.URL)

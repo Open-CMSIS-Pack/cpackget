@@ -14,6 +14,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	PdscIndexNotFound = -1
+)
+
 // PidxXML maps the PIDX file format.
 // Ref: https://github.com/ARM-software/CMSIS_5/blob/develop/CMSIS/Utilities/PackIndex.xsd
 type PidxXML struct {
@@ -27,7 +31,7 @@ type PidxXML struct {
 		Pdscs   []PdscTag `xml:"pdsc"`
 	} `xml:"pindex"`
 
-	pdscList map[string]PdscTag
+	pdscList map[string][]PdscTag
 	fileName string
 }
 
@@ -51,11 +55,12 @@ func NewPidxXML(fileName string) *PidxXML {
 // AddPdsc takes in a PdscTag and add it to the <pindex> tag.
 func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 	log.Debugf("Adding pdsc tag \"%s\" to \"%s\"", pdsc, p.fileName)
-	if p.HasPdsc(pdsc) {
+	if p.HasPdsc(pdsc) != PdscIndexNotFound {
 		return errs.ErrPdscEntryExists
 	}
 
-	p.pdscList[pdsc.Key()] = pdsc
+	key := pdsc.Key()
+	p.pdscList[key] = append(p.pdscList[key], pdsc)
 	return nil
 }
 
@@ -63,16 +68,42 @@ func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 	log.Debugf("Removing pdsc tag \"%s\" from \"%s\"", pdsc, p.fileName)
 
-	var toRemove []string
+	// removeInfo serves as a helper to identify which pdsc tags need removal
+	// key is mandatory pdscTag.Key() formatted as Vendor.Pack[.x.y.z]
+	// index is the index of the pdsc tags available for Vendor.Pack.x.y.z,
+	type removeInfo struct {
+		key   string
+		index int
+	}
 
-	if pdsc.Version != "" && p.HasPdsc(pdsc) {
-		toRemove = append(toRemove, pdsc.Key())
+	toRemove := []removeInfo{}
+
+	if pdsc.Version != "" {
+		if index := p.HasPdsc(pdsc); index != PdscIndexNotFound {
+			toRemove = append(toRemove, removeInfo{
+				key:   pdsc.Key(),
+				index: index,
+			})
+		}
 	} else {
 		// Version is omitted, search all versions
 		targetKey := pdsc.Key()
 		for key := range p.pdscList {
 			if strings.Contains(key, targetKey) {
-				toRemove = append(toRemove, key)
+				tags := p.pdscList[key]
+				index := PdscIndexNotFound
+				for i, tag := range tags {
+					if tag.URL == pdsc.URL {
+						index = i
+						break
+					}
+				}
+				if index != PdscIndexNotFound {
+					toRemove = append(toRemove, removeInfo{
+						key:   key,
+						index: index,
+					})
+				}
 			}
 		}
 	}
@@ -81,58 +112,72 @@ func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 		return errs.ErrPdscEntryNotFound
 	}
 
-	for _, key := range toRemove {
-		log.Debugf("Removing \"%v\"", key)
-		delete(p.pdscList, key)
+	for _, info := range toRemove {
+		log.Debugf("Removing \"%v:%d\"", info.key, info.index)
+		p.pdscList[info.key] = append(p.pdscList[info.key][:info.index], p.pdscList[info.key][info.index+1:]...)
+		if len(p.pdscList[info.key]) == 0 {
+			delete(p.pdscList, info.key)
+		}
 	}
 
 	return nil
 }
 
 // HasPdsc tells whether of not pdsc is already present in this pidx file.
-func (p *PidxXML) HasPdsc(pdsc PdscTag) bool {
-	_, ok := p.pdscList[pdsc.Key()]
-	log.Debugf("Checking if pidx \"%s\" contains \"%s\": %v", p.fileName, pdsc.Key(), ok)
-	return ok
+// It returns the index of the matching pdsc tag, or -1 if not found
+func (p *PidxXML) HasPdsc(pdsc PdscTag) int {
+	index := PdscIndexNotFound
+	if tags, found := p.pdscList[pdsc.Key()]; found {
+		for i, tag := range tags {
+			if tag.URL == pdsc.URL {
+				index = i
+				break
+			}
+		}
+	}
+
+	log.Debugf("Checking if pidx \"%s\" contains \"%s (%s)\": %d", p.fileName, pdsc.Key(), pdsc.URL, index)
+	return index
 }
 
-// ListPdscs returns a map of PdscTags in the pidx document
-func (p *PidxXML) ListPdscs() map[string]PdscTag {
-	return p.pdscList
+// ListPdscTags returns a map of PdscTags in the pidx document
+func (p *PidxXML) ListPdscTags() []PdscTag {
+	tags := []PdscTag{}
+	for _, pdscTags := range p.pdscList {
+		tags = append(tags, pdscTags...)
+	}
+	return tags
 }
 
-// FindPdscTag takes in a sample pdscTag and returns the actual PDSC tag inside this PidxXML.
-func (p *PidxXML) FindPdscTag(pdsc PdscTag) *PdscTag {
+// FindPdscTags takes in a sample pdscTag and returns the actual PDSC tag inside this PidxXML.
+func (p *PidxXML) FindPdscTags(pdsc PdscTag) []PdscTag {
 	log.Debugf("Searching for pdsc \"%s\"", pdsc.Key())
 	if pdsc.Version != "" {
-		foundTag, ok := p.pdscList[pdsc.Key()]
-		if ok {
-			log.Debugf("\"%s\" contains \"%s\"", p.fileName, pdsc.Key())
-			return &foundTag
-		}
-
-		log.Debugf("\"%s\" does not contain \"%s\"", p.fileName, pdsc.Key())
-		return nil
+		foundTags := p.pdscList[pdsc.Key()]
+		log.Debugf("\"%s\" contains %d pdsc tag(s) for \"%s\"", p.fileName, len(foundTags), pdsc.Key())
+		return foundTags
 	}
 
+	// No version, means "Vendor.Pack", so we need
+	// to find matching tags that start with "Vendor.Pack",
+	// and there might be many
 	targetKey := pdsc.Key()
+	foundTags := []PdscTag{}
 	for key := range p.pdscList {
 		if strings.Contains(key, targetKey) {
-			log.Debugf("\"%s\" contains \"%s\": \"%s\"", p.fileName, pdsc.Key(), key)
-			foundTag := p.pdscList[key]
-			return &foundTag
+			foundTags = append(foundTags, p.pdscList[key]...)
 		}
 	}
 
-	log.Debugf("\"%s\" does not contain \"%s\"", p.fileName, pdsc.Key())
-	return nil
+	log.Debugf("\"%s\" contains %d pdsc tag(s) for \"%s\"", p.fileName, len(foundTags), pdsc.Key())
+	return foundTags
 }
 
 // Read reads FileName into this PidxXML struct and allocates memory for all PDSC tags.
 func (p *PidxXML) Read() error {
 	log.Debugf("Reading pidx from file \"%s\"", p.fileName)
 
-	p.pdscList = make(map[string]PdscTag)
+	p.pdscList = make(map[string][]PdscTag)
 
 	// Create a new empty l
 	if !utils.FileExists(p.fileName) {
@@ -148,8 +193,9 @@ func (p *PidxXML) Read() error {
 	}
 
 	for _, pdsc := range p.Pindex.Pdscs {
-		log.Debugf("Registring \"%s\"", pdsc.Key())
-		p.pdscList[pdsc.Key()] = pdsc
+		key := pdsc.Key()
+		log.Debugf("Registring \"%s\"", key)
+		p.pdscList[key] = append(p.pdscList[key], pdsc)
 	}
 
 	// truncate Pindex.Pdscs
@@ -163,11 +209,16 @@ func (p *PidxXML) Write() error {
 	log.Debugf("Writing pidx file to \"%s\"", p.fileName)
 
 	// Use p.pdscList as the main source of pdsc tags
-	for _, pdsc := range p.pdscList {
-		p.Pindex.Pdscs = append(p.Pindex.Pdscs, pdsc)
+	for _, pdscs := range p.pdscList {
+		p.Pindex.Pdscs = append(p.Pindex.Pdscs, pdscs...)
 	}
 
-	return utils.WriteXML(p.fileName, p)
+	err := utils.WriteXML(p.fileName, p)
+
+	// Truncate Pindex.Pdscs in case a new Write is requested
+	p.Pindex.Pdscs = p.Pindex.Pdscs[:0]
+
+	return err
 }
 
 // Key returns this pdscTag unique key.
