@@ -87,8 +87,8 @@ func TestPidxXML(t *testing.T) {
 		// Adding a second PDSC tag is OK
 		assert.Nil(pidx.AddPdsc(pdscTag2))
 
-		// Adding a PDSC of a Pack with different URL is NOT OK
-		assert.Equal(pidx.AddPdsc(pdscTag2DiffURL), errs.ErrPdscEntryExists)
+		// Adding a PDSC of a Pack with different URL is also OK
+		assert.Nil(pidx.AddPdsc(pdscTag2DiffURL))
 	})
 
 	t.Run("test removing a PDSC tag from a PIDX file", func(t *testing.T) {
@@ -200,8 +200,8 @@ func TestPidxXML(t *testing.T) {
 		assert.Nil(pidx.Write())
 		newPidx := xml.NewPidxXML(fileName)
 		assert.Nil(newPidx.Read())
-		assert.True(newPidx.HasPdsc(pdscTag1))
-		assert.True(newPidx.HasPdsc(pdscTag2))
+		assert.Greater(newPidx.HasPdsc(pdscTag1), xml.PdscIndexNotFound)
+		assert.Greater(newPidx.HasPdsc(pdscTag2), xml.PdscIndexNotFound)
 	})
 
 	t.Run("test reading PIDX file with malformed XML", func(t *testing.T) {
@@ -235,15 +235,15 @@ func TestPidxXML(t *testing.T) {
 		// Find with empty version
 		assert.Nil(pidx.AddPdsc(pdscTag1))
 		pdscTag1.Version = ""
-		foundTag := pidx.FindPdscTag(pdscTag1)
-		assert.NotNil(foundTag)
-		assert.Equal(foundTag.Version, "0.0.1")
+		foundTags := pidx.FindPdscTags(pdscTag1)
+		assert.Greater(len(foundTags), 0)
+		assert.Equal(foundTags[0].Version, "0.0.1")
 
 		// Find with specified version
 		assert.Nil(pidx.AddPdsc(pdscTag2))
-		foundTag = pidx.FindPdscTag(pdscTag2)
-		assert.NotNil(foundTag)
-		assert.Equal(*foundTag, pdscTag2)
+		foundTags = pidx.FindPdscTags(pdscTag2)
+		assert.Greater(len(foundTags), 0)
+		assert.Equal(foundTags[0], pdscTag2)
 
 	})
 }

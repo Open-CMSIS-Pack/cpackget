@@ -218,6 +218,8 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 			absPath, _ := os.Getwd()
 			location = filepath.Join(absPath, location)
 			location, _ = filepath.Abs(location)
+		} else {
+			location = filepath.Clean(location)
 		}
 
 		location = "file://localhost/" + location + string(os.PathSeparator)

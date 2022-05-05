@@ -5,10 +5,12 @@ package installer_test
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	"github.com/stretchr/testify/assert"
 )
@@ -69,6 +71,31 @@ func TestAddPdsc(t *testing.T) {
 		err := installer.AddPdsc(pdscPack123)
 		assert.Nil(err)
 
+		err = installer.AddPdsc(pdscPack124)
+		assert.Nil(err)
+	})
+
+	t.Run("test add new pdsc version with same path", func(t *testing.T) {
+		localTestingDir := "test-add-new-pdsc-version-same-path"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Work on a local copy of the file
+		pdscFileName := filepath.Base(pdscPack123)
+		assert.Nil(utils.CopyFile(pdscPack123, pdscFileName))
+		defer os.Remove(pdscFileName)
+
+		err := installer.AddPdsc(pdscFileName)
+		assert.Nil(err)
+
+		// Update the version in PDSC file
+		pdscXML := xml.NewPdscXML(pdscFileName)
+		assert.Nil(pdscXML.Read())
+		releaseTag := xml.ReleaseTag{Version: "1.2.4"}
+		pdscXML.ReleasesTag.Releases = append([]xml.ReleaseTag{releaseTag}, pdscXML.ReleasesTag.Releases...)
+		assert.Nil(utils.WriteXML(pdscFileName, pdscXML))
+
+		// Attempt to add it the second time
 		err = installer.AddPdsc(pdscPack124)
 		assert.Nil(err)
 	})
