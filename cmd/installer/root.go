@@ -146,26 +146,29 @@ func UpdatePublicIndex(indexPath string, overwrite bool) error {
 		if !overwrite {
 			return errs.ErrCannotOverwritePublicIndex
 		}
-		log.Infof("Overwriting public index file %v", Installation.PublicIndex)
+		log.Debugf("Overwriting public index file %v", Installation.PublicIndex)
 	}
 
 	var err error
-	if !strings.HasPrefix(indexPath, "https://") {
-		log.Warnf("Non-HTTPS url: \"%s\"", indexPath)
-	}
 
-	indexPath, err = utils.DownloadFile(indexPath)
-	if err != nil {
-		return err
+	if strings.HasPrefix(indexPath, "http://") || strings.HasPrefix(indexPath, "https://") {
+		if !strings.HasPrefix(indexPath, "https://") {
+			log.Warnf("Non-HTTPS url: \"%s\"", indexPath)
+		}
+
+		indexPath, err = utils.DownloadFile(indexPath)
+		if err != nil {
+			return err
+		}
+		defer os.Remove(indexPath)
 	}
 
 	pidx := xml.NewPidxXML(indexPath)
 	if err := pidx.Read(); err != nil {
-		_ = os.Remove(indexPath)
 		return err
 	}
 
-	return utils.MoveFile(indexPath, filepath.Join(Installation.WebDir, "index.pidx"))
+	return utils.CopyFile(indexPath, filepath.Join(Installation.WebDir, "index.pidx"))
 }
 
 // ListInstalledPacks generates a list of all packs present in the pack root folder

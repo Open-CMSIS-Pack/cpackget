@@ -406,6 +406,24 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Equal(copied, indexContent)
 	})
 
+	t.Run("test add local file index.pidx", func(t *testing.T) {
+		localTestingDir := "test-add-local-file-index"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		indexContent, err := ioutil.ReadFile(samplePublicIndex)
+		assert.Nil(err)
+
+		assert.Nil(installer.UpdatePublicIndex(samplePublicIndex, Overwrite))
+
+		assert.True(utils.FileExists(installer.Installation.PublicIndex))
+
+		copied, err2 := ioutil.ReadFile(installer.Installation.PublicIndex)
+		assert.Nil(err2)
+
+		assert.Equal(copied, indexContent)
+	})
+
 	t.Run("test do not overwrite index.pidx", func(t *testing.T) {
 		localTestingDir := "test-do-not-overwrite-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))

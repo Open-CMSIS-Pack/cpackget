@@ -9,7 +9,20 @@ PACK_ROOT=packroot
 rm -rf $PACK_ROOT
 
 export CMSIS_PACK_ROOT=${PACK_ROOT}
-./build/cpackget init
+
+cat <<PIDX >/tmp/index.pidx
+<?xml version="1.0" encoding="UTF-8" ?>
+<index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
+    <vendor>TheVendor</vendor>
+    <url>http://the.vendor/</url>
+    <timestamp>2021-10-17T12:21:59.1747971+00:00</timestamp>
+    <pindex>
+        <pdsc url="http://the.vendor/" vendor="TheVendor" name="PackName" version="1.2.3" />
+    </pindex>
+</index>
+PIDX
+
+./build/cpackget init /tmp/index.pidx
 ./build/cpackget pdsc add testdata/devpack/1.2.3/TheVendor.DevPack.pdsc
 
 xmllint --schema testdata/PackIndex.xsd $PACK_ROOT/.Local/local_repository.pidx --noout
