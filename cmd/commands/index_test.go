@@ -5,6 +5,8 @@ package commands_test
 
 import (
 	"errors"
+	"io/fs"
+	"path/filepath"
 	"testing"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -54,16 +56,17 @@ func TestIndexCmd(t *testing.T) {
 
 // Tests for init command are placed here because there was something wrong
 // while putting them into a file init_test.go
+
+var (
+	pidxFilePath         = filepath.Join(testingDir, "SamplePublicIndex.pidx")
+	notFoundPidxFilePath = filepath.Join("path", "to", "index.pidx")
+)
+
 var initCmdTests = []TestCase{
 	{
-		name:        "test with no packroot configured",
+		name:        "test no parameter given",
 		args:        []string{"init"},
-		expectedErr: errs.ErrPackRootNotFound,
-	},
-	{
-		name:           "test create with empty index.pidx",
-		args:           []string{"init"},
-		createPackRoot: true,
+		expectedErr: errors.New("accepts 1 arg(s), received 0"),
 	},
 	{
 		name:           "test create using an index.pidx",
@@ -81,6 +84,21 @@ var initCmdTests = []TestCase{
   <pdsc url="http://the.vendor/" vendor="TheVendor" name="PackName" version="1.2.3" />
 </pindex>
 </index>`))
+		},
+	},
+	{
+		name:           "test create using local index.pidx",
+		args:           []string{"init", pidxFilePath},
+		createPackRoot: true,
+	},
+	{
+		name:           "test create using local index.pidx that do not exist",
+		args:           []string{"init", notFoundPidxFilePath},
+		createPackRoot: true,
+		expectedErr: &fs.PathError{
+			Op:   "open",
+			Path: notFoundPidxFilePath,
+			Err:  expectedFileNotFoundError,
 		},
 	},
 }
