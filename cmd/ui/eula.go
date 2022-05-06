@@ -43,6 +43,8 @@ func DisplayAndWaitForEULA(licenseTitle, licenseContents string) (bool, error) {
 	promptText := "License Agreement: [A]ccept [D]ecline [E]xtract"
 
 	if !utils.IsTerminalInteractive() {
+		// Show input on non-interactive terminals
+		promptText = "License Agreement: [A]ccept [D]ecline [E]xtract: "
 		fmt.Printf("*** %v ***", licenseTitle)
 		fmt.Println()
 		fmt.Println(licenseContents)
