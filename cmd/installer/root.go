@@ -21,7 +21,7 @@ import (
 )
 
 // AddPack adds a pack to the pack installation directory structure
-func AddPack(packPath string, checkEula, extractEula bool) error {
+func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool) error {
 
 	pack, err := preparePack(packPath)
 	if err != nil {
@@ -31,8 +31,14 @@ func AddPack(packPath string, checkEula, extractEula bool) error {
 	log.Infof("Adding pack \"%s\"", packPath)
 
 	if !extractEula && pack.isInstalled {
-		log.Infof("pack %s is already installed here: %s", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersion()))
-		return nil
+		if forceReinstall {
+			log.Infof("Forcing reinstallation of pack %s", packPath)
+			// Purge the package to avoid any download/cache errors
+			RemovePack(packPath, true)
+		} else {
+			log.Errorf("pack %s is already installed here: %s, use the --force-reinstall (-F) flag to force installation", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersion()))
+			return nil
+		}
 	}
 
 	if pack.isPackID {

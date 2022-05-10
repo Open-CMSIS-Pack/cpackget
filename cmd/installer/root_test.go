@@ -97,15 +97,16 @@ func checkPackIsInstalled(t *testing.T, pack *installer.PackType) {
 }
 
 type ConfigType struct {
-	IsPublic    bool
-	CheckEula   bool
-	ExtractEula bool
+	IsPublic       bool
+	CheckEula      bool
+	ExtractEula    bool
+	ForceReinstall bool
 }
 
 func addPack(t *testing.T, packPath string, config ConfigType) {
 	assert := assert.New(t)
 
-	err := installer.AddPack(packPath, config.CheckEula, config.ExtractEula)
+	err := installer.AddPack(packPath, config.CheckEula, config.ExtractEula, config.ForceReinstall)
 	assert.Nil(err)
 
 	if config.ExtractEula {
@@ -190,10 +191,11 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 
 var (
 	// Constant telling pack privacy
-	IsPublic    = true
-	NotPublic   = false
-	CheckEula   = true
-	ExtractEula = true
+	IsPublic       = true
+	NotPublic      = false
+	CheckEula      = true
+	ExtractEula    = true
+	ForceReinstall = true
 
 	CreatePackRoot = true
 
@@ -202,6 +204,7 @@ var (
 
 	malformedPackName              = "pack-with-bad-name"
 	packThatDoesNotExist           = "ThisPack.DoesNotExist.0.0.1.pack"
+	packToReinstall                = filepath.Join(testDir, "TheVendor.PackToReinstall.1.2.3.pack")
 	packWithCorruptZip             = filepath.Join(testDir, "FakeZip.PackName.1.2.3.pack")
 	packWithMalformedURL           = "http://:malformed-url*/TheVendor.PackName.1.2.3.pack"
 	packWithoutPdscFileInside      = filepath.Join(testDir, "PackWithout.PdscFileInside.1.2.3.pack")

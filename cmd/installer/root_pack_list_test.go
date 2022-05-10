@@ -93,8 +93,8 @@ func ExampleListInstalledPacks_list() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula)
-	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall)
+	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall)
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/)
 
 	log.SetOutput(os.Stdout)
@@ -129,8 +129,8 @@ func ExampleListInstalledPacks_listCached() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula)
-	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall)
+	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall)
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/)
 
 	log.SetOutput(os.Stdout)
@@ -167,8 +167,8 @@ func TestListInstalledPacks(t *testing.T) {
 			Name:    "PublicLocalPack",
 			Version: "1.2.5",
 		}))
-		assert.Nil(installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula))
-		assert.Nil(installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula))
+		assert.Nil(installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall))
+		assert.Nil(installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall))
 		assert.Nil(installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/))
 
 		// Install a pack via PDSC file
@@ -239,7 +239,7 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.3",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall)
 
 	// Temper with the installation folder
 	currVendorFolder := filepath.Join(localTestingDir, "TheVendor")

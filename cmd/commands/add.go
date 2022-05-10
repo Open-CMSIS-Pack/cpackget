@@ -21,6 +21,9 @@ var addCmdFlags struct {
 	// extractEula forces extraction of the embedded license only, not installing the pack
 	extractEula bool
 
+	// forceReinstall forces installation of an already installed pack
+	forceReinstall bool
+
 	// packsListFileName is the file name where a list of pack urls is present
 	packsListFileName string
 }
@@ -86,7 +89,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 			if filepath.Ext(packPath) == ".pdsc" {
 				err = installer.AddPdsc(packPath)
 			} else {
-				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula)
+				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall)
 
 			}
 
@@ -105,5 +108,6 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 func init() {
 	AddCmd.Flags().BoolVarP(&addCmdFlags.skipEula, "agree-embedded-license", "a", false, "agrees with the embedded license of the pack")
 	AddCmd.Flags().BoolVarP(&addCmdFlags.extractEula, "extract-embedded-license", "x", false, "extracts the embedded license of the pack and aborts the installation")
+	AddCmd.Flags().BoolVarP(&addCmdFlags.forceReinstall, "force-reinstall", "F", false, "forces installation of an already installed pack")
 	AddCmd.Flags().StringVarP(&addCmdFlags.packsListFileName, "packs-list-filename", "f", "", "specifies a file listing packs urls, one per line")
 }
