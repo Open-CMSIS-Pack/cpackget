@@ -34,7 +34,9 @@ func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool) 
 		if forceReinstall {
 			log.Infof("Forcing reinstallation of pack %s", packPath)
 			// Purge the package to avoid any download/cache errors
-			RemovePack(packPath, true)
+			if err = RemovePack(packPath, true); err != nil {
+				return err
+			}
 		} else {
 			log.Errorf("pack %s is already installed here: %s, use the --force-reinstall (-F) flag to force installation", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersion()))
 			return nil
