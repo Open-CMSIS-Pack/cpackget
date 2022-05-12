@@ -228,7 +228,3 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 	info.Location = location
 	return info, nil
 }
-
-// func getFullPackPath(packName string) error {
-// 	for strings.Split(packName)
-// }

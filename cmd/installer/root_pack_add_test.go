@@ -142,7 +142,7 @@ func TestAddPack(t *testing.T) {
 
 		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall)
 
-		// Sanity check, should not get installed as --force-reinstall is missing
+		// Sanity check
 		assert.NotNil(err)
 		assert.Equal(err, errs.ErrFileNotFound)
 
