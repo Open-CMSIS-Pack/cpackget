@@ -23,8 +23,9 @@ var nameRegex = regexp.MustCompile(fmt.Sprintf("^%s$", namePattern))
 
 // versionPattern validates pack version.
 // Ref: https://github.com/ARM-software/CMSIS_5/blob/develop/CMSIS/Utilities/PackIndex.xsd
-//                    <major>           . <minor>          . <patch>            - <quality>                                                                                             + <meta info>
-var versionPattern = `(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*)?(?:\+[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*)?`
+// With little adjustments to reduce the number of capturing groups to a single one
+//                       <major>     . <minor>       . <patch>         - <quality>                                                                                       + <meta info>
+var versionPattern = `(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?:[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`
 
 // versionRegex pre-compiles versionPattern.
 var versionRegex = regexp.MustCompile(fmt.Sprintf("^%s$", versionPattern))
@@ -163,68 +164,65 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 	location, packName := filepath.Split(packPath)
 
 	// Most common scenario should be the use of packId
-	matches := matchPackID(packName)
+	matches := matchPackFileName(packName)
 	if len(matches) > 0 {
-		info.IsPackID = true
 		info.Vendor = matches[1]
 		info.Pack = matches[2]
-		info.VersionModifier = AnyVersion
+		info.Extension = filepath.Ext(packPath)[1:]
 
-		if len(matches) == 4 {
-			// 4 matches: [Vendor.Pack.x.y.z, Vendor, Pack, x.y.z] (dotted version)
+		if len(matches) > 3 {
 			info.Version = matches[3]
-			info.VersionModifier = ExactVersion
-			return info, nil
 		}
 
-		if len(matches) == 5 {
-			// 5 matches: [Vendor::Pack(@|@~|>=)x.y.z, Vendor, Pack, (@|@~|>=), x.y.z] (legacy version)
-			versionModifier := matches[3]
-			version := matches[4]
-
-			info.VersionModifier = versionModMap[versionModifier]
-			if version == "latest" {
-				info.VersionModifier = LatestVersion
+		// location can be either a URL or a path to the local
+		// file system. If it's the latter, make sure to fill in
+		// in case the file is coming from the current directory
+		if !(strings.HasPrefix(location, "http://") || strings.HasPrefix(location, "https://") || strings.HasPrefix(location, "file://")) {
+			if !filepath.IsAbs(location) {
+				absPath, _ := os.Getwd()
+				location = filepath.Join(absPath, location)
+				location, _ = filepath.Abs(location)
+			} else {
+				location = filepath.Clean(location)
 			}
 
-			info.Version = version
+			location = "file://localhost/" + location + string(os.PathSeparator)
 		}
 
+		info.Location = location
+		log.Debugf("\"%s\" is a file name or a URL with Vendor=\"%s\", Pack=\"%s\", Version=\"%s\", Extension=\"%v\", Location=\"%s\"", packPath, info.Vendor, info.Pack, info.Version, info.Extension, location)
 		return info, nil
 	}
 
-	// It's known that packPath is either a file or an url
-	matches = matchPackFileName(packName)
+	// It's known that packPath is either a file or a url
+	matches = matchPackID(packName)
 	if len(matches) == 0 {
 		// packPath is neither packId nor a valid pack file name
 		return info, errs.ErrBadPackName
 	}
 
+	info.IsPackID = true
 	info.Vendor = matches[1]
 	info.Pack = matches[2]
+	info.VersionModifier = AnyVersion
 
 	if len(matches) == 4 {
-		info.Extension = matches[3]
-	} else {
+		// 4 matches: [Vendor.Pack.x.y.z, Vendor, Pack, x.y.z] (dotted version)
 		info.Version = matches[3]
-		info.Extension = matches[4]
-	}
+		info.VersionModifier = ExactVersion
+	} else if len(matches) == 5 {
+		// 5 matches: [Vendor::Pack(@|@~|>=)x.y.z, Vendor, Pack, (@|@~|>=), x.y.z] (legacy version)
+		versionModifier := matches[3]
+		version := matches[4]
 
-	// location can be either a URL or a path to the local
-	// file system. If it's the latter, make sure to fill in
-	// in case the file is coming from the current directory
-	if !(strings.HasPrefix(location, "http://") || strings.HasPrefix(location, "https://") || strings.HasPrefix(location, "file://")) {
-		if !filepath.IsAbs(location) {
-			absPath, _ := os.Getwd()
-			location = filepath.Join(absPath, location)
-			location, _ = filepath.Abs(location)
-		} else {
-			location = filepath.Clean(location)
+		info.VersionModifier = versionModMap[versionModifier]
+		if version == "latest" {
+			info.VersionModifier = LatestVersion
 		}
 
-		location = "file://localhost/" + location + string(os.PathSeparator)
+		info.Version = version
 	}
 
-	info.Location = location
+	log.Debugf("\"%s\" is a packID with Vendor=\"%s\", Pack=\"%s\", Version=\"%s\", VersionModifier=\"%v\"", packPath, info.Vendor, info.Pack, info.Version, info.VersionModifier)
 	return info, nil
 }
