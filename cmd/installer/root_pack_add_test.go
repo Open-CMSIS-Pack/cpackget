@@ -52,8 +52,8 @@ func TestAddPack(t *testing.T) {
 		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
-	t.Run("test installing a pack previously installed, no --force-reinstall flag", func(t *testing.T) {
-		localTestingDir := "test-add-pack-previously-installed-no-reinstall"
+	t.Run("test installing a pack previously installed", func(t *testing.T) {
+		localTestingDir := "test-add-pack-already-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer os.RemoveAll(localTestingDir)
@@ -78,20 +78,59 @@ func TestAddPack(t *testing.T) {
 		assert.Equal(packIdxModTime, packIdx.ModTime())
 	})
 
-	t.Run("test force-reinstalling a pack", func(t *testing.T) {
-		localTestingDir := "test-add-pack-force-reinstall"
+	t.Run("test force-reinstalling a pack not yet installed", func(t *testing.T) {
+		localTestingDir := "test-add-pack-force-reinstall-not-installed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := publicLocalPack123
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall)
+		assert.Nil(err)
+
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		checkPackIsInstalled(t, packInfoToType(packInfo))
+	})
+
+	t.Run("test force-reinstalling an installed pack", func(t *testing.T) {
+		localTestingDir := "test-add-pack-force-reinstall-already-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		defer os.RemoveAll(localTestingDir)
 
 		packPath := packToReinstall
 		addPack(t, packPath, ConfigType{})
-		// Should warn the user, remove (purge) the package, and install again
+
 		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall)
 		assert.Nil(err)
 
 		packToReinstall, err := utils.ExtractPackInfo(packPath)
 		assert.Nil(err)
 		checkPackIsInstalled(t, packInfoToType(packToReinstall))
+	})
+
+	t.Run("test force-reinstalling a pack with a user interruption", func(t *testing.T) {
+		localTestingDir := "test-add-pack-force-reinstall-user-interruption"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := packToReinstall
+		addPack(t, packPath, ConfigType{})
+
+		// Simulate a ctrl+c (as done in security_test.go)
+		utils.ShouldAbortFunction = func() bool {
+			return true
+		}
+
+		defer func() {
+			utils.ShouldAbortFunction = nil
+		}()
+
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall)
+		// Should not install anything, and revert the temporary pack to its original directory
+		originalPackPath := filepath.Join(installer.Installation.PackRoot, "TheVendor", "PackToReinstall", "1.2.3")
+		assert.True(errs.Is(err, errs.ErrTerminatedByUser))
+		assert.DirExists(originalPackPath)
+		assert.NoDirExists(originalPackPath + "_tmp")
 	})
 
 	t.Run("test installing local pack that does not exist", func(t *testing.T) {
@@ -103,7 +142,7 @@ func TestAddPack(t *testing.T) {
 
 		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall)
 
-		// Sanity check
+		// Sanity check, should not get installed as --force-reinstall is missing
 		assert.NotNil(err)
 		assert.Equal(err, errs.ErrFileNotFound)
 
