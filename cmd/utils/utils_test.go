@@ -12,13 +12,24 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
+
+// Copy of cmd/log.go
+type LogFormatter struct{}
+
+func (s *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
+	level := strings.ToUpper(entry.Level.String())
+	msg := fmt.Sprintf("%s: %s\n", level[0:1], entry.Message)
+	return []byte(msg), nil
+}
 
 func TestDownloadFile(t *testing.T) {
 	assert := assert.New(t)
@@ -474,4 +485,13 @@ func TestCleanPath(t *testing.T) {
 	expected := fmt.Sprintf("c:%csome%cpath", os.PathSeparator, os.PathSeparator)
 	result := utils.CleanPath(fmt.Sprintf("%cc:%csome%cpath", os.PathSeparator, os.PathSeparator, os.PathSeparator))
 	assert.Equal(t, expected, result)
+}
+
+func init() {
+	logLevel := log.InfoLevel
+	if os.Getenv("LOG_LEVEL") == "debug" {
+		logLevel = log.DebugLevel
+	}
+	log.SetLevel(logLevel)
+	log.SetFormatter(new(LogFormatter))
 }
