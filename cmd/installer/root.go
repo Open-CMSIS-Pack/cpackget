@@ -35,14 +35,9 @@ func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool) 
 	backupPackPath := ""
 	if !extractEula && pack.isInstalled {
 		if forceReinstall {
-			log.Infof("Making temporary backup of pack \"%s\"", packPath)
+			log.Debugf("Making temporary backup of pack \"%s\"", packPath)
 			// Get target pack's full path and move it to a temporary "_tmp" directory
-			var packInfo utils.PackInfo
-			if packInfo, err = utils.ExtractPackInfo(packPath); err != nil {
-				return err
-			}
-
-			fullPackPath = filepath.Join(Installation.PackRoot, packInfo.Vendor, packInfo.Pack, packInfo.Version)
+			fullPackPath = filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.Version)
 			backupPackPath = fullPackPath + "_tmp"
 
 			if err := utils.MoveFile(fullPackPath, backupPackPath); err != nil {
@@ -74,6 +69,10 @@ func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool) 
 	if err = pack.install(Installation, checkEula || extractEula); err != nil {
 		if dropPreInstalled {
 			log.Error("Error installing pack, reverting temporary pack to original state")
+			// Make sure the original directory doesn't exist to avoid moving errors
+			if err := os.RemoveAll(fullPackPath); err != nil {
+				return err
+			}
 			if err := utils.MoveFile(backupPackPath, fullPackPath); err != nil {
 				return err
 			}
