@@ -21,7 +21,7 @@ import (
 )
 
 // AddPack adds a pack to the pack installation directory structure
-func AddPack(packPath string, checkEula, extractEula bool) error {
+func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool) error {
 
 	pack, err := preparePack(packPath)
 	if err != nil {
@@ -30,9 +30,26 @@ func AddPack(packPath string, checkEula, extractEula bool) error {
 
 	log.Infof("Adding pack \"%s\"", packPath)
 
+	dropPreInstalled := false
+	fullPackPath := ""
+	backupPackPath := ""
 	if !extractEula && pack.isInstalled {
-		log.Infof("pack %s is already installed here: %s", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersion()))
-		return nil
+		if forceReinstall {
+			log.Debugf("Making temporary backup of pack \"%s\"", packPath)
+			// Get target pack's full path and move it to a temporary "_tmp" directory
+			fullPackPath = filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.Version)
+			backupPackPath = fullPackPath + "_tmp"
+
+			if err := utils.MoveFile(fullPackPath, backupPackPath); err != nil {
+				return err
+			}
+
+			log.Debugf("Moved pack to temporary path \"%s\"", backupPackPath)
+			dropPreInstalled = true
+		} else {
+			log.Errorf("Pack \"%s\" is already installed here: \"%s\", use the --force-reinstall (-F) flag to force installation", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersion()))
+			return nil
+		}
 	}
 
 	if pack.isPackID {
@@ -50,7 +67,26 @@ func AddPack(packPath string, checkEula, extractEula bool) error {
 	ui.Extract = extractEula
 
 	if err = pack.install(Installation, checkEula || extractEula); err != nil {
+		if dropPreInstalled {
+			log.Error("Error installing pack, reverting temporary pack to original state")
+			// Make sure the original directory doesn't exist to avoid moving errors
+			if err := os.RemoveAll(fullPackPath); err != nil {
+				return err
+			}
+			if err := utils.MoveFile(backupPackPath, fullPackPath); err != nil {
+				return err
+			}
+		}
 		return err
+	}
+
+	// Remove the original "temporary" pack
+	// Manual removal via os.RemoveAll as "_tmp" is an invalid packPath for RemovePack
+	if dropPreInstalled {
+		if err := os.RemoveAll(backupPackPath); err != nil {
+			return err
+		}
+		log.Debugf("Succesfully deleted temporary pack \"%s\"", backupPackPath)
 	}
 
 	return Installation.touchPackIdx()

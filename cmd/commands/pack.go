@@ -27,6 +27,9 @@ var skipEula bool
 // extractEula forces extraction of the embedded license only, not installing the pack
 var extractEula bool
 
+// forceReinstall forces installation of an already installed pack
+var forceReinstall bool
+
 // packsListFileName is the file name where a list of pack urls is present
 var packsListFileName string
 
@@ -73,7 +76,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 		log.Debugf("Specified packs %v", args)
 		var firstError error
 		for _, packPath := range args {
-			if err := installer.AddPack(packPath, !skipEula, extractEula); err != nil {
+			if err := installer.AddPack(packPath, !skipEula, extractEula, forceReinstall); err != nil {
 				if firstError == nil {
 					firstError = err
 				}
@@ -127,6 +130,7 @@ func init() {
 	packRmCmd.Flags().BoolVarP(&purge, "purge", "p", false, "forces deletion of cached pack files")
 	packAddCmd.Flags().BoolVarP(&skipEula, "agree-embedded-license", "a", false, "agrees with the embedded license of the pack")
 	packAddCmd.Flags().BoolVarP(&extractEula, "extract-embedded-license", "x", false, "extracts the embedded license of the pack and aborts the installation")
+	packAddCmd.Flags().BoolVarP(&forceReinstall, "force-reinstall", "F", false, "forces installation of an already installed pack")
 	packAddCmd.Flags().StringVarP(&packsListFileName, "packs-list-filename", "f", "", "specifies a file listing packs urls, one per line")
 	packListCmd.Flags().BoolVarP(&listCached, "cached", "c", false, "lists only cached packs")
 	packListCmd.Flags().BoolVarP(&listPublic, "public", "p", false, "lists packs in the public index")
