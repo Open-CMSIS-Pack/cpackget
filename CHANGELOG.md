@@ -1,3 +1,16 @@
+# v0.5.0
+
+This v0.5 release contains:
+
+Bug fixes
+- Fix pack installation with semantic versioning
+
+New features
+- --force-reinstall flag to force pack installation
+- Combine pack and psdc commands
+- Make index-url mandatory 
+- List commands using Yaml naming standard
+
 # v0.4.1
 
 This v0.4.1 release contains a small bug fix that
