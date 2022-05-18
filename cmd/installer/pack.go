@@ -41,6 +41,9 @@ type PackType struct {
 	// isPackID tells whether the path is in packID format: Vendor.PackName[.x.y.z]
 	isPackID bool
 
+	// toBeRemoved indicates
+	toBeRemoved bool
+
 	// exactVersion tells wether this pack identifier is specifying an exact version
 	// or is requesting a newer one, e.g. >=x.y.z
 	versionModifier int
@@ -63,9 +66,10 @@ type PackType struct {
 
 // preparePack does some sanity validation regarding pack name
 // and check if it's public and if it's installed or not
-func preparePack(packPath string) (*PackType, error) {
+func preparePack(packPath string, toBeRemoved bool) (*PackType, error) {
 	pack := &PackType{
-		path: packPath,
+		path:        packPath,
+		toBeRemoved: toBeRemoved,
 	}
 
 	// Clean out any possible query or user auth in the URL

@@ -4,6 +4,7 @@
 package installer_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -183,6 +184,33 @@ func TestRemovePack(t *testing.T) {
 
 		// Remove latest pack (withVersion=false), i.e. path will be "TheVendor.PackName"
 		removePack(t, packPath, false, IsPublic, true) // withVersion=false, purge=true
+	})
+
+	t.Run("test remove public pack without pdsc file in .Web folder", func(t *testing.T) {
+		localTestingDir := "test-remove-public-pack-without-pdsc-in-web-folder"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		packPath := publicLocalPack123
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+
+		// Make sure there's a pdsc in .Web
+		pdscFilePath := filepath.Join(installer.Installation.WebDir, fmt.Sprintf("%s.%s.pdsc", packInfo.Vendor, packInfo.Pack))
+		assert.Nil(utils.TouchFile(pdscFilePath))
+
+		config := ConfigType{
+			IsPublic: true,
+		}
+		addPack(t, packPath, config)
+
+		// Make sure there is no PDSC file in .Web/
+		os.Remove(pdscFilePath)
+
+		removePack(t, packPath, true, IsPublic, false) // withVersion=true, purge=false
+
+		// Assert that the file did not get created during the operation
+		assert.False(utils.FileExists(pdscFilePath))
 	})
 
 	// t.Run("test remove all versions at once", func(t *testing.T) {
