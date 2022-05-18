@@ -23,7 +23,7 @@ import (
 // AddPack adds a pack to the pack installation directory structure
 func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool) error {
 
-	pack, err := preparePack(packPath)
+	pack, err := preparePack(packPath, false)
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func RemovePack(packPath string, purge bool) error {
 	// TODO: by default, remove latest version first
 	// if no version is given
 
-	pack, err := preparePack(packPath)
+	pack, err := preparePack(packPath, true)
 	if err != nil {
 		return err
 	}
@@ -674,6 +674,11 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType) (bool, error) {
 	if len(pdscTags) == 0 {
 		log.Debugf("Not found \"%s\" tag in \"%s\"", pack.PdscFileName(), p.PublicIndex)
 		return false, nil
+	}
+
+	// If the pack is being removed, there's no need to get its PDSC file under .Web
+	if pack.toBeRemoved {
+		return true, nil
 	}
 
 	// Sometimes a pidx file might have multiple pdsc tags for same key
