@@ -574,8 +574,19 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 		return utils.DirExists(packDir)
 	}
 
-	// Now get all versions installed and check if it satisfies the versionModifier condition
 	installedVersions := []string{}
+	// Gather all versions in local_repository.idx for local .psdc installed packs
+	if err := p.LocalPidx.Read(); err != nil {
+		log.Warn("Could not read local index")
+		return false
+	}
+	for _, pdsc := range p.LocalPidx.ListPdscTags() {
+		if pack.Vendor == pdsc.Vendor && pack.Name == pdsc.Name {
+			installedVersions = append(installedVersions, pdsc.Version)
+		}
+	}
+
+	// Get all remaining versions installed and check if it satisfies the versionModifier condition
 	installedDirs, err := utils.ListDir(installationDir, "")
 	if err != nil {
 		log.Warnf("Could not list installed packs in \"%s\": %v", installationDir, err)
