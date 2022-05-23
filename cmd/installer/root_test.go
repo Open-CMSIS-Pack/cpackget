@@ -62,6 +62,11 @@ func shortenPackPath(packPath string, withVersion bool) string {
 }
 
 func getPackIdxModTime(t *testing.T, pushBack bool) time.Time {
+	packIdx := installer.Installation.PackIdx
+	if !utils.FileExists(packIdx) {
+		assert.Nil(t, utils.TouchFile(packIdx))
+	}
+
 	// This function helps retrieving mod time of pack.idx file.
 	// It is invoked before adding/removing packs to detect if the file really did get touched
 	// BUT:
@@ -78,12 +83,13 @@ func getPackIdxModTime(t *testing.T, pushBack bool) time.Time {
 	if pushBack {
 		//                              years, months, days
 		yesterday := time.Now().AddDate(0, 0, -1)
-		err := os.Chtimes(installer.Installation.PackIdx, yesterday, yesterday)
+		err := os.Chtimes(packIdx, yesterday, yesterday)
 		assert.Nil(t, err)
 	}
-	packIdx, err := os.Stat(installer.Installation.PackIdx)
+
+	stat, err := os.Stat(packIdx)
 	assert.Nil(t, err)
-	return packIdx.ModTime()
+	return stat.ModTime()
 }
 
 func checkPackIsInstalled(t *testing.T, pack *installer.PackType) {
@@ -125,6 +131,9 @@ type ConfigType struct {
 func addPack(t *testing.T, packPath string, config ConfigType) {
 	assert := assert.New(t)
 
+	// Get pack.idx before removing pack
+	packIdxModTime := getPackIdxModTime(t, Start)
+
 	err := installer.AddPack(packPath, config.CheckEula, config.ExtractEula, config.ForceReinstall)
 	assert.Nil(err)
 
@@ -140,6 +149,9 @@ func addPack(t *testing.T, packPath string, config ConfigType) {
 	pack.IsPublic = config.IsPublic
 
 	checkPackIsInstalled(t, pack)
+
+	// Make sure the pack.idx file gets trouched
+	assert.True(packIdxModTime.Before(getPackIdxModTime(t, End)))
 }
 
 func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool) {
@@ -192,7 +204,6 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 
 	// No touch on purging only
 	if !purgeOnly {
-
 		// Make sure the pack.idx file gets trouched
 		assert.True(packIdxModTime.Before(getPackIdxModTime(t, End)))
 	}
