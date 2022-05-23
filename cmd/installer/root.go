@@ -417,6 +417,19 @@ func FindPackURL(pack *PackType) (string, error) {
 		pack.resolveVersionModifier(packPdscXML)
 
 		releaseTag := packPdscXML.FindReleaseTagByVersion(pack.targetVersion)
+
+		// Can't satisfy minimum target version
+		if pack.versionModifier == utils.GreaterVersion || pack.versionModifier == utils.GreatestCompatibleVersion {
+			if semver.Compare("v"+releaseTag.Version, "v"+pack.Version) < 0 {
+				return "", errs.ErrPackVersionNotAvailable
+			}
+		}
+		if pack.versionModifier == utils.GreatestCompatibleVersion {
+			if semver.Major("v"+releaseTag.Version) != semver.Major("v"+pack.Version) {
+				return "", errs.ErrPackVersionNotAvailable
+			}
+		}
+
 		if releaseTag == nil {
 			return "", errs.ErrPackVersionNotFoundInPdsc
 		}
@@ -442,6 +455,18 @@ func FindPackURL(pack *PackType) (string, error) {
 	pack.resolveVersionModifier(packPdscXML)
 
 	releaseTag := packPdscXML.FindReleaseTagByVersion(pack.targetVersion)
+
+	if pack.versionModifier == utils.GreaterVersion {
+		if semver.Compare("v"+releaseTag.Version, "v"+pack.Version) < 0 {
+			return "", errs.ErrPackVersionNotAvailable
+		}
+	}
+	if pack.versionModifier == utils.GreatestCompatibleVersion {
+		if semver.Major("v"+releaseTag.Version) != semver.Major("v"+pack.Version) {
+			return "", errs.ErrPackVersionNotAvailable
+		}
+	}
+
 	if releaseTag == nil {
 		return "", errs.ErrPackVersionNotFoundInPdsc
 	}
