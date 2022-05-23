@@ -41,7 +41,7 @@ Use "cpackget [command] --help" for more information about a command.
 For example, if one wanted help removing a pack, running `cpackget rm --help` would print out useful information on the subject.
 
 
-### Sepecifying the working pack root folder
+### Specifying the working pack root folder
 
 If cpackget is going to work on an existing pack root folder, there are two ways to specify it:
 
@@ -51,7 +51,7 @@ If cpackget is going to work on an existing pack root folder, there are two ways
 To create a new pack root folder with an up-to-date index file of publicly available Open-CMSIS-Pack packs run:
 
 ```
-$ cpackget init --pack-root path/to/new/pack-root https://keil.com/pack/index.pidx
+$ cpackget init --pack-root path/to/new/pack-root https://www.keil.com/pack/index.pidx
 ```
 
 The command will create a folder called `path/to/new/pack-root` and the following subfolders: `.Download`, `.Local`, `.Web`.
@@ -116,7 +116,7 @@ Also there are cases where users might want to only extract the pack's license a
 
 * `cpackget add --extract-embedded-license Vendor.PackName`
 
-The extracted license file will be placed next to the pack's. For example if Vendor.PackName.x.y.z had a licese file
+The extracted license file will be placed next to the pack's. For example if Vendor.PackName.x.y.z had a license file
 named `LICENSE.txt`, cpackget would extract it to `.Download/Vendor.PackName.x.y.z.LICENSE.txt`.
 
 ### Removing packs
@@ -140,7 +140,7 @@ Remove pack `Vendor.PackName` version `x.y.z` only, from the local packs.
 Remove all versions of pack `Vendor.PackName`, from the local packs.
 * `cpackget rm Vendor.PackName` or `cpackget rm Vendor::PackName`
 
-Note that removing packs does not require pack of PDSC file location specification, e.g. no need to provide the path for the PDSC file or the URL of the pack.
+Note that removing packs does not require path of PDSC file location specification, e.g. no need to provide the path for the PDSC file or the URL of the pack.
 
 ### Working behind a proxy
 
