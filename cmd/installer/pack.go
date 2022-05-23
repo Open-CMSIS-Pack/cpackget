@@ -165,7 +165,13 @@ func (p *PackType) validate() error {
 			// Sanity check: make sure the version being installed actually exists in the PDSC file
 			version := p.GetVersion()
 			latestVersion := p.Pdsc.LatestVersion()
-			log.Debugf("Making sure %s is the latest release in %s", version, pdscFileName)
+
+			// Raise the error here, as resolveVersionModifier won't do it
+			if p.versionModifier == utils.GreaterVersion && version == "" {
+				return errs.ErrPackVersionMinimumNotSatisfied
+			}
+
+			log.Debugf("Making sure %s is the latest release in %s", p.targetVersion, pdscFileName)
 
 			if latestVersion != version {
 				releaseTag := p.Pdsc.FindReleaseTagByVersion(version)
@@ -449,8 +455,7 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 	}
 
 	if p.versionModifier == utils.LatestVersion ||
-		p.versionModifier == utils.AnyVersion ||
-		p.versionModifier == utils.GreaterVersion {
+		p.versionModifier == utils.AnyVersion {
 		p.targetVersion = pdscXML.LatestVersion()
 		log.Debugf("- resolved(@latest, >=) as %s", p.targetVersion)
 		return
@@ -467,6 +472,13 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 			return
 		}
 	}
+
+	// No minimum version exists to satisfy target version
+	if p.versionModifier == utils.GreaterVersion && p.targetVersion == "" {
+		log.Errorf("Tried to install atleast version %s, highest available version is %s", p.Version, pdscXML.LatestVersion())
+		return
+	}
+
 	log.Warn("Could not resolve version modifier")
 }
 
