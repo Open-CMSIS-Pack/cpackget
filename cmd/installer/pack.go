@@ -459,7 +459,7 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 	if p.versionModifier == utils.GreaterVersion {
 		// No minimum version exists to satisfy target version
 		if p.targetVersion == "" && semver.Compare("v"+p.Version, "v"+pdscXML.LatestVersion()) > 0 {
-			log.Errorf("Tried to install atleast version %s, highest available version is %s", p.Version, pdscXML.LatestVersion())
+			log.Errorf("Tried to install at least version %s, highest available version is %s", p.Version, pdscXML.LatestVersion())
 		} else {
 			p.targetVersion = pdscXML.LatestVersion()
 			log.Debugf("- resolved(>=) as %s", p.targetVersion)
@@ -479,7 +479,7 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 				return
 			}
 		}
-		// Check if atleast same Major version exists
+		// Check if at least same Major version exists
 		if semver.Compare("v"+p.targetVersion, "v"+p.Version) > 0 {
 			p.targetVersion = pdscXML.LatestVersion()
 			log.Debugf("- resolved (@~) as %s", p.targetVersion)
