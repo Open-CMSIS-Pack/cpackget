@@ -66,6 +66,7 @@ var (
 	ErrPackPdscCannotBeFound           = errors.New("the URL for the pack pdsc file seems not to exist or it didn't return the file")
 	ErrPackVersionNotFoundInPdsc       = errors.New("pack version not found in the pdsc file")
 	ErrPackVersionNotLatestReleasePdsc = errors.New("pack version is not the latest in the pdsc file")
+	ErrPackVersionNotAvailable         = errors.New("target pack version is not available")
 	ErrPackURLCannotBeFound            = errors.New("URL for the pack cannot be determined. Please consider updating the public index. Ex: cpackget index --force https://keil.com/pack/index.pidx")
 
 	// Hack to allow multiple error logs while still avoiding duplicating the last error log

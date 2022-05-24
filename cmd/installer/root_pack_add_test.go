@@ -971,6 +971,25 @@ func TestAddPack(t *testing.T) {
 		checkPackIsInstalled(t, &pack124)
 	})
 
+	t.Run("test installing a pack with a minimum version specified higher than the latest available", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. There are no packs installed
+		// 2. Versions 1.2.2, 1.2.3, 1.2.4 are available to install
+		// 3. Attempt to install >=1.2.5
+		// 4. Should fail as the minimum version is not available to install
+
+		localTestingDir := "test-installing-pack-with-minimum-version-higher-latest"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Inject pdsc into .Web folder
+		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
+		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		err := installer.AddPack(publicLocalPack125WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall)
+		assert.Equal(err, errs.ErrPackVersionNotAvailable)
+	})
+
 	t.Run("test installing a pack with a minimum compatible version specified and newer major version pre-installed", func(t *testing.T) {
 		// This test case checks the following use case:
 		// 1. There's already a pack 1.2.4 installed
@@ -1135,6 +1154,25 @@ func TestAddPack(t *testing.T) {
 		packIdx, err = os.Stat(installer.Installation.PackIdx)
 		assert.Nil(err)
 		assert.Equal(packIdxModTime, packIdx.ModTime())
+	})
+
+	t.Run("test installing a pack with a minimum compatible version higher than the latest available", func(t *testing.T) {
+		// This test case checks the following use case:
+		// 1. There are no packs installed
+		// 2. Versions 1.2.2, 1.2.3, 1.2.4 are available to install
+		// 3. Attempt to install @~2.1.1
+		// 4. Should fail as the minimum comaptible version is not available to install
+
+		localTestingDir := "test-installing-pack-with-minimum-compatible-version-higher-latest"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// Inject pdsc into .Web folder
+		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
+		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		err := installer.AddPack(publicLocalPack211WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall)
+		assert.Equal(err, errs.ErrPackVersionNotAvailable)
 	})
 
 	t.Run("test installing a pack with @latest version specified without any pre-installed version", func(t *testing.T) {

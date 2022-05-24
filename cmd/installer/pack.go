@@ -165,7 +165,8 @@ func (p *PackType) validate() error {
 			// Sanity check: make sure the version being installed actually exists in the PDSC file
 			version := p.GetVersion()
 			latestVersion := p.Pdsc.LatestVersion()
-			log.Debugf("Making sure %s is the latest release in %s", version, pdscFileName)
+
+			log.Debugf("Making sure %s is the latest release in %s", p.targetVersion, pdscFileName)
 
 			if latestVersion != version {
 				releaseTag := p.Pdsc.FindReleaseTagByVersion(version)
@@ -449,24 +450,45 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 	}
 
 	if p.versionModifier == utils.LatestVersion ||
-		p.versionModifier == utils.AnyVersion ||
-		p.versionModifier == utils.GreaterVersion {
+		p.versionModifier == utils.AnyVersion {
 		p.targetVersion = pdscXML.LatestVersion()
-		log.Debugf("- resolved(@latest, >=) as %s", p.targetVersion)
+		log.Debugf("- resolved(@latest) as %s", p.targetVersion)
+		return
+	}
+
+	if p.versionModifier == utils.GreaterVersion {
+		// No minimum version exists to satisfy target version
+		if p.targetVersion == "" && semver.Compare("v"+p.Version, "v"+pdscXML.LatestVersion()) > 0 {
+			log.Errorf("Tried to install at least version %s, highest available version is %s", p.Version, pdscXML.LatestVersion())
+		} else {
+			p.targetVersion = pdscXML.LatestVersion()
+			log.Debugf("- resolved(>=) as %s", p.targetVersion)
+		}
 		return
 	}
 
 	// The trickiest one is @~, because it needs to be the latest
 	// release matching the major number.
 	// The releases in the PDSC file are sorted from latest to oldest
-	for _, version := range pdscXML.AllReleases() {
-		sameMajor := semver.Major("v"+version) == semver.Major("v"+p.Version)
-		if sameMajor && semver.Compare("v"+version, "v"+p.Version) >= 0 {
-			p.targetVersion = version
-			log.Debugf("- resolved (@~) as %s", p.targetVersion)
-			return
+	if p.versionModifier == utils.GreatestCompatibleVersion {
+		for _, version := range pdscXML.AllReleases() {
+			sameMajor := semver.Major("v"+version) == semver.Major("v"+p.Version)
+			if sameMajor && semver.Compare("v"+version, "v"+p.Version) >= 0 {
+				p.targetVersion = version
+				log.Debugf("- resolved (@~) as %s", p.targetVersion)
+				return
+			}
 		}
+		// Check if at least same Major version exists
+		if semver.Compare("v"+p.targetVersion, "v"+p.Version) > 0 {
+			p.targetVersion = pdscXML.LatestVersion()
+			log.Debugf("- resolved (@~) as %s", p.targetVersion)
+		} else {
+			log.Errorf("Tried to install major version %s.x.x, highest available major version is %s.x.x", p.Version[:1], pdscXML.LatestVersion()[:1])
+		}
+		return
 	}
+
 	log.Warn("Could not resolve version modifier")
 }
 
