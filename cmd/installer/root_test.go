@@ -12,7 +12,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -62,9 +61,35 @@ func shortenPackPath(packPath string, withVersion bool) string {
 	return packName[:stripLength]
 }
 
-func getPackIdxModTime() time.Time {
-	packIdx, _ := os.Stat(installer.Installation.PackIdx)
-	return packIdx.ModTime()
+func getPackIdxModTime(t *testing.T, pushBack bool) time.Time {
+	packIdx := installer.Installation.PackIdx
+	if !utils.FileExists(packIdx) {
+		assert.Nil(t, utils.TouchFile(packIdx))
+	}
+
+	// This function helps retrieving mod time of pack.idx file.
+	// It is invoked before adding/removing packs to detect if the file really did get touched
+	// BUT:
+	// Apparently Windows systems update of file modified times
+	// happens 64 times per second, and in some cases that is not
+	// enough for the time delta  below to show a difference
+	// Ref: https://www.lochan.org/2005/keith-cl/useful/win32time.html#timingwin
+	// This caused intermittent test failures only on Windows environment.
+	// We tried sleeping for 1,2, and 3 seconds before checking for
+	// mod time of pack.idx but it still failed unexpectedly.
+	// So instead of sleeping only on Windows, we decided now to
+	// bring back the original check of pack.idx mod time in 1 day so
+	// next time it gets touched, the time delta will be great enough (we hope)
+	if pushBack {
+		//                              years, months, days
+		yesterday := time.Now().AddDate(0, 0, -1)
+		err := os.Chtimes(packIdx, yesterday, yesterday)
+		assert.Nil(t, err)
+	}
+
+	stat, err := os.Stat(packIdx)
+	assert.Nil(t, err)
+	return stat.ModTime()
 }
 
 func checkPackIsInstalled(t *testing.T, pack *installer.PackType) {
@@ -106,6 +131,9 @@ type ConfigType struct {
 func addPack(t *testing.T, packPath string, config ConfigType) {
 	assert := assert.New(t)
 
+	// Get pack.idx before removing pack
+	packIdxModTime := getPackIdxModTime(t, Start)
+
 	err := installer.AddPack(packPath, config.CheckEula, config.ExtractEula, config.ForceReinstall)
 	assert.Nil(err)
 
@@ -121,6 +149,9 @@ func addPack(t *testing.T, packPath string, config ConfigType) {
 	pack.IsPublic = config.IsPublic
 
 	checkPackIsInstalled(t, pack)
+
+	// Make sure the pack.idx file gets trouched
+	assert.True(packIdxModTime.Before(getPackIdxModTime(t, End)))
 }
 
 func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool) {
@@ -129,7 +160,7 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 	assert := assert.New(t)
 
 	// Get pack.idx before removing pack
-	packIdxModTime := getPackIdxModTime()
+	packIdxModTime := getPackIdxModTime(t, Start)
 
 	// [http://vendor.com|path/to]/TheVendor.PackName.x.y.z -> TheVendor.PackName[.x.y.z]
 	shortPackPath := shortenPackPath(packPath, withVersion)
@@ -173,23 +204,16 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 
 	// No touch on purging only
 	if !purgeOnly {
-		if runtime.GOOS == "windows" {
-			// Apparently Windows systems update of file modified times
-			// happens 64 times per second, and in some cases that is not
-			// enough for the time delta below to show a difference
-			// Ref: https://www.lochan.org/2005/keith-cl/useful/win32time.html#timingwin
-			// So let's sleep a bit before checking for file mod times
-			// Sleeping for 1 second still caused interemittent results on Windows,
-			// bumping this up to 3 seconds
-			time.Sleep(3 * time.Second)
-		}
-
 		// Make sure the pack.idx file gets trouched
-		assert.True(packIdxModTime.Before(getPackIdxModTime()))
+		assert.True(packIdxModTime.Before(getPackIdxModTime(t, End)))
 	}
 }
 
 var (
+	// Constants to help getting pack.idx mod time
+	Start = true
+	End   = false
+
 	// Constant telling pack privacy
 	IsPublic       = true
 	NotPublic      = false

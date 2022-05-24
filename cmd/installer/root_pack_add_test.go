@@ -63,19 +63,14 @@ func TestAddPack(t *testing.T) {
 			IsPublic: true,
 		})
 
-		packIdx, err := os.Stat(installer.Installation.PackIdx)
-		assert.Nil(err)
-		packIdxModTime := packIdx.ModTime()
+		packIdxModTime := getPackIdxModTime(t, Start)
 
 		// Attempt installing it again, this time it should noop
 		packPath = publicLocalPack123
-		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall)
-		assert.Nil(err)
+		assert.Nil(installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall))
 
 		// Make sure pack.idx did NOT get touched
-		packIdx, err = os.Stat(installer.Installation.PackIdx)
-		assert.Nil(err)
-		assert.Equal(packIdxModTime, packIdx.ModTime())
+		assert.Equal(packIdxModTime, getPackIdxModTime(t, End))
 	})
 
 	t.Run("test force-reinstalling a pack not yet installed", func(t *testing.T) {
