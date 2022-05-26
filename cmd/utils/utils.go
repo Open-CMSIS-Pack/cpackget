@@ -277,6 +277,28 @@ func CountLines(content string) int {
 	}
 }
 
+// FilterPackId returns the original string if any of the
+// received filter words are present - designed specifically to filter pack IDs
+func FilterPackId(content string, filter string) string {
+	log.Debugf("Filtering by words \"%s\"", filter)
+
+	// Don't accept the separator or version char
+	if filter == "" || strings.ContainsAny(filter, ":") || strings.ContainsAny(filter, "@") {
+		return ""
+	}
+
+	words := strings.Split(filter, " ")
+	// We're only interested in the first "word" (pack id)
+	target := strings.Split(content, " ")[0]
+
+	for w := 0; w < len(words); w++ {
+		if strings.Contains(target, words[w]) {
+			return target
+		}
+	}
+	return ""
+}
+
 // IsTerminalInteractive tells whether or not the current terminal is
 // capable of complex interactions
 func IsTerminalInteractive() bool {

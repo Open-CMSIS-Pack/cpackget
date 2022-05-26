@@ -14,6 +14,9 @@ var listCmdFlags struct {
 
 	// listCached tells whether listing all cached packs
 	listCached bool
+
+	// listFilter is a set of words by which to filter listed packs
+	listFilter string
 }
 
 var ListCmd = &cobra.Command{
@@ -23,11 +26,12 @@ var ListCmd = &cobra.Command{
 	Args:              cobra.MaximumNArgs(0),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic)
+		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic, listCmdFlags.listFilter)
 	},
 }
 
 func init() {
 	ListCmd.Flags().BoolVarP(&listCmdFlags.listCached, "cached", "c", false, "list only cached packs")
 	ListCmd.Flags().BoolVarP(&listCmdFlags.listPublic, "public", "p", false, "list packs in the public index")
+	ListCmd.Flags().StringVarP(&listCmdFlags.listFilter, "filter", "f", "", "filter results (case sensitive, accepts several expressions)")
 }
