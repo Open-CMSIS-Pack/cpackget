@@ -239,7 +239,7 @@ func ListInstalledPacks(listCached, listPublic bool, listFilter string) error {
 			}
 
 			// To avoid showing empty log lines ("I: ")
-			if listFilter == "" || utils.FilterPackId(logMessage, listFilter) != "" {
+			if listFilter == "" || utils.FilterPackID(logMessage, listFilter) != "" {
 				log.Info(logMessage)
 			}
 		}
@@ -282,7 +282,7 @@ func ListInstalledPacks(listCached, listPublic bool, listFilter string) error {
 				logMessage += " (installed)"
 			}
 
-			if listFilter == "" || utils.FilterPackId(logMessage, listFilter) != "" {
+			if listFilter == "" || utils.FilterPackID(logMessage, listFilter) != "" {
 				log.Info(logMessage)
 			}
 		}
@@ -390,22 +390,21 @@ func ListInstalledPacks(listCached, listPublic bool, listFilter string) error {
 				if pack.err != nil {
 					logMessage += fmt.Sprintf(", %v", pack.err)
 				}
-				if listFilter != "" && utils.FilterPackId(logMessage, listFilter) != "" {
+				if listFilter != "" && utils.FilterPackID(logMessage, listFilter) != "" {
 					printWarning = false
 				}
 				log.Error(logMessage)
 			} else if pack.err != nil {
 				numErrors += 1
 				logMessage += fmt.Sprintf(" - error: %v", pack.err)
-				if listFilter != "" && utils.FilterPackId(logMessage, listFilter) != "" {
+				if listFilter != "" && utils.FilterPackID(logMessage, listFilter) != "" {
 					printWarning = false
 				}
 				log.Error(logMessage)
 			} else {
-				if listFilter != "" && utils.FilterPackId(logMessage, listFilter) != "" {
-					printWarning = false
+				if listFilter == "" || utils.FilterPackID(logMessage, listFilter) != "" {
+					log.Info(logMessage)
 				}
-				log.Info(logMessage)
 			}
 		}
 

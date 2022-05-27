@@ -279,7 +279,7 @@ func CountLines(content string) int {
 
 // FilterPackId returns the original string if any of the
 // received filter words are present - designed specifically to filter pack IDs
-func FilterPackId(content string, filter string) string {
+func FilterPackID(content string, filter string) string {
 	log.Debugf("Filtering by words \"%s\"", filter)
 
 	// Don't accept the separator or version char
