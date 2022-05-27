@@ -39,6 +39,9 @@ var listPublic bool
 // listCached tells whether listing all cached packs
 var listCached bool
 
+// listFilter is a set of words by which to filter listed packs
+var listFilter string
+
 var packAddCmd = &cobra.Command{
 	Use:   "add [<pack path> | -f <packs list>]",
 	Short: "Adds Open-CMSIS-Pack packages",
@@ -122,7 +125,7 @@ var packListCmd = &cobra.Command{
 	Long:  `Lists all installed packs and optionally cached pack files`,
 	Args:  cobra.MaximumNArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return installer.ListInstalledPacks(listCached, listPublic)
+		return installer.ListInstalledPacks(listCached, listPublic, listFilter)
 	},
 }
 

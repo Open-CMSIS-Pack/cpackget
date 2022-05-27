@@ -208,10 +208,15 @@ func UpdatePublicIndex(indexPath string, overwrite bool) error {
 }
 
 // ListInstalledPacks generates a list of all packs present in the pack root folder
-func ListInstalledPacks(listCached, listPublic bool) error {
+func ListInstalledPacks(listCached, listPublic bool, listFilter string) error {
 	log.Debugf("Listing packs")
 	if listPublic {
-		log.Info("Listing packs from the public index")
+		if listFilter != "" {
+			log.Infof("Listing packs from the public index, filtering by \"%s\"", listFilter)
+		} else {
+			log.Infof("Listing packs from the public index")
+		}
+
 		pdscTags := Installation.PublicIndexXML.ListPdscTags()
 
 		if len(pdscTags) == 0 {
@@ -232,10 +237,18 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 			} else if utils.FileExists(packFilePath) {
 				logMessage += " (cached)"
 			}
-			log.Info(logMessage)
+
+			// To avoid showing empty log lines ("I: ")
+			if listFilter == "" || utils.FilterPackID(logMessage, listFilter) != "" {
+				log.Info(logMessage)
+			}
 		}
 	} else if listCached {
-		log.Info("Listing cached packs")
+		if listFilter != "" {
+			log.Infof("Listing cached packs, filtering by \"%s\"", listFilter)
+		} else {
+			log.Infof("Listing cached packs")
+		}
 		pattern := filepath.Join(Installation.DownloadDir, "*.pack")
 		matches, err := filepath.Glob(pattern)
 		if err != nil {
@@ -269,10 +282,16 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 				logMessage += " (installed)"
 			}
 
-			log.Info(logMessage)
+			if listFilter == "" || utils.FilterPackID(logMessage, listFilter) != "" {
+				log.Info(logMessage)
+			}
 		}
 	} else {
-		log.Info("Listing installed packs")
+		if listFilter != "" {
+			log.Infof("Listing installed packs, filtering by \"%s\"", listFilter)
+		} else {
+			log.Infof("Listing installed packs")
+		}
 
 		type installedPack struct {
 			xml.PdscTag
@@ -337,6 +356,7 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 		}
 
 		numErrors := 0
+		printWarning := true
 		sort.Slice(installedPacks, func(i, j int) bool {
 			return strings.ToLower(installedPacks[i].Key()) < strings.ToLower(installedPacks[j].Key())
 		})
@@ -356,31 +376,39 @@ func ListInstalledPacks(listCached, listPublic bool) error {
 				errors = append(errors, "pack version")
 			}
 
-			message := pack.YamlPackID()
+			logMessage := pack.YamlPackID()
 
 			// Print the PDSC path on packs installed via PDSC file
 			if pack.isPdscInstalled {
-				message += fmt.Sprintf(" (installed via %s)", pack.pdscPath)
+				logMessage += fmt.Sprintf(" (installed via %s)", pack.pdscPath)
 			}
 
 			// Append errors to the message, if any
 			if len(errors) > 0 {
 				numErrors += 1
-				message += " - error: " + strings.Join(errors[:], ", ") + " incorrect format"
+				logMessage += " - error: " + strings.Join(errors[:], ", ") + " incorrect format"
 				if pack.err != nil {
-					message += fmt.Sprintf(", %v", pack.err)
+					logMessage += fmt.Sprintf(", %v", pack.err)
 				}
-				log.Error(message)
+				if listFilter != "" && utils.FilterPackID(logMessage, listFilter) != "" {
+					printWarning = false
+				}
+				log.Error(logMessage)
 			} else if pack.err != nil {
 				numErrors += 1
-				message += fmt.Sprintf(" - error: %v", pack.err)
-				log.Error(message)
+				logMessage += fmt.Sprintf(" - error: %v", pack.err)
+				if listFilter != "" && utils.FilterPackID(logMessage, listFilter) != "" {
+					printWarning = false
+				}
+				log.Error(logMessage)
 			} else {
-				log.Info(message)
+				if listFilter == "" || utils.FilterPackID(logMessage, listFilter) != "" {
+					log.Info(logMessage)
+				}
 			}
 		}
 
-		if numErrors > 0 {
+		if numErrors > 0 && printWarning {
 			log.Warnf("%d error(s) detected", numErrors)
 		}
 	}

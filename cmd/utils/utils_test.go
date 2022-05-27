@@ -481,6 +481,13 @@ func TestCountLines(t *testing.T) {
 	assert.Equal(t, 3, utils.CountLines("this\nis\r\nacool\ncontent"))
 }
 
+func TestFilterPackId(t *testing.T) {
+	assert.Equal(t, "", utils.FilterPackID("TheVendor::Pack@1.2.3", ""))
+	assert.Equal(t, "", utils.FilterPackID("TheVendor::Pack@1.2.3", ":"))
+	assert.Equal(t, "", utils.FilterPackID("TheVendor::Pack@1.2.3", "@"))
+	assert.Equal(t, "TheVendor::Pack@1.2.3", utils.FilterPackID("TheVendor::Pack@1.2.3", "Vendor"))
+}
+
 func TestCleanPath(t *testing.T) {
 	expected := fmt.Sprintf("c:%csome%cpath", os.PathSeparator, os.PathSeparator)
 	result := utils.CleanPath(fmt.Sprintf("%cc:%csome%cpath", os.PathSeparator, os.PathSeparator, os.PathSeparator))
