@@ -19,6 +19,7 @@ import (
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
+	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -258,12 +259,14 @@ var (
 	pack123VersionNotLatest   = filepath.Join(testDir, "TheVendor.LocalPackWithVersionNotLatest.1.2.3.pack")
 
 	// Public packs
-	publicLocalPack010  = filepath.Join(testDir, "0.1.0", "TheVendor.PublicLocalPack.0.1.0.pack")
-	publicLocalPack011  = filepath.Join(testDir, "0.1.1", "TheVendor.PublicLocalPack.0.1.1.pack")
-	publicLocalPack122  = filepath.Join(testDir, "1.2.2", "TheVendor.PublicLocalPack.1.2.2.pack")
-	publicLocalPack123  = filepath.Join(testDir, "1.2.3", "TheVendor.PublicLocalPack.1.2.3.pack")
-	publicLocalPack124  = filepath.Join(testDir, "1.2.4", "TheVendor.PublicLocalPack.1.2.4.pack")
-	publicRemotePack123 = filepath.Join(testDir, "1.2.3", publicRemotePack123PackID+".pack")
+	publicLocalPack010     = filepath.Join(testDir, "0.1.0", "TheVendor.PublicLocalPack.0.1.0.pack")
+	publicLocalPack011     = filepath.Join(testDir, "0.1.1", "TheVendor.PublicLocalPack.0.1.1.pack")
+	publicLocalPack122     = filepath.Join(testDir, "1.2.2", "TheVendor.PublicLocalPack.1.2.2.pack")
+	publicLocalPack123     = filepath.Join(testDir, "1.2.3", "TheVendor.PublicLocalPack.1.2.3.pack")
+	publicLocalPack124     = filepath.Join(testDir, "1.2.4", "TheVendor.PublicLocalPack.1.2.4.pack")
+	publicLocalPack123Pdsc = filepath.Join(testDir, "1.2.3", "TheVendor.PublicLocalPack.pdsc")
+	publicLocalPack124Pdsc = filepath.Join(testDir, "1.2.4", "TheVendor.PublicLocalPack.pdsc")
+	publicRemotePack123    = filepath.Join(testDir, "1.2.3", publicRemotePack123PackID+".pack")
 
 	// Private packs
 	nonPublicLocalPack123  = filepath.Join(testDir, "1.2.3", nonPublicLocalPack123PackID+".pack")
@@ -357,6 +360,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 	assert := assert.New(t)
 
 	var Overwrite = true
+	var Sparse = true
 
 	// Re-enable this test when a flag --enforce-security is implemented
 	// t.Run("test add http server index.pidx", func(t *testing.T) {
@@ -388,7 +392,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		indexPath := server.URL() + "this-file-does-not-exist"
 
-		err := installer.UpdatePublicIndex(indexPath, Overwrite)
+		err := installer.UpdatePublicIndex(indexPath, Overwrite, Sparse)
 
 		assert.NotNil(err)
 		assert.Equal(errs.ErrBadRequest, err)
@@ -406,7 +410,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute("index.pidx", indexContent)
 		indexPath := indexServer.URL() + "index.pidx"
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite)
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse)
 
 		assert.NotNil(err)
 		assert.Equal(err.Error(), "XML syntax error on line 3: unexpected EOF")
@@ -423,7 +427,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute("index.pidx", indexContent)
 		indexPath := indexServer.URL() + "index.pidx"
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite)
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse)
 
 		assert.Nil(err)
 
@@ -443,7 +447,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexContent, err := ioutil.ReadFile(samplePublicIndex)
 		assert.Nil(err)
 
-		assert.Nil(installer.UpdatePublicIndex(samplePublicIndex, Overwrite))
+		assert.Nil(installer.UpdatePublicIndex(samplePublicIndex, Overwrite, Sparse))
 
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
 
@@ -466,7 +470,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute("index.pidx", indexContent)
 		indexPath := indexServer.URL() + "index.pidx"
 
-		err = installer.UpdatePublicIndex(indexPath, !Overwrite)
+		err = installer.UpdatePublicIndex(indexPath, !Overwrite, Sparse)
 
 		assert.NotNil(err)
 		assert.Equal(errs.ErrCannotOverwritePublicIndex, err)
@@ -485,7 +489,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute("index.pidx", indexContent)
 		indexPath := indexServer.URL() + "index.pidx"
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite)
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse)
 
 		assert.Nil(err)
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
@@ -494,6 +498,74 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err2)
 
 		assert.Equal(copied, indexContent)
+	})
+
+	t.Run("test full update when sparse is false", func(t *testing.T) {
+		localTestingDir := "test-sparse-update"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		defer os.RemoveAll(localTestingDir)
+
+		// A non-sparse/full update should detect all
+		// pdsc files under .Web/ that need update
+
+		indexServer := NewServer()
+
+		// Inject 1.2.3 in index.pidx
+		pack123Info, err := utils.ExtractPackInfo(publicLocalPack123)
+		assert.Nil(err)
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:  pack123Info.Vendor,
+			Name:    pack123Info.Pack,
+			Version: pack123Info.Version,
+		}))
+
+		// Inject the testing server URL
+		installer.Installation.PublicIndexXML.URL = indexServer.URL()
+
+		// Place 1.2.3 pdsc in .Web/
+		pdscFile := filepath.Join(installer.Installation.WebDir, filepath.Base(publicLocalPack123Pdsc))
+		assert.Nil(utils.CopyFile(publicLocalPack123Pdsc, pdscFile))
+
+		// Now get a new index.pidx and the 1.2.4 pdsc into the server and attempt updating with sparse=false
+		pack124Info, err := utils.ExtractPackInfo(publicLocalPack124)
+		assert.Nil(err)
+
+		// Create a temp index file to serve it for update
+		tempIndexFile := filepath.Join(localTestingDir, "index.pidx")
+		assert.Nil(utils.CopyFile(samplePublicIndex, tempIndexFile))
+		indexXML := xml.NewPidxXML(tempIndexFile)
+		assert.Nil(indexXML.Read())
+		assert.Nil(indexXML.AddPdsc(xml.PdscTag{
+			URL:     indexServer.URL(),
+			Vendor:  pack124Info.Vendor,
+			Name:    pack124Info.Pack,
+			Version: pack124Info.Version,
+		}))
+
+		assert.Nil(indexXML.Write())
+		indexContent, err := ioutil.ReadFile(tempIndexFile)
+		assert.Nil(err)
+		indexServer.AddRoute("index.pidx", indexContent)
+
+		// Add the path to the pack's pdsc
+		pdscContent, err := ioutil.ReadFile(publicLocalPack124Pdsc)
+		assert.Nil(err)
+
+		indexServer.AddRoute(filepath.Base(publicLocalPack124Pdsc), pdscContent)
+
+		assert.Nil(installer.UpdatePublicIndex("", Overwrite, !Sparse))
+
+		// Make sure index.pidx exists and it is updated
+		assert.FileExists(installer.Installation.PublicIndex)
+		copied, err2 := ioutil.ReadFile(installer.Installation.PublicIndex)
+		assert.Nil(err2)
+		assert.Equal(copied, indexContent)
+
+		// Make sure the pdsc under .Web/ is updated
+		assert.FileExists(pdscFile)
+		pdscXML := xml.NewPdscXML(pdscFile)
+		assert.Nil(pdscXML.Read())
+		assert.Equal(pack124Info.Version, pdscXML.LatestVersion())
 	})
 }
 
