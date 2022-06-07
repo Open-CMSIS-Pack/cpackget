@@ -24,8 +24,8 @@ var nameRegex = regexp.MustCompile(fmt.Sprintf("^%s$", namePattern))
 // versionPattern validates pack version.
 // Ref: https://github.com/ARM-software/CMSIS_5/blob/develop/CMSIS/Utilities/PackIndex.xsd
 // With little adjustments to reduce the number of capturing groups to a single one
-//                       <major>     . <minor>       . <patch>         - <quality>                                                                                       + <meta info>
-var versionPattern = `(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?:[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`
+//                    <major> .<minor> .<patch>   - <quality>                                                                         + <meta info>
+var versionPattern = `(?:\d+)\.(?:\d+)\.(?:\d+)(?:-(?:(?:\d+|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:\d+|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?:[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`
 
 // versionRegex pre-compiles versionPattern.
 var versionRegex = regexp.MustCompile(fmt.Sprintf("^%s$", versionPattern))

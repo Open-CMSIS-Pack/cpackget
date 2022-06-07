@@ -21,7 +21,6 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/mod/semver"
 )
 
 // PackType is the struct that represents the installation of a
@@ -458,7 +457,7 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 
 	if p.versionModifier == utils.GreaterVersion {
 		// No minimum version exists to satisfy target version
-		if p.targetVersion == "" && semver.Compare("v"+p.Version, "v"+pdscXML.LatestVersion()) > 0 {
+		if p.targetVersion == "" && utils.SemverCompare(p.Version, pdscXML.LatestVersion()) > 0 {
 			log.Errorf("Tried to install at least version %s, highest available version is %s", p.Version, pdscXML.LatestVersion())
 		} else {
 			p.targetVersion = pdscXML.LatestVersion()
@@ -472,15 +471,15 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 	// The releases in the PDSC file are sorted from latest to oldest
 	if p.versionModifier == utils.GreatestCompatibleVersion {
 		for _, version := range pdscXML.AllReleases() {
-			sameMajor := semver.Major("v"+version) == semver.Major("v"+p.Version)
-			if sameMajor && semver.Compare("v"+version, "v"+p.Version) >= 0 {
+			sameMajor := utils.SemverMajor(version) == utils.SemverMajor(p.Version)
+			if sameMajor && utils.SemverCompare(version, p.Version) >= 0 {
 				p.targetVersion = version
 				log.Debugf("- resolved (@~) as %s", p.targetVersion)
 				return
 			}
 		}
 		// Check if at least same Major version exists
-		if semver.Compare("v"+p.targetVersion, "v"+p.Version) > 0 {
+		if utils.SemverCompare(p.targetVersion, p.Version) > 0 {
 			p.targetVersion = pdscXML.LatestVersion()
 			log.Debugf("- resolved (@~) as %s", p.targetVersion)
 		} else {
