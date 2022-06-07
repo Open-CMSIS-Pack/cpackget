@@ -310,7 +310,6 @@ func CleanPath(path string) string {
 	cleanPath := filepath.Clean(path)
 	windowsLeadingSlashRegex := regexp.MustCompile(`^[\\/][a-zA-Z]:[\\/]`)
 	if windowsLeadingSlashRegex.MatchString(cleanPath) {
-		log.Info("blaaaaa")
 		cleanPath = cleanPath[1:]
 	}
 	return cleanPath
