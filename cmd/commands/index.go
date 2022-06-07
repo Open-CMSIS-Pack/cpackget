@@ -13,8 +13,9 @@ import (
 var overwrite bool
 
 var IndexCmd = &cobra.Command{
-	Use:   "index <index url>",
-	Short: "Updates public index",
+	Deprecated: "Consider running `cpackget update-index` instead",
+	Use:        "index <index url>",
+	Short:      "Updates public index",
 	Long: `Updates the public index in CMSIS_PACK_ROOT/.Web/index.pidx using the file specified by the given url.
 If there's already an index file, cpackget won't overwrite it. Use "-f" to do so.`,
 	PersistentPreRunE: configureInstaller,
@@ -22,7 +23,7 @@ If there's already an index file, cpackget won't overwrite it. Use "-f" to do so
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Updating index %v", args)
 		indexPath := args[0]
-		return installer.UpdatePublicIndex(indexPath, overwrite)
+		return installer.UpdatePublicIndex(indexPath, overwrite, true)
 	},
 }
 

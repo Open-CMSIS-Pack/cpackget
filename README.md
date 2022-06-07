@@ -21,12 +21,12 @@ Usage:
   cpackget [command] [flags]
 
 Available Commands:
-  help        Help about any command
-  index       Update public index
-  init        Initialize a pack root folder
-  add         Add Open-CMSIS-Pack packages
-  rm          Remove Open-CMSIS-Pack packages
-  list        List installed packs
+  add          Add Open-CMSIS-Pack packages
+  help         Help about any command
+  init         Initializes a pack root folder
+  list         List installed packs
+  rm           Remove Open-CMSIS-Pack packages
+  update-index Update the public index
 
 Flags:
   -h, --help               help for cpackget
@@ -141,6 +141,18 @@ Remove all versions of pack `Vendor.PackName`, from the local packs.
 * `cpackget rm Vendor.PackName` or `cpackget rm Vendor::PackName`
 
 Note that removing packs does not require path of PDSC file location specification, e.g. no need to provide the path for the PDSC file or the URL of the pack.
+
+### Updating the index
+
+It is common that the index.pidx file gets outdated sometime after the pack installation is initialized.
+A good practice is to keep it always updated. One can do that by running
+* `cpackget update-index`
+
+This will use the address from the `<url>` tag inside index.pidx to retrieve a new version of the file.
+cpackget will also go through all PDSC files within `.Web/` checking if the latest version has been
+oudated by the one matching the pack tag in index.pidx.
+
+If wanted, the behavior above can be disabled by using `--sparse` flag, thus updating only the index.pidx.
 
 ### Working behind a proxy
 

@@ -175,15 +175,18 @@ func RemovePdsc(pdscPath string) error {
 }
 
 // UpdatePublicIndex receives a index path and place it under .Web/index.pidx.
-func UpdatePublicIndex(indexPath string, overwrite bool) error {
-	log.Debugf("Updating public index with \"%v\"", indexPath)
-
-	if utils.FileExists(Installation.PublicIndex) {
-		if !overwrite {
-			return errs.ErrCannotOverwritePublicIndex
-		}
-		log.Debugf("Overwriting public index file %v", Installation.PublicIndex)
+func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool) error {
+	// TODO: Remove overwrite when cpackget v1 gets released
+	if !overwrite {
+		return errs.ErrCannotOverwritePublicIndex
 	}
+
+	// For backwards compatibility, allow indexPath to be a file, but ideally it should be empty
+	if indexPath == "" {
+		indexPath = fmt.Sprintf("%s/index.pidx", strings.TrimSuffix(Installation.PublicIndexXML.URL, "/"))
+	}
+
+	log.Debugf("Updating public index with \"%v\"", indexPath)
 
 	var err error
 
@@ -199,12 +202,55 @@ func UpdatePublicIndex(indexPath string, overwrite bool) error {
 		defer os.Remove(indexPath)
 	}
 
-	pidx := xml.NewPidxXML(indexPath)
-	if err := pidx.Read(); err != nil {
+	pidxXML := xml.NewPidxXML(indexPath)
+	if err := pidxXML.Read(); err != nil {
 		return err
 	}
 
-	return utils.CopyFile(indexPath, filepath.Join(Installation.WebDir, "index.pidx"))
+	if err := utils.CopyFile(indexPath, Installation.PublicIndex); err != nil {
+		return err
+	}
+
+	if !sparse {
+		log.Info("Updating PDSC files of installed packs referenced in index.pidx")
+		pdscFiles, err := utils.ListDir(Installation.WebDir, ".pdsc$")
+		if err != nil {
+			return err
+		}
+
+		for _, pdscFile := range pdscFiles {
+			log.Debugf("Checking if \"%s\" needs updating", pdscFile)
+			pdscXML := xml.NewPdscXML(pdscFile)
+			err := pdscXML.Read()
+			if err != nil {
+				log.Errorf("%s: %v", pdscFile, err)
+				continue
+			}
+
+			searchTag := xml.PdscTag{
+				Vendor: pdscXML.Vendor,
+				Name:   pdscXML.Name,
+			}
+
+			// Warn the user if the pack is no longer present in index.pidx
+			tags := pidxXML.FindPdscTags(searchTag)
+			if len(tags) == 0 {
+				log.Warnf("The pack %s::%s is no longer present in the updated index.pidx", pdscXML.Vendor, pdscXML.Name)
+				continue
+			}
+
+			versionInIndex := tags[0].Version
+			latestVersion := pdscXML.LatestVersion()
+			if versionInIndex != latestVersion {
+				log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
+				if err := Installation.downloadPdscFile(tags[0]); err != nil {
+					log.Errorf("%s: %v", pdscFile, err)
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 // ListInstalledPacks generates a list of all packs present in the pack root folder
@@ -748,28 +794,31 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType) (bool, error) {
 	// Sometimes a pidx file might have multiple pdsc tags for same key
 	// which is not the case here, so we'll take only the first one
 	pdscTag := pdscTags[0]
+	return true, p.downloadPdscFile(pdscTag)
+}
 
-	// Download it to .Web/
+// downloadPdscFile takes in a xml.PdscTag containing URL, Vendor and Name of the pack
+// so it can be downloaded into .Web/
+func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag) error {
+	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
+	pdscFilePath := filepath.Join(p.WebDir, basePdscFile)
+
+	log.Debugf("Downloading %s from \"%s\"", basePdscFile, pdscTag.URL)
+
 	pdscFileURL, err := url.Parse(pdscTag.URL)
 	if err != nil {
 		log.Errorf("Could not parse pdsc url \"%s\": %s", pdscTag.URL, err)
-		return false, err
+		return errs.ErrAlreadyLogged
 	}
-	pdscFileURL.Path = path.Join(pdscFileURL.Path, pack.PdscFileName())
+
+	pdscFileURL.Path = path.Join(pdscFileURL.Path, basePdscFile)
 	localFileName, err := utils.DownloadFile(pdscFileURL.String())
 	defer os.Remove(localFileName)
 
 	if err != nil {
 		log.Errorf("Could not download \"%s\": %s", pdscFileURL, err)
-		return false, errs.ErrPackPdscCannotBeFound
+		return errs.ErrPackPdscCannotBeFound
 	}
 
-	destinationPdscPath := filepath.Join(p.WebDir, pack.PdscFileName())
-	err = utils.MoveFile(localFileName, destinationPdscPath)
-	if err != nil {
-		log.Errorf("Could not move \"%s\" to \"%s\": %s", localFileName, destinationPdscPath, err)
-		return false, err
-	}
-
-	return true, nil
+	return utils.MoveFile(localFileName, pdscFilePath)
 }
