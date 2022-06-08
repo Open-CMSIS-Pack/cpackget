@@ -1,3 +1,15 @@
+# v0.5.1
+
+This v0.5.1 release contains:
+
+Bug fixes
+- Install only minimum and major versions if available
+- Fix intermittent testing on Windows
+
+New features
+- Filter packs when listing with --filter
+- New update-index command
+
 # v0.5.0
 
 This v0.5 release contains:
