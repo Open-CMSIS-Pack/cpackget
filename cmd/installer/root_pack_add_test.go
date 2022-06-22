@@ -390,30 +390,6 @@ func TestAddPack(t *testing.T) {
 		})
 	})
 
-	t.Run("test installing pack with license disagreed", func(t *testing.T) {
-		localTestingDir := "test-add-pack-with-license-disagreed"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		defer os.RemoveAll(localTestingDir)
-
-		packPath := packWithLicense
-
-		info, err := utils.ExtractPackInfo(packPath)
-		assert.Nil(err)
-
-		// Should NOT be installed if license is not agreed
-		ui.LicenseAgreed = &ui.Disagreed
-		err = installer.AddPack(packPath, CheckEula, !ExtractEula, !ForceReinstall)
-
-		// Sanity check
-		assert.NotNil(err)
-		assert.Equal(errs.ErrEula, err)
-		assert.False(utils.FileExists(installer.Installation.PackIdx))
-
-		// Check in installer internals
-		pack := packInfoToType(info)
-		assert.False(installer.Installation.PackIsInstalled(pack))
-	})
-
 	t.Run("test installing pack with license agreed", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-license-agreed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
