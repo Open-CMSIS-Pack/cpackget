@@ -1,3 +1,4 @@
+# App related
 build/
 testing.log
 *.out
@@ -5,3 +6,5 @@ testing.log
 .cpackget*
 tmp/
 .vagrant/
+# IDEs
+.vscode/
