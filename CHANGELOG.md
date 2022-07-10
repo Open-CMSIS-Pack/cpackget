@@ -1,3 +1,13 @@
+# v0.6.0
+
+This release is more of a "symbolic" one, as the last one should've been a minor version bump. This release contains:
+
+Bug fixes
+- Update documentation on removing packs via PDSC file
+
+New features
+- Allow pack versions with leading zeros
+
 # v0.5.1
 
 This v0.5.1 release contains:
