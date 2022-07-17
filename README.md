@@ -134,13 +134,11 @@ Same as above, except that now it also removes the cached pack file.
 
 And for removing packs that were installed via PDSC files, consider the example commands below:
 
-Remove pack `Vendor.PackName` version `x.y.z` only, from the local packs.
-* `cpackget rm Vendor.PackName.x.y.z` or `cpackget rm Vendor::PackName@x.y.z`
+Remove a local pack, or remove all instances of a local pack that were added via different PDSC file locations
+* `cpackget rm Vendor.PackName.pdsc`
 
-Remove all versions of pack `Vendor.PackName`, from the local packs.
-* `cpackget rm Vendor.PackName` or `cpackget rm Vendor::PackName`
-
-Note that removing packs does not require path of PDSC file location specification, e.g. no need to provide the path for the PDSC file or the URL of the pack.
+Remove a specific PDSC of a pack
+* `cpackget rm path/to/Vendor.PackName.pdsc` (`cpackget list` displays the absolute path of PDSC installed packs)
 
 ### Updating the index
 
