@@ -16,10 +16,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type checksum struct {
-	hashFunction, digest, filename string
-}
-
 func isValidHash(hashFunction string) bool {
 	for _, h := range Hashes {
 		if h == hashFunction {
@@ -32,34 +28,36 @@ func isValidHash(hashFunction string) bool {
 // GetChecksumList receives a list of file paths and returns
 // their hashed content using either a specified function or
 // the default one
-func getChecksumList(baseDir string, filePathList []string, hashFunction string) ([]checksum, error) {
-	digests := make([]checksum, len(filePathList))
-	for i := 0; i < len(filePathList); i++ {
-		if utils.DirExists(filePathList[i]) {
-			continue
-		}
-		f, err := os.Open(filePathList[i])
+func getChecksumList(sourcePack, hashFunction string) (map[string]string, error) {
+	var h hash.Hash
+	switch hashFunction {
+	case "sha256":
+		h = sha256.New()
+	} // Default will always be "sha256" if nothing is passed
+
+	zipReader, err := zip.OpenReader(sourcePack)
+	if err != nil {
+		log.Errorf("can't decompress \"%s\": %s", sourcePack, err)
+		return nil, errs.ErrFailedDecompressingFile
+	}
+
+	digests := make(map[string]string)
+	for _, file := range zipReader.File {
+		reader, err := file.Open()
 		if err != nil {
-			return []checksum{}, err
+			return nil, err
 		}
-		defer f.Close()
-
-		var h hash.Hash
-		switch hashFunction {
-		case "sha256":
-			h = sha256.New()
-			digests[i].hashFunction = "sha256"
-		default:
-			h = sha256.New()
-			digests[i].hashFunction = "sha256"
+		// Avoid Potential DoS vulnerability via decompression bomb
+		for {
+			_, err = io.CopyN(h, reader, 1024)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				return nil, err
+			}
 		}
-
-		if _, err := io.Copy(h, f); err != nil {
-			return []checksum{}, err
-		}
-
-		digests[i].digest = fmt.Sprintf("%x", h.Sum(nil))
-		digests[i].filename = strings.ReplaceAll(filePathList[i], baseDir, "")
+		digests[file.Name] = fmt.Sprintf("%x", h.Sum(nil))
 	}
 	return digests, nil
 }
@@ -68,7 +66,6 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 	if !isValidHash(hashFunction) {
 		return errs.ErrInvalidHashFunction
 	}
-
 	if !utils.FileExists(sourcePack) {
 		log.Errorf("\"%s\" does not exist", sourcePack)
 		return errs.ErrFileNotFound
@@ -80,43 +77,17 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 		base = filepath.Clean(strings.TrimSuffix(sourcePack, filepath.Ext(sourcePack)))
 	} else {
 		if !utils.DirExists(destinationDir) {
-			log.Errorf("\"%s\" is not a valid directory", destinationDir)
 			return errs.ErrDirectoryNotFound
 		}
 		base = filepath.Clean(destinationDir) + string(filepath.Separator) + strings.TrimSuffix(string(filepath.Base(sourcePack)), ".pack")
 	}
 	checksumFilename := base + "." + strings.Replace(hashFunction, "-", "", -1) + ".checksum"
-
 	if utils.FileExists(checksumFilename) {
 		log.Errorf("\"%s\" already exists, choose a diferent path", checksumFilename)
 		return errs.ErrPathAlreadyExists
 	}
 
-	// Unpack it to the same directory as the .pack
-	packDir := strings.TrimSuffix(sourcePack, filepath.Ext(sourcePack)) + string(os.PathSeparator)
-	if utils.DirExists(packDir) {
-		log.Errorf("pack was already extracted to \"%s\"", packDir)
-		return errs.ErrPathAlreadyExists
-	}
-
-	zipReader, err := zip.OpenReader(sourcePack)
-	if err != nil {
-		log.Errorf("can't decompress \"%s\": %s", sourcePack, err)
-		return errs.ErrFailedDecompressingFile
-	}
-	var packFileList []string
-	for _, file := range zipReader.File {
-		if err := utils.SecureInflateFile(file, packDir, ""); err != nil {
-			if err == errs.ErrTerminatedByUser {
-				log.Infof("aborting pack extraction. Removing \"%s\"", packDir)
-				return os.RemoveAll(packDir)
-			}
-			return err
-		}
-		packFileList = append(packFileList, filepath.Join(filepath.Clean(packDir), filepath.Clean(file.Name)))
-	}
-
-	digests, err := getChecksumList(packDir, packFileList, hashFunction)
+	digests, err := getChecksumList(sourcePack, hashFunction)
 	if err != nil {
 		return err
 	}
@@ -127,113 +98,73 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 		return errs.ErrFailedCreatingFile
 	}
 	defer out.Close()
-	for i := 0; i < len(digests); i++ {
-		_, err := out.Write([]byte(digests[i].digest + " " + digests[i].filename + "\n"))
+	for filename, digest := range digests {
+		_, err := out.Write([]byte(digest + " " + filename + "\n"))
 		if err != nil {
 			return err
 		}
 	}
-	// Cleanup extracted pack
-	log.Debugf("deleting \"%s\"", packDir)
-	if err := os.RemoveAll(packDir); err != nil {
-		return err
-	}
 	return nil
 }
 
-func VerifyChecksum(sourcePack, checksum string) error {
+func VerifyChecksum(sourcePack, sourceChecksum string) error {
 	if !utils.FileExists(sourcePack) {
 		log.Errorf("\"%s\" does not exist", sourcePack)
 		return errs.ErrFileNotFound
 	}
-	if !utils.FileExists(checksum) {
-		log.Errorf("\"%s\" does not exist", checksum)
+	if !utils.FileExists(sourceChecksum) {
+		log.Errorf("\"%s\" does not exist", sourceChecksum)
 		return errs.ErrFileNotFound
 	}
-	hashAlgorithm := filepath.Ext(strings.Split(checksum, ".checksum")[0])[1:]
-	if !isValidHash(hashAlgorithm) {
-		log.Errorf("\"%s\" is not a valid .checksum file (correct format is [<pack>].[<hash-algorithm>].checksum). Please confirm if the algorithm is supported.", checksum)
+	hashFunction := filepath.Ext(strings.Split(sourceChecksum, ".checksum")[0])[1:]
+	if !isValidHash(hashFunction) {
+		log.Errorf("\"%s\" is not a valid .checksum file (correct format is [<pack>].[<hash-algorithm>].checksum). Please confirm if the algorithm is supported.", sourceChecksum)
 		return errs.ErrInvalidHashFunction
 	}
 
-	// Unpack it to the same directory as the .pack
-	packDir := strings.TrimSuffix(sourcePack, filepath.Ext(sourcePack)) + string(os.PathSeparator)
-	if utils.DirExists(packDir) {
-		log.Errorf("pack was already extracted to \"%s\"", packDir)
-		return errs.ErrPathAlreadyExists
-	}
-
-	zipReader, err := zip.OpenReader(sourcePack)
-	if err != nil {
-		log.Errorf("can't decompress \"%s\": %s", sourcePack, err)
-		return errs.ErrFailedDecompressingFile
-	}
-	var packFileList []string
-	for _, file := range zipReader.File {
-		if err := utils.SecureInflateFile(file, packDir, ""); err != nil {
-			if err == errs.ErrTerminatedByUser {
-				log.Infof("aborting pack extraction. Removing \"%s\"", packDir)
-				return os.RemoveAll(packDir)
-			}
-			return err
-		}
-		packFileList = append(packFileList, filepath.Join(filepath.Clean(packDir), filepath.Clean(file.Name)))
-	}
-
-	// Calculate pack digests
-	digests, err := getChecksumList(packDir, packFileList, hashAlgorithm)
+	// Compute pack's digests
+	digests, err := getChecksumList(sourcePack, hashFunction)
 	if err != nil {
 		return err
 	}
+
+	// Check if pack and checksum file have the same number of files listed
+	b, err := os.ReadFile(sourceChecksum)
+	if err != nil {
+		return err
+	}
+	if strings.Count(string(b), "\n") != len(digests) {
+		log.Errorf("provided checksum file lists %d file(s), but pack contains %d file(s)", len(digests), strings.Count(string(b), "\n"))
+		return errs.ErrIntegrityCheckFailed
+	}
+
 	// Compare with target checksum file
-	checksumFile, err := os.Open(checksum)
+	checksumFile, err := os.Open(sourceChecksum)
 	if err != nil {
 		return err
 	}
 	defer checksumFile.Close()
 
-	scanner := bufio.NewScanner(checksumFile)
-	linesRead := 0
 	failure := false
+	scanner := bufio.NewScanner(checksumFile)
 	for scanner.Scan() {
-		// They might not be in the same order
 		if scanner.Text() == "" {
 			continue
 		}
-		targetDigest := strings.Split(scanner.Text(), " ")[0]
 		targetFile := strings.Split(scanner.Text(), " ")[1]
-		// The checksum file might not have the same order
-		fileMatched := false
-		for i := 0; i < len(digests); i++ {
-			if digests[i].filename == targetFile {
-				if digests[i].digest != targetDigest {
-					log.Debugf("%s != %s", digests[i].digest, targetDigest)
-					log.Errorf("%s: computed checksum did NOT match", targetFile)
-					failure = true
-				}
-				fileMatched = true
+		targetDigest := strings.Split(scanner.Text(), " ")[0]
+		if digests[targetFile] != targetDigest {
+			if digests[targetFile] == "" {
+				log.Errorf("\"%s\" does not exist in the provided pack but is listed in the checksum file", targetFile)
+				return errs.ErrIntegrityCheckFailed
 			}
+			log.Debugf("%s != %s", digests[targetFile], targetDigest)
+			log.Errorf("%s: computed checksum did NOT match", targetFile)
+			failure = true
 		}
-		// Make sure all files match
-		if !fileMatched {
-			log.Errorf("file \"%s\" was not found in the provided checksum file", targetFile)
-			return errs.ErrCorruptPack
-		}
-		linesRead++
-	}
-
-	// Cleanup extracted pack
-	log.Debugf("deleting \"%s\"", packDir)
-	if err := os.RemoveAll(packDir); err != nil {
-		return err
-	}
-
-	if linesRead != len(digests) {
-		log.Errorf("provided checksum file lists %d files, but pack contains %d files", linesRead, len(digests))
-		return errs.ErrCorruptPack
 	}
 	if failure {
-		return errs.ErrCorruptPack
+		return errs.ErrBadPackIntegrity
 	}
 
 	log.Info("pack integrity verified, all checksums match.")

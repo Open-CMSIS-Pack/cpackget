@@ -52,8 +52,9 @@ var (
 	ErrMovingEqualPaths          = errors.New("failed moving files: source is the same as destination")
 
 	// Cryptography errors
-	ErrCorruptPack         = errors.New("pack is corrupt, checksum verification failed")
-	ErrInvalidHashFunction = errors.New("provided hash function is not supported")
+	ErrBadPackIntegrity     = errors.New("bad pack integrity")
+	ErrIntegrityCheckFailed = errors.New("checksum verification failed")
+	ErrInvalidHashFunction  = errors.New("provided hash function is not supported")
 
 	// Security errors
 	ErrInsecureZipFileName = errors.New("zip file contains insecure characters: ../")
