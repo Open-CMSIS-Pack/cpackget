@@ -19,14 +19,28 @@ var checksumCreateCmdFlags struct {
 }
 
 func init() {
-	ChecksumCreateCmd.Flags().StringVarP(&checksumCreateCmdFlags.hashAlgorithm, "hash-algorithm", "a", "", "specifies the hash function to be used")
+	ChecksumCreateCmd.Flags().StringVarP(&checksumCreateCmdFlags.hashAlgorithm, "hash-function", "a", "", "specifies the hash function to be used")
 	ChecksumCreateCmd.Flags().StringVarP(&checksumCreateCmdFlags.outputDir, "output-dir", "o", "", "specifies output directory for the checksum file")
 }
 
 var ChecksumCreateCmd = &cobra.Command{
 	Use:   "checksum-create [<local .path pack>]",
 	Short: "Generates a .checksum file containing the digests of a pack",
-	// TODO: Long, show valid hash algorithms
+	Long: `
+Creates a .checksum file of a local pack. This is file contains the digests
+of the contents of the pack. Example <Vendor.Pack.1.2.3.sha256.checksum> file:
+
+  "6f95628e4e0824b0ff4a9f49dad1c3eb073b27c2dd84de3b985f0ef3405ca9ca Vendor.Pack.1.2.3.pdsc
+  435fsdf..."
+
+  The referenced pack must be in its original/compressed from (.pack), and be present locally:
+
+  $ cpackget checksum-create Vendor.Pack.1.2.3.pack
+
+The default Cryptographic Hash Function used is "` + cryptography.Hashes[0] + `". In the future other hash functions
+might be supported. The used function will be prefixed to the ".checksum" extension.
+
+By default the checksum file will be created in the same directory as the provided pack.`,
 	Args:              cobra.MinimumNArgs(0),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -43,7 +57,14 @@ var ChecksumCreateCmd = &cobra.Command{
 var ChecksumVerifyCmd = &cobra.Command{
 	Use:   "checksum-verify [<local .path pack>] [<local .checksum path>]",
 	Short: "Verifies the integrity of a pack using its .checksum file",
-	// TODO: Long
+	Long: `
+Verifies the contents of a pack, checking its integrity against its .checksum file (created
+with "checksum-create"):
+
+  $ cpackget checksum-verify Vendor.Pack.1.2.3.pack Vendor.Pack.1.2.3.sha256.checksum
+
+The used hash function is inferred from the checksum filename, and if any of the digests
+computed doesn't match the one provided in the checksum file an error will be thrown.`,
 	Args:              cobra.MinimumNArgs(0),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
