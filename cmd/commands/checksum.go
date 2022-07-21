@@ -17,7 +17,7 @@ var checksumCreateCmdFlags struct {
 }
 
 func init() {
-	ChecksumCreateCmd.Flags().StringVarP(&checksumCreateCmdFlags.hashAlgorithm, "hash-function", "a", "", "specifies the hash function to be used")
+	ChecksumCreateCmd.Flags().StringVarP(&checksumCreateCmdFlags.hashAlgorithm, "hash-function", "a", cryptography.Hashes[0], "specifies the hash function to be used")
 	ChecksumCreateCmd.Flags().StringVarP(&checksumCreateCmdFlags.outputDir, "output-dir", "o", "", "specifies output directory for the checksum file")
 }
 

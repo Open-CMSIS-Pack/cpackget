@@ -66,10 +66,6 @@ func getChecksumList(baseDir string, filePathList []string, hashFunction string)
 }
 
 func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
-	// Use default Cryptographic Hash Function if none is provided
-	if hashFunction == "" {
-		hashFunction = Hashes[0]
-	}
 	if !isValidHash(hashFunction) {
 		return errs.ErrInvalidHashFunction
 	}
