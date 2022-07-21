@@ -67,6 +67,10 @@ func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool) 
 	ui.Extract = extractEula
 
 	if err = pack.install(Installation, checkEula || extractEula); err != nil {
+		// Just for internal purposes, is not presented as an error to the user
+		if err == errs.ErrEula {
+			return nil
+		}
 		if dropPreInstalled {
 			log.Error("Error installing pack, reverting temporary pack to original state")
 			// Make sure the original directory doesn't exist to avoid moving errors

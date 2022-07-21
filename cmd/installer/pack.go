@@ -256,8 +256,8 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 			}
 
 			if !ok {
-				log.Info("User does not agree with the pack's license")
-				return nil
+				log.Info("User does not agree with the pack's license, not installing it")
+				return errs.ErrEula
 			}
 		} else {
 			// Explicitly inform the user that license has been agreed
