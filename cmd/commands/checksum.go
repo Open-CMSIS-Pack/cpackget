@@ -5,8 +5,6 @@ package commands
 
 import (
 	"github.com/open-cmsis-pack/cpackget/cmd/cryptography"
-	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -41,15 +39,9 @@ The default Cryptographic Hash Function used is "` + cryptography.Hashes[0] + `"
 might be supported. The used function will be prefixed to the ".checksum" extension.
 
 By default the checksum file will be created in the same directory as the provided pack.`,
-	Args:              cobra.MinimumNArgs(0),
+	Args:              cobra.ExactArgs(1),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
-
-		if len(args) == 0 {
-			log.Error("missing .pack local path")
-			return errs.ErrIncorrectCmdArgs
-		}
-
 		return cryptography.GenerateChecksum(args[0], checksumCreateCmdFlags.outputDir, checksumCreateCmdFlags.hashAlgorithm)
 	},
 }
@@ -65,15 +57,9 @@ with "checksum-create"):
 
 The used hash function is inferred from the checksum filename, and if any of the digests
 computed doesn't match the one provided in the checksum file an error will be thrown.`,
-	Args:              cobra.MinimumNArgs(0),
+	Args:              cobra.ExactArgs(2),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
-
-		if len(args) != 2 {
-			log.Error("Please provide path to pack and checksum file")
-			return errs.ErrIncorrectCmdArgs
-		}
-
 		return cryptography.VerifyChecksum(args[0], args[1])
 	},
 }
