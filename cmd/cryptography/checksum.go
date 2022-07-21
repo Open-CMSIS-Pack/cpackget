@@ -70,7 +70,7 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 	}
 
 	if !utils.FileExists(sourcePack) {
-		log.Errorf("\"%s\" is not a valid .pack", sourcePack)
+		log.Errorf("\"%s\" does not exist", sourcePack)
 		return errs.ErrFileNotFound
 	}
 
@@ -143,7 +143,7 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 
 func VerifyChecksum(sourcePack, checksum string) error {
 	if !utils.FileExists(sourcePack) {
-		log.Errorf("\"%s\" is not a valid .pack", sourcePack)
+		log.Errorf("\"%s\" does not exist", sourcePack)
 		return errs.ErrFileNotFound
 	}
 	if !utils.FileExists(checksum) {
