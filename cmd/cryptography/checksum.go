@@ -21,13 +21,12 @@ type checksum struct {
 }
 
 func isValidHash(hashFunction string) bool {
-	valid := false
 	for _, h := range Hashes {
 		if h == hashFunction {
-			valid = true
+			return true
 		}
 	}
-	return valid
+	return false
 }
 
 // GetChecksumList receives a list of file paths and returns
