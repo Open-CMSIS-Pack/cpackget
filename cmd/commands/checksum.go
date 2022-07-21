@@ -33,7 +33,7 @@ of the contents of the pack. Example <Vendor.Pack.1.2.3.sha256.checksum> file:
   "6f95628e4e0824b0ff4a9f49dad1c3eb073b27c2dd84de3b985f0ef3405ca9ca Vendor.Pack.1.2.3.pdsc
   435fsdf..."
 
-  The referenced pack must be in its original/compressed from (.pack), and be present locally:
+  The referenced pack must be in its original/compressed form (.pack), and be present locally:
 
   $ cpackget checksum-create Vendor.Pack.1.2.3.pack
 
