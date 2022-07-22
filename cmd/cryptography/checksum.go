@@ -16,6 +16,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// isValidHash returns whether a hash function is
+// supported or not.
 func isValidHash(hashFunction string) bool {
 	for _, h := range Hashes {
 		if h == hashFunction {
@@ -25,9 +27,8 @@ func isValidHash(hashFunction string) bool {
 	return false
 }
 
-// GetChecksumList receives a list of file paths and returns
-// their hashed content using either a specified function or
-// the default one
+// getChecksumList computes the digests of a pack according
+// to the specified hash function.
 func getChecksumList(sourcePack, hashFunction string) (map[string]string, error) {
 	var h hash.Hash
 	switch hashFunction {
@@ -62,6 +63,7 @@ func getChecksumList(sourcePack, hashFunction string) (map[string]string, error)
 	return digests, nil
 }
 
+// GenerateChecksum creates a .checksum file for a pack.
 func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 	if !isValidHash(hashFunction) {
 		return errs.ErrInvalidHashFunction
@@ -107,6 +109,8 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 	return nil
 }
 
+// VerifyChecksum validates the contents of a pack
+// according to a provided .checksum file.
 func VerifyChecksum(sourcePack, sourceChecksum string) error {
 	if !utils.FileExists(sourcePack) {
 		log.Errorf("\"%s\" does not exist", sourcePack)
