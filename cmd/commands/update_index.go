@@ -4,6 +4,9 @@
 package commands
 
 import (
+	"os"
+	"runtime"
+
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -15,16 +18,27 @@ var updateIndexCmdFlags struct {
 }
 
 var UpdateIndexCmd = &cobra.Command{
-	Use:   "update-index",
-	Short: "Update the public index",
-	Long: `Update the public index in CMSIS_PACK_ROOT/.Web/index.pidx using the URL in <url> tag inside index.pidx.
-By default it will also check if all PDSC files under .Web/ need update as well. This can be disabled via the "--sparse" flag.`,
+	Use:               "update-index",
+	Short:             "Update the public index",
+	Long:              getLongUpdateDescription(),
 	PersistentPreRunE: configureInstaller,
 	Args:              cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Updating public index")
 		return installer.UpdatePublicIndex("", true, updateIndexCmdFlags.sparse)
 	},
+}
+
+// getLongUpdateDescription prints a "Windows friendly" long description,
+// using the correct path slashes
+func getLongUpdateDescription() string {
+	if runtime.GOOS == "windows" {
+		return `Updates the public index in ` + os.Getenv("CMSIS_PACK_ROOT") + `\.Web\index.pidx using the URL in <url> tag inside index.pidx.
+By default it will also check if all PDSC files under .Web/ need update as well. This can be disabled via the "--sparse" flag.`
+	} else {
+		return `Updates the public index in ` + os.Getenv("CMSIS_PACK_ROOT") + `/.Web/index.pidx using the URL in <url> tag inside index.pidx.
+By default it will also check if all PDSC files under .Web/ need update as well. This can be disabled via the "--sparse" flag.`
+	}
 }
 
 func init() {

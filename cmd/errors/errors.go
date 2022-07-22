@@ -47,8 +47,14 @@ var (
 	ErrFailedCreatingDirectory   = errors.New("fail to create directory")
 	ErrFileNotFound              = errors.New("file not found")
 	ErrDirectoryNotFound         = errors.New("directory not found")
+	ErrPathAlreadyExists         = errors.New("path already exists")
 	ErrCopyingEqualPaths         = errors.New("failed copying files: source is the same as destination")
 	ErrMovingEqualPaths          = errors.New("failed moving files: source is the same as destination")
+
+	// Cryptography errors
+	ErrBadPackIntegrity     = errors.New("bad pack integrity")
+	ErrIntegrityCheckFailed = errors.New("checksum verification failed")
+	ErrInvalidHashFunction  = errors.New("provided hash function is not supported")
 
 	// Security errors
 	ErrInsecureZipFileName = errors.New("zip file contains insecure characters: ../")
