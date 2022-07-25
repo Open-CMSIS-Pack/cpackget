@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"hash"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -48,15 +47,9 @@ func getChecksumList(sourcePack, hashFunction string) (map[string]string, error)
 		if err != nil {
 			return nil, err
 		}
-		// Avoid Potential DoS vulnerability via decompression bomb
-		for {
-			_, err = io.CopyN(h, reader, 1024)
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				return nil, err
-			}
+		_, err = utils.SecureCopy(h, reader)
+		if err != nil {
+			return nil, err
 		}
 		digests[file.Name] = fmt.Sprintf("%x", h.Sum(nil))
 	}
