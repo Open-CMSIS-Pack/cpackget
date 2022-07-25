@@ -2,7 +2,6 @@ package cryptography
 
 import (
 	"archive/zip"
-	"bufio"
 	"crypto/sha256"
 	"fmt"
 	"hash"
@@ -127,29 +126,22 @@ func VerifyChecksum(sourcePack, sourceChecksum string) error {
 
 	// Check if pack and checksum file have the same number of files listed
 	b, err := os.ReadFile(sourceChecksum)
+	checksumFile := string(b)
 	if err != nil {
 		return err
 	}
-	if strings.Count(string(b), "\n") != len(digests) {
-		log.Errorf("provided checksum file lists %d file(s), but pack contains %d file(s)", len(digests), strings.Count(string(b), "\n"))
+	if strings.Count(checksumFile, "\n") != len(digests) {
+		log.Errorf("provided checksum file lists %d file(s), but pack contains %d file(s)", len(digests), strings.Count(checksumFile, "\n"))
 		return errs.ErrIntegrityCheckFailed
 	}
 
-	// Compare with target checksum file
-	checksumFile, err := os.Open(sourceChecksum)
-	if err != nil {
-		return err
-	}
-	defer checksumFile.Close()
-
+	// Compare with provided checksum file
 	failure := false
-	scanner := bufio.NewScanner(checksumFile)
-	for scanner.Scan() {
-		if scanner.Text() == "" {
-			continue
-		}
-		targetFile := strings.Split(scanner.Text(), " ")[1]
-		targetDigest := strings.Split(scanner.Text(), " ")[0]
+	lines := strings.Split(checksumFile, "\n")
+	for i := 0; i < len(lines)-1; i++ {
+		targetFile := strings.Split(lines[i], " ")[1]
+		targetDigest := strings.Split(lines[i], " ")[0]
+
 		if digests[targetFile] != targetDigest {
 			if digests[targetFile] == "" {
 				log.Errorf("\"%s\" does not exist in the provided pack but is listed in the checksum file", targetFile)
