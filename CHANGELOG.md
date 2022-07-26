@@ -1,3 +1,14 @@
+# v0.7.0
+
+This v0.7 release contains:
+
+Bug fixes:
+- Not accepting a license is not considered an error
+
+New features:
+- Two new commands, `checksum-create` and `checksum-verify`. They are part of a new "cryptography" module, intended to provide advanced security measures for pack installation.
+- "Pack root" is now read-only, with the exception of `local_repository.idx`. This measure prevents accidental environment corruption.
+
 # v0.6.0
 
 This release is more of a "symbolic" one, as the last one should've been a minor version bump. This release contains:
