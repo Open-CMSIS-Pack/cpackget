@@ -24,6 +24,8 @@ cpackget will add the pdsc entry to CMSIS_PACK_ROOT/.Local/local_repository.pidx
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Info("Adding pdsc")
+		installer.UnlockPackRoot()
+		defer installer.LockPackRoot()
 		for _, pdscPath := range args {
 			if err := installer.AddPdsc(pdscPath); err != nil {
 				return err
@@ -42,6 +44,8 @@ cpackget will remove the pdsc entry from CMSIS_PACK_ROOT/.Local/local_repository
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Info("Removing pdsc")
+		installer.UnlockPackRoot()
+		defer installer.LockPackRoot()
 		for _, pdscPath := range args {
 			if err := installer.RemovePdsc(pdscPath); err != nil {
 				return err

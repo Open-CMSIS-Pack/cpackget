@@ -52,6 +52,7 @@ please use "--purge".`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Removing %v", args)
 		var lastErr error
+		installer.UnlockPackRoot()
 		for _, packPath := range args {
 			var err error
 			if filepath.Ext(packPath) == ".pdsc" {
@@ -71,6 +72,7 @@ please use "--purge".`,
 
 			}
 		}
+		installer.LockPackRoot()
 
 		return lastErr
 	},

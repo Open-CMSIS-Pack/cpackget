@@ -32,6 +32,9 @@ The index-url is mandatory. Ex "cpackget init --pack-root path/to/mypackroot htt
 			return err
 		}
 
-		return installer.UpdatePublicIndex(indexPath, true, true)
+		installer.UnlockPackRoot()
+		err = installer.UpdatePublicIndex(indexPath, true, true)
+		installer.LockPackRoot()
+		return err
 	},
 }

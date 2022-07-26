@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -29,6 +30,16 @@ import (
 var CacheDir string
 
 var HTTPClient *http.Client
+
+var (
+	// File RO (ReadOnly) and RW (Read + Write) modes
+	FileModeRO = fs.FileMode(0444)
+	FileModeRW = fs.FileMode(0666)
+
+	// Directory RO (ReadOnly + Traverse) and RW (Read + Write + Traverse) modes
+	DirModeRO = fs.FileMode(0555)
+	DirModeRW = fs.FileMode(0777)
+)
 
 // DownloadFile downloads a file from an URL and saves it locally under destionationFilePath
 func DownloadFile(URL string) (string, error) {
@@ -177,7 +188,7 @@ func WriteXML(path string, targetStruct interface{}) error {
 	xmlText := []byte(xml.Header)
 	xmlText = append(xmlText, output...)
 
-	return ioutil.WriteFile(path, xmlText, 0600)
+	return ioutil.WriteFile(path, xmlText, FileModeRW)
 }
 
 // ListDir generates a list of files and directories in "dir".
@@ -313,6 +324,101 @@ func CleanPath(path string) string {
 		cleanPath = cleanPath[1:]
 	}
 	return cleanPath
+}
+
+// SetReadOnly takes in a file or directory and set it
+// to read-only mode. Should work on both Windows and Linux.
+func SetReadOnly(path string) {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return
+	}
+
+	if !info.IsDir() {
+		_ = os.Chmod(path, FileModeRO)
+		return
+	}
+
+	_ = os.Chmod(path, DirModeRO)
+}
+
+// SetReadOnlyR works the same as SetReadOnly, except that it is recursive
+func SetReadOnlyR(path string) {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) || !info.IsDir() {
+		return
+	}
+
+	// At this point all files and subdirs should be set to read-only recurisively
+	// there's only one catch that files and subdirs need to be set to read-only before
+	// its parent directory. This is why dirsByLevel exist. It'll help set read-only
+	// permissions in leaf directories before setting it root ones
+	dirsByLevel := make(map[int][]string)
+	maxLevel := -1
+
+	_ = filepath.WalkDir(path, func(path string, info fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			_ = os.Chmod(path, FileModeRO)
+		} else {
+			levelCount := strings.Count(path, "/") + strings.Count(path, "\\")
+			dirsByLevel[levelCount] = append(dirsByLevel[levelCount], path)
+			if levelCount > maxLevel {
+				maxLevel = levelCount
+			}
+		}
+
+		return nil
+	})
+
+	// Now set all directories to read-only, from bottom-up
+	for level := maxLevel; level >= 0; level-- {
+		if dirs, ok := dirsByLevel[level]; ok {
+			for _, dir := range dirs {
+				_ = os.Chmod(dir, DirModeRO)
+			}
+		}
+	}
+}
+
+// UnsetReadOnly takes in a file or directory and set it
+// to read-only mode. Should work on both Windows and Linux.
+func UnsetReadOnly(path string) {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return
+	}
+
+	mode := FileModeRW
+	if info.IsDir() {
+		mode = DirModeRW
+	}
+	_ = os.Chmod(path, mode)
+}
+
+// UnsetReadOnlyR works the same as UnsetReadOnly, but recursive
+func UnsetReadOnlyR(path string) {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) || !info.IsDir() {
+		return
+	}
+
+	_ = filepath.WalkDir(path, func(path string, info fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		mode := FileModeRW
+		if info.IsDir() {
+			mode = DirModeRW
+		}
+		_ = os.Chmod(path, mode)
+
+		return nil
+	})
 }
 
 func init() {

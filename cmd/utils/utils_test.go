@@ -494,6 +494,149 @@ func TestCleanPath(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
+func TestSetReadOnly(t *testing.T) {
+	fileName := "test-file-perms"
+	defer os.Remove(fileName)
+
+	assert.Nil(t, utils.TouchFile(fileName))
+	utils.SetReadOnly(fileName)
+
+	info, err := os.Stat(fileName)
+	assert.Nil(t, err)
+	permBits := info.Mode().Perm()
+	assert.Equal(t, fs.FileMode(0444), permBits&0444)
+
+	dirName := "test-dir-perms"
+	defer os.Remove(dirName)
+
+	assert.Nil(t, utils.EnsureDir(dirName))
+	utils.SetReadOnly(dirName)
+
+	info, err = os.Stat(dirName)
+	assert.Nil(t, err)
+	permBits = info.Mode().Perm()
+	assert.Equal(t, fs.FileMode(0555), permBits&0555)
+}
+
+func TestSetReadOnlyR(t *testing.T) {
+	// Create a directory structure like
+	// test-dir-perms-r
+	// +- sub-file
+	// +- sub-dir
+	//    +- sub-sub-file
+
+	dir := "test-dir-perms-r"
+	subDir := filepath.Join(dir, "sub-dir")
+	subFile := filepath.Join(dir, "sub-file")
+	subSubFile := filepath.Join(subDir, "sub-sub-file")
+	defer os.RemoveAll(dir)
+
+	// Create sub-dir, which also creates dir by automatically
+	assert.Nil(t, utils.EnsureDir(subDir))
+	assert.Nil(t, utils.TouchFile(subFile))
+	assert.Nil(t, utils.TouchFile(subSubFile))
+
+	utils.SetReadOnlyR(dir)
+
+	// Check sub-sub-file
+	info, err := os.Stat(subSubFile)
+	assert.Nil(t, err)
+	permBits := info.Mode().Perm()
+	assert.Equal(t, fs.FileMode(0444), permBits&0444)
+
+	// Check sub-file
+	info, err = os.Stat(subFile)
+	assert.Nil(t, err)
+	permBits = info.Mode().Perm()
+	assert.Equal(t, fs.FileMode(0444), permBits&0444)
+
+	// Check sub-dir
+	info, err = os.Stat(subDir)
+	assert.Nil(t, err)
+	permBits = info.Mode().Perm()
+	assert.Equal(t, fs.FileMode(0555), permBits&0555)
+
+	// Finally, check the root dir
+	info, err = os.Stat(dir)
+	assert.Nil(t, err)
+	permBits = info.Mode().Perm()
+	assert.Equal(t, fs.FileMode(0555), permBits&0555)
+
+	// Unset read-only so testing code can remove it
+	utils.UnsetReadOnlyR(dir)
+}
+
+func TestUnsetReadOnly(t *testing.T) {
+	fileName := "test-file-perms-unset"
+	defer os.Remove(fileName)
+
+	assert.Nil(t, utils.TouchFile(fileName))
+	utils.SetReadOnly(fileName)
+	utils.UnsetReadOnly(fileName)
+
+	info, err := os.Stat(fileName)
+	assert.Nil(t, err)
+	permBits := info.Mode().Perm()
+	assert.Equal(t, fs.FileMode(0666), permBits&0666)
+
+	dirName := "test-dir-perms-unset"
+	defer os.Remove(dirName)
+
+	assert.Nil(t, utils.EnsureDir(dirName))
+	utils.SetReadOnly(dirName)
+	utils.UnsetReadOnly(dirName)
+
+	info, err = os.Stat(dirName)
+	assert.Nil(t, err)
+	permBits = info.Mode().Perm()
+	assert.Equal(t, fs.FileMode(0777), permBits&0777)
+}
+
+func TestUnsetReadOnlyR(t *testing.T) {
+	// Create a directory structure like
+	// test-unset-dir-perms-r
+	// +- sub-file
+	// +- sub-dir
+	//    +- sub-sub-file
+
+	dir := "test-unset-dir-perms-r"
+	subDir := filepath.Join(dir, "sub-dir")
+	subFile := filepath.Join(dir, "sub-file")
+	subSubFile := filepath.Join(subDir, "sub-sub-file")
+	defer os.RemoveAll(dir)
+
+	// Create sub-dir, which also creates dir by automatically
+	assert.Nil(t, utils.EnsureDir(subDir))
+	assert.Nil(t, utils.TouchFile(subFile))
+	assert.Nil(t, utils.TouchFile(subSubFile))
+
+	utils.UnsetReadOnlyR(dir)
+
+	// Check sub-sub-file
+	info, err := os.Stat(subSubFile)
+	assert.Nil(t, err)
+	permBits := info.Mode().Perm()
+	assert.Equal(t, fs.FileMode(0666), permBits&0666)
+
+	// Check sub-file
+	info, err = os.Stat(subFile)
+	assert.Nil(t, err)
+	permBits = info.Mode().Perm()
+	assert.Equal(t, fs.FileMode(0666), permBits&0666)
+
+	// Check sub-dir
+	info, err = os.Stat(subDir)
+	assert.Nil(t, err)
+	permBits = info.Mode().Perm()
+	assert.Equal(t, fs.FileMode(0777), permBits&0777)
+
+	// Finally, check the root dir
+	info, err = os.Stat(dir)
+	assert.Nil(t, err)
+	permBits = info.Mode().Perm()
+	assert.Equal(t, fs.FileMode(0777), permBits&0777)
+}
+
 func init() {
 	logLevel := log.InfoLevel
 	if os.Getenv("LOG_LEVEL") == "debug" {

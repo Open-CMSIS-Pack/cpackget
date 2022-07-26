@@ -23,7 +23,8 @@ func TestRemovePack(t *testing.T) {
 	t.Run("test removing a pack with malformed name", func(t *testing.T) {
 		localTestingDir := "test-remove-pack-with-bad-name"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		defer os.RemoveAll(localTestingDir)
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
 
 		err := installer.RemovePack("TheVendor.PackName.no-a-valid-version", false)
 
@@ -35,7 +36,8 @@ func TestRemovePack(t *testing.T) {
 	t.Run("test removing a pack that is not installed", func(t *testing.T) {
 		localTestingDir := "test-remove-pack-not-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		defer os.RemoveAll(localTestingDir)
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
 
 		err := installer.RemovePack("TheVendor.PackName.1.2.3", false)
 
@@ -47,8 +49,9 @@ func TestRemovePack(t *testing.T) {
 	t.Run("test remove a public pack that was added", func(t *testing.T) {
 		localTestingDir := "test-remove-public-pack-that-was-added"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
-		defer os.RemoveAll(localTestingDir)
+		defer removePackRoot(localTestingDir)
 
 		packPath := publicLocalPack124
 		config := ConfigType{
@@ -72,8 +75,9 @@ func TestRemovePack(t *testing.T) {
 	t.Run("test remove a non-public pack that was added", func(t *testing.T) {
 		localTestingDir := "test-remove-nonpublic-pack-that-was-added"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
-		defer os.RemoveAll(localTestingDir)
+		defer removePackRoot(localTestingDir)
 
 		packPath := nonPublicLocalPack123
 		config := ConfigType{
@@ -97,8 +101,9 @@ func TestRemovePack(t *testing.T) {
 	t.Run("test remove version of a pack", func(t *testing.T) {
 		localTestingDir := "test-remove-version-of-a-pack"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
-		defer os.RemoveAll(localTestingDir)
+		defer removePackRoot(localTestingDir)
 
 		// Add a pack, add an updated version of the pack, then remove the first one
 		packPath := publicLocalPack123
@@ -116,8 +121,9 @@ func TestRemovePack(t *testing.T) {
 	t.Run("test remove a pack then purge", func(t *testing.T) {
 		localTestingDir := "test-remove-a-pack-then-purge"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
-		defer os.RemoveAll(localTestingDir)
+		defer removePackRoot(localTestingDir)
 
 		// Add a pack, add an updated version of the pack, then remove the first one
 		packPath := publicLocalPack123
@@ -139,7 +145,8 @@ func TestRemovePack(t *testing.T) {
 	t.Run("test purge a pack with license", func(t *testing.T) {
 		localTestingDir := "test-purge-pack-with-license"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		defer os.RemoveAll(localTestingDir)
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
 
 		packPath := packWithLicense
 
@@ -170,8 +177,9 @@ func TestRemovePack(t *testing.T) {
 	t.Run("test remove latest version", func(t *testing.T) {
 		localTestingDir := "test-remove-latest-versions"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
-		defer os.RemoveAll(localTestingDir)
+		defer removePackRoot(localTestingDir)
 
 		// Add a pack, add an updated version of the pack, then remove the first one
 		packPath := publicLocalPack123
@@ -189,7 +197,8 @@ func TestRemovePack(t *testing.T) {
 	t.Run("test remove public pack without pdsc file in .Web folder", func(t *testing.T) {
 		localTestingDir := "test-remove-public-pack-without-pdsc-in-web-folder"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		defer os.RemoveAll(localTestingDir)
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
 
 		packPath := publicLocalPack123
 		packInfo, err := utils.ExtractPackInfo(packPath)
@@ -212,23 +221,4 @@ func TestRemovePack(t *testing.T) {
 		// Assert that the file did not get created during the operation
 		assert.False(utils.FileExists(pdscFilePath))
 	})
-
-	// t.Run("test remove all versions at once", func(t *testing.T) {
-	// 	localTestingDir := "test-remove-all-versions-at-once"
-	// 	assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-	// 	installer.Installation.WebDir = filepath.Join(testDir, "public_index")
-	// 	defer os.RemoveAll(localTestingDir)
-
-	// 	// Add a pack, add an updated version of the pack, then remove the first one
-	// 	packPath := publicLocalPack123
-	// 	updatedPackPath := publicLocalPack124
-	// 	config := ConfigType{
-	// 		IsPublic: true,
-	// 	}
-	// 	addPack(t, packPath, config)
-	// 	addPack(t, updatedPackPath, config)
-
-	// 	// Remove latest pack (withVersion=false), i.e. path will be "TheVendor.PackName"
-	// 	removePack(t, packPath, false, IsPublic, true) // withVersion=false, purge=true
-	// })
 }

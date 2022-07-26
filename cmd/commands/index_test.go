@@ -21,6 +21,7 @@ var indexCmdTests = []TestCase{
 	{
 		name:        "test with no packroot configured",
 		args:        []string{"index", "index.pidx"},
+		env:         map[string]string{"CMSIS_PACK_ROOT": ""},
 		expectedErr: errs.ErrPackRootNotFound,
 	},
 	{
@@ -69,9 +70,8 @@ var initCmdTests = []TestCase{
 		expectedErr: errors.New("accepts 1 arg(s), received 0"),
 	},
 	{
-		name:           "test create using an index.pidx",
-		args:           []string{"init"},
-		createPackRoot: true,
+		name: "test create using an index.pidx",
+		args: []string{"init"},
 		setUpFunc: func(t *TestCase) {
 			server := NewServer()
 			t.args = append(t.args, server.URL()+"index.pidx")
