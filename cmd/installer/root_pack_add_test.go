@@ -405,8 +405,7 @@ func TestAddPack(t *testing.T) {
 		err = installer.AddPack(packPath, CheckEula, !ExtractEula, !ForceReinstall)
 
 		// Sanity check
-		assert.NotNil(err)
-		assert.Equal(errs.ErrEula, err)
+		assert.Nil(err)
 		assert.False(utils.FileExists(installer.Installation.PackIdx))
 
 		// Check in installer internals
