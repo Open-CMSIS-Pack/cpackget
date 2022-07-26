@@ -78,6 +78,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 
 		log.Debugf("Specified packs %v", args)
 		var firstError error
+		installer.UnlockPackRoot()
 		for _, packPath := range args {
 			if err := installer.AddPack(packPath, !skipEula, extractEula, forceReinstall); err != nil {
 				if firstError == nil {
@@ -89,6 +90,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 				}
 			}
 		}
+		installer.LockPackRoot()
 
 		if firstError == nil {
 			return nil
@@ -109,6 +111,8 @@ Cache files (i.e. under CMSIS_PACK_ROOT/.Download/) are *NOT* removed. If cache 
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Removing %v", args)
+		installer.UnlockPackRoot()
+		defer installer.LockPackRoot()
 		for _, packPath := range args {
 			if err := installer.RemovePack(packPath, purge); err != nil {
 				return err

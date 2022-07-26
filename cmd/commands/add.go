@@ -84,6 +84,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 
 		log.Debugf("Specified packs %v", args)
 		var lastErr error
+		installer.UnlockPackRoot()
 		for _, packPath := range args {
 			var err error
 			if filepath.Ext(packPath) == ".pdsc" {
@@ -100,6 +101,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 				}
 			}
 		}
+		installer.LockPackRoot()
 
 		return lastErr
 	},

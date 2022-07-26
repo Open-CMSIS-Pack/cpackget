@@ -35,7 +35,9 @@ func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool) 
 	backupPackPath := ""
 	if !extractEula && pack.isInstalled {
 		if forceReinstall {
+
 			log.Debugf("Making temporary backup of pack \"%s\"", packPath)
+
 			// Get target pack's full path and move it to a temporary "_tmp" directory
 			fullPackPath = filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.Version)
 			backupPackPath = fullPackPath + "_tmp"
@@ -66,6 +68,10 @@ func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool) 
 	// Tells the UI to return right away with the [E]xtract option selected
 	ui.Extract = extractEula
 
+	// Unlock the pack (to enable reinstalling) and lock it afterwards
+	pack.Unlock()
+	defer pack.Lock()
+
 	if err = pack.install(Installation, checkEula || extractEula); err != nil {
 		// Just for internal purposes, is not presented as an error to the user
 		if err == errs.ErrEula {
@@ -87,6 +93,7 @@ func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool) 
 	// Remove the original "temporary" pack
 	// Manual removal via os.RemoveAll as "_tmp" is an invalid packPath for RemovePack
 	if dropPreInstalled {
+		utils.UnsetReadOnlyR(backupPackPath)
 		if err := os.RemoveAll(backupPackPath); err != nil {
 			return err
 		}
@@ -111,6 +118,7 @@ func RemovePack(packPath string, purge bool) error {
 	if pack.isInstalled {
 		// TODO: If removing-all is enabled, get rid of the version
 		// pack.Version = ""
+		pack.Unlock()
 		if err = pack.uninstall(Installation); err != nil {
 			return err
 		}
@@ -123,6 +131,7 @@ func RemovePack(packPath string, purge bool) error {
 
 		return Installation.touchPackIdx()
 	} else if purge {
+		pack.Unlock()
 		return pack.purge()
 	}
 
@@ -211,9 +220,11 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool) error {
 		return err
 	}
 
+	utils.UnsetReadOnly(Installation.PublicIndex)
 	if err := utils.CopyFile(indexPath, Installation.PublicIndex); err != nil {
 		return err
 	}
+	utils.SetReadOnly(Installation.PublicIndex)
 
 	if !sparse {
 		log.Info("Updating PDSC files of installed packs referenced in index.pidx")
@@ -609,7 +620,19 @@ func SetPackRoot(packRoot string, create bool) error {
 	// Make sure utils.DownloadFile always downloads files to .Download/
 	utils.CacheDir = Installation.DownloadDir
 
-	return Installation.PublicIndexXML.Read()
+	err := Installation.PublicIndexXML.Read()
+	if err != nil {
+		return err
+	}
+
+	err = Installation.LocalPidx.Read()
+	if err != nil {
+		return err
+	}
+
+	LockPackRoot()
+
+	return nil
 }
 
 // PacksInstallationType is the scruct tha manages Open-CMSIS-Pack installation/deletion.
@@ -652,7 +675,10 @@ type PacksInstallationType struct {
 
 // touchPackIdx changes the timestamp of pack.idx.
 func (p *PacksInstallationType) touchPackIdx() error {
-	return utils.TouchFile(p.PackIdx)
+	utils.UnsetReadOnly(p.PackIdx)
+	err := utils.TouchFile(p.PackIdx)
+	utils.SetReadOnly(p.PackIdx)
+	return err
 }
 
 // PackIsInstalled checks whether a given pack is already installed or not
@@ -824,5 +850,24 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag) error {
 		return errs.ErrPackPdscCannotBeFound
 	}
 
-	return utils.MoveFile(localFileName, pdscFilePath)
+	utils.UnsetReadOnly(pdscFilePath)
+	err = utils.MoveFile(localFileName, pdscFilePath)
+	utils.SetReadOnly(pdscFilePath)
+	return err
+}
+
+// LockPackRoot enable the read-only flag for the pack-root directory
+func LockPackRoot() {
+	utils.SetReadOnly(Installation.WebDir)
+	utils.SetReadOnly(Installation.LocalDir)
+	utils.SetReadOnly(Installation.DownloadDir)
+	utils.SetReadOnly(Installation.PackRoot)
+}
+
+// UnlockPackRoot disable the read-only flag for the pack-root directory
+func UnlockPackRoot() {
+	utils.UnsetReadOnly(Installation.PackRoot)
+	utils.UnsetReadOnly(Installation.WebDir)
+	utils.UnsetReadOnly(Installation.LocalDir)
+	utils.UnsetReadOnly(Installation.DownloadDir)
 }

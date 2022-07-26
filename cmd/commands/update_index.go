@@ -25,7 +25,10 @@ var UpdateIndexCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Updating public index")
-		return installer.UpdatePublicIndex("", true, updateIndexCmdFlags.sparse)
+		installer.UnlockPackRoot()
+		err := installer.UpdatePublicIndex("", true, updateIndexCmdFlags.sparse)
+		installer.LockPackRoot()
+		return err
 	},
 }
 

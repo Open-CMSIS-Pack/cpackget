@@ -25,7 +25,10 @@ var IndexCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Updating index %v", args)
 		indexPath := args[0]
-		return installer.UpdatePublicIndex(indexPath, overwrite, true)
+		installer.UnlockPackRoot()
+		err := installer.UpdatePublicIndex(indexPath, overwrite, true)
+		installer.LockPackRoot()
+		return err
 	},
 }
 

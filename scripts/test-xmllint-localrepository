@@ -23,8 +23,10 @@ cat <<PIDX >/tmp/index.pidx
 PIDX
 
 ./build/cpackget init /tmp/index.pidx
-./build/cpackget pdsc add testdata/devpack/1.2.3/TheVendor.DevPack.pdsc
+./build/cpackget add testdata/devpack/1.2.3/TheVendor.DevPack.pdsc
 
 xmllint --schema testdata/PackIndex.xsd $PACK_ROOT/.Local/local_repository.pidx --noout
+
+chmod -R +w $PACK_ROOT
 
 rm -rf $PACK_ROOT

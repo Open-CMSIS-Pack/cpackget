@@ -435,7 +435,7 @@ func (p *PackType) extractEula(packPath string) error {
 
 	log.Infof("Extracting embedded license to %v", eulaFileName)
 
-	return ioutil.WriteFile(eulaFileName, eulaContents, 0600)
+	return ioutil.WriteFile(eulaFileName, eulaContents, utils.FileModeRO)
 }
 
 // resolveVersionModifier takes into account eventual versionModifiers (@, @~ and >=) to determine
@@ -524,4 +524,44 @@ func (p *PackType) GetVersion() string {
 		return p.targetVersion
 	}
 	return p.Version
+}
+
+// toggleReadOnly will be used by Lock() and Unlock() to set or unset Read-Only flag on all pack files
+func (p *PackType) toggleReadOnly(setReadOnly bool) {
+	// Vendor/Pack/x.y.z/
+	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.GetVersion())
+
+	// .Download/Vendor.Pack.z.y.z.pack
+	packBackupPath := filepath.Join(Installation.DownloadDir, p.PackFileName())
+
+	// .Download/Vendor.Pack.x.y.z.pdsc
+	packVersionedPdscPath := filepath.Join(Installation.DownloadDir, p.PdscFileNameWithVersion())
+
+	// .Web/Vendor.Pack.pdsc or .Local/Vendor.Pack.pdsc
+	packPdscPath := filepath.Join(Installation.WebDir, p.PdscFileName())
+	if !p.IsPublic {
+		packPdscPath = filepath.Join(Installation.LocalDir, p.PdscFileName())
+	}
+
+	if setReadOnly {
+		utils.SetReadOnlyR(packHomeDir)
+		utils.SetReadOnly(packBackupPath)
+		utils.SetReadOnly(packVersionedPdscPath)
+		utils.SetReadOnly(packPdscPath)
+	} else {
+		utils.UnsetReadOnlyR(packHomeDir)
+		utils.UnsetReadOnly(packBackupPath)
+		utils.UnsetReadOnly(packVersionedPdscPath)
+		utils.UnsetReadOnly(packPdscPath)
+	}
+}
+
+// Lock sets all files and directories for this pack to Read-Only
+func (p *PackType) Lock() {
+	p.toggleReadOnly(true)
+}
+
+// Unlock sets all files and directories for this pack to Read/Write mode
+func (p *PackType) Unlock() {
+	p.toggleReadOnly(false)
 }

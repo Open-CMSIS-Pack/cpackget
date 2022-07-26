@@ -18,6 +18,7 @@ import (
 
 	"github.com/open-cmsis-pack/cpackget/cmd/commands"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -44,6 +45,7 @@ type TestCase struct {
 	tearDownFunc   func()
 	validationFunc func(t *testing.T)
 	assert         *assert.Assertions
+	env            map[string]string
 }
 
 type Server struct {
@@ -133,13 +135,17 @@ func runTests(t *testing.T, tests []TestCase) {
 		test := tests[i]
 		test.assert = assert
 		t.Run(test.name, func(t *testing.T) {
+			localTestingDir := strings.ReplaceAll(test.name, " ", "_")
+			os.Setenv("CMSIS_PACK_ROOT", localTestingDir)
 			if test.createPackRoot {
-				localTestingDir := strings.ReplaceAll(test.name, " ", "_")
 				assert.Nil(installer.SetPackRoot(localTestingDir, test.createPackRoot))
-				defer os.RemoveAll(localTestingDir)
-				os.Setenv("CMSIS_PACK_ROOT", localTestingDir)
-			} else {
-				os.Setenv("CMSIS_PACK_ROOT", "")
+				installer.UnlockPackRoot()
+			}
+
+			if test.env != nil {
+				for envVar := range test.env {
+					os.Setenv(envVar, test.env[envVar])
+				}
 			}
 
 			if test.setUpFunc != nil {
@@ -149,6 +155,11 @@ func runTests(t *testing.T, tests []TestCase) {
 			if test.tearDownFunc != nil {
 				defer test.tearDownFunc()
 			}
+
+			defer func() {
+				utils.UnsetReadOnlyR(localTestingDir)
+				os.RemoveAll(localTestingDir)
+			}()
 
 			cmd := commands.NewCli()
 

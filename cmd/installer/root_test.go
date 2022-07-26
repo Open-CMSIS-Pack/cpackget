@@ -366,6 +366,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 	// t.Run("test add http server index.pidx", func(t *testing.T) {
 	// 	localTestingDir := "test-add-http-server-index"
 	// 	assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+	installer.UnlockPackRoot()
 	// 	defer os.RemoveAll(localTestingDir)
 
 	// 	httpServer := httptest.NewServer(
@@ -386,6 +387,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test add not found remote index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-not-found-remote-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
 		server := NewServer()
@@ -401,6 +403,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test add malformed index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-malformed-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
 		indexContent, err := ioutil.ReadFile(malformedPublicIndex)
@@ -419,6 +422,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test add remote index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-remote-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
 		indexContent, err := ioutil.ReadFile(samplePublicIndex)
@@ -442,6 +446,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test add local file index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-local-file-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
 		indexContent, err := ioutil.ReadFile(samplePublicIndex)
@@ -460,6 +465,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test do not overwrite index.pidx", func(t *testing.T) {
 		localTestingDir := "test-do-not-overwrite-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
 		_ = utils.TouchFile(installer.Installation.PublicIndex)
@@ -479,6 +485,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test overwrite index.pidx", func(t *testing.T) {
 		localTestingDir := "test-overwrite-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
 		_ = utils.TouchFile(installer.Installation.PublicIndex)
@@ -503,6 +510,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test full update when sparse is false", func(t *testing.T) {
 		localTestingDir := "test-sparse-update"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
 		// A non-sparse/full update should detect all
@@ -578,6 +586,11 @@ func checkPackRoot(t *testing.T, path string) {
 	assert.True(utils.DirExists(installer.Installation.LocalDir))
 }
 
+func removePackRoot(packRoot string) {
+	utils.UnsetReadOnlyR(packRoot)
+	os.RemoveAll(packRoot)
+}
+
 func TestSetPackRoot(t *testing.T) {
 
 	assert := assert.New(t)
@@ -600,7 +613,7 @@ func TestSetPackRoot(t *testing.T) {
 
 	t.Run("test initialize pack root", func(t *testing.T) {
 		localTestingDir := "valid-pack-root"
-		defer os.RemoveAll(localTestingDir)
+		defer removePackRoot(localTestingDir)
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 
 		checkPackRoot(t, localTestingDir)
