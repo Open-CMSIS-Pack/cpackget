@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/ui"
@@ -188,7 +189,7 @@ func RemovePdsc(pdscPath string) error {
 }
 
 // UpdatePublicIndex receives a index path and place it under .Web/index.pidx.
-func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPdsc bool) error {
+func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPdsc bool, concurrency int) error {
 	// TODO: Remove overwrite when cpackget v1 gets released
 	if !overwrite {
 		return errs.ErrCannotOverwritePublicIndex
@@ -226,7 +227,15 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 	}
 	utils.SetReadOnly(Installation.PublicIndex)
 
+	// Workaround wrapper function to still log errors
+	// and not make the linter angry
+	massDownloadPdscFiles := func(pdscTag xml.PdscTag, wg *sync.WaitGroup) {
+		if err := Installation.downloadPdscFile(pdscTag, wg); err != nil {
+			log.Error(err)
+		}
+	}
 	if downloadPdsc {
+		var wg sync.WaitGroup
 		log.Info("Downloading all PDSC files available on the public index")
 		if err := Installation.PublicIndexXML.Read(); err != nil {
 			return err
@@ -238,20 +247,37 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 			return nil
 		}
 
+		queue := concurrency
 		for _, pdscTag := range pdscTags {
-			log.Debugf("Downloading %s", pdscTag)
-			if err := Installation.downloadPdscFile(pdscTag); err != nil {
-				log.Errorf("%s: %v", pdscTag, err)
+			if concurrency == 0 {
+				if err := Installation.downloadPdscFile(pdscTag, nil); err != nil {
+					log.Error(err)
+				}
+			} else {
+				// Don't queue more downloads than specified
+				if queue == 0 {
+					if err := Installation.downloadPdscFile(pdscTag, nil); err != nil {
+						log.Error(err)
+					}
+					wg.Add(concurrency)
+					queue = concurrency
+				} else {
+					wg.Add(1)
+					go massDownloadPdscFiles(pdscTag, &wg)
+					queue--
+				}
 			}
 		}
 	}
 	if !sparse {
+		var wg sync.WaitGroup
 		log.Info("Updating PDSC files of installed packs referenced in index.pidx")
 		pdscFiles, err := utils.ListDir(Installation.WebDir, ".pdsc$")
 		if err != nil {
 			return err
 		}
 
+		queue := concurrency
 		for _, pdscFile := range pdscFiles {
 			log.Debugf("Checking if \"%s\" needs updating", pdscFile)
 			pdscXML := xml.NewPdscXML(pdscFile)
@@ -277,8 +303,22 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 			latestVersion := pdscXML.LatestVersion()
 			if versionInIndex != latestVersion {
 				log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
-				if err := Installation.downloadPdscFile(tags[0]); err != nil {
-					log.Errorf("%s: %v", pdscFile, err)
+				if concurrency == 0 {
+					if err := Installation.downloadPdscFile(tags[0], nil); err != nil {
+						log.Error(err)
+					}
+				} else {
+					if queue == 0 {
+						if err := Installation.downloadPdscFile(tags[0], nil); err != nil {
+							log.Error(err)
+						}
+						wg.Add(concurrency)
+						queue = concurrency
+					} else {
+						wg.Add(1)
+						go massDownloadPdscFiles(tags[0], &wg)
+						queue--
+					}
 				}
 			}
 		}
@@ -843,12 +883,17 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType) (bool, error) {
 	// Sometimes a pidx file might have multiple pdsc tags for same key
 	// which is not the case here, so we'll take only the first one
 	pdscTag := pdscTags[0]
-	return true, p.downloadPdscFile(pdscTag)
+	return true, p.downloadPdscFile(pdscTag, nil)
 }
 
 // downloadPdscFile takes in a xml.PdscTag containing URL, Vendor and Name of the pack
 // so it can be downloaded into .Web/
-func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag) error {
+func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, wg *sync.WaitGroup) error {
+	// Only change use if it's not a concurrent download
+	if wg != nil {
+		defer wg.Done()
+	}
+
 	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
 	pdscFilePath := filepath.Join(p.WebDir, basePdscFile)
 
