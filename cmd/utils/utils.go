@@ -5,11 +5,15 @@ package utils
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/xml"
+	"errors"
 	"io"
 	"io/fs"
 	"io/ioutil"
+	"math"
 	"math/rand"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -31,6 +35,39 @@ var CacheDir string
 
 var HTTPClient *http.Client
 
+type TimeoutTransport struct {
+	http.Transport
+	RoundTripTimeout time.Duration
+}
+
+// Helper function to set timeouts on HTTP connections
+// that use keep-alive connections (the most common one)
+func (t *TimeoutTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	type respAndErr struct {
+		resp *http.Response
+		err  error
+	}
+
+	timeout := time.After(t.RoundTripTimeout)
+	resp := make(chan respAndErr, 1)
+
+	go func() {
+		r, e := t.Transport.RoundTrip(req)
+		resp <- respAndErr{
+			resp: r,
+			err:  e,
+		}
+	}()
+
+	select {
+	case <-timeout:
+		t.Transport.CancelRequest(req)
+		return nil, errors.New("HTTP get timed out")
+	case r := <-resp:
+		return r.resp, r.err
+	}
+}
+
 var (
 	// File RO (ReadOnly) and RW (Read + Write) modes
 	FileModeRO = fs.FileMode(0444)
@@ -42,7 +79,7 @@ var (
 )
 
 // DownloadFile downloads a file from an URL and saves it locally under destionationFilePath
-func DownloadFile(URL string) (string, error) {
+func DownloadFile(URL string, timeout int) (string, error) {
 	parsedURL, _ := url.Parse(URL)
 	fileBase := path.Base(parsedURL.Path)
 	filePath := filepath.Join(CacheDir, fileBase)
@@ -52,7 +89,34 @@ func DownloadFile(URL string) (string, error) {
 		return filePath, nil
 	}
 
-	resp, err := HTTPClient.Get(URL) // #nosec
+	// For now, skip insecure HTTPS downloads verification only for localhost
+	var tls tls.Config
+	if strings.Contains(URL, "https://127.0.0.1") {
+		tls.InsecureSkipVerify = true
+	} else {
+		tls.InsecureSkipVerify = false
+	}
+
+	var rtt time.Duration
+	if timeout == 0 {
+		rtt = time.Duration(math.MaxInt64)
+	} else {
+		rtt = time.Second * time.Duration(timeout)
+	}
+
+	client := &http.Client{
+		Transport: &TimeoutTransport{
+			Transport: http.Transport{
+				Dial: func(netw, addr string) (net.Conn, error) {
+					return net.Dial(netw, addr)
+				},
+				TLSClientConfig: &tls,
+			},
+			RoundTripTimeout: rtt,
+		},
+	}
+
+	resp, err := client.Get(URL)
 	if err != nil {
 		log.Error(err)
 		return "", errs.ErrFailedDownloadingFile

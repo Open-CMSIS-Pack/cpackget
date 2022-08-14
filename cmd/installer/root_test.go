@@ -135,7 +135,7 @@ func addPack(t *testing.T, packPath string, config ConfigType) {
 	// Get pack.idx before removing pack
 	packIdxModTime := getPackIdxModTime(t, Start)
 
-	err := installer.AddPack(packPath, config.CheckEula, config.ExtractEula, config.ForceReinstall)
+	err := installer.AddPack(packPath, config.CheckEula, config.ExtractEula, config.ForceReinstall, Timeout)
 	assert.Nil(err)
 
 	if config.ExtractEula {
@@ -175,7 +175,7 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 
 	purgeOnly := !isInstalled && purge
 
-	err = installer.RemovePack(shortPackPath, purge)
+	err = installer.RemovePack(shortPackPath, purge, Timeout)
 	assert.Nil(err)
 
 	removeAll := false
@@ -221,6 +221,7 @@ var (
 	CheckEula      = true
 	ExtractEula    = true
 	ForceReinstall = true
+	Timeout        = 0
 
 	CreatePackRoot = true
 
@@ -404,7 +405,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		indexPath := server.URL() + "this-file-does-not-exist"
 
-		err := installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, Concurrency)
+		err := installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, Concurrency, Timeout)
 
 		assert.NotNil(err)
 		assert.Equal(errs.ErrBadRequest, err)
@@ -423,7 +424,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute("index.pidx", indexContent)
 		indexPath := indexServer.URL() + "index.pidx"
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, Concurrency)
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, Concurrency, Timeout)
 
 		assert.NotNil(err)
 		assert.Equal(err.Error(), "XML syntax error on line 3: unexpected EOF")
@@ -441,7 +442,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute("index.pidx", indexContent)
 		indexPath := indexServer.URL() + "index.pidx"
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, Concurrency)
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, Concurrency, Timeout)
 
 		assert.Nil(err)
 
@@ -462,7 +463,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexContent, err := ioutil.ReadFile(samplePublicIndex)
 		assert.Nil(err)
 
-		assert.Nil(installer.UpdatePublicIndex(samplePublicIndex, Overwrite, Sparse, DownloadPdsc, Concurrency))
+		assert.Nil(installer.UpdatePublicIndex(samplePublicIndex, Overwrite, Sparse, DownloadPdsc, Concurrency, Timeout))
 
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
 
@@ -486,7 +487,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute("index.pidx", indexContent)
 		indexPath := indexServer.URL() + "index.pidx"
 
-		err = installer.UpdatePublicIndex(indexPath, !Overwrite, Sparse, DownloadPdsc, Concurrency)
+		err = installer.UpdatePublicIndex(indexPath, !Overwrite, Sparse, DownloadPdsc, Concurrency, Timeout)
 
 		assert.NotNil(err)
 		assert.Equal(errs.ErrCannotOverwritePublicIndex, err)
@@ -506,7 +507,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute("index.pidx", indexContent)
 		indexPath := indexServer.URL() + "index.pidx"
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, Concurrency)
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, Concurrency, Timeout)
 
 		assert.Nil(err)
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
@@ -527,7 +528,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err)
 		indexServer := NewServer()
 		// The psd URL needs to be updated as it's not known beforehand
-		updatedIndex := []byte(strings.Replace(string(indexContent), "REPLACEME", indexServer.URL(), -1))
+		updatedIndex := []byte(strings.Replace(string(indexContent), "https://127.0.0.1", indexServer.URL(), -1))
 		indexServer.AddRoute("index.pidx", updatedIndex)
 		indexPath := indexServer.URL() + "index.pidx"
 
@@ -535,7 +536,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err)
 		indexServer.AddRoute("TheVendor.PublicLocalPack.pdsc", pdscContent)
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, !DownloadPdsc, Concurrency)
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, !DownloadPdsc, Concurrency, Timeout)
 
 		assert.Nil(err)
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
@@ -568,7 +569,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 			indexServer.AddRoute(publicConcurrentLocalPdscBase+fmt.Sprint(i)+".pdsc", pdscContent)
 		}
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, !DownloadPdsc, 5)
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, !DownloadPdsc, 5, Timeout)
 
 		assert.Nil(err)
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
@@ -639,7 +640,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		indexServer.AddRoute(filepath.Base(publicLocalPack124Pdsc), pdscContent)
 
-		assert.Nil(installer.UpdatePublicIndex("", Overwrite, !Sparse, DownloadPdsc, Concurrency))
+		assert.Nil(installer.UpdatePublicIndex("", Overwrite, !Sparse, DownloadPdsc, Concurrency, Timeout))
 
 		// Make sure index.pidx exists and it is updated
 		assert.FileExists(installer.Installation.PublicIndex)
@@ -707,7 +708,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 			indexServer.AddRoute(pdsc, pdscContent)
 		}
 
-		assert.Nil(installer.UpdatePublicIndex("", Overwrite, !Sparse, DownloadPdsc, 5))
+		assert.Nil(installer.UpdatePublicIndex("", Overwrite, !Sparse, DownloadPdsc, 5, Timeout))
 
 		// Make sure index.pidx exists and it is updated
 		assert.FileExists(installer.Installation.PublicIndex)

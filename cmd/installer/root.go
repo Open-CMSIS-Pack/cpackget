@@ -22,9 +22,9 @@ import (
 )
 
 // AddPack adds a pack to the pack installation directory structure
-func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool) error {
+func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool, timeout int) error {
 
-	pack, err := preparePack(packPath, false)
+	pack, err := preparePack(packPath, false, timeout)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool) 
 		}
 	}
 
-	if err = pack.fetch(); err != nil {
+	if err = pack.fetch(timeout); err != nil {
 		return err
 	}
 
@@ -105,13 +105,13 @@ func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool) 
 }
 
 // RemovePack removes a pack given a pack path
-func RemovePack(packPath string, purge bool) error {
+func RemovePack(packPath string, purge bool, timeout int) error {
 	log.Debugf("Removing pack \"%v\"", packPath)
 
 	// TODO: by default, remove latest version first
 	// if no version is given
 
-	pack, err := preparePack(packPath, true)
+	pack, err := preparePack(packPath, true, timeout)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func RemovePdsc(pdscPath string) error {
 }
 
 // UpdatePublicIndex receives a index path and place it under .Web/index.pidx.
-func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPdsc bool, concurrency int) error {
+func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPdsc bool, concurrency int, timeout int) error {
 	// TODO: Remove overwrite when cpackget v1 gets released
 	if !overwrite {
 		return errs.ErrCannotOverwritePublicIndex
@@ -209,7 +209,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 			log.Warnf("Non-HTTPS url: \"%s\"", indexPath)
 		}
 
-		indexPath, err = utils.DownloadFile(indexPath)
+		indexPath, err = utils.DownloadFile(indexPath, timeout)
 		if err != nil {
 			return err
 		}
@@ -230,7 +230,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 	// Workaround wrapper function to still log errors
 	// and not make the linter angry
 	massDownloadPdscFiles := func(pdscTag xml.PdscTag, wg *sync.WaitGroup) {
-		if err := Installation.downloadPdscFile(pdscTag, wg); err != nil {
+		if err := Installation.downloadPdscFile(pdscTag, wg, timeout); err != nil {
 			log.Error(err)
 		}
 	}
@@ -250,13 +250,13 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 		queue := concurrency
 		for _, pdscTag := range pdscTags {
 			if concurrency == 0 {
-				if err := Installation.downloadPdscFile(pdscTag, nil); err != nil {
+				if err := Installation.downloadPdscFile(pdscTag, nil, timeout); err != nil {
 					log.Error(err)
 				}
 			} else {
 				// Don't queue more downloads than specified
 				if queue == 0 {
-					if err := Installation.downloadPdscFile(pdscTag, nil); err != nil {
+					if err := Installation.downloadPdscFile(pdscTag, nil, timeout); err != nil {
 						log.Error(err)
 					}
 					wg.Add(concurrency)
@@ -304,12 +304,12 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 			if versionInIndex != latestVersion {
 				log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
 				if concurrency == 0 {
-					if err := Installation.downloadPdscFile(tags[0], nil); err != nil {
+					if err := Installation.downloadPdscFile(tags[0], nil, timeout); err != nil {
 						log.Error(err)
 					}
 				} else {
 					if queue == 0 {
-						if err := Installation.downloadPdscFile(tags[0], nil); err != nil {
+						if err := Installation.downloadPdscFile(tags[0], nil, timeout); err != nil {
 							log.Error(err)
 						}
 						wg.Add(concurrency)
@@ -848,7 +848,7 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 
 // packIsPublic checks whether the pack is public or not.
 // Being public means a PDSC file is present in ".Web/" folder
-func (p *PacksInstallationType) packIsPublic(pack *PackType) (bool, error) {
+func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool, error) {
 	// lazyly lists all pdsc files in the ".Web/" folder only once
 	if p.packs == nil {
 		p.packs = make(map[string]bool)
@@ -883,12 +883,12 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType) (bool, error) {
 	// Sometimes a pidx file might have multiple pdsc tags for same key
 	// which is not the case here, so we'll take only the first one
 	pdscTag := pdscTags[0]
-	return true, p.downloadPdscFile(pdscTag, nil)
+	return true, p.downloadPdscFile(pdscTag, nil, timeout)
 }
 
 // downloadPdscFile takes in a xml.PdscTag containing URL, Vendor and Name of the pack
 // so it can be downloaded into .Web/
-func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, wg *sync.WaitGroup) error {
+func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, wg *sync.WaitGroup, timeout int) error {
 	// Only change use if it's not a concurrent download
 	if wg != nil {
 		defer wg.Done()
@@ -906,7 +906,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, wg *sync.W
 	}
 
 	pdscFileURL.Path = path.Join(pdscFileURL.Path, basePdscFile)
-	localFileName, err := utils.DownloadFile(pdscFileURL.String())
+	localFileName, err := utils.DownloadFile(pdscFileURL.String(), timeout)
 	defer os.Remove(localFileName)
 
 	if err != nil {

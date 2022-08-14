@@ -65,7 +65,7 @@ type PackType struct {
 
 // preparePack does some sanity validation regarding pack name
 // and check if it's public and if it's installed or not
-func preparePack(packPath string, toBeRemoved bool) (*PackType, error) {
+func preparePack(packPath string, toBeRemoved bool, timeout int) (*PackType, error) {
 	pack := &PackType{
 		path:        packPath,
 		toBeRemoved: toBeRemoved,
@@ -99,7 +99,7 @@ func preparePack(packPath string, toBeRemoved bool) (*PackType, error) {
 	pack.versionModifier = info.VersionModifier
 	pack.isPackID = info.IsPackID
 
-	if pack.IsPublic, err = Installation.packIsPublic(pack); err != nil {
+	if pack.IsPublic, err = Installation.packIsPublic(pack, timeout); err != nil {
 		return pack, err
 	}
 
@@ -111,11 +111,11 @@ func preparePack(packPath string, toBeRemoved bool) (*PackType, error) {
 // fetch will download the pack file if it's on the Internet, or
 // will use the one in .Download/ if previously downloaded.
 // If the path is not a URL, it will make sure the file exists in the local file system
-func (p *PackType) fetch() error {
+func (p *PackType) fetch(timeout int) error {
 	log.Debugf("Fetching pack file \"%s\" (or just making sure it exists locally)", p.path)
 	var err error
 	if strings.HasPrefix(p.path, "http") {
-		p.path, err = utils.DownloadFile(p.path)
+		p.path, err = utils.DownloadFile(p.path, timeout)
 		if err == errs.ErrTerminatedByUser {
 			log.Infof("Aborting pack download. Removing \"%s\"", p.path)
 		}
@@ -227,7 +227,7 @@ func (p *PackType) purge() error {
 //   - Saves a copy of the pack in "CMSIS_PACK_ROOT/.Download/"
 //   - Saves a versioned pdsc file in "CMSIS_PACK_ROOT/.Download/"
 //   - If "CMSIS_PACK_ROOT/.Web/p.Vendor.p.Name.pdsc" does not exist then
-//     - Save an unversioned copy of the pdsc file in "CMSIS_PACK_ROOT/.Local/"
+//   - Save an unversioned copy of the pdsc file in "CMSIS_PACK_ROOT/.Local/"
 func (p *PackType) install(installation *PacksInstallationType, checkEula bool) error {
 	log.Debugf("Installing \"%s\"", p.path)
 
@@ -336,7 +336,7 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 //   - Removes "CMSIS_PACK_ROOT/p.Vendor/p.Name/" if empty
 //   - Removes "CMSIS_PACK_ROOT/p.Vendor/" if empty
 //   - If "CMSIS_PACK_ROOT/.Web/p.Vendor.p.Name.pdsc" does not exist then
-//     - Remove "p.Vendor.p.Name.pdsc" from "CMSIS_PACK_ROOT/.Local/"
+//   - Remove "p.Vendor.p.Name.pdsc" from "CMSIS_PACK_ROOT/.Local/"
 func (p *PackType) uninstall(installation *PacksInstallationType) error {
 	log.Debugf("Uninstalling \"%v\"", p.path)
 

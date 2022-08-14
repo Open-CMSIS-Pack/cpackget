@@ -45,7 +45,7 @@ func TestDownloadFile(t *testing.T) {
 				},
 			),
 		)
-		_, err := utils.DownloadFile(goodServer.URL + "/file.txt")
+		_, err := utils.DownloadFile(goodServer.URL+"/file.txt", 0)
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrFailedCreatingFile))
 		utils.CacheDir = oldCache
@@ -55,7 +55,7 @@ func TestDownloadFile(t *testing.T) {
 		fileName := "file.txt"
 		defer os.Remove(fileName)
 
-		_, err := utils.DownloadFile(fileName)
+		_, err := utils.DownloadFile(fileName, 0)
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrFailedDownloadingFile))
 	})
@@ -71,7 +71,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 
-		_, err := utils.DownloadFile(notFoundServer.URL + "/" + fileName)
+		_, err := utils.DownloadFile(notFoundServer.URL+"/"+fileName, 0)
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrBadRequest))
 		assert.False(utils.FileExists(fileName))
@@ -89,7 +89,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 
-		_, err := utils.DownloadFile(bodyErrorServer.URL + "/" + fileName)
+		_, err := utils.DownloadFile(bodyErrorServer.URL+"/"+fileName, 0)
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrFailedWrittingToLocalFile))
 	})
@@ -106,7 +106,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 		url := goodServer.URL + "/" + fileName
-		_, err1 := utils.DownloadFile(url)
+		_, err1 := utils.DownloadFile(url, 0)
 		assert.Nil(err1)
 		assert.True(utils.FileExists(fileName))
 		bytes, err2 := ioutil.ReadFile(fileName)
@@ -128,7 +128,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 		url := goodServer.URL + "/" + fileName
-		_, err1 := utils.DownloadFile(url)
+		_, err1 := utils.DownloadFile(url, 0)
 		assert.Nil(err1)
 		assert.True(utils.FileExists(fileName))
 		bytes, err2 := ioutil.ReadFile(fileName)
@@ -137,7 +137,7 @@ func TestDownloadFile(t *testing.T) {
 		assert.Equal(1, requestCount)
 
 		// Download it again, this time it shouldn't trigger any HTTP request
-		_, err1 = utils.DownloadFile(url)
+		_, err1 = utils.DownloadFile(url, 0)
 		assert.Nil(err1)
 		assert.Equal(1, requestCount)
 	})
