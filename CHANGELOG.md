@@ -1,3 +1,15 @@
+# v0.7.1
+
+This v0.7.1 release is dedicated to improving network capabilities. It contains:
+
+Bug fixes:
+- Timeout on broken downloads instead of getting stuck (via new timeout flag)
+
+New features:
+- `cpackget init --all-pdsc-files/-a`: Downloads all PDSC files listed in the initialized public index
+- `--concurrent-downloads/-C`: global flag to enable concurrent/parallel downloads when downloading multiple files
+- `--timeout/-T`: global flag setting a maximum timeout for all HTTP/HTTPS downloads
+
 # v0.7.0
 
 This v0.7 release contains:
