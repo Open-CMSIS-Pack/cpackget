@@ -292,6 +292,8 @@ var (
 
 	// Sample public index.pidx
 	samplePublicIndex = filepath.Join(testDir, "SamplePublicIndex.pidx")
+	// Sample public index.pdix with a localhost pdsc url
+	samplePublicIndexLocalhostPdsc = filepath.Join(testDir, "SamplePublicIndexLocalhostUrl.pidx")
 
 	// Malformed index.pidx
 	malformedPublicIndex = filepath.Join("..", "..", "testdata", "MalformedPack.pidx")
@@ -312,10 +314,11 @@ func (s *Server) AddRoute(route string, content []byte) {
 
 // NewServer is a generic dev server that takes in a routes map and returns 404 if the route[path] is nil
 // Ex:
-// server := NewHttpsServer(map[string][]byte{
-// 	"*": []byte("Default content"),
-// 	"should-return-404": nil,
-// })
+//
+//	server := NewHttpsServer(map[string][]byte{
+//		"*": []byte("Default content"),
+//		"should-return-404": nil,
+//	})
 //
 // Acessing server.URL should return "Default content"
 // Acessing server.URL + "/should-return-404" should return HTTP 404
@@ -361,6 +364,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	var Overwrite = true
 	var Sparse = true
+	var DownloadPdsc = false
 
 	// Re-enable this test when a flag --enforce-security is implemented
 	// t.Run("test add http server index.pidx", func(t *testing.T) {
@@ -394,7 +398,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		indexPath := server.URL() + "this-file-does-not-exist"
 
-		err := installer.UpdatePublicIndex(indexPath, Overwrite, Sparse)
+		err := installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc)
 
 		assert.NotNil(err)
 		assert.Equal(errs.ErrBadRequest, err)
@@ -413,7 +417,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute("index.pidx", indexContent)
 		indexPath := indexServer.URL() + "index.pidx"
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse)
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc)
 
 		assert.NotNil(err)
 		assert.Equal(err.Error(), "XML syntax error on line 3: unexpected EOF")
@@ -431,7 +435,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute("index.pidx", indexContent)
 		indexPath := indexServer.URL() + "index.pidx"
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse)
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc)
 
 		assert.Nil(err)
 
@@ -452,7 +456,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexContent, err := ioutil.ReadFile(samplePublicIndex)
 		assert.Nil(err)
 
-		assert.Nil(installer.UpdatePublicIndex(samplePublicIndex, Overwrite, Sparse))
+		assert.Nil(installer.UpdatePublicIndex(samplePublicIndex, Overwrite, Sparse, DownloadPdsc))
 
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
 
@@ -476,7 +480,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute("index.pidx", indexContent)
 		indexPath := indexServer.URL() + "index.pidx"
 
-		err = installer.UpdatePublicIndex(indexPath, !Overwrite, Sparse)
+		err = installer.UpdatePublicIndex(indexPath, !Overwrite, Sparse, DownloadPdsc)
 
 		assert.NotNil(err)
 		assert.Equal(errs.ErrCannotOverwritePublicIndex, err)
@@ -496,7 +500,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute("index.pidx", indexContent)
 		indexPath := indexServer.URL() + "index.pidx"
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse)
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc)
 
 		assert.Nil(err)
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
@@ -505,6 +509,36 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err2)
 
 		assert.Equal(copied, indexContent)
+	})
+
+	t.Run("test add remote index.pidx and dowload pdsc files", func(t *testing.T) {
+		localTestingDir := "test-add-remote-index-download-pdsc"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer os.RemoveAll(localTestingDir)
+
+		indexContent, err := ioutil.ReadFile(samplePublicIndexLocalhostPdsc)
+		assert.Nil(err)
+		indexServer := NewServer()
+		// The psd URL needs to be updated as it's not known beforehand
+		updatedIndex := []byte(strings.Replace(string(indexContent), "REPLACEME", indexServer.URL(), -1))
+		indexServer.AddRoute("index.pidx", updatedIndex)
+		indexPath := indexServer.URL() + "index.pidx"
+
+		pdscContent, err := ioutil.ReadFile(publicLocalPack123Pdsc)
+		assert.Nil(err)
+		indexServer.AddRoute("TheVendor.PublicLocalPack.pdsc", pdscContent)
+
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, !DownloadPdsc)
+
+		assert.Nil(err)
+		assert.True(utils.FileExists(installer.Installation.PublicIndex))
+
+		copied, err := ioutil.ReadFile(installer.Installation.PublicIndex)
+		assert.Nil(err)
+		assert.Equal(copied, updatedIndex)
+		// Check if referenced pdsc was downloaded
+		assert.True(utils.FileExists(installer.Installation.WebDir + string(filepath.Separator) + "TheVendor.PublicLocalPack.pdsc"))
 	})
 
 	t.Run("test full update when sparse is false", func(t *testing.T) {
@@ -561,7 +595,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		indexServer.AddRoute(filepath.Base(publicLocalPack124Pdsc), pdscContent)
 
-		assert.Nil(installer.UpdatePublicIndex("", Overwrite, !Sparse))
+		assert.Nil(installer.UpdatePublicIndex("", Overwrite, !Sparse, DownloadPdsc))
 
 		// Make sure index.pidx exists and it is updated
 		assert.FileExists(installer.Installation.PublicIndex)

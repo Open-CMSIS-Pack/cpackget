@@ -188,7 +188,7 @@ func RemovePdsc(pdscPath string) error {
 }
 
 // UpdatePublicIndex receives a index path and place it under .Web/index.pidx.
-func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool) error {
+func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPdsc bool) error {
 	// TODO: Remove overwrite when cpackget v1 gets released
 	if !overwrite {
 		return errs.ErrCannotOverwritePublicIndex
@@ -226,6 +226,25 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool) error {
 	}
 	utils.SetReadOnly(Installation.PublicIndex)
 
+	if downloadPdsc {
+		log.Info("Downloading all PDSC files available on the public index")
+		if err := Installation.PublicIndexXML.Read(); err != nil {
+			return err
+		}
+
+		pdscTags := Installation.PublicIndexXML.ListPdscTags()
+		if len(pdscTags) == 0 {
+			log.Info("(no packs in public index)")
+			return nil
+		}
+
+		for _, pdscTag := range pdscTags {
+			log.Debugf("Downloading %s", pdscTag)
+			if err := Installation.downloadPdscFile(pdscTag); err != nil {
+				log.Errorf("%s: %v", pdscTag, err)
+			}
+		}
+	}
 	if !sparse {
 		log.Info("Updating PDSC files of installed packs referenced in index.pidx")
 		pdscFiles, err := utils.ListDir(Installation.WebDir, ".pdsc$")

@@ -9,6 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var initCmdFlags struct {
+	// downloadPdscFiles forces all pdsc files from the public index to be downloaded
+	downloadPdscFiles bool
+}
+
 var InitCmd = &cobra.Command{
 	Use:   "init [--pack-root <pack root>] <index-url>",
 	Short: "Initializes a pack root folder",
@@ -33,8 +38,12 @@ The index-url is mandatory. Ex "cpackget init --pack-root path/to/mypackroot htt
 		}
 
 		installer.UnlockPackRoot()
-		err = installer.UpdatePublicIndex(indexPath, true, true)
+		err = installer.UpdatePublicIndex(indexPath, true, true, initCmdFlags.downloadPdscFiles)
 		installer.LockPackRoot()
 		return err
 	},
+}
+
+func init() {
+	InitCmd.Flags().BoolVarP(&initCmdFlags.downloadPdscFiles, "all-pdsc-files", "a", false, "downloads all the latest .pdsc files from the public index")
 }
