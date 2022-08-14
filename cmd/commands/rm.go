@@ -25,13 +25,13 @@ Remove a pack using the reference "Vendor.Pack[.x.y.z]", "Vendor::Pack[@x.y.z]" 
 
   $ cpackget rm Vendor.Pack.1.2.3
   $ cpackget rm Vendor::Pack@1.2.3
-  
+
   Use the syntax above to let cpackget determine
   the location of pack files prior to removing them.
-  
+
   $ cpackget rm Vendor.LocalPackInstalledViaPdsc.pdsc
   $ cpackget rm path/to/Vendor.LocalPackInstalledViaPdsc.pdsc
-  
+
   cpackget also identifies if the pack was installed via
   PDSC file. In this case, cpackget will remove its reference
   from ".Local/local_repository.pidx".
@@ -61,7 +61,7 @@ please use "--purge".`,
 					err = errs.ErrPackNotInstalled
 				}
 			} else {
-				err = installer.RemovePack(packPath, rmCmdFlags.purge)
+				err = installer.RemovePack(packPath, rmCmdFlags.purge, viper.GetInt("timeout"))
 			}
 			if err != nil {
 				if err != errs.ErrAlreadyLogged {

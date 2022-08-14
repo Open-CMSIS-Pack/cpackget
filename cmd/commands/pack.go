@@ -80,7 +80,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 		var firstError error
 		installer.UnlockPackRoot()
 		for _, packPath := range args {
-			if err := installer.AddPack(packPath, !skipEula, extractEula, forceReinstall); err != nil {
+			if err := installer.AddPack(packPath, !skipEula, extractEula, forceReinstall, viper.GetInt("timeout")); err != nil {
 				if firstError == nil {
 					firstError = err
 				}
@@ -114,7 +114,7 @@ Cache files (i.e. under CMSIS_PACK_ROOT/.Download/) are *NOT* removed. If cache 
 		installer.UnlockPackRoot()
 		defer installer.LockPackRoot()
 		for _, packPath := range args {
-			if err := installer.RemovePack(packPath, purge); err != nil {
+			if err := installer.RemovePack(packPath, purge, viper.GetInt("timeout")); err != nil {
 				return err
 			}
 		}

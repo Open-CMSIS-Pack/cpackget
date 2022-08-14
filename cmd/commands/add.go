@@ -36,17 +36,17 @@ Add a pack using the following "<pack>" specification or using packs provided by
 
   $ cpackget add Vendor.Pack.1.2.3
   $ cpackget add Vendor::Pack@1.2.3
-  
+
   Use the syntax above to let cpackget determine
   the location of pack files prior to installing it locally.
-  
+
   $ cpackget add Vendor.Pack.1.2.3.pack
-  
+
   Use this syntax if you already have a pack at hand and simply
   want to install it under pack-root folder.
-  
+
   $ cpackget add path/to/Vendor.Pack.pdsc
-  
+
   Use this syntax if you are installing a pack that has not
   been released yet. This will install it as a local pack and
   keep a reference in ".Local/local_repository.pidx".
@@ -90,7 +90,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 			if filepath.Ext(packPath) == ".pdsc" {
 				err = installer.AddPdsc(packPath)
 			} else {
-				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall)
+				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, viper.GetInt("timeout"))
 
 			}
 
