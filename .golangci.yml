@@ -14,7 +14,7 @@ linters:
     - govet
     - ineffassign
     - staticcheck
-    - structcheck
+    # - structcheck https://github.com/golangci/golangci-lint/issues/2649
     - typecheck
     - unused
     - varcheck
