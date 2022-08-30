@@ -16,9 +16,15 @@ var checksumCreateCmdFlags struct {
 	outputDir string
 }
 
+var checksumVerifyCmdFlags struct {
+	// checksumPath is the path of the checksum file
+	checksumPath string
+}
+
 func init() {
 	ChecksumCreateCmd.Flags().StringVarP(&checksumCreateCmdFlags.hashAlgorithm, "hash-function", "a", cryptography.Hashes[0], "specifies the hash function to be used")
 	ChecksumCreateCmd.Flags().StringVarP(&checksumCreateCmdFlags.outputDir, "output-dir", "o", "", "specifies output directory for the checksum file")
+	ChecksumVerifyCmd.Flags().StringVarP(&checksumVerifyCmdFlags.checksumPath, "path", "p", "", "path of the checksum file")
 }
 
 var ChecksumCreateCmd = &cobra.Command{
@@ -46,18 +52,22 @@ By default the checksum file will be created in the same directory as the provid
 }
 
 var ChecksumVerifyCmd = &cobra.Command{
-	Use:   "checksum-verify [<local .path pack>] [<local .checksum path>]",
+	Use:   "checksum-verify [<local .path pack>]",
 	Short: "Verifies the integrity of a pack using its .checksum file",
 	Long: `
 Verifies the contents of a pack, checking its integrity against its .checksum file (created
-with "checksum-create"):
+with "checksum-create"), present in the same directory:
 
-  $ cpackget checksum-verify Vendor.Pack.1.2.3.pack Vendor.Pack.1.2.3.sha256.checksum
+  $ cpackget checksum-verify Vendor.Pack.1.2.3.pack
 
 The used hash function is inferred from the checksum filename, and if any of the digests
-computed doesn't match the one provided in the checksum file an error will be thrown.`,
-	Args: cobra.ExactArgs(2),
+computed doesn't match the one provided in the checksum file an error will be thrown.
+If the .checksum file is in another directory, specify it with the -p/--path flag`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return cryptography.VerifyChecksum(args[0], args[1])
+		if checksumVerifyCmdFlags.checksumPath != "" {
+			return cryptography.VerifyChecksum(args[0], checksumVerifyCmdFlags.checksumPath)
+		}
+		return cryptography.VerifyChecksum(args[0], "")
 	},
 }

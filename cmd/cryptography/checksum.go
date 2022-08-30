@@ -103,29 +103,42 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 
 // VerifyChecksum validates the contents of a pack
 // according to a provided .checksum file.
-func VerifyChecksum(sourcePack, sourceChecksum string) error {
-	if !utils.FileExists(sourcePack) {
-		log.Errorf("\"%s\" does not exist", sourcePack)
+func VerifyChecksum(packPath, checksumPath string) error {
+	if !utils.FileExists(packPath) {
+		log.Errorf("\"%s\" does not exist", packPath)
 		return errs.ErrFileNotFound
 	}
-	if !utils.FileExists(sourceChecksum) {
-		log.Errorf("\"%s\" does not exist", sourceChecksum)
+
+	// TODO: When multiple hash algos are supported,
+	// some more refined logic is needed as there may
+	// exist .checksums with different algos in the same dir
+	if checksumPath == "" {
+		for _, hash := range Hashes {
+			checksumPath = strings.ReplaceAll(packPath, ".pack", "."+hash+".checksum")
+			if utils.FileExists(checksumPath) {
+				break
+			}
+		}
+	}
+
+	if !utils.FileExists(checksumPath) {
+		log.Errorf("\"%s\" does not exist", checksumPath)
 		return errs.ErrFileNotFound
 	}
-	hashFunction := filepath.Ext(strings.Split(sourceChecksum, ".checksum")[0])[1:]
+	hashFunction := filepath.Ext(strings.Split(checksumPath, ".checksum")[0])[1:]
 	if !isValidHash(hashFunction) {
-		log.Errorf("\"%s\" is not a valid .checksum file (correct format is [<pack>].[<hash-algorithm>].checksum). Please confirm if the algorithm is supported.", sourceChecksum)
+		log.Errorf("\"%s\" is not a valid .checksum file (correct format is [<pack>].[<hash-algorithm>].checksum). Please confirm if the algorithm is supported.", checksumPath)
 		return errs.ErrInvalidHashFunction
 	}
 
 	// Compute pack's digests
-	digests, err := getChecksumList(sourcePack, hashFunction)
+	digests, err := getChecksumList(packPath, hashFunction)
 	if err != nil {
 		return err
 	}
 
 	// Check if pack and checksum file have the same number of files listed
-	b, err := os.ReadFile(sourceChecksum)
+	b, err := os.ReadFile(checksumPath)
 	checksumFile := string(b)
 	if err != nil {
 		return err
