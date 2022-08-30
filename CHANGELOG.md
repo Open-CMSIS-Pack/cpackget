@@ -1,3 +1,15 @@
+# v0.7.2
+
+This v0.7.2 release contains:
+
+Bug fixes:
+- `cpackget --version` outputs correct value
+- Local paths are consistent on all systems, no more backslashes
+- "local_repository.pidx" has a static `<vendor>` tag, matching the spec
+
+New features:
+- Using Go 1.18 and updated dependencies, slightly faster
+
 # v0.7.1
 
 This v0.7.1 release is dedicated to improving network capabilities. It contains:
