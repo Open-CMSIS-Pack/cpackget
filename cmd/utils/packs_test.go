@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -329,6 +330,8 @@ func TestExtractPackInfo(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			info, err := utils.ExtractPackInfo(test.path)
+			// Avoid Windows path issues
+			test.expected.Location = strings.ReplaceAll(test.expected.Location, "\\", "/")
 			if test.err != nil {
 				assert.True(errs.Is(err, test.err))
 			} else {
