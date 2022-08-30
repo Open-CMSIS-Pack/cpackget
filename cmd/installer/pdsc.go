@@ -87,6 +87,12 @@ func (p *PdscType) install(installation *PacksInstallationType) error {
 	foundTags := installation.LocalPidx.FindPdscTags(searchTag)
 	if len(foundTags) > 0 {
 		for _, foundTag := range foundTags {
+			if strings.ReplaceAll(foundTag.URL, "\\", "/") == tag.URL {
+				log.Warn("Found PDSC file with an equal but malformed path (using '\\'). Correcting entry and reinstalling.")
+				if err := installation.LocalPidx.RemovePdsc(foundTag); err != nil {
+					return err
+				}
+			}
 			if foundTag.URL == tag.URL {
 				return errs.ErrPdscEntryExists
 			}

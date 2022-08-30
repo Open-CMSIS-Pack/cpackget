@@ -24,7 +24,8 @@ var nameRegex = regexp.MustCompile(fmt.Sprintf("^%s$", namePattern))
 // versionPattern validates pack version.
 // Ref: https://github.com/ARM-software/CMSIS_5/blob/develop/CMSIS/Utilities/PackIndex.xsd
 // With little adjustments to reduce the number of capturing groups to a single one
-//                    <major> .<minor> .<patch>   - <quality>                                                                         + <meta info>
+//
+//	<major> .<minor> .<patch>   - <quality>                                                                         + <meta info>
 var versionPattern = `(?:\d+)\.(?:\d+)\.(?:\d+)(?:-(?:(?:\d+|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:\d+|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?:[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?`
 
 // versionRegex pre-compiles versionPattern.
@@ -154,7 +155,8 @@ type PackInfo struct {
 // If short is true, then prepare it considering that path is in the simpler
 // form of Vendor.Pack[.x.y.z], used when removing packs/pdscs.
 // NOTE: a malformed packPath e.g. "my.pack" DOES look like a valid
-//       pack name, with "my" for vendor and "pack" for pack name.
+//
+//	pack name, with "my" for vendor and "pack" for pack name.
 func ExtractPackInfo(packPath string) (PackInfo, error) {
 	log.Debugf("Extracting pack info from \"%s\"", packPath)
 
@@ -189,6 +191,9 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 			location = "file://localhost/" + location + string(os.PathSeparator)
 		}
 
+		// As per the specification, no path backslashes allowed
+		// (found in Windows)
+		location = strings.ReplaceAll(location, "\\", "/")
 		info.Location = location
 		log.Debugf("\"%s\" is a file name or a URL with Vendor=\"%s\", Pack=\"%s\", Version=\"%s\", Extension=\"%v\", Location=\"%s\"", packPath, info.Vendor, info.Pack, info.Version, info.Extension, location)
 		return info, nil
