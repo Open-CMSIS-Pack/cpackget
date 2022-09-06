@@ -1,10 +1,6 @@
 package cryptography
 
 import (
-	"archive/zip"
-	"crypto/sha256"
-	"fmt"
-	"hash"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,36 +19,6 @@ func isValidHash(hashFunction string) bool {
 		}
 	}
 	return false
-}
-
-// getChecksumList computes the digests of a pack according
-// to the specified hash function.
-func getChecksumList(sourcePack, hashFunction string) (map[string]string, error) {
-	var h hash.Hash
-	switch hashFunction {
-	case "sha256":
-		h = sha256.New()
-	} // Default will always be "sha256" if nothing is passed
-
-	zipReader, err := zip.OpenReader(sourcePack)
-	if err != nil {
-		log.Errorf("can't decompress \"%s\": %s", sourcePack, err)
-		return nil, errs.ErrFailedDecompressingFile
-	}
-
-	digests := make(map[string]string)
-	for _, file := range zipReader.File {
-		reader, err := file.Open()
-		if err != nil {
-			return nil, err
-		}
-		_, err = utils.SecureCopy(h, reader)
-		if err != nil {
-			return nil, err
-		}
-		digests[file.Name] = fmt.Sprintf("%x", h.Sum(nil))
-	}
-	return digests, nil
 }
 
 // GenerateChecksum creates a .checksum file for a pack.
@@ -81,22 +47,13 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 		return errs.ErrPathAlreadyExists
 	}
 
-	digests, err := getChecksumList(sourcePack, hashFunction)
+	digests, err := GetDigestList(sourcePack, hashFunction)
 	if err != nil {
 		return err
 	}
-
-	out, err := os.Create(checksumFilename)
+	err = WriteChecksumFile(digests, checksumFilename)
 	if err != nil {
-		log.Error(err)
-		return errs.ErrFailedCreatingFile
-	}
-	defer out.Close()
-	for filename, digest := range digests {
-		_, err := out.Write([]byte(digest + " " + filename + "\n"))
-		if err != nil {
-			return err
-		}
+		return err
 	}
 	return nil
 }
@@ -132,7 +89,7 @@ func VerifyChecksum(packPath, checksumPath string) error {
 	}
 
 	// Compute pack's digests
-	digests, err := getChecksumList(packPath, hashFunction)
+	digests, err := GetDigestList(packPath, hashFunction)
 	if err != nil {
 		return err
 	}

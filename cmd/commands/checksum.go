@@ -31,7 +31,7 @@ var ChecksumCreateCmd = &cobra.Command{
 	Use:   "checksum-create [<local .path pack>]",
 	Short: "Generates a .checksum file containing the digests of a pack",
 	Long: `
-Creates a .checksum file of a local pack. This is file contains the digests
+Creates a .checksum file of a local pack. This file contains the digests
 of the contents of the pack. Example <Vendor.Pack.1.2.3.sha256.checksum> file:
 
   "6f95628e4e0824b0ff4a9f49dad1c3eb073b27c2dd84de3b985f0ef3405ca9ca Vendor.Pack.1.2.3.pdsc

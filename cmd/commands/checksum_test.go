@@ -11,6 +11,7 @@ import (
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 )
 
+// TODO: Compare actual ErrFileNotFound output
 var checksumCreateCmdTests = []TestCase{
 	{
 		name:        "test different number of parameters",
@@ -40,11 +41,11 @@ var checksumVerifyCmdTests = []TestCase{
 	{
 		name:        "test different number of parameters",
 		args:        []string{"checksum-verify"},
-		expectedErr: errors.New("accepts 2 arg(s), received 0"),
+		expectedErr: errors.New("accepts 1 arg(s), received 0"),
 	},
 	{
 		name:        "test verifying checksum of unexisting pack",
-		args:        []string{"checksum-verify", "DoesNotExist.Pack.1.2.3.pack", "DoesNotExist.Pack.1.2.3.pack.sha256.checksum"},
+		args:        []string{"checksum-verify", "DoesNotExist.Pack.1.2.3.pack"},
 		expectedErr: errs.ErrFileNotFound,
 		setUpFunc: func(t *TestCase) {
 			f, _ := os.Create("DoesNotExist.Pack.1.2.3.pack.sha256.checksum")
@@ -56,12 +57,8 @@ var checksumVerifyCmdTests = []TestCase{
 	},
 	{
 		name:        "test verifying checksum of unexisting checksum file",
-		args:        []string{"checksum-verify", "Pack.1.2.3.pack", "DoesNotExist.Pack.1.2.3.pack.sha256.checksum"},
+		args:        []string{"checksum-verify", "Pack.1.2.3.pack"},
 		expectedErr: errs.ErrFileNotFound,
-		setUpFunc: func(t *TestCase) {
-			f, _ := os.Create("Pack.1.2.3.pack.sha256.checksum")
-			f.Close()
-		},
 		tearDownFunc: func() {
 			os.Remove("Pack.1.2.3.pack.sha256.checksum")
 		},
