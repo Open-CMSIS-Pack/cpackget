@@ -1,3 +1,12 @@
+# v0.8.0
+
+This v0.8.0 release contains:
+
+New features:
+- `cpackget signature-create`: creates and PGP signs a .checksum file
+- `cpackget signature-verify`: verifies a .checksum file against its PGP signature
+- `cpackget checksum-verify` infers checksum path from the pack's directory
+
 # v0.7.2
 
 This v0.7.2 release contains:
