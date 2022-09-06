@@ -55,6 +55,7 @@ var (
 	ErrBadPackIntegrity     = errors.New("bad pack integrity")
 	ErrIntegrityCheckFailed = errors.New("checksum verification failed")
 	ErrInvalidHashFunction  = errors.New("provided hash function is not supported")
+	ErrKeyGenerationFailure = errors.New("error generating new private key")
 
 	// Security errors
 	ErrInsecureZipFileName = errors.New("zip file contains insecure characters: ../")
