@@ -183,7 +183,12 @@ func (p *PidxXML) Read() error {
 	if !utils.FileExists(p.fileName) {
 		log.Debugf("\"%v\" not found. Creating a new one.", p.fileName)
 		p.SchemaVersion = "1.1.0"
-		vendorName := path.Base(p.fileName)
+		vendorName := ""
+		if p.URL == "" {
+			vendorName = "local_repository.pidx"
+		} else {
+			vendorName = path.Base(p.fileName)
+		}
 		p.Vendor = strings.TrimSuffix(vendorName, filepath.Ext(vendorName))
 		return p.Write()
 	}

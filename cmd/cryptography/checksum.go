@@ -1,10 +1,6 @@
 package cryptography
 
 import (
-	"archive/zip"
-	"crypto/sha256"
-	"fmt"
-	"hash"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,36 +19,6 @@ func isValidHash(hashFunction string) bool {
 		}
 	}
 	return false
-}
-
-// getChecksumList computes the digests of a pack according
-// to the specified hash function.
-func getChecksumList(sourcePack, hashFunction string) (map[string]string, error) {
-	var h hash.Hash
-	switch hashFunction {
-	case "sha256":
-		h = sha256.New()
-	} // Default will always be "sha256" if nothing is passed
-
-	zipReader, err := zip.OpenReader(sourcePack)
-	if err != nil {
-		log.Errorf("can't decompress \"%s\": %s", sourcePack, err)
-		return nil, errs.ErrFailedDecompressingFile
-	}
-
-	digests := make(map[string]string)
-	for _, file := range zipReader.File {
-		reader, err := file.Open()
-		if err != nil {
-			return nil, err
-		}
-		_, err = utils.SecureCopy(h, reader)
-		if err != nil {
-			return nil, err
-		}
-		digests[file.Name] = fmt.Sprintf("%x", h.Sum(nil))
-	}
-	return digests, nil
 }
 
 // GenerateChecksum creates a .checksum file for a pack.
@@ -81,51 +47,55 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 		return errs.ErrPathAlreadyExists
 	}
 
-	digests, err := getChecksumList(sourcePack, hashFunction)
+	digests, err := GetDigestList(sourcePack, hashFunction)
 	if err != nil {
 		return err
 	}
-
-	out, err := os.Create(checksumFilename)
+	err = WriteChecksumFile(digests, checksumFilename)
 	if err != nil {
-		log.Error(err)
-		return errs.ErrFailedCreatingFile
-	}
-	defer out.Close()
-	for filename, digest := range digests {
-		_, err := out.Write([]byte(digest + " " + filename + "\n"))
-		if err != nil {
-			return err
-		}
+		return err
 	}
 	return nil
 }
 
 // VerifyChecksum validates the contents of a pack
 // according to a provided .checksum file.
-func VerifyChecksum(sourcePack, sourceChecksum string) error {
-	if !utils.FileExists(sourcePack) {
-		log.Errorf("\"%s\" does not exist", sourcePack)
+func VerifyChecksum(packPath, checksumPath string) error {
+	if !utils.FileExists(packPath) {
+		log.Errorf("\"%s\" does not exist", packPath)
 		return errs.ErrFileNotFound
 	}
-	if !utils.FileExists(sourceChecksum) {
-		log.Errorf("\"%s\" does not exist", sourceChecksum)
+
+	// TODO: When multiple hash algos are supported,
+	// some more refined logic is needed as there may
+	// exist .checksums with different algos in the same dir
+	if checksumPath == "" {
+		for _, hash := range Hashes {
+			checksumPath = strings.ReplaceAll(packPath, ".pack", "."+hash+".checksum")
+			if utils.FileExists(checksumPath) {
+				break
+			}
+		}
+	}
+
+	if !utils.FileExists(checksumPath) {
+		log.Errorf("\"%s\" does not exist", checksumPath)
 		return errs.ErrFileNotFound
 	}
-	hashFunction := filepath.Ext(strings.Split(sourceChecksum, ".checksum")[0])[1:]
+	hashFunction := filepath.Ext(strings.Split(checksumPath, ".checksum")[0])[1:]
 	if !isValidHash(hashFunction) {
-		log.Errorf("\"%s\" is not a valid .checksum file (correct format is [<pack>].[<hash-algorithm>].checksum). Please confirm if the algorithm is supported.", sourceChecksum)
+		log.Errorf("\"%s\" is not a valid .checksum file (correct format is [<pack>].[<hash-algorithm>].checksum). Please confirm if the algorithm is supported.", checksumPath)
 		return errs.ErrInvalidHashFunction
 	}
 
 	// Compute pack's digests
-	digests, err := getChecksumList(sourcePack, hashFunction)
+	digests, err := GetDigestList(packPath, hashFunction)
 	if err != nil {
 		return err
 	}
 
 	// Check if pack and checksum file have the same number of files listed
-	b, err := os.ReadFile(sourceChecksum)
+	b, err := os.ReadFile(checksumPath)
 	checksumFile := string(b)
 	if err != nil {
 		return err

@@ -1,3 +1,36 @@
+# v0.8.0
+
+This v0.8.0 release contains:
+
+New features:
+- `cpackget signature-create`: creates and PGP signs a .checksum file
+- `cpackget signature-verify`: verifies a .checksum file against its PGP signature
+- `cpackget checksum-verify` infers checksum path from the pack's directory
+
+# v0.7.2
+
+This v0.7.2 release contains:
+
+Bug fixes:
+- `cpackget --version` outputs correct value
+- Local paths are consistent on all systems, no more backslashes
+- "local_repository.pidx" has a static `<vendor>` tag, matching the spec
+
+New features:
+- Using Go 1.18 and updated dependencies, slightly faster
+
+# v0.7.1
+
+This v0.7.1 release is dedicated to improving network capabilities. It contains:
+
+Bug fixes:
+- Timeout on broken downloads instead of getting stuck (via new timeout flag)
+
+New features:
+- `cpackget init --all-pdsc-files/-a`: Downloads all PDSC files listed in the initialized public index
+- `--concurrent-downloads/-C`: global flag to enable concurrent/parallel downloads when downloading multiple files
+- `--timeout/-T`: global flag setting a maximum timeout for all HTTP/HTTPS downloads
+
 # v0.7.0
 
 This v0.7 release contains:
