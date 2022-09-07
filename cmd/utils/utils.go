@@ -111,6 +111,7 @@ func DownloadFile(URL string, timeout int) (string, error) {
 					return net.Dial(netw, addr)
 				},
 				TLSClientConfig: &tls,
+				Proxy:           http.ProxyFromEnvironment,
 			},
 			RoundTripTimeout: rtt,
 		},
