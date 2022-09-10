@@ -75,6 +75,11 @@ var initCmdTests = []TestCase{
 		expectedErr: errors.New("accepts 1 arg(s), received 0"),
 	},
 	{
+		name:        "test help command",
+		args:        []string{"help", "init"},
+		expectedErr: nil,
+	},
+	{
 		name: "test create using an index.pidx",
 		args: []string{"init"},
 		setUpFunc: func(t *TestCase) {
@@ -101,7 +106,7 @@ var initCmdTests = []TestCase{
 		args:           []string{"init", notFoundPidxFilePath},
 		createPackRoot: true,
 		expectedErr: &fs.PathError{
-			Op:   "open",
+			Op:   "stat",
 			Path: notFoundPidxFilePath,
 			Err:  expectedFileNotFoundError,
 		},
