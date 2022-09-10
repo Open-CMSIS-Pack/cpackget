@@ -58,4 +58,19 @@ cpackget will remove the pdsc entry from CMSIS_PACK_ROOT/.Local/local_repository
 
 func init() {
 	PdscCmd.AddCommand(pdscAddCmd, pdscRmCmd)
+	PdscCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+		err := command.Flags().MarkHidden("concurrent-downloads")
+		_ = command.Flags().MarkHidden("timeout")
+		log.Debug(err)
+		command.Parent().HelpFunc()(command, strings)
+	})
+	// Since it's two subcommands, they can't just inherit
+	// the parent's help function
+	pdscAddCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+		err := command.Flags().MarkHidden("concurrent-downloads")
+		_ = command.Flags().MarkHidden("timeout")
+		log.Debug(err)
+		PdscCmd.Parent().HelpFunc()(command, strings)
+	})
+	pdscRmCmd.SetHelpFunc(pdscAddCmd.HelpFunc())
 }

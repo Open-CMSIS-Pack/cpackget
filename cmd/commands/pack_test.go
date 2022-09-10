@@ -26,6 +26,11 @@ var packCmdTests = []TestCase{
 
 	// Add
 	{
+		name:        "test help command",
+		args:        []string{"help", "pack", "add"},
+		expectedErr: nil,
+	},
+	{
 		name:           "test adding pack file no args",
 		args:           []string{"pack", "add"},
 		createPackRoot: true,
@@ -68,6 +73,11 @@ var packCmdTests = []TestCase{
 		expectedErr: errors.New("requires at least 1 arg(s), only received 0"),
 	},
 	{
+		name:        "test help command",
+		args:        []string{"help", "pack", "rm"},
+		expectedErr: nil,
+	},
+	{
 		name:           "test removing pack",
 		args:           []string{"pack", "rm", "TheVendor.PublicLocalPack.1.2.3"},
 		createPackRoot: true,
@@ -76,6 +86,11 @@ var packCmdTests = []TestCase{
 	},
 
 	// List
+	{
+		name:        "test help command",
+		args:        []string{"help", "pack", "list"},
+		expectedErr: nil,
+	},
 	{
 		name:           "test listing installed packs",
 		args:           []string{"pack", "list"},

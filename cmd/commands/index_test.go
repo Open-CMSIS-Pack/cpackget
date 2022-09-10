@@ -19,6 +19,11 @@ var indexCmdTests = []TestCase{
 		expectedErr: errors.New("accepts 1 arg(s), received 0"),
 	},
 	{
+		name:        "test help command",
+		args:        []string{"help", "index"},
+		expectedErr: nil,
+	},
+	{
 		name:        "test with no packroot configured",
 		args:        []string{"index", "index.pidx"},
 		env:         map[string]string{"CMSIS_PACK_ROOT": ""},
@@ -38,7 +43,7 @@ var indexCmdTests = []TestCase{
 		setUpFunc: func(t *TestCase) {
 			server := NewServer()
 			t.args = append(t.args, server.URL()+"index.pidx")
-			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?> 
+			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?>
 <index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
 <vendor>TheVendor</vendor>
 <url>http://the.vendor/</url>
@@ -75,7 +80,7 @@ var initCmdTests = []TestCase{
 		setUpFunc: func(t *TestCase) {
 			server := NewServer()
 			t.args = append(t.args, server.URL()+"index.pidx")
-			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?> 
+			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?>
 <index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
 <vendor>TheVendor</vendor>
 <url>http://the.vendor/</url>

@@ -17,6 +17,11 @@ var (
 
 var pdscCmdTests = []TestCase{
 	{
+		name:        "test help command",
+		args:        []string{"help", "pdsc"},
+		expectedErr: nil,
+	},
+	{
 		name:           "test no parameter given",
 		args:           []string{"pdsc"},
 		expectedStdout: []string{"Adds or removes Open-CMSIS-Pack packages in the local file system via PDSC files"},
@@ -30,6 +35,11 @@ var pdscCmdTests = []TestCase{
 		expectedErr:    errors.New("requires at least 1 arg(s), only received 0"),
 	},
 	{
+		name:        "test help command",
+		args:        []string{"help", "pdsc", "add"},
+		expectedErr: nil,
+	},
+	{
 		name:           "test adding pdsc file",
 		args:           []string{"pdsc", "add", pdscFilePath},
 		createPackRoot: true,
@@ -41,6 +51,11 @@ var pdscCmdTests = []TestCase{
 		name:        "test removing pdsc file no args",
 		args:        []string{"pdsc", "rm"},
 		expectedErr: errors.New("requires at least 1 arg(s), only received 0"),
+	},
+	{
+		name:        "test help command",
+		args:        []string{"help", "pdsc", "rm"},
+		expectedErr: nil,
 	},
 	{
 		name:           "test removing pdsc",

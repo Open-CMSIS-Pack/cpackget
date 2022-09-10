@@ -5,6 +5,7 @@ package commands
 
 import (
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -34,4 +35,11 @@ func init() {
 	ListCmd.Flags().BoolVarP(&listCmdFlags.listCached, "cached", "c", false, "list only cached packs")
 	ListCmd.Flags().BoolVarP(&listCmdFlags.listPublic, "public", "p", false, "list packs in the public index")
 	ListCmd.Flags().StringVarP(&listCmdFlags.listFilter, "filter", "f", "", "filter results (case sensitive, accepts several expressions)")
+
+	ListCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+		err := command.Flags().MarkHidden("concurrent-downloads")
+		_ = command.Flags().MarkHidden("timeout")
+		log.Debug(err)
+		command.Parent().HelpFunc()(command, strings)
+	})
 }

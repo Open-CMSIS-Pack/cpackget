@@ -111,6 +111,11 @@ var rootCmdTests = []TestCase{
 		expectedStdout: []string{"Please refer to the upstream repository for further information"},
 	},
 	{
+		name:        "test no parameter given",
+		args:        []string{"help"},
+		expectedErr: nil,
+	},
+	{
 		name:        "test unknown command",
 		args:        []string{"this-command-does-not-exist"},
 		expectedErr: errors.New("unknown command \"this-command-does-not-exist\" for \"cpackget\""),

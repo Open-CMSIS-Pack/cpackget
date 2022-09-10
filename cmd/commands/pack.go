@@ -142,4 +142,17 @@ func init() {
 	packListCmd.Flags().BoolVarP(&listCached, "cached", "c", false, "lists only cached packs")
 	packListCmd.Flags().BoolVarP(&listPublic, "public", "p", false, "lists packs in the public index")
 	PackCmd.AddCommand(packAddCmd, packRmCmd, packListCmd)
+
+	packAddCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+		err := command.Flags().MarkHidden("concurrent-downloads")
+		log.Debug(err)
+		command.Parent().HelpFunc()(command, strings)
+	})
+	packRmCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+		err := command.Flags().MarkHidden("concurrent-downloads")
+		_ = command.Flags().MarkHidden("timeout")
+		log.Debug(err)
+		command.Parent().HelpFunc()(command, strings)
+	})
+	packListCmd.SetHelpFunc(packRmCmd.HelpFunc())
 }

@@ -5,6 +5,7 @@ package commands
 
 import (
 	"github.com/open-cmsis-pack/cpackget/cmd/cryptography"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -25,6 +26,15 @@ func init() {
 	ChecksumCreateCmd.Flags().StringVarP(&checksumCreateCmdFlags.hashAlgorithm, "hash-function", "a", cryptography.Hashes[0], "specifies the hash function to be used")
 	ChecksumCreateCmd.Flags().StringVarP(&checksumCreateCmdFlags.outputDir, "output-dir", "o", "", "specifies output directory for the checksum file")
 	ChecksumVerifyCmd.Flags().StringVarP(&checksumVerifyCmdFlags.checksumPath, "path", "p", "", "path of the checksum file")
+
+	ChecksumCreateCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+		err := command.Flags().MarkHidden("pack-root")
+		_ = command.Flags().MarkHidden("concurrent-downloads")
+		_ = command.Flags().MarkHidden("timeout")
+		log.Debug(err)
+		command.Parent().HelpFunc()(command, strings)
+	})
+	ChecksumVerifyCmd.SetHelpFunc(ChecksumCreateCmd.HelpFunc())
 }
 
 var ChecksumCreateCmd = &cobra.Command{

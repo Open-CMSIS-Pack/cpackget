@@ -112,4 +112,12 @@ func init() {
 	AddCmd.Flags().BoolVarP(&addCmdFlags.extractEula, "extract-embedded-license", "x", false, "extracts the embedded license of the pack and aborts the installation")
 	AddCmd.Flags().BoolVarP(&addCmdFlags.forceReinstall, "force-reinstall", "F", false, "forces installation of an already installed pack")
 	AddCmd.Flags().StringVarP(&addCmdFlags.packsListFileName, "packs-list-filename", "f", "", "specifies a file listing packs urls, one per line")
+
+	AddCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+		// Small workaround to keep the linter happy, not
+		// really necessary to test this
+		err := command.Flags().MarkHidden("concurrent-downloads")
+		log.Debug(err)
+		command.Parent().HelpFunc()(command, strings)
+	})
 }

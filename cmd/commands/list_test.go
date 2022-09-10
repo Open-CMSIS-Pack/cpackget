@@ -14,6 +14,11 @@ import (
 
 var listCmdTests = []TestCase{
 	{
+		name:        "test help command",
+		args:        []string{"help", "list"},
+		expectedErr: nil,
+	},
+	{
 		name:           "test listing installed packs",
 		args:           []string{"list"},
 		createPackRoot: true,

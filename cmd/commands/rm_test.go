@@ -22,6 +22,11 @@ var rmCmdTests = []TestCase{
 		expectedErr:    errors.New("requires at least 1 arg(s), only received 0"),
 	},
 	{
+		name:        "test help command",
+		args:        []string{"help", "rm"},
+		expectedErr: nil,
+	},
+	{
 		name:           "test removing pack that does not exist",
 		args:           []string{"rm", "DoesNotExist.Pack.1.2.3"},
 		createPackRoot: true,
