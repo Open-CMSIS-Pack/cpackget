@@ -70,6 +70,7 @@ var (
 
 	// Errors on installation strucuture
 	ErrCannotOverwritePublicIndex      = errors.New("cannot replace \"index.pidx\", use the flag \"-f/--force\" to force overwritting it")
+	ErrInvalidPublicIndexReference     = errors.New("the specified index path can only either empty, a local file or an HTTP(S) URL - not a directory")
 	ErrPackPdscCannotBeFound           = errors.New("the URL for the pack pdsc file seems not to exist or it didn't return the file")
 	ErrPackVersionNotFoundInPdsc       = errors.New("pack version not found in the pdsc file")
 	ErrPackVersionNotLatestReleasePdsc = errors.New("pack version is not the latest in the pdsc file")

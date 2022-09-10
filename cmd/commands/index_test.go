@@ -6,6 +6,7 @@ package commands_test
 import (
 	"errors"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -109,6 +110,18 @@ var initCmdTests = []TestCase{
 			Op:   "stat",
 			Path: notFoundPidxFilePath,
 			Err:  expectedFileNotFoundError,
+		},
+	},
+	{
+		name:           "test create using directory as path",
+		args:           []string{"init", "foo/"},
+		createPackRoot: true,
+		expectedErr:    errs.ErrInvalidPublicIndexReference,
+		setUpFunc: func(t *TestCase) {
+			t.assert.Nil(os.Mkdir("foo/", 0777))
+		},
+		tearDownFunc: func() {
+			os.Remove("foo/")
 		},
 	},
 }
