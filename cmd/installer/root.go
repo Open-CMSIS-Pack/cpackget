@@ -214,6 +214,19 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 			return err
 		}
 		defer os.Remove(indexPath)
+	} else {
+		if indexPath != "" {
+			if !utils.FileExists(indexPath) && !utils.DirExists(indexPath) {
+				return errs.ErrFileNotFound
+			}
+			fileInfo, err := os.Stat(indexPath)
+			if err != nil {
+				return err
+			}
+			if fileInfo.IsDir() {
+				return errs.ErrInvalidPublicIndexReference
+			}
+		}
 	}
 
 	pidxXML := xml.NewPidxXML(indexPath)
@@ -634,16 +647,14 @@ var Installation *PacksInstallationType
 // if create == true, cpackget will try to create needed resources
 func SetPackRoot(packRoot string, create bool) error {
 	if len(packRoot) == 0 {
-		log.Infof("Using pack root: \"%v\"", packRoot)
 		return errs.ErrPackRootNotFound
 	}
 
 	packRoot = filepath.Clean(packRoot)
-	log.Infof("Using pack root: \"%v\"", packRoot)
-
 	if !utils.DirExists(packRoot) && !create {
 		return errs.ErrPackRootDoesNotExist
 	}
+	log.Infof("Using pack root: \"%v\"", packRoot)
 
 	Installation = &PacksInstallationType{
 		PackRoot:    packRoot,

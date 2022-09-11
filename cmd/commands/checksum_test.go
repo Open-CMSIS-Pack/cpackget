@@ -19,6 +19,11 @@ var checksumCreateCmdTests = []TestCase{
 		expectedErr: errors.New("accepts 1 arg(s), received 0"),
 	},
 	{
+		name:        "test help command",
+		args:        []string{"help", "checksum-create"},
+		expectedErr: nil,
+	},
+	{
 		name:        "test creating checksum of unexisting pack",
 		args:        []string{"checksum-create", "DoesNotExist.Pack.1.2.3.pack"},
 		expectedErr: errs.ErrFileNotFound,
@@ -42,6 +47,11 @@ var checksumVerifyCmdTests = []TestCase{
 		name:        "test different number of parameters",
 		args:        []string{"checksum-verify"},
 		expectedErr: errors.New("accepts 1 arg(s), received 0"),
+	},
+	{
+		name:        "test help command",
+		args:        []string{"help", "checksum-verify"},
+		expectedErr: nil,
 	},
 	{
 		name:        "test verifying checksum of unexisting pack",

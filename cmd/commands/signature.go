@@ -40,6 +40,15 @@ func init() {
 
 	SignatureVerifyCmd.Flags().StringVarP(&signatureVerifyCmdFlags.signaturePath, "sig-path", "s", "", "path of the .signature file")
 	SignatureVerifyCmd.Flags().StringVarP(&signatureVerifyCmdFlags.passphrase, "passphrase", "p", "", "passphrase for the provided private key")
+
+	SignatureCreateCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+		err := command.Flags().MarkHidden("pack-root")
+		_ = command.Flags().MarkHidden("concurrent-downloads")
+		_ = command.Flags().MarkHidden("timeout")
+		log.Debug(err)
+		command.Parent().HelpFunc()(command, strings)
+	})
+	SignatureVerifyCmd.SetHelpFunc(SignatureCreateCmd.HelpFunc())
 }
 
 var SignatureCreateCmd = &cobra.Command{
@@ -74,7 +83,7 @@ By default the signature file will be created in the same directory as the provi
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if signatureCreateCmdFlags.keyPath == "" && signatureCreateCmdFlags.passphrase != "" {
-			log.Error("-p/-passphrase is only specified when providing a key")
+			log.Error("-p/--passphrase is only specified when providing a key")
 			return errs.ErrIncorrectCmdArgs
 		}
 		return cryptography.GenerateSignedChecksum(args[0], signatureCreateCmdFlags.keyPath, signatureCreateCmdFlags.outputDir, signatureCreateCmdFlags.passphrase, signatureCreateCmdFlags.outputB64)

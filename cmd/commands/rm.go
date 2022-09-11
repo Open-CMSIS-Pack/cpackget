@@ -80,4 +80,11 @@ please use "--purge".`,
 
 func init() {
 	RmCmd.Flags().BoolVarP(&rmCmdFlags.purge, "purge", "p", false, "forces deletion of cached pack files")
+
+	RmCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+		err := command.Flags().MarkHidden("concurrent-downloads")
+		_ = command.Flags().MarkHidden("timeout")
+		log.Debug(err)
+		command.Parent().HelpFunc()(command, strings)
+	})
 }

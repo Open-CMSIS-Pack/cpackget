@@ -20,12 +20,17 @@ var updateIndexCmdTests = []TestCase{
 		expectedErr: errors.New("accepts 0 arg(s), received 1"),
 	},
 	{
+		name:        "test help command",
+		args:        []string{"help", "index"},
+		expectedErr: nil,
+	},
+	{
 		name:           "test updating index",
 		args:           []string{"update-index"},
 		createPackRoot: true,
 		expectedStdout: []string{"Updating public index", "Downloading index.pidx"},
 		setUpFunc: func(t *TestCase) {
-			indexContent := `<?xml version="1.0" encoding="UTF-8" ?> 
+			indexContent := `<?xml version="1.0" encoding="UTF-8" ?>
 <index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
 <vendor>TheVendor</vendor>
 <url>%s</url>

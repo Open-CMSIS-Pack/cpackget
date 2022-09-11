@@ -5,7 +5,7 @@ package commands_test
 
 import (
 	"errors"
-	"io/fs"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -17,6 +17,11 @@ var indexCmdTests = []TestCase{
 		name:        "test no parameter given",
 		args:        []string{"index"},
 		expectedErr: errors.New("accepts 1 arg(s), received 0"),
+	},
+	{
+		name:        "test help command",
+		args:        []string{"help", "index"},
+		expectedErr: nil,
 	},
 	{
 		name:        "test with no packroot configured",
@@ -38,7 +43,7 @@ var indexCmdTests = []TestCase{
 		setUpFunc: func(t *TestCase) {
 			server := NewServer()
 			t.args = append(t.args, server.URL()+"index.pidx")
-			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?> 
+			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?>
 <index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
 <vendor>TheVendor</vendor>
 <url>http://the.vendor/</url>
@@ -70,12 +75,17 @@ var initCmdTests = []TestCase{
 		expectedErr: errors.New("accepts 1 arg(s), received 0"),
 	},
 	{
+		name:        "test help command",
+		args:        []string{"help", "init"},
+		expectedErr: nil,
+	},
+	{
 		name: "test create using an index.pidx",
 		args: []string{"init"},
 		setUpFunc: func(t *TestCase) {
 			server := NewServer()
 			t.args = append(t.args, server.URL()+"index.pidx")
-			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?> 
+			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?>
 <index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
 <vendor>TheVendor</vendor>
 <url>http://the.vendor/</url>
@@ -95,10 +105,18 @@ var initCmdTests = []TestCase{
 		name:           "test create using local index.pidx that do not exist",
 		args:           []string{"init", notFoundPidxFilePath},
 		createPackRoot: true,
-		expectedErr: &fs.PathError{
-			Op:   "open",
-			Path: notFoundPidxFilePath,
-			Err:  expectedFileNotFoundError,
+		expectedErr:    errs.ErrFileNotFound,
+	},
+	{
+		name:           "test create using directory as path",
+		args:           []string{"init", "foo/"},
+		createPackRoot: true,
+		expectedErr:    errs.ErrInvalidPublicIndexReference,
+		setUpFunc: func(t *TestCase) {
+			t.assert.Nil(os.Mkdir("foo/", 0777))
+		},
+		tearDownFunc: func() {
+			os.Remove("foo/")
 		},
 	},
 }

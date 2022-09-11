@@ -13,6 +13,11 @@ import (
 
 var addCmdTests = []TestCase{
 	{
+		name:        "test help command",
+		args:        []string{"help", "add"},
+		expectedErr: nil,
+	},
+	{
 		name:           "test adding pack file no args",
 		args:           []string{"add"},
 		createPackRoot: true,
