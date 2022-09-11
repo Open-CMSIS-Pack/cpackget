@@ -215,12 +215,17 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 		}
 		defer os.Remove(indexPath)
 	} else {
-		fileInfo, err := os.Stat(indexPath)
-		if err != nil {
-			return err
-		}
-		if fileInfo.IsDir() {
-			return errs.ErrInvalidPublicIndexReference
+		if indexPath != "" {
+			if !utils.FileExists(indexPath) && !utils.DirExists(indexPath) {
+				return errs.ErrFileNotFound
+			}
+			fileInfo, err := os.Stat(indexPath)
+			if err != nil {
+				return err
+			}
+			if fileInfo.IsDir() {
+				return errs.ErrInvalidPublicIndexReference
+			}
 		}
 	}
 

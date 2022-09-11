@@ -5,7 +5,6 @@ package commands_test
 
 import (
 	"errors"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -106,11 +105,7 @@ var initCmdTests = []TestCase{
 		name:           "test create using local index.pidx that do not exist",
 		args:           []string{"init", notFoundPidxFilePath},
 		createPackRoot: true,
-		expectedErr: &fs.PathError{
-			Op:   "stat",
-			Path: notFoundPidxFilePath,
-			Err:  expectedFileNotFoundError,
-		},
+		expectedErr:    errs.ErrFileNotFound,
 	},
 	{
 		name:           "test create using directory as path",
