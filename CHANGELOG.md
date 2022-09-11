@@ -1,3 +1,12 @@
+# v0.8.1
+
+This v0.8.1 release contains:
+
+Bug fixes:
+- Fix HTTP(S) proxy usage
+- Hide non relevant global flags
+- Clearer error message when initializing an invalid path like a directory or unexisting file
+
 # v0.8.0
 
 This v0.8.0 release contains:
