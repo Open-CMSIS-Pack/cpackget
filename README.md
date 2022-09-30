@@ -21,25 +21,30 @@ Usage:
   cpackget [command] [flags]
 
 Available Commands:
-  add          Add Open-CMSIS-Pack packages
-  help         Help about any command
-  init         Initializes a pack root folder
-  list         List installed packs
-  rm           Remove Open-CMSIS-Pack packages
-  update-index Update the public index
+  add              Add Open-CMSIS-Pack packages
+  checksum-create  Generates a .checksum file containing the digests of a pack
+  checksum-verify  Verifies the integrity of a pack using its .checksum file
+  help             Help about any command
+  init             Initializes a pack root folder
+  list             List installed packs
+  rm               Remove Open-CMSIS-Pack packages
+  signature-create Create a digest list of a pack and signs it
+  signature-verify Verifies the integrity of a .checksum against its signature
+  update-index     Update the public index
 
 Flags:
-  -h, --help               help for cpackget
-  -R, --pack-root string   Specifies pack root folder. Defaults to CMSIS_PACK_ROOT environment variable
-  -q, --quiet              Run cpackget silently, printing only error messages
-  -v, --verbose            Sets verboseness level: None (Errors + Info + Warnings), -v (all + Debugging). Specify "-q" for no messages
-  -V, --version            Prints the version number of cpackget and exit
+  -C, --concurrent-downloads uint   Number of concurrent batch downloads. Set to 0 to disable concurrency (default 5)
+  -h, --help                        help for cpackget
+  -R, --pack-root string            Specifies pack root folder. Defaults to CMSIS_PACK_ROOT environment variable
+  -q, --quiet                       Run cpackget silently, printing only error messages
+  -T, --timeout uint                Set maximum duration (in seconds) of a download. Disabled by default
+  -v, --verbose                     Sets verboseness level: None (Errors + Info + Warnings), -v (all + Debugging). Specify "-q" for no messages
+  -V, --version                     Prints the version number of cpackget and exit
 
 Use "cpackget [command] --help" for more information about a command.
 ```
 
 For example, if one wanted help removing a pack, running `cpackget rm --help` would print out useful information on the subject.
-
 
 ### Specifying the working pack root folder
 
@@ -60,6 +65,7 @@ A copy of the index file (if specified) is placed in `.Web/index.pidx`.
 If later it is needed to update the public index file, just run `cpackget index https://vendor.com/index.pidx` and
 `.Web/index.pidx` will be updated accordingly.
 
+**As of v0.7.0, the pack root is read-only, with permissions being handled by cpackget.** Changing any permissions manually inside the pack root might cause erratic behavior, potentially breaking functionality.
 
 ### Adding packs
 
@@ -79,7 +85,7 @@ Install the latest published version of a public package listed in the package i
 
 Install packs using version modifiers:
 * `cpackget add Vendor::PackName>=x.y.z`, check if there is any version greater than or equal to x.y.z, install latest otherwise
-* `cpackget add Vendor::PackName@~x.y.z`, check if there is any version greater than or equal to x.y.z 
+* `cpackget add Vendor::PackName@~x.y.z`, check if there is any version greater than or equal to x.y.z
 
 Install the pack versions specified in the ascii file. Each line specifies a single pack.
 * `cpackget add -f list-of-packs.txt`
@@ -168,6 +174,60 @@ $ export HTTPS_PROXY=https://my-https-proxy # proxy used for HTTPS requests
 ```
 
 Then **all** HTTP/HTTPS requests will be going through the specified proxy.
+
+### Specifying timeouts
+
+It's possible to set timeouts on commands that perform HTTP downloads, like `cpackget add`. \
+By default there's no timeout. Use the `-T/--timeout` global flag to specify in seconds the maximum waiting period for an HTTP GET:
+
+```bash
+$ cpackget add Vendor::PackName --timeout 5 # Maximum timeout of 5 seconds
+```
+
+**Note**: This feature will be reworked as not to set a hard timeout but an "exponential backoff" based on a number of retries. Some connections might take a lot longer than others, so if an operation like installing a public pack fails, increase the timeout or do not use it at all.
+
+### Parallel downloads
+
+By default  commands that mass download, like `update-index`, use 5 parallel connections to speed up the process. Use the `-C/--concurrent-downloads` global flag to specify the maximum number of parallel HTTP connections that can be opened:
+
+```bash
+$ cpackget add Vendor::PackName --concurrent-downloads 7 # Maximum 7 parallel downloads
+```
+
+Setting it to 0 will disable any parallel downloads.
+
+**Note**: Some hosts might have firewalls/attack mitigation software that might identify multiple fast connections being opened as an attack. If downloading from a certain domain keeps failing, disable both concurrent downloads (set it to 0) and maximum timeout (by not using the flag).
+
+## Security features
+
+The following features are a WIP and under constant review/discussion. These might suddenly change from release to release, with potential breaking changes. Always check the release/changelog first.
+
+### Integrity checking
+As of release **v0.7.0**, it's possible to create a `.checksum` file of a local .pack. This file resembles a common digest file, used to confirm that an obtained piece of information matches the source's content. \
+Instead of just including the digest of the entire .pack as one, it lists the digests of all the files.
+
+The extension includes the pack's name in its canonical form and hash algorithm used, appended by ".checksum": `Pack.Vendor.1.0.0.sha256.checksum`. Currently only works for local packs.
+
+To create it:
+
+```bash
+$ cpackget checksum-create Vendor.PackName.1.0.0
+```
+
+To verify a .pack against it's checksum file:
+
+```bash
+$ cpackget checksum-verify Vendor.PackName.1.0.0
+```
+
+(the .checksum path is assumed to be the same as the .pack, but it can be specified with the `-p` flag)
+
+### Signed Packs
+
+Likewise, this capability can also be extended to check for _authenticity_. With the usage of x509 certificates and/or PGP signatures, it's possible to create a chain of trust where pack vendors can provide verifiable proof that mitigates malicious attacks (like man-in-the-middle) and assure cpackget users
+the legitimacy and authenticity of their published packs.
+
+For more info on the current proof-of-concept implementation: `cpackget help signature-create` and `cpackget help signature-verify`.
 
 ## Contributing to cpackget tool
 
