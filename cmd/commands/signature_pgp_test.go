@@ -12,20 +12,20 @@ import (
 )
 
 // TODO: Compare actual ErrFileNotFound output
-var signatureCreateCmdTests = []TestCase{
+var signatureCreatePGPCmdTests = []TestCase{
 	{
 		name:        "test different number of parameters",
-		args:        []string{"signature-create"},
+		args:        []string{"signature-create-pgp"},
 		expectedErr: errors.New("accepts 1 arg(s), received 0"),
 	},
 	{
 		name:        "test help command",
-		args:        []string{"help", "signature-create"},
+		args:        []string{"help", "signature-create-pgp"},
 		expectedErr: nil,
 	},
 	{
 		name:        "test wrong usage of passphrase flag",
-		args:        []string{"signature-create", "Pack.1.2.3.pack", "--passphrase", "foo"},
+		args:        []string{"signature-create-pgp", "Pack.1.2.3.pack", "--passphrase", "foo"},
 		expectedErr: errs.ErrIncorrectCmdArgs,
 		setUpFunc: func(t *TestCase) {
 			x, _ := os.Create("Pack.1.2.3.pack")
@@ -41,25 +41,25 @@ var signatureCreateCmdTests = []TestCase{
 	// the second test..
 	{
 		name:        "test creating signature of unexisting pack",
-		args:        []string{"signature-create", "DoesNotExist.Pack.1.2.3.pack", "-k", "foo"},
+		args:        []string{"signature-create-pgp", "DoesNotExist.Pack.1.2.3.pack", "-k", "foo"},
 		expectedErr: errs.ErrFileNotFound,
 	},
 }
 
-var signatureVerifyCmdTests = []TestCase{
+var signatureVerifyPGPCmdTests = []TestCase{
 	{
 		name:        "test different number of parameters",
-		args:        []string{"signature-verify"},
+		args:        []string{"signature-verify-pgp"},
 		expectedErr: errors.New("accepts 2 arg(s), received 0"),
 	},
 	{
 		name:        "test help command",
-		args:        []string{"help", "signature-verify"},
+		args:        []string{"help", "signature-verify-pgp"},
 		expectedErr: nil,
 	},
 	{
 		name:        "test signature of unexisting .checksum",
-		args:        []string{"signature-verify", "Pack.1.2.3.sha256.checksum", "signature_curve25519.key"},
+		args:        []string{"signature-verify-pgp", "Pack.1.2.3.sha256.checksum", "signature_curve25519.key"},
 		expectedErr: errs.ErrFileNotFound,
 		setUpFunc: func(t *TestCase) {
 			x, _ := os.Create("signature_curve25519.key")
@@ -74,7 +74,7 @@ var signatureVerifyCmdTests = []TestCase{
 	},
 	{
 		name:        "test verifying unexisting .signature",
-		args:        []string{"signature-verify", "Pack.1.2.3.sha256.checksum", "signature_curve25519.key"},
+		args:        []string{"signature-verify-pgp", "Pack.1.2.3.sha256.checksum", "signature_curve25519.key"},
 		expectedErr: errs.ErrFileNotFound,
 		setUpFunc: func(t *TestCase) {
 			x, _ := os.Create("signature_curve25519.key")
@@ -90,9 +90,9 @@ var signatureVerifyCmdTests = []TestCase{
 }
 
 func TestSignatureCreateCmd(t *testing.T) {
-	runTests(t, signatureCreateCmdTests)
+	runTests(t, signatureCreatePGPCmdTests)
 }
 
 func TestSignatureVerifyCmd(t *testing.T) {
-	runTests(t, signatureVerifyCmdTests)
+	runTests(t, signatureVerifyPGPCmdTests)
 }

@@ -29,7 +29,7 @@ func abortSignatureCreate(err error, checksumPath string) error {
 
 // generatePrivateKey creates a new, PGP formatted
 // private key, prompting the user for its details
-// and key type. Similar to gpg's "--full-generate-key"
+// and key type. Similar to pgp's "--full-generate-key"
 // option.
 func generatePrivateKey() (string, []byte, error) {
 	// Get key details
@@ -144,7 +144,7 @@ func signData(data []byte, keyring *crypto.KeyRing) (string, error) {
 
 // writeChecksumSignature processes and signs
 // a .checksum file using an unlocked private key
-func writeChecksumSignature(checksumFilename, signatureFilename, key string, passphrase []byte) (string, error) {
+func writePGPChecksumSignature(checksumFilename, signatureFilename, key string, passphrase []byte) (string, error) {
 	log.Debugf("opening \"%s\" to create \"%s\"", checksumFilename, signatureFilename)
 	chk, err := os.Open(checksumFilename)
 	if err != nil {
@@ -175,7 +175,7 @@ func writeChecksumSignature(checksumFilename, signatureFilename, key string, pas
 }
 
 // GenerateSignature creates a .signature file based on a pack
-func GenerateSignedChecksum(packPath, keyPath, destinationDir, passphrase string, base64 bool) error {
+func GenerateSignedPGPChecksum(packPath, keyPath, destinationDir, passphrase string, base64 bool) error {
 	if !utils.FileExists(packPath) {
 		log.Errorf("\"%s\" does not exist", packPath)
 		return errs.ErrFileNotFound
@@ -219,7 +219,7 @@ func GenerateSignedChecksum(packPath, keyPath, destinationDir, passphrase string
 		if err != nil {
 			return abortSignatureCreate(err, checksumFilename)
 		}
-		sig, err = writeChecksumSignature(checksumFilename, signatureFilename, key, passphrase)
+		sig, err = writePGPChecksumSignature(checksumFilename, signatureFilename, key, passphrase)
 		if err != nil {
 			return abortSignatureCreate(err, checksumFilename)
 		}
@@ -240,7 +240,7 @@ func GenerateSignedChecksum(packPath, keyPath, destinationDir, passphrase string
 			}
 			passphrase = string(p)
 		}
-		sig, err = writeChecksumSignature(checksumFilename, signatureFilename, string(key), []byte(passphrase))
+		sig, err = writePGPChecksumSignature(checksumFilename, signatureFilename, string(key), []byte(passphrase))
 		if err != nil {
 			return abortSignatureCreate(err, checksumFilename)
 		}
@@ -257,7 +257,7 @@ func GenerateSignedChecksum(packPath, keyPath, destinationDir, passphrase string
 // for demo purposes it validates the checksum file against
 // its detached .signature and only accepts a private key,
 // preferably created through "cpackget signature-create"
-func VerifySignature(checksumPath, keyPath, signaturePath, passphrase string) error {
+func VerifyPGPSignature(checksumPath, keyPath, signaturePath, passphrase string) error {
 	if !utils.FileExists(checksumPath) {
 		log.Errorf("\"%s\" does not exist", checksumPath)
 		return errs.ErrFileNotFound

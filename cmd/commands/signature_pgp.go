@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var signatureCreateCmdFlags struct {
-	// keyPath points to an existing GPG private key
+var signatureCreatePGPflags struct {
+	// keyPath points to an existing PGP private key
 	keyPath string
 
 	// passphrase bypasses the prompt
@@ -24,7 +24,7 @@ var signatureCreateCmdFlags struct {
 	outputB64 bool
 }
 
-var signatureVerifyCmdFlags struct {
+var signatureVerifyPGPflags struct {
 	// signaturePath is the path of the signature file
 	signaturePath string
 
@@ -33,26 +33,26 @@ var signatureVerifyCmdFlags struct {
 }
 
 func init() {
-	SignatureCreateCmd.Flags().StringVarP(&signatureCreateCmdFlags.keyPath, "key-path", "k", "", "provide a private key instead of generating one")
-	SignatureCreateCmd.Flags().StringVarP(&signatureCreateCmdFlags.passphrase, "passphrase", "p", "", "passphrase for the provided private key")
-	SignatureCreateCmd.Flags().StringVarP(&signatureCreateCmdFlags.outputDir, "output-dir", "o", "", "specifies an output directory of the signature file")
-	SignatureCreateCmd.Flags().BoolVarP(&signatureCreateCmdFlags.outputB64, "output-base64", "6", false, "show signature contents as base64")
+	SignatureCreatePGPCmd.Flags().StringVarP(&signatureCreatePGPflags.keyPath, "key-path", "k", "", "provide a private key instead of generating one")
+	SignatureCreatePGPCmd.Flags().StringVarP(&signatureCreatePGPflags.passphrase, "passphrase", "p", "", "passphrase for the provided private key")
+	SignatureCreatePGPCmd.Flags().StringVarP(&signatureCreatePGPflags.outputDir, "output-dir", "o", "", "specifies an output directory of the signature file")
+	SignatureCreatePGPCmd.Flags().BoolVarP(&signatureCreatePGPflags.outputB64, "output-base64", "6", false, "show signature contents as base64")
 
-	SignatureVerifyCmd.Flags().StringVarP(&signatureVerifyCmdFlags.signaturePath, "sig-path", "s", "", "path of the .signature file")
-	SignatureVerifyCmd.Flags().StringVarP(&signatureVerifyCmdFlags.passphrase, "passphrase", "p", "", "passphrase for the provided private key")
+	SignatureVerifyPGPCmd.Flags().StringVarP(&signatureVerifyPGPflags.signaturePath, "sig-path", "s", "", "path of the .signature file")
+	SignatureVerifyPGPCmd.Flags().StringVarP(&signatureVerifyPGPflags.passphrase, "passphrase", "p", "", "passphrase for the provided private key")
 
-	SignatureCreateCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+	SignatureCreatePGPCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		err := command.Flags().MarkHidden("pack-root")
 		_ = command.Flags().MarkHidden("concurrent-downloads")
 		_ = command.Flags().MarkHidden("timeout")
 		log.Debug(err)
 		command.Parent().HelpFunc()(command, strings)
 	})
-	SignatureVerifyCmd.SetHelpFunc(SignatureCreateCmd.HelpFunc())
+	SignatureVerifyPGPCmd.SetHelpFunc(SignatureCreatePGPCmd.HelpFunc())
 }
 
-var SignatureCreateCmd = &cobra.Command{
-	Use:   "signature-create [<local .path pack>]",
+var SignatureCreatePGPCmd = &cobra.Command{
+	Use:   "signature-create-pgp [<local .path pack>]",
 	Short: "Create a digest list of a pack and signs it",
 	Long: `
 Generates a digest list of a pack, and signs it, creating
@@ -66,7 +66,7 @@ If a .checksum file already exists in the target path, it will fail as to
 guarantee hash freshness.
 
 Currently Curve25519 and RSA (2048, 3072, 4096 bits) key types are supported.
-If no private key (it MUST be in GPG PEM format) is provided with the -k/--key-path,
+If no private key (it MUST be in PGP PEM format) is provided with the -k/--key-path,
 one will be created using the builtin GopenPGP module.
 
 The contents of the generated ".checksum" file are the same as the one
@@ -77,26 +77,26 @@ created by "cpackget checksum-create":
 
   The referenced pack must be in its original/compressed form (.pack), and be present locally:
 
-  $ cpackget signature-create Vendor.Pack.1.2.3.pack
+  $ cpackget signature-create-pgp Vendor.Pack.1.2.3.pack
 
 By default the signature file will be created in the same directory as the provided pack.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if signatureCreateCmdFlags.keyPath == "" && signatureCreateCmdFlags.passphrase != "" {
+		if signatureCreatePGPflags.keyPath == "" && signatureCreatePGPflags.passphrase != "" {
 			log.Error("-p/--passphrase is only specified when providing a key")
 			return errs.ErrIncorrectCmdArgs
 		}
-		return cryptography.GenerateSignedChecksum(args[0], signatureCreateCmdFlags.keyPath, signatureCreateCmdFlags.outputDir, signatureCreateCmdFlags.passphrase, signatureCreateCmdFlags.outputB64)
+		return cryptography.GenerateSignedPGPChecksum(args[0], signatureCreatePGPflags.keyPath, signatureCreatePGPflags.outputDir, signatureCreatePGPflags.passphrase, signatureCreatePGPflags.outputB64)
 	},
 }
 
-var SignatureVerifyCmd = &cobra.Command{
-	Use:   "signature-verify [<local .checksum pack>] [<local private gpg key>]",
+var SignatureVerifyPGPCmd = &cobra.Command{
+	Use:   "signature-verify-pgp [<local .checksum pack>] [<local private pgp key>]",
 	Short: "Verifies the integrity of a .checksum against its signature",
 	Long: `
 Verifies the integrity and authenticity of a .checksum file, by
 checking it against a provided .signature file (a detached PGP signature) and
-a private GPG key (either RSA or Curve25519).
+a private PGP key (either RSA or Curve25519).
 
 The .signature and key files should have been created with the "signature-create" command,
 as they need to be in the PEM format.
@@ -104,12 +104,12 @@ as they need to be in the PEM format.
 If not specified by the -s/--sig-path flag, the .signature path will be read
 from the same directory as the .checksum file:
 
-  $ cpackget checksum-verify Vendor.Pack.1.2.3.sha256.checksum signature_curve25519.key
+  $ cpackget signature-verify-pgp Vendor.Pack.1.2.3.sha256.checksum signature_curve25519.key
 
 The passphrase prompt can be skipped with -p/--passphrase, which is useful for CI and automation
 but should be used carefully as it exposes the passphrase.`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return cryptography.VerifySignature(args[0], args[1], signatureVerifyCmdFlags.signaturePath, signatureVerifyCmdFlags.passphrase)
+		return cryptography.VerifyPGPSignature(args[0], args[1], signatureVerifyPGPflags.signaturePath, signatureVerifyPGPflags.passphrase)
 	},
 }
