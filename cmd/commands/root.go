@@ -28,6 +28,7 @@ var AllCommands = []*cobra.Command{
 	UpdateIndexCmd,
 	ChecksumCreateCmd,
 	ChecksumVerifyCmd,
+	SignatureCreateX509Cmd,
 	SignatureCreatePGPCmd,
 	SignatureVerifyPGPCmd,
 }

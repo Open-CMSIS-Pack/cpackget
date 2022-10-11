@@ -313,7 +313,7 @@ func VerifyPGPSignature(checksumPath, keyPath, signaturePath, passphrase string)
 	if err != nil {
 		return err
 	}
-	log.Info("verification successfull, .checksum matches its signature")
+	log.Info("Verification successful, .checksum matches its signature")
 
 	return nil
 }

@@ -56,6 +56,12 @@ var (
 	ErrIntegrityCheckFailed = errors.New("checksum verification failed")
 	ErrInvalidHashFunction  = errors.New("provided hash function is not supported")
 	ErrKeyGenerationFailure = errors.New("error generating new private key")
+	//
+	ErrSignAlreadySigned      = errors.New("pack is already signed, not overwriting")
+	ErrSignBadCertificate     = errors.New("certificate can't be processed")
+	ErrSignBadPrivateKey      = errors.New("private key can't be processed")
+	ErrSignUnsafeCertificate  = errors.New("certificate does not meet minimum security standards")
+	ErrSignUnsupportedKeyAlgo = errors.New("unsupported key algorithm")
 
 	// Security errors
 	ErrInsecureZipFileName = errors.New("zip file contains insecure characters: ../")

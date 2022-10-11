@@ -17,6 +17,12 @@ func stripLeadingZeros(version string) string {
 	regex := regexp.MustCompile(`\.0*(\d+)`)
 	version = strings.TrimLeft(version, "0")
 	version = regex.ReplaceAllString(version, ".$1")
+	// Avoid eating the first major 0 if it's the case (v0.1.1)
+	if len(version) > 0 {
+		if string(version[0]) == "." {
+			version = "0" + version
+		}
+	}
 	return version
 }
 
