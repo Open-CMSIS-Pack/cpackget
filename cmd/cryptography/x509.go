@@ -14,7 +14,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -23,50 +22,82 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func isBase64(s string) bool {
-	_, err := base64.StdEncoding.DecodeString(s)
-	return err == nil
-}
-
 // TODO: send to utils
-// Valid tags are:
-// cpackget-vX.Y.Z:f:cert:signedhash -> 4 fields
-// cpackget-vX.Y.Z:c:cert -> 3 fields
-// cpackget-vX.Y.Z:p:signedpgp -> 3 fields
-func validateZipTag(zip *zip.ReadCloser, version string) string {
+// validateSignatureScheme parses and identifies a packs
+// signature scheme (stored in the Zip comment field).
+func validateSignatureScheme(zip *zip.ReadCloser, version string, signing bool) string {
 	c := zip.Comment
 	s := strings.Split(c, ":")
 	// avoid out of bounds errors
 	if len(s) != 3 && len(s) != 4 {
 		return "empty"
 	}
+	// Valid signature schemes are:
+	// cpackget-vX.Y.Z:f:cert:signedhash -> 4 fields
+	// cpackget-vX.Y.Z:c:cert -> 3 fields
+	// cpackget-vX.Y.Z:p:pgpmessage -> 3 fields
+	// TODO: check for version tag
 	// Warn the user if the tag was made by an older cpackget version
 	if utils.SemverCompare(strings.Split(s[0], "-")[0][1:], strings.Split(version, "-")[0][1:]) == -1 {
 		log.Warnf("this pack was signed with an older version of cpackget (%s)", s[0])
 	}
 	if s[1] == "f" && len(s) == 4 {
-		if !isBase64(s[2]) && !isBase64(s[3]) {
-			// TODO: should it warn or error in verify?
-			log.Warn("an existing corrupt signature tag was detected in the provided pack (signature type: full)")
+		if !utils.IsBase64(s[2]) && !utils.IsBase64(s[3]) {
+			// If signing, just warn the user instead of failing
+			if signing {
+				log.Warn("existing \"full\" signature detected, will be overwritten")
+				return "full"
+			} else {
+				return "invalid"
+			}
+		} else {
 			return "full"
 		}
 	}
-	if s[1] == "c" {
-		if !isBase64(s[2]) {
-			// TODO: should it warn or error in verify?
-			log.Warn("an existing corrupt signature tag was detected in the provided pack (signature type: cert-only)")
+	if s[1] == "c" && len(s) == 3 {
+		if !utils.IsBase64(s[2]) {
+			if signing {
+				log.Warn("existing \"cert-only\" signature detected, will be overwritten")
+				return "cert-only"
+			} else {
+				return "invalid"
+			}
+		} else {
 			return "cert-only"
 		}
 	}
-	if s[1] == "p" {
-		if !isBase64(s[2]) {
-			// TODO: should it warn or error in verify?
-			log.Warn("an existing corrupt signature tag was detected in the provided pack (signature type: pgp)")
+	if s[1] == "p" && len(s) == 3 {
+		if !utils.IsBase64(s[2]) {
+			if signing {
+				log.Warn("existing \"pgp\" signature detected, will be overwritten")
+				return "pgp"
+			} else {
+				return "invalid"
+			}
+		} else {
 			return "pgp"
 		}
 	}
 	log.Debugf("found zip comment: %s", c)
 	return "invalid"
+}
+
+// getSignField reads from a specific element of a VALID pack
+// signature. No other validations are performed - it's up to the caller
+// to pass a valid signature (such as calling validateSignatureScheme before).
+func getSignField(signature, element string) string {
+	s := strings.Split(signature, ":")
+	switch element {
+	case "version":
+		return s[0]
+	case "type":
+		return s[1]
+	case "certificate":
+		return s[2]
+	case "hash":
+		return s[3]
+	}
+	return ""
 }
 
 // getKeyUsage prints the RFC/human friendly version
@@ -96,6 +127,7 @@ func getKeyUsage(k x509.KeyUsage) []string {
 		return ""
 	}
 
+	// Simple bitmask "decoding"
 	var uses []string
 	for key := x509.KeyUsageDigitalSignature; key < 9; key <<= 1 {
 		if k&key != 0 {
@@ -105,27 +137,10 @@ func getKeyUsage(k x509.KeyUsage) []string {
 	return uses
 }
 
-// prettyPrintHex transforms an int64 into an
-// hexadecimal, human friendly string.
-func prettyPrintHex(i int64) string {
-	s := strconv.FormatInt(i, 16)
-	var hex []string
-	for p, c := range s {
-		hex = append(hex, strings.ToUpper((string(c))))
-		if p%2 == 1 && p != len(s)-1 {
-			hex = append(hex, ":")
-		}
-	}
-	return strings.Join(hex, "")
-}
-
-// fetchCertFromOSKeychain
-
 // displayCertInfo prints the relevant fields of a certificate.
 func displayCertificateInfo(cert *x509.Certificate) {
 	log.Info("Loading relevant info from provided certificate")
 	log.Info("To manually inspect it, use the --export/-e flag to export a copy")
-
 	// This representation is loosely based on how Mozilla Firefox
 	// represents certificate info (about:certificate?cert=...)
 	log.Info("Subject:")
@@ -146,7 +161,6 @@ func displayCertificateInfo(cert *x509.Certificate) {
 	log.Infof("	Key Size: %d", cert.PublicKey.(*rsa.PublicKey).Size()*8)
 	log.Infof("	Exponent: %d", cert.PublicKey.(*rsa.PublicKey).E)
 	log.Info("Miscellaneous")
-	log.Infof("	Serial Number: %s", prettyPrintHex(cert.SerialNumber.Int64()))
 	log.Infof("	Signature Algorithm: %s", cert.SignatureAlgorithm.String())
 	log.Infof("	Version: %d", cert.Version)
 	log.Info("Basic Constraints")
@@ -156,7 +170,7 @@ func displayCertificateInfo(cert *x509.Certificate) {
 }
 
 // sanityCheckCertificate makes some basic validations
-// against the provided X509 certificate
+// against the provided X509 certificate.
 func sanityCheckCertificate(cert *x509.Certificate, vendor string) error {
 	log.Info("Checking certificate's integrity and parameters ")
 	// Names
@@ -202,6 +216,8 @@ func sanityCheckCertificate(cert *x509.Certificate, vendor string) error {
 	return nil
 }
 
+// isPrivateKeyFromCertificate tells whether a DER encoded key
+// is the private counterpart to a X509 certificate.
 func isPrivateKeyFromCertificate(cert *x509.Certificate, keyDER []byte, keyType string) (bool, error) {
 	if keyType == "PKCS1" {
 		pv, err := x509.ParsePKCS1PrivateKey(keyDER)
@@ -223,7 +239,54 @@ func isPrivateKeyFromCertificate(cert *x509.Certificate, keyDER []byte, keyType 
 	return false, errs.ErrSignBadPrivateKey
 }
 
-// TODO: comment
+// loadCertificate reads, parses and validates a X509 certificate in PEM format.
+func loadCertificate(rawCert []byte, vendor string, skipInfo, skipCertValidation bool) (*x509.Certificate, error) {
+	certPEM, rest := pem.Decode(rawCert)
+	if len(rest) > 0 {
+		log.Warn("the provided certificate included other PEM objects, only the first was read")
+	}
+	if certPEM == nil {
+		log.Error("could not decode signature certificate as PEM, please check for corruption")
+		log.Debugf("rest: %s", string(rest))
+		return &x509.Certificate{}, errs.ErrSignCannotVerify
+	}
+	certificate, err := x509.ParseCertificate(certPEM.Bytes)
+	if err != nil {
+		return &x509.Certificate{}, err
+	}
+	if !skipInfo {
+		displayCertificateInfo(certificate)
+	}
+	if !skipCertValidation {
+		log.Debugf("pack vendor identified as: %s", vendor)
+		if err := sanityCheckCertificate(certificate, ""); err != nil {
+			return &x509.Certificate{}, err
+		}
+	}
+	return certificate, nil
+}
+
+// exportCertificate saves a PEM encoded x509 certificate
+// to a local file.
+func exportCertificate(b64Cert, path string) error {
+	out, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	b64, err := base64.StdEncoding.DecodeString(b64Cert)
+	if err != nil {
+		return err
+	}
+	_, err = out.WriteString(string(b64))
+	if err != nil {
+		return err
+	}
+	log.Infof("Certificate successfully exported to %s", path)
+	return nil
+}
+
+// calculatePackHash hashes the contents of a zip file using the
+// SHA256 algorithm and returns the underlying hash object.
 func calculatePackHash(zip *zip.ReadCloser) ([]byte, error) {
 	hashes := make([]byte, 0)
 	h := sha256.New()
@@ -243,7 +306,9 @@ func calculatePackHash(zip *zip.ReadCloser) ([]byte, error) {
 	return hashes, nil
 }
 
-// https://stackoverflow.com/questions/48958304/pkcs1-and-pkcs8-format-for-rsa-private-key
+// detectKeyType identifies a PEM encoded RSA private key. It can be
+// either PKCS1 or PKCS8, the latter not password-protected (std crypto
+// does not support it currently).
 func detectKeyType(key string) (string, error) {
 	switch strings.Split(key, "-----")[1] {
 	case "BEGIN RSA PRIVATE KEY":
@@ -251,7 +316,7 @@ func detectKeyType(key string) (string, error) {
 	case "BEGIN PRIVATE KEY":
 		return "PKCS8", nil
 	case "BEGIN ENCRYPTED PRIVATE KEY":
-		log.Error("Encrypted PKCSC8 private keys aren't currently supported")
+		log.Error("encrypted PKCSC8 private keys aren't currently supported")
 		return "", errs.ErrSignUnsupportedKeyAlgo
 	default:
 		log.Error("could not decode private key as PEM, please check for corruption")
@@ -259,6 +324,8 @@ func detectKeyType(key string) (string, error) {
 	}
 }
 
+// signPackHash takes a private RSA key and PKCS1v15 signs
+// the hashed zip contents of a pack.
 func signPackHash(keyPath string, cert *x509.Certificate, hash []byte) ([]byte, error) {
 	k, err := ioutil.ReadFile(keyPath)
 	if err != nil {
@@ -368,7 +435,6 @@ func SignPackX509(packPath, certPath, keyPath, outputDir, version string, certOn
 		log.Errorf("\"%s\" does not exist", certPath)
 		return errs.ErrFileNotFound
 	}
-
 	// Check for previous packs/signatures
 	// Default dir is where cpackget is
 	packFilenameBase := filepath.Base(packPath)
@@ -391,7 +457,7 @@ func SignPackX509(packPath, certPath, keyPath, outputDir, version string, certOn
 		return errs.ErrFailedDecompressingFile
 	}
 	// TODO: split this in smaller funcs
-	switch validateZipTag(zip, version) {
+	switch validateSignatureScheme(zip, version, true) {
 	case "full":
 		log.Error("full X509 signature found in provided pack")
 		return errs.ErrSignAlreadySigned
@@ -406,34 +472,16 @@ func SignPackX509(packPath, certPath, keyPath, outputDir, version string, certOn
 	case "invalid":
 		log.Info("provided pack's zip comment already set, will overwrite")
 	}
-
 	// Load & analyze certificate
 	rawCert, err := ioutil.ReadFile(certPath)
 	if err != nil {
 		return err
 	}
-	// TODO: check for rest?
-	certPEM, rest := pem.Decode([]byte(rawCert))
-	if certPEM == nil {
-		log.Error("could not decode certificate as PEM, please check for corruption")
-		log.Debugf("rest: %s", string(rest))
-		return errs.ErrSignBadCertificate
-	}
-	cert, err := x509.ParseCertificate(certPEM.Bytes)
+	vendor := strings.Split(filepath.Base(certPath), ".")[0]
+	cert, err := loadCertificate(rawCert, vendor, skipCertValidation, skipInfo)
 	if err != nil {
 		return err
 	}
-	if !skipInfo {
-		displayCertificateInfo(cert)
-	}
-	if !skipCertValidation {
-		vendor := strings.Split(filepath.Base(certPath), ".")[0]
-		log.Debugf("pack vendor identified as: %s", vendor)
-		if err := sanityCheckCertificate(cert, ""); err != nil {
-			return err
-		}
-	}
-
 	// Get & sign pack hash
 	hash, err := calculatePackHash(zip)
 	if err != nil {
@@ -443,11 +491,92 @@ func SignPackX509(packPath, certPath, keyPath, outputDir, version string, certOn
 	if err != nil {
 		return err
 	}
-
 	// Finally embed the full signature onto the pack
 	if err = embedPackX509(packFilenameSigned, version, zip, rawCert, signedHash); err != nil {
 		return err
 	}
 	log.Infof("Successfully written signed pack %s to %s", filepath.Base(packPath), filepath.Join(outputDir, packFilenameSigned))
+	return nil
+}
+
+// verifyPackFullSignature validates the integrity of a pack
+// by computing its digest and verifying the embedded PKCS1v15
+// signature.
+func verifyPackFullSignature(zip *zip.ReadCloser, vendor, b64Cert, b64Hash string, skipCertValidation, skipInfo bool) error {
+	rawCert, err := base64.StdEncoding.DecodeString(b64Cert)
+	if err != nil {
+		return err
+	}
+	hashSig, err := base64.StdEncoding.DecodeString(b64Hash)
+	if err != nil {
+		return err
+	}
+
+	certificate, err := loadCertificate(rawCert, vendor, skipCertValidation, skipInfo)
+	if err != nil {
+		return err
+	}
+
+	hashPack, err := calculatePackHash(zip)
+	if err != nil {
+		return err
+	}
+	hashPack256 := sha256.Sum256(hashPack)
+	return rsa.VerifyPKCS1v15(certificate.PublicKey.(*rsa.PublicKey), crypto.SHA256, hashPack256[:], hashSig)
+}
+
+// func verifyPackCertOnlySignature() error {
+// 	return nil
+// }
+
+// func verifyPackPGPSignature() error {
+// 	return nil
+// }
+
+// VerifyPackSignature is the  command entrypoint to the signature
+// specific validation functions.
+func VerifyPackSignature(packPath, version string, export, skipCertValidation, skipInfo bool) error {
+	if !utils.FileExists(packPath) {
+		log.Errorf("\"%s\" does not exist", packPath)
+		return errs.ErrFileNotFound
+	}
+	zip, err := zip.OpenReader(packPath)
+	if err != nil {
+		log.Errorf("can't decompress \"%s\": %s", packPath, err)
+		return errs.ErrFailedDecompressingFile
+	}
+
+	vendor := strings.Split(filepath.Base(packPath), ".")[0]
+	switch validateSignatureScheme(zip, version, false) {
+	case "full":
+		if export {
+			path := filepath.Base(packPath) + ".pem"
+			if utils.FileExists(path) {
+				log.Error("existing certificate found")
+				return errs.ErrPathAlreadyExists
+			}
+			err := exportCertificate(getSignField(zip.Comment, "certificate"), path)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+		err := verifyPackFullSignature(zip, vendor, getSignField(zip.Comment, "certificate"), getSignField(zip.Comment, "hash"), skipCertValidation, skipInfo)
+		if err != nil {
+			return errs.ErrPossibleMaliciousPack
+		}
+	case "cert-only":
+		log.Info("cert-only")
+	case "pgp":
+		log.Error("pgp signing not yet implemented")
+		return errs.ErrUnknownBehavior
+	case "empty":
+		log.Error("pack's signature field is empty, nothing to check")
+		return errs.ErrBadSignatureScheme
+	case "invalid":
+		return errs.ErrBadSignatureScheme
+	}
+
+	log.Info("pack signature verification success - pack is authentic")
 	return nil
 }

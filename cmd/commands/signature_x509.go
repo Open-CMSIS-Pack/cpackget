@@ -14,6 +14,9 @@ var signatureCreateX509flags struct {
 	// certOnly skips private key usage
 	certOnly bool
 
+	//TODO
+	//pgp bool
+
 	// certPath points to the signer's certificate
 	certPath string
 
@@ -23,15 +26,28 @@ var signatureCreateX509flags struct {
 	// outputDir saves the signed pack to a specific path
 	outputDir string
 
-	// TODO: for verify
+	// skipCertValidation skips sanity/safety checks on the provided certificate
+	skipCertValidation bool
+
+	// skipInfo skips displaying certificate info
+	skipInfo bool
+}
+
+var signatureVerifyflags struct {
 	// export doesn't sign but only exports the embedded certificate
-	// export bool
+	export bool
+
+	// pgpKey loads a PGP public key to verify against the signature
+	// pgpKey string
 
 	// skipCertValidation skips sanity/safety checks on the provided certificate
 	skipCertValidation bool
 
 	// skipInfo skips displaying certificate info
 	skipInfo bool
+
+	// TODO:
+	//skipAddKeychain bool
 }
 
 func init() {
@@ -43,6 +59,10 @@ func init() {
 	SignatureCreateX509Cmd.Flags().BoolVar(&signatureCreateX509flags.skipCertValidation, "skip-validation", false, "do not validate certificate")
 	SignatureCreateX509Cmd.Flags().BoolVar(&signatureCreateX509flags.skipInfo, "skip-info", false, "do not display certificate information")
 
+	SignatureVerifyCmd.Flags().BoolVarP(&signatureVerifyflags.export, "export", "e", false, "only export embed certificate")
+	SignatureVerifyCmd.Flags().BoolVar(&signatureVerifyflags.skipCertValidation, "skip-validation", false, "do not validate certificate")
+	SignatureVerifyCmd.Flags().BoolVar(&signatureVerifyflags.skipInfo, "skip-info", false, "do not display certificate information")
+
 	SignatureCreateX509Cmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		err := command.Flags().MarkHidden("pack-root")
 		_ = command.Flags().MarkHidden("concurrent-downloads")
@@ -50,10 +70,12 @@ func init() {
 		log.Debug(err)
 		command.Parent().HelpFunc()(command, strings)
 	})
-	// SignatureVerifyPGPCmd.SetHelpFunc(SignatureCreateX509Cmd.HelpFunc())
+
+	SignatureVerifyCmd.SetHelpFunc(SignatureCreateX509Cmd.HelpFunc())
 }
 
 var SignatureCreateX509Cmd = &cobra.Command{
+	// TODO: refactor to generic SignatureCreateCmd (default full, --cert-only or --pgp to specify)
 	Use:   "signature-create-x509 [<local .path pack>]",
 	Short: "Digitally signs a pack with a X509 certificate",
 	Long: `
@@ -74,26 +96,31 @@ By default the signature file will be created in the same directory as the provi
 	},
 }
 
-// var SignatureVerifyPGPCmd = &cobra.Command{
-// 	Use:   "signature-verify-pgp [<local .checksum pack>] [<local private pgp key>]",
-// 	Short: "Verifies the integrity of a .checksum against its signature",
-// 	Long: `
-// Verifies the integrity and authenticity of a .checksum file, by
-// checking it against a provided .signature file (a detached PGP signature) and
-// a private PGP key (either RSA or Curve25519).
+var SignatureVerifyCmd = &cobra.Command{
+	Use:   "signature-verify [<local .path pack>]",
+	Short: "Verifies a signed pack",
+	Long: `
+Verifies the integrity and authenticity of a .checksum file, by
+checking it against a provided .signature file (a detached PGP signature) and
+a private PGP key (either RSA or Curve25519).
 
-// The .signature and key files should have been created with the "signature-create" command,
-// as they need to be in the PEM format.
+The .signature and key files should have been created with the "signature-create" command,
+as they need to be in the PEM format.
 
-// If not specified by the -s/--sig-path flag, the .signature path will be read
-// from the same directory as the .checksum file:
+If not specified by the -s/--sig-path flag, the .signature path will be read
+from the same directory as the .checksum file:
 
-//   $ cpackget signature-verify-pgp Vendor.Pack.1.2.3.sha256.checksum signature_curve25519.key
+  $ cpackget signature-verify-x509 Vendor.Pack.1.2.3.pack.signed
 
-// The passphrase prompt can be skipped with -p/--passphrase, which is useful for CI and automation
-// but should be used carefully as it exposes the passphrase.`,
-// 	Args: cobra.ExactArgs(2),
-// 	RunE: func(cmd *cobra.Command, args []string) error {
-// 		return cryptography.VerifyPGPSignature(args[0], args[1], signatureVerifyPGPflags.signaturePath, signatureVerifyPGPflags.passphrase)
-// 	},
-// }
+The passphrase prompt can be skipped with -p/--passphrase, which is useful for CI and automation
+but should be used carefully as it exposes the passphrase.`,
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// TODO: add flag checking
+		if signatureVerifyflags.export && (signatureVerifyflags.skipCertValidation || signatureVerifyflags.skipInfo) {
+			log.Error("-e/--export does not need any other flags")
+			return errs.ErrIncorrectCmdArgs
+		}
+		return cryptography.VerifyPackSignature(args[0], Version, signatureVerifyflags.export, signatureVerifyflags.skipCertValidation, signatureVerifyflags.skipInfo)
+	},
+}
