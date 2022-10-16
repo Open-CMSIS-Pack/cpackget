@@ -2,7 +2,7 @@
 OS ?= $(shell uname)
 
 # Having this will allow CI scripts to build for many OS's and ARCH's
-ARCH := $(or $(ARCH),$(ARCH),amd64)
+ARCH := $(or $(ARCH),amd64)
 
 # Path to lint tool
 GOLINTER ?= golangci-lint
@@ -33,7 +33,8 @@ all:
 	@echo
 	@echo Build for different OS's and ARCH's by defining these variables. Ex:
 	@echo $$ make OS=windows ARCH=amd64 build/$(BIN_NAME).exe
-	@echo $$ make OS=darwin  ARCH=amd64 build/$(BIN_NAME)
+	@echo $$ make OS=darwin ARCH=amd64 build/$(BIN_NAME)
+	@echo $$ make OS=linux ARCH=arm64 build/$(BIN_NAME)
 	@echo
 	@echo Run tests
 	@echo $$ make test ARGS="<test args>"
@@ -69,7 +70,7 @@ format-check:
 
 .PHONY: test release config
 test: $(SOURCES)
-	cd cmd && go test $(ARGS) ./... -coverprofile ../cover.out
+	cd cmd && GOOS=$(OS) GOARCH=$(ARCH) go test $(ARGS) ./... -coverprofile ../cover.out
 
 test-all: format-check coverage-check lint
 
@@ -78,7 +79,7 @@ coverage-report: test
 
 coverage-check: test
 	@echo Checking if test coverage is above 90%
-	test `go tool cover -func cover.out | tail -1 | awk '{print ($$3 + 0)*10}'` -gt 900
+	test `go tool cover -func cover.out | tail -1 | awk '{print ($$3 + 0)*10}'` -ge 900
 
 test-public-index:
 	@./scripts/test-public-index

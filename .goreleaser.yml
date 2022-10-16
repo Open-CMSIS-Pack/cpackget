@@ -7,7 +7,13 @@ builds:
       - darwin
     goarch:
       - amd64
+      - arm64
     dir: cmd
+    ignore:
+      - goos: darwin
+        goarch: arm64
+      - goos: windows
+        goarch: arm64
 
 archives:
   - files:
@@ -26,5 +32,3 @@ archives:
     # You can also set it to a custom folder name (templating is supported).
     # Default is false.
     wrap_in_directory: true
-
-

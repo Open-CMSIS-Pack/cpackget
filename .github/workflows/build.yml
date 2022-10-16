@@ -23,4 +23,6 @@ jobs:
           make build/cpackget
           make OS=windows ARCH=amd64 build/cpackget.exe
           make clean
-          make OS=darwin  ARCH=amd64 build/cpackget
+          make OS=darwin ARCH=amd64 build/cpackget
+          make clean
+          make OS=linux ARCH=arm64 build/cpackget

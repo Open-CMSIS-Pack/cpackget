@@ -3,7 +3,6 @@ name: Test
 on: [push, pull_request]
 
 jobs:
-
   lint:
     name: Lint
     timeout-minutes: 10
@@ -67,7 +66,7 @@ jobs:
       matrix:
         platform: [ubuntu-latest, windows-latest]
         go: [1.18.x]
-    name: '${{ matrix.platform }} | ${{ matrix.go }}'
+    name: "${{ matrix.platform }} | ${{ matrix.go }}"
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Check out repository code
@@ -79,3 +78,29 @@ jobs:
       - name: Unit testing
         run: |
           make coverage-check
+
+  test-arm64:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest]
+        go: [1.18.x]
+        arch: [aarch64]
+        distro: [ubuntu_latest]
+    name: "${{ matrix.platform }} | ${{ matrix.go }} | ${{ matrix.arch }}"
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Unit testing
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+          env: |
+            GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
+          install: |
+            apt-get update -qq -y
+            apt-get install -qq -y git make golang=2:1.18\~0ubuntu2
+          run: |
+            git clone https://github.com/$GITHUB_REPOSITORY -q
+            cd cpackget
+            git checkout $GITHUB_REF -q
+            make ARCH=arm64 GOOS=linux coverage-check

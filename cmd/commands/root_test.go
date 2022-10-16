@@ -62,12 +62,6 @@ func (s *Server) AddRoute(route string, content []byte) {
 }
 
 // NewServer is a generic dev server that takes in a routes map and returns 404 if the route[path] is nil
-// Ex:
-// server := NewServer(map[string][]byte{
-// 	"*": []byte("Default content"),
-// 	"should-return-404": nil,
-// })
-//
 // Acessing server.URL should return "Default content"
 // Acessing server.URL + "/should-return-404" should return HTTP 404
 func NewServer() Server {
