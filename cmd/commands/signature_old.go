@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var signatureCreatePGPflags struct {
+var signatureCreateOldflags struct {
 	// keyPath points to an existing PGP private key
 	keyPath string
 
@@ -24,7 +24,7 @@ var signatureCreatePGPflags struct {
 	outputB64 bool
 }
 
-var signatureVerifyPGPflags struct {
+var signatureVerifyOldflags struct {
 	// signaturePath is the path of the signature file
 	signaturePath string
 
@@ -33,25 +33,25 @@ var signatureVerifyPGPflags struct {
 }
 
 func init() {
-	SignatureCreatePGPCmd.Flags().StringVarP(&signatureCreatePGPflags.keyPath, "key-path", "k", "", "provide a private key instead of generating one")
-	SignatureCreatePGPCmd.Flags().StringVarP(&signatureCreatePGPflags.passphrase, "passphrase", "p", "", "passphrase for the provided private key")
-	SignatureCreatePGPCmd.Flags().StringVarP(&signatureCreatePGPflags.outputDir, "output-dir", "o", "", "specifies an output directory of the signature file")
-	SignatureCreatePGPCmd.Flags().BoolVarP(&signatureCreatePGPflags.outputB64, "output-base64", "6", false, "show signature contents as base64")
+	SignatureCreateOldCmd.Flags().StringVarP(&signatureCreateOldflags.keyPath, "key-path", "k", "", "provide a private key instead of generating one")
+	SignatureCreateOldCmd.Flags().StringVarP(&signatureCreateOldflags.passphrase, "passphrase", "p", "", "passphrase for the provided private key")
+	SignatureCreateOldCmd.Flags().StringVarP(&signatureCreateOldflags.outputDir, "output-dir", "o", "", "specifies an output directory of the signature file")
+	SignatureCreateOldCmd.Flags().BoolVarP(&signatureCreateOldflags.outputB64, "output-base64", "6", false, "show signature contents as base64")
 
-	SignatureVerifyPGPCmd.Flags().StringVarP(&signatureVerifyPGPflags.signaturePath, "sig-path", "s", "", "path of the .signature file")
-	SignatureVerifyPGPCmd.Flags().StringVarP(&signatureVerifyPGPflags.passphrase, "passphrase", "p", "", "passphrase for the provided private key")
+	SignatureVerifyOldCmd.Flags().StringVarP(&signatureVerifyOldflags.signaturePath, "sig-path", "s", "", "path of the .signature file")
+	SignatureVerifyOldCmd.Flags().StringVarP(&signatureVerifyOldflags.passphrase, "passphrase", "p", "", "passphrase for the provided private key")
 
-	SignatureCreatePGPCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+	SignatureCreateOldCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		err := command.Flags().MarkHidden("pack-root")
 		_ = command.Flags().MarkHidden("concurrent-downloads")
 		_ = command.Flags().MarkHidden("timeout")
 		log.Debug(err)
 		command.Parent().HelpFunc()(command, strings)
 	})
-	SignatureVerifyPGPCmd.SetHelpFunc(SignatureCreatePGPCmd.HelpFunc())
+	SignatureVerifyOldCmd.SetHelpFunc(SignatureCreateOldCmd.HelpFunc())
 }
 
-var SignatureCreatePGPCmd = &cobra.Command{
+var SignatureCreateOldCmd = &cobra.Command{
 	Use:   "signature-create-pgp [<local .path pack>]",
 	Short: "Create a digest list of a pack and signs it",
 	Long: `
@@ -82,15 +82,15 @@ created by "cpackget checksum-create":
 By default the signature file will be created in the same directory as the provided pack.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if signatureCreatePGPflags.keyPath == "" && signatureCreatePGPflags.passphrase != "" {
+		if signatureCreateOldflags.keyPath == "" && signatureCreateOldflags.passphrase != "" {
 			log.Error("-p/--passphrase is only specified when providing a key")
 			return errs.ErrIncorrectCmdArgs
 		}
-		return cryptography.GenerateSignedPGPChecksum(args[0], signatureCreatePGPflags.keyPath, signatureCreatePGPflags.outputDir, signatureCreatePGPflags.passphrase, signatureCreatePGPflags.outputB64)
+		return cryptography.GenerateSignedPGPChecksum(args[0], signatureCreateOldflags.keyPath, signatureCreateOldflags.outputDir, signatureCreateOldflags.passphrase, signatureCreateOldflags.outputB64)
 	},
 }
 
-var SignatureVerifyPGPCmd = &cobra.Command{
+var SignatureVerifyOldCmd = &cobra.Command{
 	Use:   "signature-verify-pgp [<local .checksum pack>] [<local private pgp key>]",
 	Short: "Verifies the integrity of a .checksum against its signature",
 	Long: `
@@ -110,6 +110,6 @@ The passphrase prompt can be skipped with -p/--passphrase, which is useful for C
 but should be used carefully as it exposes the passphrase.`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return cryptography.VerifyPGPSignature(args[0], args[1], signatureVerifyPGPflags.signaturePath, signatureVerifyPGPflags.passphrase)
+		return cryptography.VerifyPGPSignature(args[0], args[1], signatureVerifyOldflags.signaturePath, signatureVerifyOldflags.passphrase)
 	},
 }

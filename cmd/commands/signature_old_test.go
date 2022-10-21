@@ -12,7 +12,7 @@ import (
 )
 
 // TODO: Compare actual ErrFileNotFound output
-var signatureCreatePGPCmdTests = []TestCase{
+var signatureCreateOldCmdTests = []TestCase{
 	{
 		name:        "test different number of parameters",
 		args:        []string{"signature-create-pgp"},
@@ -46,7 +46,7 @@ var signatureCreatePGPCmdTests = []TestCase{
 	},
 }
 
-var signatureVerifyPGPCmdTests = []TestCase{
+var signatureVerifyOldCmdTests = []TestCase{
 	{
 		name:        "test different number of parameters",
 		args:        []string{"signature-verify-pgp"},
@@ -89,10 +89,10 @@ var signatureVerifyPGPCmdTests = []TestCase{
 	},
 }
 
-func TestSignatureCreateCmd(t *testing.T) {
-	runTests(t, signatureCreatePGPCmdTests)
+func TestSignatureCreateOldCmd(t *testing.T) {
+	runTests(t, signatureCreateOldCmdTests)
 }
 
-func TestSignatureVerifyCmd(t *testing.T) {
-	runTests(t, signatureVerifyPGPCmdTests)
+func TestSignatureVerifyOldCmd(t *testing.T) {
+	runTests(t, signatureVerifyOldCmdTests)
 }

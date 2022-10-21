@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var signatureCreateX509flags struct {
+var signatureCreateflags struct {
 	// certOnly skips private key usage
 	certOnly bool
 
@@ -51,19 +51,19 @@ var signatureVerifyflags struct {
 }
 
 func init() {
-	SignatureCreateX509Cmd.Flags().BoolVar(&signatureCreateX509flags.certOnly, "cert-only", false, "certificate-only signature")
-	SignatureCreateX509Cmd.Flags().StringVarP(&signatureCreateX509flags.certPath, "certificate", "c", "", "path for the signer's certificate")
-	_ = SignatureCreateX509Cmd.MarkFlagRequired("certificate")
-	SignatureCreateX509Cmd.Flags().StringVarP(&signatureCreateX509flags.keyPath, "key", "k", "", "path for the signer's private key")
-	SignatureCreateX509Cmd.Flags().StringVarP(&signatureCreateX509flags.outputDir, "output-dir", "o", "", "save the signed pack to a specific path")
-	SignatureCreateX509Cmd.Flags().BoolVar(&signatureCreateX509flags.skipCertValidation, "skip-validation", false, "do not validate certificate")
-	SignatureCreateX509Cmd.Flags().BoolVar(&signatureCreateX509flags.skipInfo, "skip-info", false, "do not display certificate information")
+	SignatureCreateCmd.Flags().BoolVar(&signatureCreateflags.certOnly, "cert-only", false, "certificate-only signature")
+	SignatureCreateCmd.Flags().StringVarP(&signatureCreateflags.certPath, "certificate", "c", "", "path for the signer's certificate")
+	_ = SignatureCreateCmd.MarkFlagRequired("certificate")
+	SignatureCreateCmd.Flags().StringVarP(&signatureCreateflags.keyPath, "key", "k", "", "path for the signer's private key")
+	SignatureCreateCmd.Flags().StringVarP(&signatureCreateflags.outputDir, "output-dir", "o", "", "save the signed pack to a specific path")
+	SignatureCreateCmd.Flags().BoolVar(&signatureCreateflags.skipCertValidation, "skip-validation", false, "do not validate certificate")
+	SignatureCreateCmd.Flags().BoolVar(&signatureCreateflags.skipInfo, "skip-info", false, "do not display certificate information")
 
 	SignatureVerifyCmd.Flags().BoolVarP(&signatureVerifyflags.export, "export", "e", false, "only export embed certificate")
 	SignatureVerifyCmd.Flags().BoolVar(&signatureVerifyflags.skipCertValidation, "skip-validation", false, "do not validate certificate")
 	SignatureVerifyCmd.Flags().BoolVar(&signatureVerifyflags.skipInfo, "skip-info", false, "do not display certificate information")
 
-	SignatureCreateX509Cmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
+	SignatureCreateCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		err := command.Flags().MarkHidden("pack-root")
 		_ = command.Flags().MarkHidden("concurrent-downloads")
 		_ = command.Flags().MarkHidden("timeout")
@@ -71,28 +71,33 @@ func init() {
 		command.Parent().HelpFunc()(command, strings)
 	})
 
-	SignatureVerifyCmd.SetHelpFunc(SignatureCreateX509Cmd.HelpFunc())
+	SignatureVerifyCmd.SetHelpFunc(SignatureCreateCmd.HelpFunc())
 }
 
-var SignatureCreateX509Cmd = &cobra.Command{
+var SignatureCreateCmd = &cobra.Command{
 	// TODO: refactor to generic SignatureCreateCmd (default full, --cert-only or --pgp to specify)
-	Use:   "signature-create-x509 [<local .path pack>]",
+	Use:   "signature-create [<local .path pack>]",
 	Short: "Digitally signs a pack with a X509 certificate",
 	Long: `
 Signs a pack using a x509 certificate and its private key.
 
-  The referenced pack must be in its original/compressed form (.pack), and be present locally:
+The referenced pack must be in its original/compressed form (.pack), and be present locally:
 
-  $ cpackget signature-create-x509 Vendor.Pack.1.2.3.pack
-
-By default the signature file will be created in the same directory as the provided pack.`,
+  $ cpackget signature-create Vendor.Pack.1.2.3.pack`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if signatureCreateX509flags.certOnly && signatureCreateX509flags.keyPath != "" {
-			log.Error("-k/--key should not be provided in certificate-only mode")
-			return errs.ErrIncorrectCmdArgs
+		if signatureCreateflags.keyPath == "" {
+			if !signatureCreateflags.certOnly {
+				log.Error("specify private key file with the --key/-k flag")
+				return errs.ErrIncorrectCmdArgs
+			}
+		} else {
+			if signatureCreateflags.certOnly {
+				log.Error("-k/--key should not be provided in certificate-only mode")
+				return errs.ErrIncorrectCmdArgs
+			}
 		}
-		return cryptography.SignPackX509(args[0], signatureCreateX509flags.certPath, signatureCreateX509flags.keyPath, signatureCreateX509flags.outputDir, Version, signatureCreateX509flags.certOnly, signatureCreateX509flags.skipCertValidation, signatureCreateX509flags.skipInfo)
+		return cryptography.SignPack(args[0], signatureCreateflags.certPath, signatureCreateflags.keyPath, signatureCreateflags.outputDir, Version, signatureCreateflags.certOnly, signatureCreateflags.skipCertValidation, signatureCreateflags.skipInfo)
 	},
 }
 
@@ -100,23 +105,14 @@ var SignatureVerifyCmd = &cobra.Command{
 	Use:   "signature-verify [<local .path pack>]",
 	Short: "Verifies a signed pack",
 	Long: `
-Verifies the integrity and authenticity of a .checksum file, by
-checking it against a provided .signature file (a detached PGP signature) and
-a private PGP key (either RSA or Curve25519).
+Verifies the integrity and authenticity of a pack signed
+with the "signature-create" command.
 
-The .signature and key files should have been created with the "signature-create" command,
-as they need to be in the PEM format.
+The referenced pack must be in its original/compressed form (.pack), and be present locally:
 
-If not specified by the -s/--sig-path flag, the .signature path will be read
-from the same directory as the .checksum file:
-
-  $ cpackget signature-verify-x509 Vendor.Pack.1.2.3.pack.signed
-
-The passphrase prompt can be skipped with -p/--passphrase, which is useful for CI and automation
-but should be used carefully as it exposes the passphrase.`,
+  $ cpackget signature-verify Vendor.Pack.1.2.3.pack.signed`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO: add flag checking
 		if signatureVerifyflags.export && (signatureVerifyflags.skipCertValidation || signatureVerifyflags.skipInfo) {
 			log.Error("-e/--export does not need any other flags")
 			return errs.ErrIncorrectCmdArgs
