@@ -52,8 +52,9 @@ func init() {
 }
 
 var SignatureCreateOldCmd = &cobra.Command{
-	Use:   "signature-create-pgp [<local .path pack>]",
-	Short: "Create a digest list of a pack and signs it",
+	Deprecated: "Consider running `cpackget signature-create` instead",
+	Use:        "signature-create-pgp [<local .path pack>]",
+	Short:      "Create a digest list of a pack and signs it",
 	Long: `
 Generates a digest list of a pack, and signs it, creating
 a detached PGP signature.
@@ -91,8 +92,9 @@ By default the signature file will be created in the same directory as the provi
 }
 
 var SignatureVerifyOldCmd = &cobra.Command{
-	Use:   "signature-verify-pgp [<local .checksum pack>] [<local private pgp key>]",
-	Short: "Verifies the integrity of a .checksum against its signature",
+	Deprecated: "Consider running `cpackget signature-verify` instead",
+	Use:        "signature-verify-pgp [<local .checksum pack>] [<local private pgp key>]",
+	Short:      "Verifies the integrity of a .checksum against its signature",
 	Long: `
 Verifies the integrity and authenticity of a .checksum file, by
 checking it against a provided .signature file (a detached PGP signature) and
