@@ -115,6 +115,9 @@ func NewCli() *cobra.Command {
 	rootCmd.SetUsageTemplate(usageTemplate)
 
 	defaultPackRoot := os.Getenv("CMSIS_PACK_ROOT")
+	if defaultPackRoot == "" {
+		defaultPackRoot = installer.GetDefaultCmsisPackRoot()
+	}
 
 	viper = viperType.New()
 

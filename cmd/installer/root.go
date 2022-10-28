@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -20,6 +21,34 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/mod/semver"
 )
+
+func GetDefaultCmsisPackRoot() string {
+	var root string
+	if runtime.GOOS == "windows" {
+		root = os.Getenv("LOCALAPPDATA")
+		if root == "" {
+			root = os.Getenv("USERPROFILE")
+			if root != "" {
+				root = root + "\\AppData\\Local"
+			}
+		}
+		if root != "" {
+			root = root + "\\Arm\\Packs"
+		}
+	} else {
+		root = os.Getenv("XDG_CACHE_HOME")
+		if root == "" {
+			root = os.Getenv("HOME")
+			if root != "" {
+				root = root + "/.cache"
+			}
+		}
+		if root != "" {
+			root = root + "/arm/packs"
+		}
+	}
+	return filepath.Clean(root)
+}
 
 // AddPack adds a pack to the pack installation directory structure
 func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool, timeout int) error {
@@ -654,7 +683,11 @@ func SetPackRoot(packRoot string, create bool) error {
 	if !utils.DirExists(packRoot) && !create {
 		return errs.ErrPackRootDoesNotExist
 	}
-	log.Infof("Using pack root: \"%v\"", packRoot)
+	if packRoot == GetDefaultCmsisPackRoot() {
+		log.Infof("Using pack root: \"%v\" (default mode - no specific CMSIS_PACK_ROOT chosen)", packRoot)
+	} else {
+		log.Infof("Using pack root: \"%v\"", packRoot)
+	}
 
 	Installation = &PacksInstallationType{
 		PackRoot:    packRoot,

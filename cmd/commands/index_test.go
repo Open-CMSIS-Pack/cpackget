@@ -24,12 +24,6 @@ var indexCmdTests = []TestCase{
 		expectedErr: nil,
 	},
 	{
-		name:        "test with no packroot configured",
-		args:        []string{"index", "index.pidx"},
-		env:         map[string]string{"CMSIS_PACK_ROOT": ""},
-		expectedErr: errs.ErrPackRootNotFound,
-	},
-	{
 		name:           "test cannot overwrite current index",
 		args:           []string{"index", "index.pidx"},
 		createPackRoot: true,
