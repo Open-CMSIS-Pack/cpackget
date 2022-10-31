@@ -22,8 +22,18 @@ import (
 	"golang.org/x/mod/semver"
 )
 
+// GetDefaultCmsisPackRoot provides a default location
+// for the pack root if not provided. This is to enable
+// a "default mode", where the public index will be
+// automatically initiated if not ready yet.
 func GetDefaultCmsisPackRoot() string {
 	var root string
+	// Workaround to fake default mode in tests,
+	// by avoiding writing in any of the default locations,
+	// and using the generated testing pack dirs.
+	if root = os.Getenv("CPACKGET_DEFAULT_MODE_PATH"); root != "" {
+		return filepath.Clean(root)
+	}
 	if runtime.GOOS == "windows" {
 		root = os.Getenv("LOCALAPPDATA")
 		if root == "" {

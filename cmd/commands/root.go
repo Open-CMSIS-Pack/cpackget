@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	viperType "github.com/spf13/viper"
@@ -35,6 +37,9 @@ var AllCommands = []*cobra.Command{
 // createPackRoot is a flag that determines if the pack root should be created or not
 var createPackRoot bool
 
+// defaultPublicIndex is the public index to use in "default mode"
+const defaultPublicIndex = "https://www.keil.com/pack/index.pidx"
+
 var viper *viperType.Viper
 
 // configureInstaller configures cpackget installer for adding or removing pack/pdsc
@@ -56,7 +61,38 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	return installer.SetPackRoot(viper.GetString("pack-root"), createPackRoot)
+	targetPackRoot := viper.GetString("pack-root")
+	if targetPackRoot == installer.GetDefaultCmsisPackRoot() {
+		// If using the default pack root path and the public index is not found,
+		// initialize it
+		if !utils.FileExists(filepath.Join(targetPackRoot, ".Web", "index.pidx")) {
+			err := installer.SetPackRoot(targetPackRoot, true)
+			if err != nil {
+				return err
+			}
+			// Exclude index updating commands to not double update
+			if cmd.Name() != "init" && cmd.Name() != "index" && cmd.Name() != "update-index" {
+				installer.UnlockPackRoot()
+				err = installer.UpdatePublicIndex(defaultPublicIndex, true, true, false, 0, 0)
+				if err != nil {
+					return err
+				}
+				installer.LockPackRoot()
+			}
+		} else {
+			err := installer.SetPackRoot(targetPackRoot, createPackRoot)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		err := installer.SetPackRoot(targetPackRoot, createPackRoot)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 var flags struct {

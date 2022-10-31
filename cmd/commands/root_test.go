@@ -37,6 +37,7 @@ var testingDir = filepath.Join("..", "..", "testdata", "integration")
 type TestCase struct {
 	args           []string
 	name           string
+	defaultMode    bool
 	createPackRoot bool
 	expectedStdout []string
 	expectedStderr []string
@@ -135,6 +136,10 @@ func runTests(t *testing.T, tests []TestCase) {
 		test.assert = assert
 		t.Run(test.name, func(t *testing.T) {
 			localTestingDir := strings.ReplaceAll(test.name, " ", "_")
+			if test.defaultMode {
+				os.Setenv("CPACKGET_DEFAULT_MODE_PATH", localTestingDir)
+			}
+
 			os.Setenv("CMSIS_PACK_ROOT", localTestingDir)
 			if test.createPackRoot {
 				assert.Nil(installer.SetPackRoot(localTestingDir, test.createPackRoot))
