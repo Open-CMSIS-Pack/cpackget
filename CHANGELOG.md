@@ -1,3 +1,10 @@
+# v0.8.2
+
+This v0.8.2 release contains:
+
+- New features:
+- `arm64 linux` build and support
+
 # v0.8.1
 
 This v0.8.1 release contains:
