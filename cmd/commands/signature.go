@@ -10,36 +10,56 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var signatureCreateCmdFlags struct {
-	// keyPath points to an existing GPG private key
+var signatureCreateflags struct {
+	// certOnly skips private key usage
+	certOnly bool
+
+	// certPath points to the signer's certificate
+	certPath string
+
+	// keyPath points to the signer's private key
 	keyPath string
 
-	// passphrase bypasses the prompt
-	passphrase string
-
-	// outputDir is the target directory where the signature file is written to
+	// outputDir saves the signed pack to a specific path
 	outputDir string
 
-	// outputB64 prints the signature in base64 encoding
-	outputB64 bool
+	// pgp mode embeds a PGP signature instead
+	pgp bool
+
+	// skipCertValidation skips sanity/safety checks on the provided certificate
+	skipCertValidation bool
+
+	// skipInfo skips displaying certificate info
+	skipInfo bool
 }
 
-var signatureVerifyCmdFlags struct {
-	// signaturePath is the path of the signature file
-	signaturePath string
+var signatureVerifyflags struct {
+	// export doesn't sign but only exports the embedded certificate
+	export bool
 
-	// passphrase bypasses the prompt
-	passphrase string
+	// pgpKey loads a PGP public key to verify against the signature
+	pgpKey string
+
+	// skipCertValidation skips sanity/safety checks on the provided certificate
+	skipCertValidation bool
+
+	// skipInfo skips displaying certificate info
+	skipInfo bool
 }
 
 func init() {
-	SignatureCreateCmd.Flags().StringVarP(&signatureCreateCmdFlags.keyPath, "key-path", "k", "", "provide a private key instead of generating one")
-	SignatureCreateCmd.Flags().StringVarP(&signatureCreateCmdFlags.passphrase, "passphrase", "p", "", "passphrase for the provided private key")
-	SignatureCreateCmd.Flags().StringVarP(&signatureCreateCmdFlags.outputDir, "output-dir", "o", "", "specifies an output directory of the signature file")
-	SignatureCreateCmd.Flags().BoolVarP(&signatureCreateCmdFlags.outputB64, "output-base64", "6", false, "show signature contents as base64")
+	SignatureCreateCmd.Flags().BoolVar(&signatureCreateflags.certOnly, "cert-only", false, "certificate-only signature mode")
+	SignatureCreateCmd.Flags().StringVarP(&signatureCreateflags.certPath, "certificate", "c", "", "path of the signer's certificate")
+	SignatureCreateCmd.Flags().StringVarP(&signatureCreateflags.keyPath, "private-key", "k", "", "path of the signer's private key")
+	SignatureCreateCmd.Flags().StringVarP(&signatureCreateflags.outputDir, "output-dir", "o", "", "save the signed pack to a specific path")
+	SignatureCreateCmd.Flags().BoolVar(&signatureCreateflags.pgp, "pgp", false, "PGP signature mode")
+	SignatureCreateCmd.Flags().BoolVar(&signatureCreateflags.skipCertValidation, "skip-validation", false, "do not validate certificate")
+	SignatureCreateCmd.Flags().BoolVar(&signatureCreateflags.skipInfo, "skip-info", false, "do not display certificate information")
 
-	SignatureVerifyCmd.Flags().StringVarP(&signatureVerifyCmdFlags.signaturePath, "sig-path", "s", "", "path of the .signature file")
-	SignatureVerifyCmd.Flags().StringVarP(&signatureVerifyCmdFlags.passphrase, "passphrase", "p", "", "passphrase for the provided private key")
+	SignatureVerifyCmd.Flags().BoolVarP(&signatureVerifyflags.export, "export", "e", false, "only export embed certificate")
+	SignatureVerifyCmd.Flags().StringVarP(&signatureVerifyflags.pgpKey, "pub-key", "k", "", "path of the PGP public key")
+	SignatureVerifyCmd.Flags().BoolVar(&signatureVerifyflags.skipCertValidation, "skip-validation", false, "do not validate certificate")
+	SignatureVerifyCmd.Flags().BoolVar(&signatureVerifyflags.skipInfo, "skip-info", false, "do not display certificate information")
 
 	SignatureCreateCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		err := command.Flags().MarkHidden("pack-root")
@@ -48,68 +68,106 @@ func init() {
 		log.Debug(err)
 		command.Parent().HelpFunc()(command, strings)
 	})
+
 	SignatureVerifyCmd.SetHelpFunc(SignatureCreateCmd.HelpFunc())
 }
 
 var SignatureCreateCmd = &cobra.Command{
 	Use:   "signature-create [<local .path pack>]",
-	Short: "Create a digest list of a pack and signs it",
+	Short: "Digitally signs a pack with a X.509 certificate or PGP key",
 	Long: `
-Generates a digest list of a pack, and signs it, creating
-a detached PGP signature.
+Signs a pack using X.509 Public Key Infrastructure or PGP signatures.
 
-This creates a ".checksum" file, containing hashes of the contents
-of the provided pack. It then gets processed and signed with a private
-key, producing a PGP signature, stored in the equivalent ".signature".
+Three modes are available. "full" is the default, and takes a X.509 public key
+certificate and its private key (currently only RSA supported), which is used
+to sign the hashed (SHA256) contents of a pack.
+If "--cert-only" is specified, only a X.509 certificate will be embed in the pack. This
+offers a lesser degree of security guarantees.
+Both these options perform some basic validations on the X.509 certificate, which can
+be skipped.
 
-If a .checksum file already exists in the target path, it will fail as to
-guarantee hash freshness.
+If "--pgp" is specified, the user must provide a PGP private key (Curve25519 or RSA 2048,
+3072 and 4096 bits are supported).
 
-Currently Curve25519 and RSA (2048, 3072, 4096 bits) key types are supported.
-If no private key (it MUST be in GPG PEM format) is provided with the -k/--key-path,
-one will be created using the builtin GopenPGP module.
+The signature follows a simple scheme which includes the cpackget version used to sign,
+the mode, and the outputs, base64 encoded - saved to the pack's Zip comment field.
+These can be viewed with any text/hex editor or dedicated zip tools like "zipinfo".
 
-The contents of the generated ".checksum" file are the same as the one
-created by "cpackget checksum-create":
+The referenced pack must be in its original/compressed form (.pack), and be present locally:
 
-  "6f95628e4e0824b0ff4a9f49dad1c3eb073b27c2dd84de3b985f0ef3405ca9ca Vendor.Pack.1.2.3.pdsc
-  435fsdf..."
-
-  The referenced pack must be in its original/compressed form (.pack), and be present locally:
-
-  $ cpackget signature-create Vendor.Pack.1.2.3.pack
-
-By default the signature file will be created in the same directory as the provided pack.`,
+  $ cpackget signature-create Vendor.Pack.1.2.3.pack -k private.key -c certificate.pem`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if signatureCreateCmdFlags.keyPath == "" && signatureCreateCmdFlags.passphrase != "" {
-			log.Error("-p/--passphrase is only specified when providing a key")
-			return errs.ErrIncorrectCmdArgs
+		if signatureCreateflags.keyPath == "" {
+			if !signatureCreateflags.certOnly {
+				log.Error("Specify private key file with the -k/--key flag")
+				return errs.ErrIncorrectCmdArgs
+			}
+		} else {
+			if signatureCreateflags.certOnly {
+				log.Error("-k/--key should not be provided in certificate-only mode")
+				return errs.ErrIncorrectCmdArgs
+			}
 		}
-		return cryptography.GenerateSignedChecksum(args[0], signatureCreateCmdFlags.keyPath, signatureCreateCmdFlags.outputDir, signatureCreateCmdFlags.passphrase, signatureCreateCmdFlags.outputB64)
+		if signatureCreateflags.certPath == "" {
+			if !signatureCreateflags.pgp {
+				log.Error("Specify PEM certificate with the -c/--certificate flag")
+				return errs.ErrIncorrectCmdArgs
+			}
+		}
+		if signatureCreateflags.pgp {
+			if signatureCreateflags.certOnly {
+				log.Error("Both PGP and cert-only modes specified")
+				return errs.ErrIncorrectCmdArgs
+			}
+			if signatureCreateflags.certPath != "" {
+				log.Error("PGP signature scheme does not need a x509 certificate")
+				return errs.ErrIncorrectCmdArgs
+			}
+			if signatureCreateflags.skipCertValidation {
+				log.Error("PGP signature scheme does not validate certificates (--skip-validation)")
+				return errs.ErrIncorrectCmdArgs
+			}
+			if signatureCreateflags.skipInfo {
+				log.Error("PGP signature scheme does not display certificate info (--skip-info)")
+				return errs.ErrIncorrectCmdArgs
+			}
+		}
+		return cryptography.SignPack(args[0], signatureCreateflags.certPath, signatureCreateflags.keyPath, signatureCreateflags.outputDir, Version, signatureCreateflags.certOnly, signatureCreateflags.skipCertValidation, signatureCreateflags.skipInfo)
 	},
 }
 
 var SignatureVerifyCmd = &cobra.Command{
-	Use:   "signature-verify [<local .checksum pack>] [<local private gpg key>]",
-	Short: "Verifies the integrity of a .checksum against its signature",
+	Use:   "signature-verify [<local .path pack>]",
+	Short: "Verifies a signed pack",
 	Long: `
-Verifies the integrity and authenticity of a .checksum file, by
-checking it against a provided .signature file (a detached PGP signature) and
-a private GPG key (either RSA or Curve25519).
+Verifies the integrity and authenticity of a pack signed
+with the "signature-create" command.
 
-The .signature and key files should have been created with the "signature-create" command,
-as they need to be in the PEM format.
+For more information on the signatures, use "cpackget help signature-create".
 
-If not specified by the -s/--sig-path flag, the .signature path will be read
-from the same directory as the .checksum file:
+If attempting to verify a PGP signed pack, use the -k/--pub-key flag to specify
+the publisher's public PGP key.
 
-  $ cpackget checksum-verify Vendor.Pack.1.2.3.sha256.checksum signature_curve25519.key
+The referenced pack must be in its original/compressed form (.pack), and be present locally:
 
-The passphrase prompt can be skipped with -p/--passphrase, which is useful for CI and automation
-but should be used carefully as it exposes the passphrase.`,
-	Args: cobra.ExactArgs(2),
+  $ cpackget signature-verify Vendor.Pack.1.2.3.pack.signed`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return cryptography.VerifySignature(args[0], args[1], signatureVerifyCmdFlags.signaturePath, signatureVerifyCmdFlags.passphrase)
+		if signatureVerifyflags.export && (signatureVerifyflags.skipCertValidation || signatureVerifyflags.skipInfo) {
+			log.Error("-e/--export does not need any other flags")
+			return errs.ErrIncorrectCmdArgs
+		}
+		if signatureVerifyflags.pgpKey != "" {
+			if signatureVerifyflags.export {
+				log.Error("Can't export non X.509 (full, cert-only) signature scheme")
+				return errs.ErrIncorrectCmdArgs
+			}
+			if signatureVerifyflags.skipCertValidation || signatureVerifyflags.skipInfo {
+				log.Error("PGP verification does not need any flags other than -k/-pub-key")
+				return errs.ErrIncorrectCmdArgs
+			}
+		}
+		return cryptography.VerifyPackSignature(args[0], signatureVerifyflags.pgpKey, Version, signatureVerifyflags.export, signatureVerifyflags.skipCertValidation, signatureVerifyflags.skipInfo)
 	},
 }

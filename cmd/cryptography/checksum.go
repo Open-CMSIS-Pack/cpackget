@@ -1,6 +1,7 @@
 package cryptography
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,9 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
 )
+
+// Hashes is the list of supported Cryptographic Hash Functions used for the checksum feature.
+var Hashes = [1]string{"sha256"}
 
 // isValidHash returns whether a hash function is
 // supported or not.
@@ -21,10 +25,28 @@ func isValidHash(hashFunction string) bool {
 	return false
 }
 
+// WriteChecksumFile writes the digests of a pack
+// and writes it to a local file
+func WriteChecksumFile(digests map[string]string, filename string) error {
+	out, err := os.Create(filename)
+	if err != nil {
+		log.Error(err)
+		return errs.ErrFailedCreatingFile
+	}
+	defer out.Close()
+	for filename, digest := range digests {
+		_, err := out.Write([]byte(digest + " " + filename + "\n"))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // GenerateChecksum creates a .checksum file for a pack.
 func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 	if !isValidHash(hashFunction) {
-		return errs.ErrInvalidHashFunction
+		return errors.New("provided hash function is not supported")
 	}
 	if !utils.FileExists(sourcePack) {
 		log.Errorf("\"%s\" does not exist", sourcePack)
@@ -47,7 +69,7 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 		return errs.ErrPathAlreadyExists
 	}
 
-	digests, err := GetDigestList(sourcePack, hashFunction)
+	digests, err := getDigestList(sourcePack, hashFunction)
 	if err != nil {
 		return err
 	}
@@ -66,7 +88,7 @@ func VerifyChecksum(packPath, checksumPath string) error {
 		return errs.ErrFileNotFound
 	}
 
-	// TODO: When multiple hash algos are supported,
+	// When multiple hash algos are supported,
 	// some more refined logic is needed as there may
 	// exist .checksums with different algos in the same dir
 	if checksumPath == "" {
@@ -84,12 +106,11 @@ func VerifyChecksum(packPath, checksumPath string) error {
 	}
 	hashFunction := filepath.Ext(strings.Split(checksumPath, ".checksum")[0])[1:]
 	if !isValidHash(hashFunction) {
-		log.Errorf("\"%s\" is not a valid .checksum file (correct format is [<pack>].[<hash-algorithm>].checksum). Please confirm if the algorithm is supported.", checksumPath)
-		return errs.ErrInvalidHashFunction
+		return errors.New("not a valid .checksum file (correct format is [<pack>].[<hash-algorithm>].checksum). Please confirm if the hash is supported")
 	}
 
 	// Compute pack's digests
-	digests, err := GetDigestList(packPath, hashFunction)
+	digests, err := getDigestList(packPath, hashFunction)
 	if err != nil {
 		return err
 	}
@@ -123,7 +144,7 @@ func VerifyChecksum(packPath, checksumPath string) error {
 		}
 	}
 	if failure {
-		return errs.ErrBadPackIntegrity
+		return errors.New("bad pack integrity")
 	}
 
 	log.Info("pack integrity verified, all checksums match.")

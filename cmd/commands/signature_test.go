@@ -5,87 +5,94 @@ package commands_test
 
 import (
 	"errors"
-	"os"
 	"testing"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 )
 
-// TODO: Compare actual ErrFileNotFound output
 var signatureCreateCmdTests = []TestCase{
-	{
-		name:        "test different number of parameters",
-		args:        []string{"signature-create"},
-		expectedErr: errors.New("accepts 1 arg(s), received 0"),
-	},
 	{
 		name:        "test help command",
 		args:        []string{"help", "signature-create"},
 		expectedErr: nil,
 	},
 	{
-		name:        "test wrong usage of passphrase flag",
-		args:        []string{"signature-create", "Pack.1.2.3.pack", "--passphrase", "foo"},
-		expectedErr: errs.ErrIncorrectCmdArgs,
-		setUpFunc: func(t *TestCase) {
-			x, _ := os.Create("Pack.1.2.3.pack")
-			x.Close()
-		},
-		tearDownFunc: func() {
-			os.Remove("Pack.1.2.3.pack")
-		},
+		name:        "test different number of parameters",
+		args:        []string{"signature-create", "Vendor.Pack.1.2.3.pack", "foo"},
+		expectedErr: errors.New("accepts 1 arg(s), received 2"),
 	},
-	// TODO: Investigate why cobra does not clear up used flags
-	// https://github.com/spf13/cobra/issues/1419
-	// Using -k here as it seems to keep the --passphrase from
-	// the second test..
 	{
-		name:        "test creating signature of unexisting pack",
-		args:        []string{"signature-create", "DoesNotExist.Pack.1.2.3.pack", "-k", "foo"},
-		expectedErr: errs.ErrFileNotFound,
+		name:        "test missing certificate path",
+		args:        []string{"signature-create", "Vendor.Pack.1.2.3.pack", "--cert-only"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
+	},
+	{
+		name:        "test passing cert-only and key flag",
+		args:        []string{"signature-create", "Vendor.Pack.1.2.3.pack", "--cert-only", "--private-key", "foo"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
+	},
+	{
+		name:        "test passing pgp and cert-only flag",
+		args:        []string{"signature-create", "Vendor.Pack.1.2.3.pack", "--pgp", "--cert-only"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
+	},
+	{
+		name:        "test passing pgp flag and missing key",
+		args:        []string{"signature-create", "Vendor.Pack.1.2.3.pack", "--pgp"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
+	},
+	{
+		name:        "test passing pgp flag and certificate",
+		args:        []string{"signature-create", "Vendor.Pack.1.2.3.pack", "--pgp", "--private-key", "foo", "--certificate", "bar"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
+	},
+	{
+		name:        "test passing pgp flag and skip-validation",
+		args:        []string{"signature-create", "Vendor.Pack.1.2.3.pack", "--pgp", "--private-key", "foo", "--skip-validation"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
+	},
+	{
+		name:        "test passing pgp flag and skip-info",
+		args:        []string{"signature-create", "Vendor.Pack.1.2.3.pack", "--pgp", "--private-key", "foo", "--skip-info"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
 	},
 }
 
 var signatureVerifyCmdTests = []TestCase{
-	{
-		name:        "test different number of parameters",
-		args:        []string{"signature-verify"},
-		expectedErr: errors.New("accepts 2 arg(s), received 0"),
-	},
 	{
 		name:        "test help command",
 		args:        []string{"help", "signature-verify"},
 		expectedErr: nil,
 	},
 	{
-		name:        "test signature of unexisting .checksum",
-		args:        []string{"signature-verify", "Pack.1.2.3.sha256.checksum", "signature_curve25519.key"},
-		expectedErr: errs.ErrFileNotFound,
-		setUpFunc: func(t *TestCase) {
-			x, _ := os.Create("signature_curve25519.key")
-			y, _ := os.Create("Pack.1.2.3.sha256.signature")
-			x.Close()
-			y.Close()
-		},
-		tearDownFunc: func() {
-			os.Remove("signature_curve25519.key")
-			os.Remove("Pack.1.2.3.sha256.signature")
-		},
+		name:        "test different number of parameters",
+		args:        []string{"signature-verify", "Vendor.Pack.1.2.3.pack", "foo"},
+		expectedErr: errors.New("accepts 1 arg(s), received 2"),
 	},
 	{
-		name:        "test verifying unexisting .signature",
-		args:        []string{"signature-verify", "Pack.1.2.3.sha256.checksum", "signature_curve25519.key"},
-		expectedErr: errs.ErrFileNotFound,
-		setUpFunc: func(t *TestCase) {
-			x, _ := os.Create("signature_curve25519.key")
-			y, _ := os.Create("Pack.1.2.3.sha256.checksum")
-			x.Close()
-			y.Close()
-		},
-		tearDownFunc: func() {
-			os.Remove("signature_curve25519.key")
-			os.Remove("Pack.1.2.3.sha256.checksum")
-		},
+		name:        "test passing export and skip-validation",
+		args:        []string{"signature-verify", "Vendor.Pack.1.2.3.pack", "--export", "--skip-validation"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
+	},
+	{
+		name:        "test passing export and skip-info",
+		args:        []string{"signature-verify", "Vendor.Pack.1.2.3.pack", "--export", "--skip-info"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
+	},
+	{
+		name:        "test passing key and export",
+		args:        []string{"signature-verify", "Vendor.Pack.1.2.3.pack", "--pub-key", "foo", "--export"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
+	},
+	{
+		name:        "test passing key and skip-validation",
+		args:        []string{"signature-verify", "Vendor.Pack.1.2.3.pack", "--pub-key", "foo", "--skip-validation"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
+	},
+	{
+		name:        "test passing key and skip-info",
+		args:        []string{"signature-verify", "Vendor.Pack.1.2.3.pack", "--pub-key", "foo", "--skip-info"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
 	},
 }
 

@@ -6,6 +6,7 @@ package utils
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/xml"
 	"errors"
 	"io"
@@ -306,6 +307,12 @@ func TouchFile(filePath string) error {
 
 	currentTime := time.Now().Local()
 	return os.Chtimes(filePath, currentTime, currentTime)
+}
+
+// IsBase64 tells whether a string is correctly b64 encoded.
+func IsBase64(s string) bool {
+	_, err := base64.StdEncoding.DecodeString(s)
+	return err == nil
 }
 
 // IsEmpty tells whether a directory specified by "dir" is empty or not

@@ -24,20 +24,20 @@ var checksumCreateCmdTests = []TestCase{
 		expectedErr: nil,
 	},
 	{
-		name:        "test creating checksum of unexisting pack",
+		name:        "test creating checksum of nonexisting pack",
 		args:        []string{"checksum-create", "DoesNotExist.Pack.1.2.3.pack"},
 		expectedErr: errs.ErrFileNotFound,
 	},
 	{
-		name:        "test using unexisting hash function",
-		args:        []string{"checksum-create", "Pack.1.2.3.pack", "-a", "sha1"},
-		expectedErr: errs.ErrInvalidHashFunction,
+		name:        "test using nonexisting hash function",
+		args:        []string{"checksum-create", "Vendor.Pack.1.2.3.pack", "-a", "sha1"},
+		expectedErr: errors.New("provided hash function is not supported"),
 		setUpFunc: func(t *TestCase) {
-			f, _ := os.Create("Pack.1.2.3.pack.sha256.checksum")
+			f, _ := os.Create("Vendor.Pack.1.2.3.pack.sha256.checksum")
 			f.Close()
 		},
 		tearDownFunc: func() {
-			os.Remove("Pack.1.2.3.pack.sha256.checksum")
+			os.Remove("Vendor.Pack.1.2.3.pack.sha256.checksum")
 		},
 	},
 }
@@ -54,7 +54,7 @@ var checksumVerifyCmdTests = []TestCase{
 		expectedErr: nil,
 	},
 	{
-		name:        "test verifying checksum of unexisting pack",
+		name:        "test verifying checksum of nonexisting pack",
 		args:        []string{"checksum-verify", "DoesNotExist.Pack.1.2.3.pack"},
 		expectedErr: errs.ErrFileNotFound,
 		setUpFunc: func(t *TestCase) {
@@ -66,11 +66,11 @@ var checksumVerifyCmdTests = []TestCase{
 		},
 	},
 	{
-		name:        "test verifying checksum of unexisting checksum file",
-		args:        []string{"checksum-verify", "Pack.1.2.3.pack"},
+		name:        "test verifying checksum of nonexisting checksum file",
+		args:        []string{"checksum-verify", "Vendor.Pack.1.2.3.pack"},
 		expectedErr: errs.ErrFileNotFound,
 		tearDownFunc: func() {
-			os.Remove("Pack.1.2.3.pack.sha256.checksum")
+			os.Remove("Vendor.Pack.1.2.3.pack.sha256.checksum")
 		},
 	},
 }
