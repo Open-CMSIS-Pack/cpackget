@@ -40,6 +40,20 @@ var pdscCmdTests = []TestCase{
 		expectedErr: nil,
 	},
 	{
+		name:           "test adding pdsc file default mode",
+		args:           []string{"pdsc", "add", pdscFilePath},
+		createPackRoot: true,
+		defaultMode:    true,
+		expectedStdout: []string{"Adding pdsc"},
+	},
+	{
+		name:           "test adding pdsc file default mode no preexisting index",
+		args:           []string{"pdsc", "add", pdscFilePath},
+		createPackRoot: false,
+		defaultMode:    true,
+		expectedStdout: []string{"Adding pdsc"},
+	},
+	{
 		name:           "test adding pdsc file",
 		args:           []string{"pdsc", "add", pdscFilePath},
 		createPackRoot: true,
@@ -56,6 +70,22 @@ var pdscCmdTests = []TestCase{
 		name:        "test help command",
 		args:        []string{"help", "pdsc", "rm"},
 		expectedErr: nil,
+	},
+	{
+		name:           "test removing pdsc default mode",
+		args:           []string{"pdsc", "rm", "TheVendor.PublicLocalPack.1.2.3"},
+		createPackRoot: true,
+		defaultMode:    true,
+		expectedStdout: []string{"Removing pdsc"},
+		expectedErr:    errs.ErrPdscEntryNotFound,
+	},
+	{
+		name:           "test removing pdsc default mode no preexisting index",
+		args:           []string{"pdsc", "rm", "TheVendor.PublicLocalPack.1.2.3"},
+		createPackRoot: false,
+		defaultMode:    true,
+		expectedStdout: []string{"Removing pdsc"},
+		expectedErr:    errs.ErrPdscEntryNotFound,
 	},
 	{
 		name:           "test removing pdsc",

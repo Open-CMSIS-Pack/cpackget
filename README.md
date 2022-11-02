@@ -67,6 +67,13 @@ If later it is needed to update the public index file, just run `cpackget index 
 
 **As of v0.7.0, the pack root is read-only, with permissions being handled by cpackget.** Changing any permissions manually inside the pack root might cause erratic behavior, potentially breaking functionality.
 
+### Using the default pack root folder
+
+If not specified as described in the previous section, cpackget will determine the pack root folder based on the Operating System and user environment.
+
+This "default mode" enables a fast bootstrapping process, as cpackget will detect the presence of the public index file `.Web/index.pidx` in the default pack root and if it's missing, automatically populates/initializes it using the current index reference. This is the equivalent of running `cpackget init https://www.keil.com/pack/index.pidx`.
+
+
 ### Adding packs
 
 The commands below demonstrate how to add packs:

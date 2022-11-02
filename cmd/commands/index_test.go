@@ -24,16 +24,50 @@ var indexCmdTests = []TestCase{
 		expectedErr: nil,
 	},
 	{
-		name:        "test with no packroot configured",
-		args:        []string{"index", "index.pidx"},
-		env:         map[string]string{"CMSIS_PACK_ROOT": ""},
-		expectedErr: errs.ErrPackRootNotFound,
-	},
-	{
 		name:           "test cannot overwrite current index",
 		args:           []string{"index", "index.pidx"},
 		createPackRoot: true,
 		expectedErr:    errs.ErrCannotOverwritePublicIndex,
+	},
+	{
+		name:           "test updating index default mode",
+		args:           []string{"index", "--force"},
+		defaultMode:    true,
+		createPackRoot: true,
+		expectedStdout: []string{"Updating index"},
+		setUpFunc: func(t *TestCase) {
+			server := NewServer()
+			t.args = append(t.args, server.URL()+"index.pidx")
+			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?>
+<index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
+<vendor>TheVendor</vendor>
+<url>http://the.vendor/</url>
+<timestamp>2021-10-17T12:21:59.1747971+00:00</timestamp>
+<pindex>
+  <pdsc url="http://the.vendor/" vendor="TheVendor" name="PackName" version="1.2.3" />
+</pindex>
+</index>`))
+		},
+	},
+	{
+		name:           "test updating index default mode no preexisting index",
+		args:           []string{"index", "--force"},
+		defaultMode:    true,
+		createPackRoot: false,
+		expectedStdout: []string{"Updating index"},
+		setUpFunc: func(t *TestCase) {
+			server := NewServer()
+			t.args = append(t.args, server.URL()+"index.pidx")
+			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?>
+<index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
+<vendor>TheVendor</vendor>
+<url>http://the.vendor/</url>
+<timestamp>2021-10-17T12:21:59.1747971+00:00</timestamp>
+<pindex>
+  <pdsc url="http://the.vendor/" vendor="TheVendor" name="PackName" version="1.2.3" />
+</pindex>
+</index>`))
+		},
 	},
 	{
 		name:           "test updating index",

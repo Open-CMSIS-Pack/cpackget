@@ -25,6 +25,20 @@ var addCmdTests = []TestCase{
 		expectedErr:    errs.ErrIncorrectCmdArgs,
 	},
 	{
+		name:           "test adding pack file default mode",
+		args:           []string{"add", packFilePath},
+		createPackRoot: true,
+		defaultMode:    true,
+		expectedStdout: []string{"Adding pack", filepath.Base(packFilePath)},
+	},
+	{
+		name:           "test adding pack file default mode no preexisting index",
+		args:           []string{"add", packFilePath},
+		createPackRoot: false,
+		defaultMode:    true,
+		expectedStdout: []string{"Adding pack", filepath.Base(packFilePath)},
+	},
+	{
 		name:           "test adding pack missing file",
 		args:           []string{"add", "DoesNotExist.Pack.1.2.3.pack"},
 		createPackRoot: true,

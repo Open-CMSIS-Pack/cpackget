@@ -34,6 +34,24 @@ var rmCmdTests = []TestCase{
 		expectedErr:    errs.ErrAlreadyLogged,
 	},
 	{
+		name:           "test removing pack default mode",
+		args:           []string{"rm", "Vendor.Pack.1.2.3", "Vendor.PackInstalledViaPdsc.pdsc"},
+		createPackRoot: true,
+		defaultMode:    true,
+		expectedStdout: []string{"Removing [Vendor.Pack.1.2.3 Vendor.PackInstalledViaPdsc.pdsc]"},
+		setUpFunc: func(t *TestCase) {
+			packRoot := os.Getenv("CMSIS_PACK_ROOT")
+			packFolder := filepath.Join(packRoot, "Vendor", "Pack", "1.2.3")
+			t.assert.Nil(os.MkdirAll(packFolder, 0700))
+			t.assert.Nil(os.WriteFile(filepath.Join(packFolder, "Vendor.Pack.pdsc"), []byte(""), 0600))
+			t.assert.Nil(os.WriteFile(filepath.Join(packRoot, ".Local", "Vendor.Pack.pdsc"), []byte(""), 0600))
+			localRepository := installer.Installation.LocalPidx
+			t.assert.Nil(localRepository.Read())
+			t.assert.Nil(localRepository.AddPdsc(xml.PdscTag{Vendor: "Vendor", Name: "PackInstalledViaPdsc", Version: "1.2.3"}))
+			t.assert.Nil(localRepository.Write())
+		},
+	},
+	{
 		name:           "test removing pack",
 		args:           []string{"rm", "Vendor.Pack.1.2.3", "Vendor.PackInstalledViaPdsc.pdsc"},
 		createPackRoot: true,
