@@ -9,7 +9,6 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -22,10 +21,10 @@ import (
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/mod/semver"
 	"golang.org/x/term"
 )
 
-// TODO: send to utils
 // validateSignatureScheme parses and identifies a packs
 // signature scheme (stored in the Zip comment field).
 func validateSignatureScheme(zip *zip.ReadCloser, version string, signing bool) string {
@@ -39,7 +38,10 @@ func validateSignatureScheme(zip *zip.ReadCloser, version string, signing bool) 
 	// cpackget-vX.Y.Z:f:cert:signedhash -> 4 fields
 	// cpackget-vX.Y.Z:c:cert -> 3 fields
 	// cpackget-vX.Y.Z:p:pgpmessage -> 3 fields
-	// TODO: check for version tag
+	if !semver.IsValid(s[0]) {
+		log.Debugf("signature: %s", c)
+		return "invalid"
+	}
 	// Warn the user if the tag was made by an older cpackget version
 	if utils.SemverCompare(strings.Split(s[0], "-")[0][1:], strings.Split(version, "-")[0][1:]) == -1 {
 		log.Warnf("This pack was signed with an older version of cpackget (%s)", s[0])
@@ -105,106 +107,36 @@ func getSignField(signature, element string) string {
 	return ""
 }
 
-// getKeyUsage prints the RFC/human friendly version
-// of possible X509 key usages (https://www.rfc-editor.org/rfc/rfc5280#section-4.2.1.3).
-func getKeyUsage(k x509.KeyUsage) []string {
-	getSingleUsage := func(k x509.KeyUsage) string {
-		switch k {
-		case x509.KeyUsageDigitalSignature:
-			return "\"Digital Signature\""
-		case x509.KeyUsageContentCommitment:
-			return "\"Content Commitment\""
-		case x509.KeyUsageKeyEncipherment:
-			return "\"Key Encipherment\""
-		case x509.KeyUsageDataEncipherment:
-			return "\"Data Encipherment\""
-		case x509.KeyUsageKeyAgreement:
-			return "\"Key Agreement\""
-		case x509.KeyUsageCertSign:
-			return "\"Certificate Signing\""
-		case x509.KeyUsageCRLSign:
-			return "\"CRL Signing\""
-		case x509.KeyUsageEncipherOnly:
-			return "\"Encipher Only\""
-		case x509.KeyUsageDecipherOnly:
-			return "\"Decipher Only\""
-		}
-		return ""
-	}
-
-	// Simple bitmask "decoding"
-	var uses []string
-	for key := x509.KeyUsageDigitalSignature; key < 9; key <<= 1 {
-		if k&key != 0 {
-			uses = append(uses, getSingleUsage(key))
-		}
-	}
-	return uses
-}
-
-// displayCertInfo prints the relevant fields of a certificate.
-func displayCertificateInfo(cert *x509.Certificate) {
-	log.Info("Loading relevant info from provided certificate")
-	log.Info("To manually inspect it, use the --export/-e flag to export a copy")
-	// This representation is loosely based on how Mozilla Firefox
-	// represents certificate info (about:certificate?cert=...)
-	log.Info("Subject:")
-	log.Infof("	Country (C): %s", cert.Subject.Country)
-	log.Infof("	Organization (O): %s", cert.Subject.Organization)
-	log.Infof("	Common Name (CN): %s", cert.Subject.CommonName)
-	log.Infof("	Alt Names: %s", cert.Subject.ExtraNames)
-	log.Info("Issuer:")
-	log.Infof("	Country (C): %s", cert.Issuer.Country)
-	log.Infof("	Organization (O): %s", cert.Issuer.Organization)
-	log.Infof("	Common Name (CN): %s", cert.Issuer.CommonName)
-	log.Info("Validity:")
-	log.Infof("	Not Valid Before: %s", cert.NotBefore)
-	log.Infof("	Not Valid After: %s", cert.NotAfter)
-	log.Info("Public key Info:")
-	log.Infof("	Algorithm: %s", cert.PublicKeyAlgorithm.String())
-	// Modulus size in bits, not bytes
-	log.Infof("	Key Size: %d", cert.PublicKey.(*rsa.PublicKey).Size()*8)
-	log.Infof("	Exponent: %d", cert.PublicKey.(*rsa.PublicKey).E)
-	log.Info("Miscellaneous")
-	log.Infof("	Signature Algorithm: %s", cert.SignatureAlgorithm.String())
-	log.Infof("	Version: %d", cert.Version)
-	log.Info("Basic Constraints")
-	log.Infof("	Certificate Authority: %t", cert.IsCA)
-	log.Info("Key Usages:")
-	log.Infof("	Purposes: %s", getKeyUsage(cert.KeyUsage))
-}
-
 // sanityCheckCertificate makes some basic validations
-// against the provided X509 certificate.
+// against the provided X.509 certificate.
 func sanityCheckCertificate(cert *x509.Certificate, vendor string) error {
 	log.Info("Checking certificate's integrity and parameters ")
 	// Names
 	if cert.Subject.CommonName == "" {
-		log.Error("certificate's Subject Common Name (CN) is missing")
-		return errs.ErrSignUnsafeCertificate
+		log.Error("Certificate's Subject Common Name (CN) is missing")
+		return errs.ErrUnsafeCertificate
 	}
-	// TODO: Uncomment
 	if vendor != "" && cert.Subject.CommonName != vendor {
-		log.Error("certificate's Subject Common Name (CN) does not match vendor name")
-		return errs.ErrSignUnsafeCertificate
+		log.Error("Certificate's Subject Common Name (CN) does not match vendor name")
+		return errs.ErrUnsafeCertificate
 	}
 	if cert.Issuer.CommonName == "" {
-		log.Error("certificate's Issuer Common Name (CN) is missing")
-		return errs.ErrSignUnsafeCertificate
+		log.Error("Certificate's Issuer Common Name (CN) is missing")
+		return errs.ErrUnsafeCertificate
 	}
 	// Validity
 	if time.Now().Before(cert.NotBefore) {
-		log.Errorf("certificate is only valid after %s", cert.NotBefore)
-		return errs.ErrSignUnsafeCertificate
+		log.Errorf("Certificate is only valid after %s", cert.NotBefore)
+		return errs.ErrUnsafeCertificate
 	}
 	if time.Now().After(cert.NotAfter) {
-		log.Error("certificate has expired")
-		return errs.ErrSignUnsafeCertificate
+		log.Error("Certificate has expired")
+		return errs.ErrUnsafeCertificate
 	}
 	// Key
 	if cert.PublicKeyAlgorithm.String() == "DSA" {
 		log.Error("DSA keys are not supported")
-		return errs.ErrSignUnsupportedKeyAlgo
+		return errs.ErrUnsupportedKeyAlgo
 	}
 	// Usage
 	if cert.IsCA {
@@ -213,47 +145,24 @@ func sanityCheckCertificate(cert *x509.Certificate, vendor string) error {
 	ku := getKeyUsage(cert.KeyUsage)
 	if len(ku) == 2 {
 		if ku[0] != "\"Digital Signature\"" || ku[1] != "\"Content Commitment\"" {
-			log.Warn("Certificate should preferably only have \"Digital Signature\" and \"Content Commitment\" key usage fields")
+			log.Warn("Does not have \"Digital Signature\" and \"Content Commitment\" key usage fields")
 		}
 	} else {
-		log.Warn("Certificate should preferably only have \"Digital Signature\" and \"Content Commitment\" key usage fields")
+		log.Warn("Does not have \"Digital Signature\" and \"Content Commitment\" key usage fields")
 	}
 	return nil
 }
 
-// isPrivateKeyFromCertificate tells whether a DER encoded key
-// is the private counterpart to a X509 certificate.
-func isPrivateKeyFromCertificate(cert *x509.Certificate, keyDER []byte, keyType string) (bool, error) {
-	if keyType == "PKCS1" {
-		pv, err := x509.ParsePKCS1PrivateKey(keyDER)
-		if err != nil {
-			return false, err
-		}
-		pubCert := cert.PublicKey
-		return pv.PublicKey.Equal(pubCert), nil
-	} else {
-		if keyType == "PKCS8" {
-			pv, err := x509.ParsePKCS8PrivateKey(keyDER)
-			if err != nil {
-				return false, err
-			}
-			pubCert := cert.PublicKey
-			return pv.(*rsa.PrivateKey).PublicKey.Equal(pubCert), nil
-		}
-	}
-	return false, errs.ErrSignBadPrivateKey
-}
-
-// loadCertificate reads, parses and validates a X509 certificate in PEM format.
+// loadCertificate reads, parses and validates a X.509 certificate in PEM format.
 func loadCertificate(rawCert []byte, vendor string, skipCertValidation, skipInfo bool) (*x509.Certificate, error) {
 	certPEM, rest := pem.Decode(rawCert)
 	if len(rest) > 0 {
 		log.Warn("The provided certificate included other PEM objects, only the first was read")
 	}
 	if certPEM == nil {
-		log.Error("could not decode signature certificate as PEM, please check for corruption")
+		log.Error("Could not decode signature certificate as PEM, please check for corruption")
 		log.Debugf("rest: %s", string(rest))
-		return &x509.Certificate{}, errs.ErrSignCannotVerify
+		return &x509.Certificate{}, errs.ErrCannotVerifySignature
 	}
 	certificate, err := x509.ParseCertificate(certPEM.Bytes)
 	if err != nil {
@@ -275,7 +184,7 @@ func loadCertificate(rawCert []byte, vendor string, skipCertValidation, skipInfo
 // to a local file.
 func exportCertificate(b64Cert, path string) error {
 	if utils.FileExists(path) {
-		log.Error("existing certificate found")
+		log.Error("Existing certificate found")
 		return errs.ErrPathAlreadyExists
 	}
 	out, err := os.Create(path)
@@ -294,45 +203,6 @@ func exportCertificate(b64Cert, path string) error {
 	return nil
 }
 
-// calculatePackHash hashes the contents of a zip file using the
-// SHA256 algorithm and returns the underlying hash object.
-func calculatePackHash(zip *zip.ReadCloser) ([]byte, error) {
-	hashes := make([]byte, 0)
-	h := sha256.New()
-	for _, file := range zip.File {
-		reader, err := file.Open()
-		if err != nil {
-			return nil, err
-		}
-		defer reader.Close()
-		_, err = utils.SecureCopy(h, reader)
-		if err != nil {
-			return nil, err
-		}
-		hashes = h.Sum(hashes)
-	}
-	log.Debugf("Calculated hash: %s", fmt.Sprintf("%x", hashes))
-	return hashes, nil
-}
-
-// detectKeyType identifies a PEM encoded RSA private key. It can be
-// either PKCS1 or PKCS8, the latter not password-protected (std crypto
-// does not support it currently).
-func detectKeyType(key string) (string, error) {
-	switch strings.Split(key, "-----")[1] {
-	case "BEGIN RSA PRIVATE KEY":
-		return "PKCS1", nil
-	case "BEGIN PRIVATE KEY":
-		return "PKCS8", nil
-	case "BEGIN ENCRYPTED PRIVATE KEY":
-		log.Error("encrypted PKCSC8 private keys aren't currently supported")
-		return "", errs.ErrSignUnsupportedKeyAlgo
-	default:
-		log.Error("could not decode private key as PEM, please check for corruption")
-		return "", errs.ErrSignBadPrivateKey
-	}
-}
-
 // signPackHash takes a private RSA key and PKCS1v15 signs
 // the hashed zip contents of a pack.
 func signPackHashX509(keyPath string, cert *x509.Certificate, hash []byte) ([]byte, error) {
@@ -342,9 +212,9 @@ func signPackHashX509(keyPath string, cert *x509.Certificate, hash []byte) ([]by
 	}
 	block, rest := pem.Decode([]byte(k))
 	if block == nil {
-		log.Error("could not decode key as PEM, please check for corruption")
+		log.Error("Could not decode key as PEM, please check for corruption")
 		log.Debugf("rest: %s", string(rest))
-		return nil, errs.ErrSignBadPrivateKey
+		return nil, errs.ErrBadPrivateKey
 	}
 
 	keyType, err := detectKeyType(string(k))
@@ -361,7 +231,7 @@ func signPackHashX509(keyPath string, cert *x509.Certificate, hash []byte) ([]by
 	case "PKCS1":
 		b, err := isPrivateKeyFromCertificate(cert, block.Bytes, "PKCS1")
 		if !b {
-			log.Error("private key does not derive from provided x509 certificate")
+			log.Error("Private key does not derive from provided x509 certificate")
 			return nil, err
 		}
 		rsaPrivateKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -371,7 +241,7 @@ func signPackHashX509(keyPath string, cert *x509.Certificate, hash []byte) ([]by
 	case "PKCS8":
 		b, err := isPrivateKeyFromCertificate(cert, block.Bytes, "PKCS8")
 		if !b {
-			log.Error("private key does not derive from provided x509 certificate")
+			log.Error("Private key does not derive from provided x509 certificate")
 			return nil, err
 		}
 		pk, err := x509.ParsePKCS8PrivateKey(block.Bytes)
@@ -472,32 +342,33 @@ func SignPack(packPath, certPath, keyPath, outputDir, version string, certOnly, 
 	packFilenameSigned := packFilenameBase + ".signed"
 	if outputDir != "" {
 		if utils.FileExists(filepath.Join(outputDir, packFilenameSigned)) {
-			return errors.New("destination path would overwrite an existing signed pack")
+			log.Error("Destination path would overwrite an existing signed pack")
+			return errs.ErrPathAlreadyExists
 		} else {
 			packFilenameSigned = filepath.Join(outputDir, packFilenameSigned)
 		}
 	} else {
 		if utils.FileExists(packFilenameSigned) {
-			return errors.New("destination path would overwrite an existing signed pack")
+			log.Error("Destination path would overwrite an existing signed pack")
+			return errs.ErrPathAlreadyExists
 		}
 	}
 
 	zip, err := zip.OpenReader(packPath)
 	if err != nil {
-		log.Errorf("can't decompress \"%s\": %s", packPath, err)
+		log.Errorf("Can't decompress \"%s\": %s", packPath, err)
 		return errs.ErrFailedDecompressingFile
 	}
-	// TODO: split this in smaller funcs
 	switch validateSignatureScheme(zip, version, true) {
 	case "full":
-		log.Error("full X509 signature found in provided pack")
-		return errs.ErrSignAlreadySigned
+		log.Error("\"Full\" signature found in provided pack")
+		return errs.ErrAlreadySigned
 	case "cert-only":
-		log.Error("cert-only X509 signature found in provided pack")
-		return errs.ErrSignAlreadySigned
+		log.Error("\"cert-only\" signature found in provided pack")
+		return errs.ErrAlreadySigned
 	case "pgp":
 		log.Error("PGP signature found in provided pack")
-		return errs.ErrSignAlreadySigned
+		return errs.ErrAlreadySigned
 	case "empty":
 		log.Info("Provided pack's zip comment is empty, OK to use")
 	case "invalid":
@@ -601,8 +472,8 @@ func verifyPackCertOnlySignature(zip *zip.ReadCloser, vendor, b64Cert string, sk
 // by verifying a PGP detached signature against a public key.
 func verifyPackPGPSignature(zip *zip.ReadCloser, keyPath, b64Signature string) error {
 	if keyPath == "" {
-		log.Error("please provide the public key to use for verification")
-		return errs.ErrSignCannotVerify
+		log.Error("Please provide the public key to use for verification")
+		return errs.ErrCannotVerifySignature
 	}
 	k, err := ioutil.ReadFile(keyPath)
 	if err != nil {
@@ -645,7 +516,7 @@ func VerifyPackSignature(packPath, pubPath, version string, export, skipCertVali
 	}
 	zip, err := zip.OpenReader(packPath)
 	if err != nil {
-		log.Errorf("can't decompress \"%s\": %s", packPath, err)
+		log.Errorf("Can't decompress \"%s\": %s", packPath, err)
 		return errs.ErrFailedDecompressingFile
 	}
 
@@ -681,7 +552,7 @@ func VerifyPackSignature(packPath, pubPath, version string, export, skipCertVali
 			return err
 		}
 	case "empty":
-		log.Error("pack's signature field is empty, nothing to check")
+		log.Error("Pack's signature field is empty, nothing to check")
 		return errs.ErrBadSignatureScheme
 	case "invalid":
 		return errs.ErrBadSignatureScheme

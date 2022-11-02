@@ -20,6 +20,7 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -170,6 +171,19 @@ func runTests(t *testing.T, tests []TestCase) {
 			cmd.SetArgs(test.args)
 
 			cmdErr := cmd.Execute()
+			// Very important: resets all flags, as apparently
+			// Cobra doesn't do that.
+			// Otherwise, the first time a command uses a flag,
+			// it will taint the others.
+			// Ref: https://github.com/spf13/cobra/issues/1488
+			for _, c := range cmd.Commands() {
+				c.Flags().VisitAll(func(f *pflag.Flag) {
+					if f.Changed {
+						_ = f.Value.Set(f.DefValue)
+						f.Changed = false
+					}
+				})
+			}
 
 			outBytes, err1 := ioutil.ReadAll(stdout)
 			errBytes, err2 := ioutil.ReadAll(stderr)

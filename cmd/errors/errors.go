@@ -52,20 +52,14 @@ var (
 	ErrMovingEqualPaths          = errors.New("failed moving files: source is the same as destination")
 
 	// Cryptography errors
-	// TODO: better names
-	ErrBadPackIntegrity     = errors.New("bad pack integrity")
-	ErrIntegrityCheckFailed = errors.New("checksum verification failed")
-	ErrInvalidHashFunction  = errors.New("provided hash function is not supported")
-	ErrKeyGenerationFailure = errors.New("error generating new private key")
-	//
-	ErrSignAlreadySigned      = errors.New("pack is already signed, not overwriting")
-	ErrSignBadCertificate     = errors.New("certificate can't be processed")
-	ErrSignBadPrivateKey      = errors.New("private key can't be processed")
-	ErrSignUnsafeCertificate  = errors.New("certificate does not meet minimum security standards")
-	ErrSignUnsupportedKeyAlgo = errors.New("unsupported key algorithm")
-	ErrBadSignatureScheme     = errors.New("pack has an invalid/corrupt signature scheme")
-	ErrSignCannotVerify       = errors.New("cannot verify pack signature")
-	ErrPossibleMaliciousPack  = errors.New("bad pack integrity! signature does not match pack contents - might have been tampered")
+	ErrIntegrityCheckFailed  = errors.New("checksum verification failed")
+	ErrAlreadySigned         = errors.New("pack is already signed, not overwriting")
+	ErrBadPrivateKey         = errors.New("private key can't be processed")
+	ErrBadSignatureScheme    = errors.New("pack has an invalid/corrupt signature scheme")
+	ErrUnsafeCertificate     = errors.New("certificate does not meet minimum security standards")
+	ErrUnsupportedKeyAlgo    = errors.New("unsupported key algorithm")
+	ErrCannotVerifySignature = errors.New("cannot verify pack signature")
+	ErrPossibleMaliciousPack = errors.New("bad pack integrity! signature does not match pack contents - might have been tampered")
 
 	// Security errors
 	ErrInsecureZipFileName = errors.New("zip file contains insecure characters: ../")

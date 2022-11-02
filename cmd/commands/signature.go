@@ -50,7 +50,7 @@ var signatureVerifyflags struct {
 func init() {
 	SignatureCreateCmd.Flags().BoolVar(&signatureCreateflags.certOnly, "cert-only", false, "certificate-only signature mode")
 	SignatureCreateCmd.Flags().StringVarP(&signatureCreateflags.certPath, "certificate", "c", "", "path of the signer's certificate")
-	SignatureCreateCmd.Flags().StringVarP(&signatureCreateflags.keyPath, "key", "k", "", "path of the signer's private key")
+	SignatureCreateCmd.Flags().StringVarP(&signatureCreateflags.keyPath, "private-key", "k", "", "path of the signer's private key")
 	SignatureCreateCmd.Flags().StringVarP(&signatureCreateflags.outputDir, "output-dir", "o", "", "save the signed pack to a specific path")
 	SignatureCreateCmd.Flags().BoolVar(&signatureCreateflags.pgp, "pgp", false, "PGP signature mode")
 	SignatureCreateCmd.Flags().BoolVar(&signatureCreateflags.skipCertValidation, "skip-validation", false, "do not validate certificate")
@@ -74,16 +74,16 @@ func init() {
 
 var SignatureCreateCmd = &cobra.Command{
 	Use:   "signature-create [<local .path pack>]",
-	Short: "Digitally signs a pack with a X509 certificate or PGP key",
+	Short: "Digitally signs a pack with a X.509 certificate or PGP key",
 	Long: `
-Signs a pack using X509 Public Key Infrastructure or PGP signatures.
+Signs a pack using X.509 Public Key Infrastructure or PGP signatures.
 
-Three modes are available. "full" is the default, and takes a X509 public key
+Three modes are available. "full" is the default, and takes a X.509 public key
 certificate and its private key (currently only RSA supported), which is used
 to sign the hashed (SHA256) contents of a pack.
-If "--cert-only" is specified, only a X509 certificate will be embed in the pack. This
+If "--cert-only" is specified, only a X.509 certificate will be embed in the pack. This
 offers a lesser degree of security guarantees.
-Both these options perform some basic validations on the X509 certificate, which can
+Both these options perform some basic validations on the X.509 certificate, which can
 be skipped.
 
 If "--pgp" is specified, the user must provide a PGP private key (Curve25519 or RSA 2048,
@@ -98,10 +98,9 @@ The referenced pack must be in its original/compressed form (.pack), and be pres
   $ cpackget signature-create Vendor.Pack.1.2.3.pack -k private.key -c certificate.pem`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// TODO: skipCertinfo and validation
 		if signatureCreateflags.keyPath == "" {
-			if !signatureCreateflags.certOnly || signatureCreateflags.pgp {
-				log.Error("specify private key file with the -k/-key flag")
+			if !signatureCreateflags.certOnly {
+				log.Error("Specify private key file with the -k/--key flag")
 				return errs.ErrIncorrectCmdArgs
 			}
 		} else {
@@ -110,7 +109,17 @@ The referenced pack must be in its original/compressed form (.pack), and be pres
 				return errs.ErrIncorrectCmdArgs
 			}
 		}
+		if signatureCreateflags.certPath == "" {
+			if !signatureCreateflags.pgp {
+				log.Error("Specify PEM certificate with the -c/--certificate flag")
+				return errs.ErrIncorrectCmdArgs
+			}
+		}
 		if signatureCreateflags.pgp {
+			if signatureCreateflags.certOnly {
+				log.Error("Both PGP and cert-only modes specified")
+				return errs.ErrIncorrectCmdArgs
+			}
 			if signatureCreateflags.certPath != "" {
 				log.Error("PGP signature scheme does not need a x509 certificate")
 				return errs.ErrIncorrectCmdArgs
@@ -138,7 +147,7 @@ with the "signature-create" command.
 For more information on the signatures, use "cpackget help signature-create".
 
 If attempting to verify a PGP signed pack, use the -k/--pub-key flag to specify
-the publisher's public GPG key.
+the publisher's public PGP key.
 
 The referenced pack must be in its original/compressed form (.pack), and be present locally:
 
@@ -151,7 +160,7 @@ The referenced pack must be in its original/compressed form (.pack), and be pres
 		}
 		if signatureVerifyflags.pgpKey != "" {
 			if signatureVerifyflags.export {
-				log.Error("can't export non X509 (full, cert-only) signature scheme")
+				log.Error("Can't export non X.509 (full, cert-only) signature scheme")
 				return errs.ErrIncorrectCmdArgs
 			}
 			if signatureVerifyflags.skipCertValidation || signatureVerifyflags.skipInfo {

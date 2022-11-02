@@ -29,9 +29,7 @@ var AllCommands = []*cobra.Command{
 	ChecksumCreateCmd,
 	ChecksumVerifyCmd,
 	SignatureCreateCmd,
-	SignatureCreateOldCmd,
 	SignatureVerifyCmd,
-	SignatureVerifyOldCmd,
 }
 
 // createPackRoot is a flag that determines if the pack root should be created or not
