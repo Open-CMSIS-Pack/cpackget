@@ -28,8 +28,8 @@ Available Commands:
   init             Initializes a pack root folder
   list             List installed packs
   rm               Remove Open-CMSIS-Pack packages
-  signature-create Create a digest list of a pack and signs it
-  signature-verify Verifies the integrity of a .checksum against its signature
+  signature-create Digitally signs a pack with a X.509 certificate or PGP key
+  signature-verify Verifies a signed pack
   update-index     Update the public index
 
 Flags:
@@ -207,10 +207,10 @@ Setting it to 0 will disable any parallel downloads.
 
 ## Security features
 
-The following features are a WIP and under constant review/discussion. These might suddenly change from release to release, with potential breaking changes. Always check the release/changelog first.
+The following features are not fully deployed yet and under constant review/discussion. These might suddenly change from release to release, with potential breaking changes. Always check the release/changelog first.
 
 ### Integrity checking
-As of release **v0.7.0**, it's possible to create a `.checksum` file of a local .pack. This file resembles a common digest file, used to confirm that an obtained piece of information matches the source's content. \
+As of release **v0.7.0**, it's possible to create a `.checksum` file of a local `.pack`. This file resembles a common digest file, used to confirm that an obtained piece of information matches the source's content. \
 Instead of just including the digest of the entire .pack as one, it lists the digests of all the files.
 
 The extension includes the pack's name in its canonical form and hash algorithm used, appended by ".checksum": `Pack.Vendor.1.0.0.sha256.checksum`. Currently only works for local packs.
@@ -218,23 +218,78 @@ The extension includes the pack's name in its canonical form and hash algorithm 
 To create it:
 
 ```bash
-$ cpackget checksum-create Vendor.PackName.1.0.0
+$ cpackget checksum-create Vendor.PackName.1.0.0.pack
 ```
 
-To verify a .pack against it's checksum file:
+To verify a `.pack` against it's checksum file:
 
 ```bash
-$ cpackget checksum-verify Vendor.PackName.1.0.0
+$ cpackget checksum-verify Vendor.PackName.1.0.0.pack
 ```
 
-(the .checksum path is assumed to be the same as the .pack, but it can be specified with the `-p` flag)
+(the .checksum path is assumed to be the same as the `.pack`, but it can be specified with the `-p` flag)
 
 ### Signed Packs
 
-Likewise, this capability can also be extended to check for _authenticity_. With the usage of x509 certificates and/or PGP signatures, it's possible to create a chain of trust where pack vendors can provide verifiable proof that mitigates malicious attacks (like man-in-the-middle) and assure cpackget users
+Likewise, this capability can also be extended to check for _authenticity_ and _non-repudiation_. With the usage of X.509 certificates and/or PGP signatures, it's possible to create a chain of trust where pack vendors can provide verifiable proof that mitigates malicious attacks (like man-in-the-middle) and assure cpackget users
 the legitimacy and authenticity of their published packs.
 
-For more info on the current proof-of-concept implementation: `cpackget help signature-create` and `cpackget help signature-verify`.
+#### Specification
+
+To achieve this, a protocol was developed which takes advantage of the `.pack` format - packs are always zip files which by definition contain a general comment field. cpackget generates a _signature_ which gets embed in the pack through this comment field.
+
+This signature includes a cryptographic signed message of the hashed pack, binding its contents to an entity.
+
+Two different modes are available, which have different requirements to create the signature:
+
+* full: a X.509 public key certificate representing the vendor/publisher and its private key
+* pgp: an armored PGP private key
+
+_Note: there's a third, "cert-only" mode, which is recommended only for testing/debugging purposes, as it doesn't include the signed digest of the pack._
+
+The signature features the following format: `[cpackget version]:[chosen mode]:[x509 certificate or PGP signed digest]:[signed digest]`. As expected, the last two elements vary depending on the used mode, and are base64 encoded. Modes are represented with an `f` or `c` character.
+
+To verify a pack, cpackget does the reverse operation: calculates the signed digest of the pack with the included X.509 pub key or referenced PGP key and matches it against what's written in the signature.
+
+#### Example usage: PGP
+
+A PGP key pair is required to use the PGP signing mode. [GnuPG](https://gnupg.org/download/) is the tried & tested tool for this purpose.
+
+After installation, create one with:
+
+```bash
+$ gpg --full-generate-key
+```
+
+The specified key must be either RSA or Curve25519. Take note of the `email` field, as it will be used to export it. \
+Then, proceed to export both the public and private key locally, so it can be used as input for cpackget:
+
+```bash
+$ gpg --output public.pgp --armor --export <your-email>
+$ gpg --output private.pgp --armor --export-secret-key <your-email>
+```
+
+With both of the keys locally saved, create the signature by providing a pack:
+
+```bash
+$ cpackget signature-create Vendor.PackName.1.2.3.pack --pgp --private-key private.pgp
+```
+
+A copy of the pack (with a `.signature` extension) should be embed with the PGP signed digest and the rest of the signature. Any zip tool like `zipinfo` can be used to view this:
+
+```bash
+$ zipinfo -z Vendor.PackName.1.2.3.pack.signed
+Archive:  Vendor.PackName.1.2.3.pack.signed
+v0.8.1-alpha.1-20-g6909d5a:p:LS0tLS1CRUdJTiBQR1AgU0lHTkFUVVJFLS0tLS0KVmVyc2lvbjogR29wZW5QR1AgMi40LjEwCkNvbW1lbnQ6IGh0dHBzOi8vZ29wZW5wZ3Aub3JnCgp3c0R6QkFBQkNnQW5CUUpqWXdYVENaQ1hzckI2R0VKeGJSWWhCTk94N0srOWZ...
+```
+
+To verify this pack as legitimate and authentic, cpackget needs the public counterpart of the signee's key, and the signed pack:
+```bash
+$ cpackget signature-verify Vendor.PackName.1.2.3.pack.signed --pub-key public.pgp
+I: Pack signature verification success - pack is authentic
+```
+
+For more info on the current implementation: `cpackget help signature-create` and `cpackget help signature-verify`.
 
 ## Contributing to cpackget tool
 
