@@ -1,3 +1,12 @@
+# v0.8.3
+
+This v0.8.3 release contains:
+
+New features
+- cryptography module reworked to support X.509 and PGP schemes
+- Default `CMSIS_PACK_ROOT` location
+- Initialize public index if using the default pack root location
+
 # v0.8.2
 
 This v0.8.2 release contains:
