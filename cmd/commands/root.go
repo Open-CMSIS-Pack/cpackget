@@ -77,6 +77,10 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 				if err != nil {
 					return err
 				}
+				err = installer.SetPackRoot(targetPackRoot, false)
+				if err != nil {
+					return err
+				}
 				installer.LockPackRoot()
 			}
 		} else {
