@@ -1,3 +1,10 @@
+# v0.8.4
+
+This v0.8.4 release contains:
+
+Bug fixes
+- Fix default pack root initialization
+
 # v0.8.3
 
 This v0.8.3 release contains:
