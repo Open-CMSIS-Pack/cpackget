@@ -194,3 +194,14 @@ func isPrivateKeyFromCertificate(cert *x509.Certificate, keyDER []byte, keyType 
 	}
 	return false, errs.ErrBadPrivateKey
 }
+
+// sanitizeVersionForSignature cleans the version string
+// for the sig scheme as it may not be the same in builds
+// from source vs an automated release.
+func sanitizeVersionForSignature(version string) string {
+	v := sigVersionPrefix
+	if string(version[0]) != "v" {
+		return v + "v" + version
+	}
+	return v + version
+}

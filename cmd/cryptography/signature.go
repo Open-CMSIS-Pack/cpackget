@@ -25,6 +25,8 @@ import (
 	"golang.org/x/term"
 )
 
+const sigVersionPrefix = "cpackget-"
+
 // validateSignatureScheme parses and identifies a packs
 // signature scheme (stored in the Zip comment field).
 func validateSignatureScheme(zip *zip.ReadCloser, version string, signing bool) string {
@@ -35,16 +37,17 @@ func validateSignatureScheme(zip *zip.ReadCloser, version string, signing bool) 
 		return "empty"
 	}
 	// Valid signature schemes are:
-	// cpackget-vX.Y.Z:f:cert:signedhash -> 4 fields
-	// cpackget-vX.Y.Z:c:cert -> 3 fields
-	// cpackget-vX.Y.Z:p:pgpmessage -> 3 fields
-	if !semver.IsValid(s[0]) {
+	// sigVersionPrefix(-)vX.Y.Z:f:cert:signedhash -> 4 fields
+	// sigVersionPrefix(-)vX.Y.Z:c:cert -> 3 fields
+	// sigVersionPrefix(-)vX.Y.Z:p:pgpmessage -> 3 fields
+	sv := strings.TrimPrefix(s[0], sigVersionPrefix)
+	if sv == s[0] || !semver.IsValid(sv) {
 		log.Debugf("signature: %s", c)
 		return "invalid"
 	}
 	// Warn the user if the tag was made by an older cpackget version
-	if utils.SemverCompare(strings.Split(s[0], "-")[0][1:], strings.Split(version, "-")[0][1:]) == -1 {
-		log.Warnf("This pack was signed with an older version of cpackget (%s)", s[0])
+	if utils.SemverCompare(strings.Split(sv, "-")[0][1:], strings.Split(version, "-")[0][1:]) == -1 {
+		log.Warnf("This pack was signed with an older version of cpackget (%s)", sv)
 	}
 	if s[1] == "f" && len(s) == 4 {
 		if !utils.IsBase64(s[2]) && !utils.IsBase64(s[3]) {
@@ -293,6 +296,7 @@ func embedPack(packFilename, version string, z *zip.ReadCloser, rawCert, signedH
 	}
 	// Write tag scheme to comment field
 	signature := ""
+	version = sanitizeVersionForSignature(version)
 	// full
 	if len(signedHash) != 0 && len(rawCert) != 0 {
 		signature = version + ":f:" + base64.StdEncoding.EncodeToString([]byte(rawCert)) + ":" + base64.StdEncoding.EncodeToString(signedHash)
