@@ -1,3 +1,10 @@
+# v0.8.5-rc1
+
+This v0.8.5-rc1 pre-release contains:
+
+Bug fixes:
+- Fix version handling on signature creation/verification
+
 # v0.8.4
 
 This v0.8.4 release contains:
