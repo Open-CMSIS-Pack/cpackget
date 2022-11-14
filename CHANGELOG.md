@@ -1,3 +1,13 @@
+# v0.8.5
+
+This v0.8.5 release contains:
+
+New features:
+- Don't fetch PDSC files from locally sourced packs
+
+Bug fixes:
+- Fix version handling on signature creation/verification
+
 # v0.8.5-rc1
 
 This v0.8.5-rc1 pre-release contains:
