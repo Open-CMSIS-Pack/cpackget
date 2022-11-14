@@ -28,6 +28,9 @@ import (
 type PackType struct {
 	xml.PdscTag
 
+	//IsLocallySourced tells whether the pack's source is local or an HTTP URL
+	IsLocallySourced bool
+
 	// IsPublic tells whether the pack exists in the public index or not
 	IsPublic bool
 
@@ -98,6 +101,10 @@ func preparePack(packPath string, toBeRemoved bool, timeout int) (*PackType, err
 	pack.Version = info.Version
 	pack.versionModifier = info.VersionModifier
 	pack.isPackID = info.IsPackID
+
+	if !strings.HasPrefix(pack.URL, "http://") && !strings.HasPrefix(pack.URL, "https://") && strings.HasPrefix(pack.URL, "file://") {
+		pack.IsLocallySourced = true
+	}
 
 	if pack.IsPublic, err = Installation.packIsPublic(pack, timeout); err != nil {
 		return pack, err

@@ -930,7 +930,8 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool,
 	}
 
 	// If the pack is being removed, there's no need to get its PDSC file under .Web
-	if pack.toBeRemoved {
+	// Same applies to locally sourced packs
+	if pack.toBeRemoved || pack.IsLocallySourced {
 		return true, nil
 	}
 

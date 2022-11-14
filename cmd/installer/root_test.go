@@ -108,8 +108,9 @@ func checkPackIsInstalled(t *testing.T, pack *installer.PackType) {
 		// Make sure no PDSC file got copied to .Local/
 		assert.False(utils.FileExists(filepath.Join(installer.Installation.LocalDir, pack.PdscFileName())))
 
-		// Make sure there is a PDSC file under .Web/
-		assert.True(utils.FileExists(filepath.Join(installer.Installation.WebDir, pack.PdscFileName())))
+		if pack.IsLocallySourced {
+			assert.True(utils.FileExists(filepath.Join(installer.Installation.WebDir, pack.PdscFileName())))
+		}
 	} else {
 		// Make sure there's an unversioned copy of the PDSC file in .Local/, in case pack is not public
 		assert.True(utils.FileExists(filepath.Join(installer.Installation.LocalDir, pack.PdscFileName())))
