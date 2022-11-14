@@ -1,5 +1,4 @@
 name: Test
-
 on: [push, pull_request]
 
 jobs:
@@ -100,7 +99,8 @@ jobs:
             apt-get update -qq -y
             apt-get install -qq -y git make golang=2:1.18\~0ubuntu2
           run: |
-            git clone https://github.com/$GITHUB_REPOSITORY -q
+            git clone --depth 1 https://github.com/$GITHUB_REPOSITORY --quiet
             cd cpackget
-            git checkout $GITHUB_REF -q
+            git fetch origin $GITHUB_REF:local_branch
+            git checkout local_branch
             make ARCH=arm64 GOOS=linux coverage-check
