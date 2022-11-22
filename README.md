@@ -6,11 +6,11 @@
 
 # cpackget: Open-CMSIS-Pack Package Installer
 
-This utility allows embedded developers to install (or uninstall) Open-CMSIS-Pack software packs to their local environments.
+This utility allows embedded developers to install (or uninstall) Open-CMSIS-Pack software packs to their local environments. It is one of the Open-CMSIS-Pack's [devtools](https://github.com/Open-CMSIS-Pack/devtools/tree/main/tools).
 
 ## How to get `cpackget`
 
-Please visit the [latest stable release](https://github.com/Open-CMSIS-Pack/cpackget/releases/latest) page and download the binary for your system, decompress it and run the binary named `cpackget` in the folder.
+Please visit the [latest stable release](https://github.com/Open-CMSIS-Pack/cpackget/releases/latest) page and download the binary for your system, decompress it and run the binary named `cpackget` in the folder. It's also distributed as a part of the Open-CMSIS-Pack's [toolbox](https://github.com/Open-CMSIS-Pack/cmsis-toolbox/releases).
 
 ## Usage
 
