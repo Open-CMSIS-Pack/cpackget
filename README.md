@@ -251,6 +251,41 @@ The signature features the following format: `[cpackget version]:[chosen mode]:[
 
 To verify a pack, cpackget does the reverse operation: calculates the signed digest of the pack with the included X.509 pub key or referenced PGP key and matches it against what's written in the signature.
 
+#### Example usage: X.509
+
+A X.509 public key certificate and its private key is required to use the X.509 signing mode. [OpenSSL](https://wiki.openssl.org/index.php/Binaries) is the industry standard for this. If you're running Linux, chances are you already have it installed in your system.
+
+After installation, create both the certificate and private key with:
+
+```bash
+$ openssl req -x509 -newkey rsa:3072 -keyout x509_private_rsa.pem -out x509_certificate.pem -nodes
+```
+
+The specified key must be RSA, as of current implementation. The most important field is `CN (Common Name)`, which names the entity signing the pack. Currently, cpackget does not enforce any specific CA to be the `Issuer`, so if following these steps, this field would represent both the `Issuer` and `Subject` names. Like the entire feature, this is very much subject to change.
+
+Now, create the signature by providing a pack:
+
+```bash
+$ cpackget signature-create Vendor.PackName.1.2.3.pack --private-key x509_private_rsa.pem --certificate x509_certificate.pem
+```
+
+Information about the certificate will be displayed, and some basic validations on its integrity will be performed. Skip these with `--skip-info` and `--skip-validation`, respectively.
+
+A copy of the pack (with a `.signed` extension) should be embed with the X.509 signed digest and the rest of the signature. Any zip tool like `zipinfo` can be used to view this:
+
+```bash
+$ zipinfo -z Vendor.PackName.1.2.3.pack.signed
+Archive:  Vendor.PackName.1.2.3.pack.signed
+cpackget-v0.8.5:f:LS0tLS1CRUdJTiBQR1AgU0lHTkFUVVJFLS0tLS0KVmVyc2lvbjogR29wZW5QR1AgMi40LjEwCkNvbW1lbnQ6IGh0dHBzOi8vZ29wZW5wZ3Aub3JnCgp3c0R6QkFBQkNnQW5CUUpqWXdYVENaQ1hzckI2R0VKeGJSWWhCTk94N0srOWZ:sCCre...
+```
+
+To verify this pack as legitimate and authentic, cpackget needs X.509 public key certificate, and the signed pack:
+
+```bash
+$ cpackget signature-verify Vendor.PackName.1.2.3.pack.signed --pub-key x509_certificate.pem
+I: Pack signature verification success - pack is authentic
+```
+
 #### Example usage: PGP
 
 A PGP key pair is required to use the PGP signing mode. [GnuPG](https://gnupg.org/download/) is the tried & tested tool for this purpose.
@@ -275,15 +310,16 @@ With both of the keys locally saved, create the signature by providing a pack:
 $ cpackget signature-create Vendor.PackName.1.2.3.pack --pgp --private-key private.pgp
 ```
 
-A copy of the pack (with a `.signature` extension) should be embed with the PGP signed digest and the rest of the signature. Any zip tool like `zipinfo` can be used to view this:
+A copy of the pack (with a `.signed` extension) should be embed with the PGP signed digest and the rest of the signature. Any zip tool like `zipinfo` can be used to view this:
 
 ```bash
 $ zipinfo -z Vendor.PackName.1.2.3.pack.signed
 Archive:  Vendor.PackName.1.2.3.pack.signed
-v0.8.1-alpha.1-20-g6909d5a:p:LS0tLS1CRUdJTiBQR1AgU0lHTkFUVVJFLS0tLS0KVmVyc2lvbjogR29wZW5QR1AgMi40LjEwCkNvbW1lbnQ6IGh0dHBzOi8vZ29wZW5wZ3Aub3JnCgp3c0R6QkFBQkNnQW5CUUpqWXdYVENaQ1hzckI2R0VKeGJSWWhCTk94N0srOWZ...
+cpackget-v0.8.5:p:LS0tLS1CRUdJTiBQR1AgU0lHTkFUVVJFLS0tLS0KVmVyc2lvbjogR29wZW5QR1AgMi40LjEwCkNvbW1lbnQ6IGh0dHBzOi8vZ29wZW5wZ3Aub3JnCgp3c0R6QkFBQkNnQW5CUUpqWXdYVENaQ1hzckI2R0VKeGJSWWhCTk94N0srOWZ...
 ```
 
 To verify this pack as legitimate and authentic, cpackget needs the public counterpart of the signee's key, and the signed pack:
+
 ```bash
 $ cpackget signature-verify Vendor.PackName.1.2.3.pack.signed --pub-key public.pgp
 I: Pack signature verification success - pack is authentic
