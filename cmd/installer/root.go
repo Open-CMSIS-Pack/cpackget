@@ -281,7 +281,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 
 	// Workaround wrapper function to still log errors
 	// and not make the linter angry
-	massDownloadPdscFiles := func(pdscTag xml.PdscTag, wg *sync.WaitGroup) {
+	massDownloadPdscFiles := func(pdscTag xml.PdscTag, wg *sync.WaitGroup, timeout int) {
 		if err := Installation.downloadPdscFile(pdscTag, wg, timeout); err != nil {
 			log.Error(err)
 		}
@@ -301,7 +301,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 
 		queue := concurrency
 		for _, pdscTag := range pdscTags {
-			if concurrency == 0 {
+			if concurrency == 0 || len(pdscTags) <= concurrency {
 				if err := Installation.downloadPdscFile(pdscTag, nil, timeout); err != nil {
 					log.Error(err)
 				}
@@ -315,7 +315,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 					queue = concurrency
 				} else {
 					wg.Add(1)
-					go massDownloadPdscFiles(pdscTag, &wg)
+					go massDownloadPdscFiles(pdscTag, &wg, timeout)
 					queue--
 				}
 			}
@@ -355,7 +355,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 			latestVersion := pdscXML.LatestVersion()
 			if versionInIndex != latestVersion {
 				log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
-				if concurrency == 0 {
+				if concurrency == 0 || len(pdscFiles) <= concurrency {
 					if err := Installation.downloadPdscFile(tags[0], nil, timeout); err != nil {
 						log.Error(err)
 					}
@@ -368,7 +368,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 						queue = concurrency
 					} else {
 						wg.Add(1)
-						go massDownloadPdscFiles(tags[0], &wg)
+						go massDownloadPdscFiles(tags[0], &wg, timeout)
 						queue--
 					}
 				}
