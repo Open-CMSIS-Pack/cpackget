@@ -11,7 +11,6 @@ import (
 	"errors"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"math"
 	"math/rand"
 	"net"
@@ -233,7 +232,7 @@ func MoveFile(source, destination string) error {
 
 // ReadXML reads in a file into an XML struct
 func ReadXML(path string, targetStruct interface{}) error {
-	contents, err := ioutil.ReadFile(path)
+	contents, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -254,7 +253,7 @@ func WriteXML(path string, targetStruct interface{}) error {
 	xmlText := []byte(xml.Header)
 	xmlText = append(xmlText, output...)
 
-	return ioutil.WriteFile(path, xmlText, FileModeRW)
+	return os.WriteFile(path, xmlText, FileModeRW)
 }
 
 // ListDir generates a list of files and directories in "dir".

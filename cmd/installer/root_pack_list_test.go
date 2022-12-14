@@ -6,7 +6,7 @@ package installer_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,7 +32,7 @@ func ExampleListInstalledPacks() {
 	defer removePackRoot(localTestingDir)
 
 	log.SetOutput(os.Stdout)
-	defer log.SetOutput(ioutil.Discard)
+	defer log.SetOutput(io.Discard)
 
 	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, ListFilter)
 	// Output:
@@ -46,7 +46,7 @@ func ExampleListInstalledPacks_emptyCache() {
 	defer removePackRoot(localTestingDir)
 
 	log.SetOutput(os.Stdout)
-	defer log.SetOutput(ioutil.Discard)
+	defer log.SetOutput(io.Discard)
 
 	_ = installer.ListInstalledPacks(ListCached, !ListPublic, ListFilter)
 	// Output:
@@ -60,7 +60,7 @@ func ExampleListInstalledPacks_emptyPublicIndex() {
 	defer removePackRoot(localTestingDir)
 
 	log.SetOutput(os.Stdout)
-	defer log.SetOutput(ioutil.Discard)
+	defer log.SetOutput(io.Discard)
 
 	_ = installer.ListInstalledPacks(ListCached, ListPublic, ListFilter)
 	// Output:
@@ -100,7 +100,7 @@ func ExampleListInstalledPacks_list() {
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
 
 	log.SetOutput(os.Stdout)
-	defer log.SetOutput(ioutil.Discard)
+	defer log.SetOutput(io.Discard)
 	_ = installer.ListInstalledPacks(ListCached, ListPublic, ListFilter)
 	// Output:
 	// I: Listing packs from the public index
@@ -137,7 +137,7 @@ func ExampleListInstalledPacks_listCached() {
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
 
 	log.SetOutput(os.Stdout)
-	defer log.SetOutput(ioutil.Discard)
+	defer log.SetOutput(io.Discard)
 	_ = installer.ListInstalledPacks(ListCached, !ListPublic, ListFilter)
 	// Output:
 	// I: Listing cached packs
@@ -184,7 +184,7 @@ func TestListInstalledPacks(t *testing.T) {
 
 		var buf bytes.Buffer
 		log.SetOutput(&buf)
-		defer log.SetOutput(ioutil.Discard)
+		defer log.SetOutput(io.Discard)
 		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, ListFilter))
 		stdout := buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
@@ -214,7 +214,7 @@ func TestListInstalledPacks(t *testing.T) {
 
 		var buf bytes.Buffer
 		log.SetOutput(&buf)
-		defer log.SetOutput(ioutil.Discard)
+		defer log.SetOutput(io.Discard)
 		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, ListFilter))
 		stdout := buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
@@ -262,7 +262,7 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 	_ = utils.MoveFile(currVendorFolder, temperedVendorFolder)
 
 	log.SetOutput(os.Stdout)
-	defer log.SetOutput(ioutil.Discard)
+	defer log.SetOutput(io.Discard)
 	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, ListFilter)
 	// Output:
 	// I: Listing installed packs
@@ -298,7 +298,7 @@ func ExampleListInstalledPacks_filter() {
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
 
 	log.SetOutput(os.Stdout)
-	defer log.SetOutput(ioutil.Discard)
+	defer log.SetOutput(io.Discard)
 	_ = installer.ListInstalledPacks(ListCached, ListPublic, "1.2.4")
 	// Output:
 	// I: Listing packs from the public index, filtering by "1.2.4"
@@ -335,7 +335,7 @@ func ExampleListInstalledPacks_filterErrorPackages() {
 	_ = utils.MoveFile(currVendorFolder, temperedVendorFolder)
 
 	log.SetOutput(os.Stdout)
-	defer log.SetOutput(ioutil.Discard)
+	defer log.SetOutput(io.Discard)
 	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, "TheVendor")
 	// Output:
 	// I: Listing installed packs, filtering by "TheVendor"
@@ -370,7 +370,7 @@ func ExampleListInstalledPacks_filterInvalidChars() {
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
 
 	log.SetOutput(os.Stdout)
-	defer log.SetOutput(ioutil.Discard)
+	defer log.SetOutput(io.Discard)
 	_ = installer.ListInstalledPacks(ListCached, ListPublic, "@ :")
 	// Output:
 	// I: Listing packs from the public index, filtering by "@ :"
@@ -404,7 +404,7 @@ func ExampleListInstalledPacks_filteradditionalMessages() {
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
 
 	log.SetOutput(os.Stdout)
-	defer log.SetOutput(ioutil.Discard)
+	defer log.SetOutput(io.Discard)
 	_ = installer.ListInstalledPacks(ListCached, !ListPublic, "(installed)")
 	// Output:
 	// I: Listing cached packs, filtering by "(installed)"

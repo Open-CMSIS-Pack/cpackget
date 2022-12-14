@@ -6,7 +6,7 @@ package commands_test
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
@@ -41,7 +41,7 @@ var updateIndexCmdTests = []TestCase{
 </pindex>
 </index>`
 			indexContent = fmt.Sprintf(indexContent, updateIndexServer.URL())
-			_ = ioutil.WriteFile(installer.Installation.PublicIndex, []byte(indexContent), 0600)
+			_ = os.WriteFile(installer.Installation.PublicIndex, []byte(indexContent), 0600)
 
 			updateIndexServer.AddRoute("index.pidx", []byte(indexContent))
 		},
@@ -62,7 +62,7 @@ var updateIndexCmdTests = []TestCase{
 </pindex>
 </index>`
 			indexContent = fmt.Sprintf(indexContent, updateIndexServer.URL())
-			_ = ioutil.WriteFile(installer.Installation.PublicIndex, []byte(indexContent), 0600)
+			_ = os.WriteFile(installer.Installation.PublicIndex, []byte(indexContent), 0600)
 
 			updateIndexServer.AddRoute("index.pidx", []byte(indexContent))
 		},

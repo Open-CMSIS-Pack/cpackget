@@ -7,7 +7,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
@@ -446,7 +445,7 @@ func (p *PackType) extractEula(packPath string) error {
 
 	log.Infof("Extracting embedded license to %v", eulaFileName)
 
-	return ioutil.WriteFile(eulaFileName, eulaContents, utils.FileModeRO)
+	return os.WriteFile(eulaFileName, eulaContents, utils.FileModeRO)
 }
 
 // resolveVersionModifier takes into account eventual versionModifiers (@, @~ and >=) to determine

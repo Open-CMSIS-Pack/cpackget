@@ -10,7 +10,6 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -209,7 +208,7 @@ func exportCertificate(b64Cert, path string) error {
 // signPackHash takes a private RSA key and PKCS1v15 signs
 // the hashed zip contents of a pack.
 func signPackHashX509(keyPath string, cert *x509.Certificate, hash []byte) ([]byte, error) {
-	k, err := ioutil.ReadFile(keyPath)
+	k, err := os.ReadFile(keyPath)
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +382,7 @@ func SignPack(packPath, certPath, keyPath, outputDir, version string, certOnly, 
 	var rawCert []byte
 	var cert *x509.Certificate
 	if pgp {
-		key, err := ioutil.ReadFile(keyPath)
+		key, err := os.ReadFile(keyPath)
 		if err != nil {
 			return err
 		}
@@ -398,7 +397,7 @@ func SignPack(packPath, certPath, keyPath, outputDir, version string, certOnly, 
 		}
 	} else {
 		// Load & analyze certificate
-		rawCert, err = ioutil.ReadFile(certPath)
+		rawCert, err = os.ReadFile(certPath)
 		if err != nil {
 			return err
 		}
@@ -479,7 +478,7 @@ func verifyPackPGPSignature(zip *zip.ReadCloser, keyPath, b64Signature string) e
 		log.Error("Please provide the public key to use for verification")
 		return errs.ErrCannotVerifySignature
 	}
-	k, err := ioutil.ReadFile(keyPath)
+	k, err := os.ReadFile(keyPath)
 	if err != nil {
 		return err
 	}
