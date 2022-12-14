@@ -37,16 +37,16 @@ func validateSignatureScheme(zip *zip.ReadCloser, version string, signing bool) 
 		return "empty"
 	}
 	// Valid signature schemes are:
-	// sigVersionPrefix(-)vX.Y.Z:f:cert:signedhash -> 4 fields
-	// sigVersionPrefix(-)vX.Y.Z:c:cert -> 3 fields
-	// sigVersionPrefix(-)vX.Y.Z:p:pgpmessage -> 3 fields
+	// sigVersionPrefix-(cpackget version):f:cert:signedhash -> 4 fields
+	// sigVersionPrefix-(cpackget version):c:cert -> 3 fields
+	// sigVersionPrefix-(cpackget version):p:pgpmessage -> 3 fields
 	sv := strings.TrimPrefix(s[0], sigVersionPrefix)
 	if sv == s[0] || !semver.IsValid(sv) {
 		log.Debugf("signature: %s", c)
 		return "invalid"
 	}
 	// Warn the user if the tag was made by an older cpackget version
-	if utils.SemverCompare(strings.Split(sv, "-")[0][1:], strings.Split(version, "-")[0][1:]) == -1 {
+	if utils.SemverCompare(strings.Split(sv, "-")[1][1:], strings.Split(version, "-")[0][1:]) == -1 {
 		log.Warnf("This pack was signed with an older version of cpackget (%s)", sv)
 	}
 	if s[1] == "f" && len(s) == 4 {
