@@ -4,7 +4,6 @@
 package installer_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -328,7 +327,7 @@ func TestAddPack(t *testing.T) {
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
-		zipContent, err := ioutil.ReadFile(publicRemotePack123)
+		zipContent, err := os.ReadFile(publicRemotePack123)
 		assert.Nil(err)
 		packServer := NewServer()
 		packServer.AddRoute("*", zipContent)
@@ -381,7 +380,7 @@ func TestAddPack(t *testing.T) {
 		pack := packInfoToType(packInfo)
 
 		packPdscFilePath := filepath.Join(filepath.Dir(packPath), pack.PdscFileName())
-		packPdscContent, err := ioutil.ReadFile(packPdscFilePath)
+		packPdscContent, err := os.ReadFile(packPdscFilePath)
 		assert.Nil(err)
 
 		pdscServer := NewServer()
@@ -637,7 +636,7 @@ func TestAddPack(t *testing.T) {
 			packPdscFilePath := filepath.Join(installer.Installation.WebDir, pack.PdscFileName())
 			assert.Nil(utils.CopyFile(pdscPack123MissingVersion, packPdscFilePath))
 
-			packContent, err := ioutil.ReadFile(publicRemotePack123)
+			packContent, err := os.ReadFile(publicRemotePack123)
 			assert.Nil(err)
 
 			// Fake server
@@ -681,7 +680,7 @@ func TestAddPack(t *testing.T) {
 			packPdscFilePath := filepath.Join(installer.Installation.WebDir, pack.PdscFileName())
 			assert.Nil(utils.CopyFile(pdscPack123MissingVersion, packPdscFilePath))
 
-			packContent, err := ioutil.ReadFile(publicRemotePack123)
+			packContent, err := os.ReadFile(publicRemotePack123)
 			assert.Nil(err)
 
 			// Fake server
@@ -723,7 +722,7 @@ func TestAddPack(t *testing.T) {
 		// should serve *.pack and *.pdsc
 		server := NewServer()
 
-		packContent, err := ioutil.ReadFile(packPath)
+		packContent, err := os.ReadFile(packPath)
 		assert.Nil(err)
 
 		packPdscXML := xml.NewPdscXML(filepath.Join(filepath.Dir(packPath), pack.PdscFileName()))
@@ -731,7 +730,7 @@ func TestAddPack(t *testing.T) {
 		packPdscXML.URL = server.URL()
 		assert.Nil(utils.WriteXML(pack.PdscFileName(), packPdscXML))
 		defer os.Remove(pack.PdscFileName())
-		packPdscContent, err := ioutil.ReadFile(pack.PdscFileName())
+		packPdscContent, err := os.ReadFile(pack.PdscFileName())
 		assert.Nil(err)
 
 		server.AddRoute(pack.PackFileName(), packContent)
@@ -774,7 +773,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(err)
 		pack123 := packInfoToType(pack123Info)
 
-		pack123Content, err := ioutil.ReadFile(pack123Path)
+		pack123Content, err := os.ReadFile(pack123Path)
 		assert.Nil(err)
 
 		server := NewServer()
@@ -824,7 +823,7 @@ func TestAddPack(t *testing.T) {
 			utils.ShouldAbortFunction = nil
 		}()
 
-		zipContent, err := ioutil.ReadFile(publicRemotePack123)
+		zipContent, err := os.ReadFile(publicRemotePack123)
 		assert.Nil(err)
 		packServer := NewServer()
 		packServer.AddRoute("*", zipContent)
@@ -946,7 +945,7 @@ func TestAddPack(t *testing.T) {
 		pack124.IsPublic = true
 
 		// Prep server
-		pack124Content, err := ioutil.ReadFile(publicLocalPack124)
+		pack124Content, err := os.ReadFile(publicLocalPack124)
 		assert.Nil(err)
 		server := NewServer()
 		server.AddRoute(pack124.PackFileName(), pack124Content)
@@ -993,7 +992,7 @@ func TestAddPack(t *testing.T) {
 		pack124.IsPublic = true
 
 		// Prep server
-		pack124Content, err := ioutil.ReadFile(publicLocalPack124)
+		pack124Content, err := os.ReadFile(publicLocalPack124)
 		assert.Nil(err)
 		server := NewServer()
 		server.AddRoute(pack124.PackFileName(), pack124Content)
@@ -1061,7 +1060,7 @@ func TestAddPack(t *testing.T) {
 		pack011.IsPublic = true
 
 		// Prep server
-		pack011Content, err := ioutil.ReadFile(publicLocalPack011)
+		pack011Content, err := os.ReadFile(publicLocalPack011)
 		assert.Nil(err)
 		server := NewServer()
 		server.AddRoute(pack011.PackFileName(), pack011Content)
@@ -1104,7 +1103,7 @@ func TestAddPack(t *testing.T) {
 		pack011.IsPublic = true
 
 		// Prep server
-		pack011Content, err := ioutil.ReadFile(publicLocalPack011)
+		pack011Content, err := os.ReadFile(publicLocalPack011)
 		assert.Nil(err)
 		server := NewServer()
 		server.AddRoute(pack011.PackFileName(), pack011Content)
@@ -1151,7 +1150,7 @@ func TestAddPack(t *testing.T) {
 		pack011.IsPublic = true
 
 		// Prep server
-		pack011Content, err := ioutil.ReadFile(publicLocalPack011)
+		pack011Content, err := os.ReadFile(publicLocalPack011)
 		assert.Nil(err)
 		server := NewServer()
 		server.AddRoute(pack011.PackFileName(), pack011Content)
@@ -1248,7 +1247,7 @@ func TestAddPack(t *testing.T) {
 		pack124.IsPublic = true
 
 		// Prep server
-		pack124Content, err := ioutil.ReadFile(publicLocalPack124)
+		pack124Content, err := os.ReadFile(publicLocalPack124)
 		assert.Nil(err)
 		server := NewServer()
 		server.AddRoute(pack124.PackFileName(), pack124Content)
@@ -1295,7 +1294,7 @@ func TestAddPack(t *testing.T) {
 		pack124.IsPublic = true
 
 		// Prep server
-		pack124Content, err := ioutil.ReadFile(publicLocalPack124)
+		pack124Content, err := os.ReadFile(publicLocalPack124)
 		assert.Nil(err)
 		server := NewServer()
 		server.AddRoute(pack124.PackFileName(), pack124Content)
@@ -1375,7 +1374,7 @@ func TestAddPack(t *testing.T) {
 		pack124.Version = "1.2.4"
 
 		// Prep server
-		pack124Content, err := ioutil.ReadFile(publicLocalPack124)
+		pack124Content, err := os.ReadFile(publicLocalPack124)
 		assert.Nil(err)
 		server := NewServer()
 		server.AddRoute(pack124.PackFileName(), pack124Content)

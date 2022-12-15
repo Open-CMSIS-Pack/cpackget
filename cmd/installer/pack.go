@@ -7,7 +7,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
@@ -283,17 +282,18 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	}
 
 	log.Debugf("Extracting files from \"%s\" to \"%s\"", p.path, packHomeDir)
-
+	log.Infof("Extracting files to %s...", packHomeDir)
+	// Avoid repeated calls to IsTerminalInteractive
+	// as it cleans the stdout buffer
+	interactiveTerminal := utils.IsTerminalInteractive()
 	var progress *progressbar.ProgressBar
-	if utils.IsTerminalInteractive() {
-		progress = progressbar.Default(int64(len(p.zipReader.File)), "I: Extracting files to "+packHomeDir)
-	} else {
-		log.Infof("Extracting files to %s...", packHomeDir)
+	if interactiveTerminal && log.GetLevel() != log.ErrorLevel {
+		progress = progressbar.Default(int64(len(p.zipReader.File)), "I:")
 	}
 
 	for _, file := range p.zipReader.File {
-		if utils.IsTerminalInteractive() {
-			_ = progress.Add(1)
+		if interactiveTerminal && log.GetLevel() != log.ErrorLevel {
+			_ = progress.Add64(1)
 		}
 		err = utils.SecureInflateFile(file, packHomeDir, p.Subfolder)
 		if err != nil {
@@ -442,7 +442,7 @@ func (p *PackType) extractEula(packPath string) error {
 
 	log.Infof("Extracting embedded license to %v", eulaFileName)
 
-	return ioutil.WriteFile(eulaFileName, eulaContents, utils.FileModeRO)
+	return os.WriteFile(eulaFileName, eulaContents, utils.FileModeRO)
 }
 
 // resolveVersionModifier takes into account eventual versionModifiers (@, @~ and >=) to determine

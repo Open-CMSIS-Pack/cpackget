@@ -11,7 +11,6 @@ import (
 	"errors"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"math"
 	"math/rand"
 	"net"
@@ -137,15 +136,13 @@ func DownloadFile(URL string, timeout int) (string, error) {
 	}
 	defer out.Close()
 
+	log.Infof("Downloading %s...", fileBase)
 	writers := []io.Writer{out}
 	if log.GetLevel() != log.ErrorLevel {
 		if IsTerminalInteractive() {
 			length := resp.ContentLength
-			message := "I: Downloading " + fileBase
-			progressWriter := progressbar.DefaultBytes(length, message)
+			progressWriter := progressbar.DefaultBytes(length, "I:")
 			writers = append(writers, progressWriter)
-		} else {
-			log.Infof("Downloading %s...", fileBase)
 		}
 	}
 
@@ -233,7 +230,7 @@ func MoveFile(source, destination string) error {
 
 // ReadXML reads in a file into an XML struct
 func ReadXML(path string, targetStruct interface{}) error {
-	contents, err := ioutil.ReadFile(path)
+	contents, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -254,7 +251,7 @@ func WriteXML(path string, targetStruct interface{}) error {
 	xmlText := []byte(xml.Header)
 	xmlText = append(xmlText, output...)
 
-	return ioutil.WriteFile(path, xmlText, FileModeRW)
+	return os.WriteFile(path, xmlText, FileModeRW)
 }
 
 // ListDir generates a list of files and directories in "dir".

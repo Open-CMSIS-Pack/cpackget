@@ -7,7 +7,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -109,7 +108,7 @@ func TestDownloadFile(t *testing.T) {
 		_, err1 := utils.DownloadFile(url, 0)
 		assert.Nil(err1)
 		assert.True(utils.FileExists(fileName))
-		bytes, err2 := ioutil.ReadFile(fileName)
+		bytes, err2 := os.ReadFile(fileName)
 		assert.Nil(err2)
 		assert.Equal(bytes, goodResponse)
 	})
@@ -131,7 +130,7 @@ func TestDownloadFile(t *testing.T) {
 		_, err1 := utils.DownloadFile(url, 0)
 		assert.Nil(err1)
 		assert.True(utils.FileExists(fileName))
-		bytes, err2 := ioutil.ReadFile(fileName)
+		bytes, err2 := os.ReadFile(fileName)
 		assert.Nil(err2)
 		assert.Equal(bytes, goodResponse)
 		assert.Equal(1, requestCount)
@@ -190,7 +189,7 @@ func TestCopyFile(t *testing.T) {
 		sourceFileName := "dummy-file-for-copy-test.txt"
 		destinationFileName := "~/dummy-file-for-copy-test-destionation.txt"
 
-		assert.Nil(ioutil.WriteFile(sourceFileName, []byte("hello"), 0600))
+		assert.Nil(os.WriteFile(sourceFileName, []byte("hello"), 0600))
 		defer os.Remove(sourceFileName)
 
 		err := utils.CopyFile(sourceFileName, destinationFileName)
@@ -202,18 +201,18 @@ func TestCopyFile(t *testing.T) {
 	t.Run("test overwrite destination file", func(t *testing.T) {
 		sourceFileName := "dummy-file-for-copy-test.txt"
 		sourceFileContent := []byte("hello from source")
-		assert.Nil(ioutil.WriteFile(sourceFileName, sourceFileContent, 0600))
+		assert.Nil(os.WriteFile(sourceFileName, sourceFileContent, 0600))
 		defer os.Remove(sourceFileName)
 
 		destinationFileName := "dummy-file-for-copy-test-destination.txt"
 		destinationFileContent := []byte("hello from destination")
-		assert.Nil(ioutil.WriteFile(destinationFileName, destinationFileContent, 0600))
+		assert.Nil(os.WriteFile(destinationFileName, destinationFileContent, 0600))
 		defer os.Remove(destinationFileName)
 
 		err := utils.CopyFile(sourceFileName, destinationFileName)
 		assert.Nil(err)
 
-		newDestinationFileContent, err := ioutil.ReadFile(destinationFileName)
+		newDestinationFileContent, err := os.ReadFile(destinationFileName)
 		assert.Nil(err)
 
 		assert.Equal(sourceFileContent, newDestinationFileContent)
@@ -222,7 +221,7 @@ func TestCopyFile(t *testing.T) {
 	t.Run("test really copy one file to a new one", func(t *testing.T) {
 		sourceFileName := "dummy-file-for-copy-test.txt"
 		sourceFileContent := []byte("hello from source")
-		assert.Nil(ioutil.WriteFile(sourceFileName, sourceFileContent, 0600))
+		assert.Nil(os.WriteFile(sourceFileName, sourceFileContent, 0600))
 		defer os.Remove(sourceFileName)
 
 		destinationFileName := "dummy-file-for-copy-test-destination.txt"
@@ -231,7 +230,7 @@ func TestCopyFile(t *testing.T) {
 		err := utils.CopyFile(sourceFileName, destinationFileName)
 		assert.Nil(err)
 
-		destinationFileContent, err := ioutil.ReadFile(destinationFileName)
+		destinationFileContent, err := os.ReadFile(destinationFileName)
 		assert.Nil(err)
 
 		assert.Equal(sourceFileContent, destinationFileContent)
@@ -259,7 +258,7 @@ func TestMoveFile(t *testing.T) {
 	t.Run("test really moving files", func(t *testing.T) {
 		sourceFileName := "dummy-file-for-copy-test.txt"
 		sourceFileContent := []byte("hello from source")
-		assert.Nil(ioutil.WriteFile(sourceFileName, sourceFileContent, 0600))
+		assert.Nil(os.WriteFile(sourceFileName, sourceFileContent, 0600))
 		defer os.Remove(sourceFileName)
 
 		destinationFileName := "dummy-file-for-copy-test-destination.txt"
@@ -268,7 +267,7 @@ func TestMoveFile(t *testing.T) {
 		err := utils.MoveFile(sourceFileName, destinationFileName)
 		assert.Nil(err)
 
-		destinationFileContent, err := ioutil.ReadFile(destinationFileName)
+		destinationFileContent, err := os.ReadFile(destinationFileName)
 		assert.Nil(err)
 
 		assert.Equal(sourceFileContent, destinationFileContent)
@@ -302,7 +301,7 @@ func TestReadXML(t *testing.T) {
 		contents := "Dummy content"
 		xmlFileName := "dummy.xml"
 		xmlFileContent := []byte("<dummy><contents>" + contents + "</contents></dummy>")
-		assert.Nil(ioutil.WriteFile(xmlFileName, xmlFileContent, 0600))
+		assert.Nil(os.WriteFile(xmlFileName, xmlFileContent, 0600))
 		defer os.Remove(xmlFileName)
 
 		dummy := dummyXML{}
@@ -315,7 +314,7 @@ func TestReadXML(t *testing.T) {
 		contents := "Dummy content"
 		xmlFileName := "dummy.xml"
 		xmlFileContent := []byte("<?xml version='1.0' encoding='ASCII'?><dummy><contents>" + contents + "</contents></dummy>")
-		assert.Nil(ioutil.WriteFile(xmlFileName, xmlFileContent, 0600))
+		assert.Nil(os.WriteFile(xmlFileName, xmlFileContent, 0600))
 		defer os.Remove(xmlFileName)
 
 		dummy := dummyXML{}
@@ -372,7 +371,7 @@ func TestWriteXML(t *testing.T) {
 		defer os.Remove(fileName)
 
 		// Make sure content actually got written
-		written, err2 := ioutil.ReadFile(fileName)
+		written, err2 := os.ReadFile(fileName)
 		assert.Nil(err2)
 
 		assert.Equal(written, []byte(`<?xml version="1.0" encoding="UTF-8"?>
@@ -438,7 +437,7 @@ func TestTouchFile(t *testing.T) {
 	t.Run("test change file time", func(t *testing.T) {
 		fileName := "touchfile-test-change-time"
 		fileContent := []byte("")
-		assert.Nil(ioutil.WriteFile(fileName, fileContent, 0600))
+		assert.Nil(os.WriteFile(fileName, fileContent, 0600))
 		defer os.Remove(fileName)
 
 		// Set time for yesterday

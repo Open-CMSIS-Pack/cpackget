@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -418,7 +417,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
-		indexContent, err := ioutil.ReadFile(malformedPublicIndex)
+		indexContent, err := os.ReadFile(malformedPublicIndex)
 		assert.Nil(err)
 
 		indexServer := NewServer()
@@ -437,7 +436,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
-		indexContent, err := ioutil.ReadFile(samplePublicIndex)
+		indexContent, err := os.ReadFile(samplePublicIndex)
 		assert.Nil(err)
 		indexServer := NewServer()
 		indexServer.AddRoute("index.pidx", indexContent)
@@ -449,7 +448,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
 
-		copied, err2 := ioutil.ReadFile(installer.Installation.PublicIndex)
+		copied, err2 := os.ReadFile(installer.Installation.PublicIndex)
 		assert.Nil(err2)
 
 		assert.Equal(copied, indexContent)
@@ -461,14 +460,14 @@ func TestUpdatePublicIndex(t *testing.T) {
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
-		indexContent, err := ioutil.ReadFile(samplePublicIndex)
+		indexContent, err := os.ReadFile(samplePublicIndex)
 		assert.Nil(err)
 
 		assert.Nil(installer.UpdatePublicIndex(samplePublicIndex, Overwrite, Sparse, DownloadPdsc, Concurrency, Timeout))
 
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
 
-		copied, err2 := ioutil.ReadFile(installer.Installation.PublicIndex)
+		copied, err2 := os.ReadFile(installer.Installation.PublicIndex)
 		assert.Nil(err2)
 
 		assert.Equal(copied, indexContent)
@@ -482,7 +481,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		_ = utils.TouchFile(installer.Installation.PublicIndex)
 
-		indexContent, err := ioutil.ReadFile(samplePublicIndex)
+		indexContent, err := os.ReadFile(samplePublicIndex)
 		assert.Nil(err)
 		indexServer := NewServer()
 		indexServer.AddRoute("index.pidx", indexContent)
@@ -502,7 +501,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		_ = utils.TouchFile(installer.Installation.PublicIndex)
 
-		indexContent, err := ioutil.ReadFile(samplePublicIndex)
+		indexContent, err := os.ReadFile(samplePublicIndex)
 		assert.Nil(err)
 		indexServer := NewServer()
 		indexServer.AddRoute("index.pidx", indexContent)
@@ -513,7 +512,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err)
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
 
-		copied, err2 := ioutil.ReadFile(installer.Installation.PublicIndex)
+		copied, err2 := os.ReadFile(installer.Installation.PublicIndex)
 		assert.Nil(err2)
 
 		assert.Equal(copied, indexContent)
@@ -525,7 +524,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
-		indexContent, err := ioutil.ReadFile(samplePublicIndexLocalhostPdsc)
+		indexContent, err := os.ReadFile(samplePublicIndexLocalhostPdsc)
 		assert.Nil(err)
 		indexServer := NewServer()
 		// The psd URL needs to be updated as it's not known beforehand
@@ -533,7 +532,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute("index.pidx", updatedIndex)
 		indexPath := indexServer.URL() + "index.pidx"
 
-		pdscContent, err := ioutil.ReadFile(publicLocalPack123Pdsc)
+		pdscContent, err := os.ReadFile(publicLocalPack123Pdsc)
 		assert.Nil(err)
 		indexServer.AddRoute("TheVendor.PublicLocalPack.pdsc", pdscContent)
 
@@ -542,7 +541,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err)
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
 
-		copied, err := ioutil.ReadFile(installer.Installation.PublicIndex)
+		copied, err := os.ReadFile(installer.Installation.PublicIndex)
 		assert.Nil(err)
 		assert.Equal(copied, updatedIndex)
 		// Check if referenced pdsc was downloaded
@@ -555,7 +554,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
-		indexContent, err := ioutil.ReadFile(samplePublicIndexConcurrentLocalhostPdsc)
+		indexContent, err := os.ReadFile(samplePublicIndexConcurrentLocalhostPdsc)
 		assert.Nil(err)
 		indexServer := NewServer()
 		// The psd URL needs to be updated as it's not known beforehand
@@ -565,7 +564,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		for i := 1; i < 11; i++ {
 			pdsc := publicConcurrentLocalPdscBase + fmt.Sprint(i) + ".pdsc"
-			pdscContent, err := ioutil.ReadFile(filepath.Join(testDir, "concurrent", "1.2.3", pdsc))
+			pdscContent, err := os.ReadFile(filepath.Join(testDir, "concurrent", "1.2.3", pdsc))
 			assert.Nil(err)
 			indexServer.AddRoute(publicConcurrentLocalPdscBase+fmt.Sprint(i)+".pdsc", pdscContent)
 		}
@@ -575,7 +574,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err)
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
 
-		copied, err := ioutil.ReadFile(installer.Installation.PublicIndex)
+		copied, err := os.ReadFile(installer.Installation.PublicIndex)
 		assert.Nil(err)
 		assert.Equal(copied, updatedIndex)
 
@@ -631,12 +630,12 @@ func TestUpdatePublicIndex(t *testing.T) {
 		}))
 
 		assert.Nil(indexXML.Write())
-		indexContent, err := ioutil.ReadFile(tempIndexFile)
+		indexContent, err := os.ReadFile(tempIndexFile)
 		assert.Nil(err)
 		indexServer.AddRoute("index.pidx", indexContent)
 
 		// Add the path to the pack's pdsc
-		pdscContent, err := ioutil.ReadFile(publicLocalPack124Pdsc)
+		pdscContent, err := os.ReadFile(publicLocalPack124Pdsc)
 		assert.Nil(err)
 
 		indexServer.AddRoute(filepath.Base(publicLocalPack124Pdsc), pdscContent)
@@ -645,7 +644,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		// Make sure index.pidx exists and it is updated
 		assert.FileExists(installer.Installation.PublicIndex)
-		copied, err2 := ioutil.ReadFile(installer.Installation.PublicIndex)
+		copied, err2 := os.ReadFile(installer.Installation.PublicIndex)
 		assert.Nil(err2)
 		assert.Equal(copied, indexContent)
 
@@ -697,14 +696,14 @@ func TestUpdatePublicIndex(t *testing.T) {
 		}
 
 		assert.Nil(indexXML.Write())
-		indexContent, err := ioutil.ReadFile(tempIndexFile)
+		indexContent, err := os.ReadFile(tempIndexFile)
 		assert.Nil(err)
 		indexServer.AddRoute("index.pidx", indexContent)
 
 		// Add the path to the pack's pdsc
 		for i := 1; i < 11; i++ {
 			pdsc := publicConcurrentLocalPdscBase + fmt.Sprint(i) + ".pdsc"
-			pdscContent, err := ioutil.ReadFile(filepath.Join(testDir, "concurrent", "1.2.4", pdsc))
+			pdscContent, err := os.ReadFile(filepath.Join(testDir, "concurrent", "1.2.4", pdsc))
 			assert.Nil(err)
 			indexServer.AddRoute(pdsc, pdscContent)
 		}
@@ -713,7 +712,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		// Make sure index.pidx exists and it is updated
 		assert.FileExists(installer.Installation.PublicIndex)
-		copied, err2 := ioutil.ReadFile(installer.Installation.PublicIndex)
+		copied, err2 := os.ReadFile(installer.Installation.PublicIndex)
 		assert.Nil(err2)
 		assert.Equal(copied, indexContent)
 

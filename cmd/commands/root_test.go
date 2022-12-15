@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -190,8 +189,8 @@ func runTests(t *testing.T, tests []TestCase) {
 				})
 			}
 
-			outBytes, err1 := ioutil.ReadAll(stdout)
-			errBytes, err2 := ioutil.ReadAll(stderr)
+			outBytes, err1 := io.ReadAll(stdout)
+			errBytes, err2 := io.ReadAll(stderr)
 			assert.Nil(err1)
 			assert.Nil(err2)
 
