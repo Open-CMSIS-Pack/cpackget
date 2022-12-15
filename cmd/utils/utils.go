@@ -136,15 +136,13 @@ func DownloadFile(URL string, timeout int) (string, error) {
 	}
 	defer out.Close()
 
+	log.Infof("Downloading %s...", fileBase)
 	writers := []io.Writer{out}
 	if log.GetLevel() != log.ErrorLevel {
 		if IsTerminalInteractive() {
 			length := resp.ContentLength
-			message := "I: Downloading " + fileBase
-			progressWriter := progressbar.DefaultBytes(length, message)
+			progressWriter := progressbar.DefaultBytes(length, "I:")
 			writers = append(writers, progressWriter)
-		} else {
-			log.Infof("Downloading %s...", fileBase)
 		}
 	}
 

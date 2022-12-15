@@ -282,20 +282,17 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	}
 
 	log.Debugf("Extracting files from \"%s\" to \"%s\"", p.path, packHomeDir)
-
+	log.Infof("Extracting files to %s...", packHomeDir)
 	// Avoid repeated calls to IsTerminalInteractive
 	// as it cleans the stdout buffer
 	interactiveTerminal := utils.IsTerminalInteractive()
 	var progress *progressbar.ProgressBar
-	if interactiveTerminal {
-		message := "I: Extracting files to " + packHomeDir
-		progress = progressbar.Default(int64(len(p.zipReader.File)), message)
-	} else {
-		log.Infof("Extracting files to %s...", packHomeDir)
+	if interactiveTerminal && log.GetLevel() != log.ErrorLevel {
+		progress = progressbar.Default(int64(len(p.zipReader.File)), "I:")
 	}
 
 	for _, file := range p.zipReader.File {
-		if interactiveTerminal {
+		if interactiveTerminal && log.GetLevel() != log.ErrorLevel {
 			_ = progress.Add64(1)
 		}
 		err = utils.SecureInflateFile(file, packHomeDir, p.Subfolder)
