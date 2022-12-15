@@ -118,11 +118,12 @@ jobs:
             GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
           install: |
             apt-get update -qq -y
-            apt-get install -qq -y git make
-            wget https://go.dev/dl/go1.19.4.linux-arm64.tar.gz
-            tar -C /usr/local -xzv go1.19.4.linux-arm64.tar.gz
+            apt-get install -qq -y software-properties-common git make
+            add-apt-repository -y ppa:longsleep/golang-backports
+            apt-get update -qq -y
+            apt-get install -qq -y golang-1.19
           run: |
-            export GOROOT=/usr/local/go
+            export PATH=$PATH:/usr/lib/go-1.19/bin
             git clone --depth 1 https://github.com/$GITHUB_REPOSITORY --quiet
             cd cpackget
             git fetch origin $GITHUB_REF:local_branch
