@@ -1,3 +1,15 @@
+# v0.9.0
+
+This v0.9.0 release contains:
+
+New features:
+- Update to Go 1.19
+
+Bug fixes:
+- Fix concurrent pack installation when the number of packs is smaller than the set concurrency
+- Fix progress bar repeatedly getting printed, setting it below the info message as not to break it when resizing
+- Fix signature field version checking (for signature-create and signature-verify)
+
 # v0.8.5
 
 This v0.8.5 release contains:
