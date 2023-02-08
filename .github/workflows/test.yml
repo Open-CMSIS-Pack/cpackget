@@ -136,8 +136,8 @@ jobs:
             apt-get install -qq -y golang-1.19
           run: |
             export PATH=$PATH:/usr/lib/go-1.19/bin
-            git clone --depth 1 https://github.com/$GITHUB_REPOSITORY --quiet
+            git clone --depth 1 ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
             cd cpackget
-            git fetch origin $GITHUB_REF:local_branch
-            git checkout local_branch
-            make ARCH=arm64 GOOS=linux coverage-check
+            git fetch --depth 1 origin ${GITHUB_REF}
+            git checkout FETCH_HEAD
+            make coverage-check
