@@ -11,11 +11,13 @@ jobs:
         go: [1.19.x]
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
       - name: Install go 1.19
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
+
       - uses: golangci/golangci-lint-action@v2
         with:
           # must be specified without patch version
@@ -30,11 +32,13 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install go 1.19
-        uses: actions/setup-go@v2
+
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
+
       - name: Check formatting
         run: |
           make format-check
@@ -48,13 +52,16 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
       - name: Install go 1.19
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
+
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
       - name: Run vulnerability check
         run: |
           echo "$(govulncheck ./... 2>&1 | tee vulnerability_report.out)"
@@ -70,13 +77,16 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
       - name: Install go 1.19
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
+
       - name: Install xmllint
         run: sudo apt-get update && sudo apt-get install libxml2-utils
+
       - name: Check if local_repository.pidx is valid
         run: |
           make test-xmllint-localrepository
@@ -90,11 +100,13 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
       - name: Install go 1.19
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
+
       - name: Unit testing
         run: |
           make coverage-check

@@ -2,7 +2,10 @@
 OS ?= $(shell uname)
 
 # Having this will allow CI scripts to build for many OS's and ARCH's
-ARCH := $(or $(ARCH),amd64)
+ARCH ?= $(shell uname -m)
+
+# Retrieve version from git history
+VERSION ?= $(shell git describe --tags 2>/dev/null || echo unknown)
 
 # Path to lint tool
 GOLINTER ?= golangci-lint
@@ -20,21 +23,29 @@ else
     # Default to Linux
     OS=linux
 endif
+ifneq (,$(findstring x86_64,$(ARCH)))
+	ARCH=amd64
+else ifneq (,$(findstring aarch64,$(ARCH)))
+    ARCH=arm64
+else ifneq (,$(findstring unknown,$(ARCH)))
+	# fallback
+	ARCH=amd64
+endif
 
 SOURCES := $(wildcard cmd/*.go) $(wildcard cmd/*/*.go)
 
 all:
 	@echo Pick one of:
-	@echo $$ make $(PROG)
+	@echo $$ make build
 	@echo $$ make run
 	@echo $$ make clean
 	@echo $$ make config
 	@echo $$ make release
 	@echo
 	@echo Build for different OS's and ARCH's by defining these variables. Ex:
-	@echo $$ make OS=windows ARCH=amd64 build/$(BIN_NAME).exe
-	@echo $$ make OS=darwin ARCH=amd64 build/$(BIN_NAME)
-	@echo $$ make OS=linux ARCH=arm64 build/$(BIN_NAME)
+	@echo $$ make OS=windows ARCH=amd64 build
+	@echo $$ make OS=darwin ARCH=amd64 build
+	@echo $$ make OS=linux ARCH=arm64 build
 	@echo
 	@echo Run tests
 	@echo $$ make test ARGS="<test args>"
@@ -53,7 +64,9 @@ all:
 
 $(PROG): $(SOURCES)
 	@echo Building project
-	GOOS=$(OS) GOARCH=$(ARCH) go build -ldflags "-X main.version=`git describe --tags 2>/dev/null || echo unknown`" -o $(PROG) ./cmd/
+	GOOS=$(OS) GOARCH=$(ARCH) go build -ldflags "-X main.version=$(VERSION)" -o $(PROG) ./cmd/
+
+build: $(PROG)
 
 run: $(PROG)
 	@./$(PROG) $(ARGS) || true

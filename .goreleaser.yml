@@ -10,8 +10,6 @@ builds:
       - arm64
     dir: cmd
     ignore:
-      - goos: darwin
-        goarch: arm64
       - goos: windows
         goarch: arm64
 
