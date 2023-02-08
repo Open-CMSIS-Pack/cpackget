@@ -981,6 +981,8 @@ func LockPackRoot() {
 	utils.SetReadOnly(Installation.LocalDir)
 	utils.SetReadOnly(Installation.DownloadDir)
 	utils.SetReadOnly(Installation.PackRoot)
+	// "pack.idx" does not need to be read only
+	utils.UnsetReadOnly(Installation.PackIdx)
 }
 
 // UnlockPackRoot disable the read-only flag for the pack-root directory
