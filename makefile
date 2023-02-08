@@ -2,7 +2,7 @@
 OS ?= $(shell uname)
 
 # Having this will allow CI scripts to build for many OS's and ARCH's
-ARCH ?= $(shell uname -i)
+ARCH ?= $(shell uname -m)
 
 # Retrieve version from git history
 VERSION ?= $(shell git describe --tags 2>/dev/null || echo unknown)
@@ -27,6 +27,9 @@ ifneq (,$(findstring x86_64,$(ARCH)))
 	ARCH=amd64
 else ifneq (,$(findstring aarch64,$(ARCH)))
     ARCH=arm64
+else ifneq (,$(findstring unknown,$(ARCH)))
+	# fallback
+	ARCH=amd64
 endif
 
 SOURCES := $(wildcard cmd/*.go) $(wildcard cmd/*/*.go)
