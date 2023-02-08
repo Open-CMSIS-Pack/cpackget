@@ -26,8 +26,10 @@ func TestAddPdsc(t *testing.T) {
 		installer.UnlockPackRoot()
 		defer removePackRoot(localTestingDir)
 
-		err := installer.AddPdsc(malformedPackName)
-		assert.Equal(errs.ErrBadPackName, err)
+		for i := 0; i < len(malformedPackNames); i++ {
+			err := installer.AddPdsc(malformedPackNames[i])
+			assert.Equal(errs.ErrBadPackName, err)
+		}
 	})
 
 	t.Run("test add pdsc with bad local_repository.pidx", func(t *testing.T) {

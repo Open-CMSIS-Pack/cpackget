@@ -23,8 +23,8 @@ import (
 // cpackget pack add Vendor.PackName.x.y.z                         # packID with version
 // cpackget pack add Vendor::PackName                              # packID using legacy syntax
 // cpackget pack add Vendor::PackName@x.y.z                        # packID using legacy syntax specifying an exact version
-// cpackget pack add Vendor::PackName@~x.y.z                       # packID using legacy syntax specifying a minumum compatible version
-// cpackget pack add Vendor::PackName>=x.y.z                       # packID using legacy syntax specifying a minumum version
+// cpackget pack add Vendor::PackName@~x.y.z                       # packID using legacy syntax specifying a minimum compatible version
+// cpackget pack add Vendor::PackName>=x.y.z                       # packID using legacy syntax specifying a minimum version
 // cpackget pack add Vendor.PackName.x.y.z.pack                    # pack file name
 // cpackget pack add https://vendor.com/Vendor.PackName.x.y.z.pack # pack URL
 //
@@ -41,13 +41,12 @@ func TestAddPack(t *testing.T) {
 		installer.UnlockPackRoot()
 		defer removePackRoot(localTestingDir)
 
-		packPath := malformedPackName
-
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
-
-		// Sanity check
-		assert.NotNil(err)
-		assert.Equal(err, errs.ErrBadPackName)
+		for i := 0; i < len(malformedPackNames); i++ {
+			err := installer.AddPack(malformedPackNames[i], !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
+			// Sanity check
+			assert.NotNil(err)
+			assert.Equal(err, errs.ErrBadPackName)
+		}
 
 		// Make sure pack.idx never got touched
 		assert.False(utils.FileExists(installer.Installation.PackIdx))

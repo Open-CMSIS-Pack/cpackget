@@ -14,15 +14,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// namePattern specifies a regular expression that matches Vendor and Pack names.
-// Ref: https://github.com/ARM-software/CMSIS_5/blob/develop/CMSIS/Utilities/PackIndex.xsd
-var namePattern = `[a-zA-Z][0-9a-zA-Z_\-]+`
+// namePattern specifies a regular expression that matches Pack and Vendor names.
+// Ref: https://github.com/Open-CMSIS-Pack/Open-CMSIS-Pack-Spec/blob/4e2ef7dddc4bcd2a43b530d79908720c9c52da9e/schema/PACK.xsd#L1659
+var namePattern = `[\-_A-Za-z0-9]+`
 
 // nameRegex has a pre-compiled namePattern ready for use
 var nameRegex = regexp.MustCompile(fmt.Sprintf("^%s$", namePattern))
 
 // versionPattern validates pack version.
-// Ref: https://github.com/ARM-software/CMSIS_5/blob/develop/CMSIS/Utilities/PackIndex.xsd
+// Ref: https://github.com/Open-CMSIS-Pack/Open-CMSIS-Pack-Spec/blob/4e2ef7dddc4bcd2a43b530d79908720c9c52da9e/schema/PACK.xsd#L1672
 // With little adjustments to reduce the number of capturing groups to a single one
 //
 //	<major> .<minor> .<patch>   - <quality>                                                                         + <meta info>

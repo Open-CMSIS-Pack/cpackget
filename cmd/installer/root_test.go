@@ -228,7 +228,7 @@ var (
 	// Available testing packs
 	testDir = filepath.Join("..", "..", "testdata", "integration")
 
-	malformedPackName              = "pack-with-bad-name"
+	malformedPackNames             = []string{"pAck-WiTH-HiFenS", "[$pecialC#aracter£]", "Spaced Pack Name", " "}
 	packThatDoesNotExist           = "ThisPack.DoesNotExist.0.0.1.pack"
 	packToReinstall                = filepath.Join(testDir, "TheVendor.PackToReinstall.1.2.3.pack")
 	packWithCorruptZip             = filepath.Join(testDir, "FakeZip.PackName.1.2.3.pack")

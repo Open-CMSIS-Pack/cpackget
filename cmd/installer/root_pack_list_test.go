@@ -266,7 +266,7 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, ListFilter)
 	// Output:
 	// I: Listing installed packs
-	// E: _TheVendor::_PublicLocalPack@1.2.3.4 - error: vendor, pack name, pack version incorrect format
+	// E: _TheVendor::_PublicLocalPack@1.2.3.4 - error: pack version incorrect format
 	// W: 1 error(s) detected
 }
 
@@ -339,7 +339,7 @@ func ExampleListInstalledPacks_filterErrorPackages() {
 	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, "TheVendor")
 	// Output:
 	// I: Listing installed packs, filtering by "TheVendor"
-	// E: _TheVendor::_PublicLocalPack@1.2.3.4 - error: vendor, pack name, pack version incorrect format
+	// E: _TheVendor::_PublicLocalPack@1.2.3.4 - error: pack version incorrect format
 }
 
 func ExampleListInstalledPacks_filterInvalidChars() {
