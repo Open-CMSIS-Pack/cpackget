@@ -22,9 +22,11 @@ func TestRemovePdsc(t *testing.T) {
 		installer.UnlockPackRoot()
 		defer removePackRoot(localTestingDir)
 
-		err := installer.RemovePdsc(malformedPackName)
-		assert.NotNil(err)
-		assert.Equal(errs.ErrBadPackName, err)
+		for i := 0; i < len(malformedPackNames); i++ {
+			err := installer.RemovePdsc(malformedPackNames[i])
+			assert.NotNil(err)
+			assert.Equal(errs.ErrBadPackName, err)
+		}
 	})
 
 	t.Run("test remove a pdsc", func(t *testing.T) {
