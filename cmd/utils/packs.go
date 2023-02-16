@@ -131,6 +131,9 @@ const (
 
 	// Example: Vendor::PackName@~x.y.z (the greatest version of the pack keeping the same major number)
 	GreatestCompatibleVersion = 4
+
+	// For the <package/requirements/packages> spec only. Example: Vendor.PackName.a.b.c:x.y.z
+	RangeVersion = 5
 )
 
 var versionModMap = map[string]int{
@@ -161,8 +164,18 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 	log.Debugf("Extracting pack info from \"%s\"", packPath)
 
 	info := PackInfo{}
+	maxVersion := ""
 
-	// packPath can be either a file (Vendor.Pack.x.y.z.pack) or simply just the packID (Vendor.Pack)
+	// Matches Vendor.Pack.a.b.c:x.y.z
+	r, err := regexp.Compile(`([\-_A-Za-z0-9]+\.){4}[\-_A-Za-z0-9]+\:`)
+	if err != nil {
+		return info, err
+	}
+	if r.MatchString(packPath) {
+		maxVersion = strings.Split(packPath, ":")[1]
+		packPath = strings.Split(packPath, ":")[0]
+	}
+	// packPath is normally either a file (Vendor.Pack.x.y.z.pack) or simply just the packID (Vendor.Pack)
 	location, packName := filepath.Split(packPath)
 
 	// Most common scenario should be the use of packId
@@ -214,7 +227,12 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 	if len(matches) == 4 {
 		// 4 matches: [Vendor.Pack.x.y.z, Vendor, Pack, x.y.z] (dotted version)
 		info.Version = matches[3]
-		info.VersionModifier = ExactVersion
+		if maxVersion != "" {
+			info.Version = info.Version + ":" + maxVersion
+			info.VersionModifier = RangeVersion
+		} else {
+			info.VersionModifier = ExactVersion
+		}
 	} else if len(matches) == 5 {
 		// 5 matches: [Vendor::Pack(@|@~|>=)x.y.z, Vendor, Pack, (@|@~|>=), x.y.z] (legacy version)
 		versionModifier := matches[3]

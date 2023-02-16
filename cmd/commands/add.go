@@ -15,17 +15,20 @@ import (
 )
 
 var addCmdFlags struct {
-	// skipEula tells whether pack's license should be presented to the user or not for a yay-or-nay acceptance
-	skipEula bool
-
 	// extractEula forces extraction of the embedded license only, not installing the pack
 	extractEula bool
 
 	// forceReinstall forces installation of an already installed pack
 	forceReinstall bool
 
+	// noRequirements skips installing package requirements
+	noRequirements bool
+
 	// packsListFileName is the file name where a list of pack urls is present
 	packsListFileName string
+
+	// skipEula tells whether pack's license should be presented to the user or not for a yay-or-nay acceptance
+	skipEula bool
 }
 
 var AddCmd = &cobra.Command{
@@ -90,10 +93,8 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 			if filepath.Ext(packPath) == ".pdsc" {
 				err = installer.AddPdsc(packPath)
 			} else {
-				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, viper.GetInt("timeout"))
-
+				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, addCmdFlags.noRequirements, viper.GetInt("timeout"))
 			}
-
 			if err != nil {
 				lastErr = err
 				if !errs.AlreadyLogged(err) {
@@ -102,7 +103,6 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 			}
 		}
 		installer.LockPackRoot()
-
 		return lastErr
 	},
 }
@@ -111,6 +111,7 @@ func init() {
 	AddCmd.Flags().BoolVarP(&addCmdFlags.skipEula, "agree-embedded-license", "a", false, "agrees with the embedded license of the pack")
 	AddCmd.Flags().BoolVarP(&addCmdFlags.extractEula, "extract-embedded-license", "x", false, "extracts the embedded license of the pack and aborts the installation")
 	AddCmd.Flags().BoolVarP(&addCmdFlags.forceReinstall, "force-reinstall", "F", false, "forces installation of an already installed pack")
+	AddCmd.Flags().BoolVarP(&addCmdFlags.noRequirements, "no-dependencies", "n", false, "do not install package dependencies")
 	AddCmd.Flags().StringVarP(&addCmdFlags.packsListFileName, "packs-list-filename", "f", "", "specifies a file listing packs urls, one per line")
 
 	AddCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {

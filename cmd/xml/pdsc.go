@@ -11,7 +11,7 @@ import (
 )
 
 // PdscXML maps few tags of a PDSC file.
-// Ref: https://github.com/ARM-software/CMSIS_5/blob/develop/CMSIS/Utilities/PACK.xsd
+// Ref: https://github.com/Open-CMSIS-Pack/Open-CMSIS-Pack-Spec/blob/main/schema/PACK.xsd
 type PdscXML struct {
 	XMLName xml.Name `xml:"package"`
 	Vendor  string   `xml:"vendor"`
@@ -24,6 +24,11 @@ type PdscXML struct {
 		Releases []ReleaseTag `xml:"release"`
 	} `xml:"releases"`
 
+	RequirementsTag struct {
+		XMLName  xml.Name      `xml:"requirements"`
+		Packages []PackagesTag `xml:"packages"`
+	} `xml:"requirements"`
+
 	FileName string
 }
 
@@ -33,6 +38,20 @@ type ReleaseTag struct {
 	Version string   `xml:"version,attr"`
 	Date    string   `xml:"Date,attr"`
 	URL     string   `xml:"url,attr"`
+}
+
+// PackagesTag only has one possible child, which is <package>
+type PackagesTag struct {
+	XMLName  xml.Name     `xml:"packages"`
+	Packages []PackageTag `xml:"package"`
+}
+
+// Package represents a direct dependency/requirement of this package
+type PackageTag struct {
+	XMLName xml.Name `xml:"package"`
+	Vendor  string   `xml:"vendor,attr"`
+	Name    string   `xml:"name,attr"`
+	Version string   `xml:"version,attr"`
 }
 
 // NewPdscXML receives a PDSC file name to be later read into the PdscXML struct
@@ -112,4 +131,21 @@ func (p *PdscXML) PackURL(version string) string {
 	}
 
 	return baseURL + p.Vendor + "." + p.Name + "." + version + ".pack"
+}
+
+// Dependencies returns all the listed packs that need to be installed
+// alongside, as per the <requirements> section. It returns a [][]string
+// array containing the packs in [<Name>, <Vendor>, <Version>] format.
+func (p *PdscXML) Dependencies() [][]string {
+	dependencies := [][]string{}
+	if p.RequirementsTag.Packages == nil {
+		return nil
+	}
+	for i, pack := range p.RequirementsTag.Packages {
+		for _, pk := range pack.Packages {
+			dependencies = append(dependencies, []string{pk.Name, pk.Vendor, pk.Version})
+			log.Debugf("found %v dependency", dependencies[i])
+		}
+	}
+	return dependencies
 }

@@ -45,7 +45,7 @@ type PackType struct {
 	// toBeRemoved indicates
 	toBeRemoved bool
 
-	// exactVersion tells wether this pack identifier is specifying an exact version
+	// exactVersion tells whether this pack identifier is specifying an exact version
 	// or is requesting a newer one, e.g. >=x.y.z
 	versionModifier int
 
@@ -58,11 +58,20 @@ type PackType struct {
 	// Subfolder stores the subfolder this pack is in the compressed file.
 	Subfolder string
 
-	// pdsc holds a pointer to the PDSC file already parsed as XML
+	// Pdsc holds a pointer to the PDSC file already parsed as XML
 	Pdsc *xml.PdscXML
 
 	// zipReader holds a pointer to the uncompress pack file
 	zipReader *zip.ReadCloser
+
+	// Requirements represents a packs' dependencies
+	Requirements struct {
+		packages []struct {
+			info      []string // [Name, Vendor, Version]
+			installed bool
+		}
+		satisfied bool // true if all dependencies are installed
+	}
 }
 
 // preparePack does some sanity validation regarding pack name
@@ -131,14 +140,14 @@ func (p *PackType) fetch(timeout int) error {
 	}
 
 	if !utils.FileExists(p.path) {
-		log.Errorf("File \"%s\" does't exist", p.path)
+		log.Errorf("File \"%s\" doesn't exist", p.path)
 		return errs.ErrFileNotFound
 	}
 
 	return nil
 }
 
-// validate ensures the pack is legit and it has all minimal requrements
+// validate ensures the pack is legit and it has all minimal requirements
 // to be installed.
 func (p *PackType) validate() error {
 	log.Debug("Validating pack")
@@ -499,7 +508,64 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 	log.Warn("Could not resolve version modifier")
 }
 
-// PackID retuns the most generic name of a pack: Vendor.PackName
+// loadDependencies verifies and registers a pack's required packages
+func (p *PackType) loadDependencies() error {
+	deps := p.Pdsc.Dependencies()
+	installed := 0
+	if deps == nil {
+		return nil
+	}
+	for i := 0; i < len(deps); i++ {
+		version := deps[i][2]
+		var pack *PackType
+		var err error
+		if version == "" {
+			pack, err = preparePack(deps[i][1]+"."+deps[i][0], false, 0)
+			if err != nil {
+				return err
+			}
+		} else {
+			pack, err = preparePack(deps[i][1]+"."+deps[i][0]+"."+deps[i][2], false, 0)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Need to convert the spec <package/requirements/packages> "version" to the one internally used
+		// Ref: https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/element_requirements_pg.html#element_packages
+		if version != "" {
+			if len(strings.Split(version, ":")) > 1 {
+				pack.versionModifier = utils.RangeVersion
+			} else {
+				pack.versionModifier = utils.GreaterVersion
+			}
+		} else {
+			pack.versionModifier = utils.LatestVersion
+		}
+		if Installation.PackIsInstalled(pack) {
+			p.Requirements.packages = append(p.Requirements.packages, struct {
+				info      []string
+				installed bool
+			}{deps[i], true})
+			installed++
+		} else {
+			p.Requirements.packages = append(p.Requirements.packages, struct {
+				info      []string
+				installed bool
+			}{deps[i], false})
+		}
+	}
+	if installed == len(deps) {
+		p.Requirements.satisfied = true
+	}
+	return nil
+}
+
+func (p *PackType) RequirementsSatisfied() bool {
+	return p.Requirements.satisfied
+}
+
+// PackID returns the most generic name of a pack: Vendor.PackName
 func (p *PackType) PackID() string {
 	return p.Vendor + "." + p.Name
 }
