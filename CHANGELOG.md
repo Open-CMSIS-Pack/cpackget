@@ -1,3 +1,15 @@
+# v0.9.1
+
+This v0.9.1 release contains:
+
+New features:
+- Install a pack's required packages by default
+- "cpackget list required" to list installed packages with dependencies and their status
+
+Bug fixes:
+- Don't set "pack.idx" as read-only
+- Fix pack name checking when installing, according to the current specification
+
 # v0.9.0
 
 This v0.9.0 release contains:
