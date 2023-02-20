@@ -123,10 +123,11 @@ func checkPackIsInstalled(t *testing.T, pack *installer.PackType) {
 }
 
 type ConfigType struct {
-	IsPublic       bool
 	CheckEula      bool
 	ExtractEula    bool
 	ForceReinstall bool
+	IsPublic       bool
+	NoRequirements bool
 }
 
 func addPack(t *testing.T, packPath string, config ConfigType) {
@@ -135,7 +136,7 @@ func addPack(t *testing.T, packPath string, config ConfigType) {
 	// Get pack.idx before removing pack
 	packIdxModTime := getPackIdxModTime(t, Start)
 
-	err := installer.AddPack(packPath, config.CheckEula, config.ExtractEula, config.ForceReinstall, Timeout)
+	err := installer.AddPack(packPath, config.CheckEula, config.ExtractEula, config.ForceReinstall, config.NoRequirements, Timeout)
 	assert.Nil(err)
 
 	if config.ExtractEula {
@@ -216,11 +217,12 @@ var (
 	End   = false
 
 	// Constant telling pack privacy
-	IsPublic       = true
-	NotPublic      = false
 	CheckEula      = true
 	ExtractEula    = true
 	ForceReinstall = true
+	IsPublic       = true
+	NotPublic      = false
+	NoRequirements = true
 	Timeout        = 0
 
 	CreatePackRoot = true
@@ -282,6 +284,9 @@ var (
 	// Pack with subfolder in it, pdsc not in root folder
 	packWithSubFolder    = filepath.Join(testDir, "TheVendor.PackWithSubFolder.1.2.3.pack")
 	packWithSubSubFolder = filepath.Join(testDir, "TheVendor.PackWithSubSubFolder.1.2.3.pack")
+
+	// Packs with dependencies
+	packWithSingleDependency = filepath.Join(testDir, "dependencies", "TheVendor.SingleDependency.1.2.3.pack")
 
 	// Concurrent download PDSC base name
 	publicConcurrentLocalPdscBase = "TheVendor.PublicLocalPack"

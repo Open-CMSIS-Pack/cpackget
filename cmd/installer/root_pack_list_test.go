@@ -20,9 +20,10 @@ import (
 )
 
 var (
-	ListCached = true
-	ListPublic = true
-	ListFilter = ""
+	ListCached       = true
+	ListFilter       = ""
+	ListPublic       = true
+	ListRequirements = true
 )
 
 // Listing on empty
@@ -34,7 +35,7 @@ func ExampleListInstalledPacks() {
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
 
-	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, ListFilter)
+	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListRequirements, ListFilter)
 	// Output:
 	// I: Listing installed packs
 	// I: (no packs installed)
@@ -48,7 +49,7 @@ func ExampleListInstalledPacks_emptyCache() {
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
 
-	_ = installer.ListInstalledPacks(ListCached, !ListPublic, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListRequirements, ListFilter)
 	// Output:
 	// I: Listing cached packs
 	// I: (no packs cached)
@@ -62,7 +63,7 @@ func ExampleListInstalledPacks_emptyPublicIndex() {
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
 
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListRequirements, ListFilter)
 	// Output:
 	// I: Listing packs from the public index
 	// I: (no packs in public index)
@@ -95,13 +96,13 @@ func ExampleListInstalledPacks_list() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
-	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
+	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListRequirements, ListFilter)
 	// Output:
 	// I: Listing packs from the public index
 	// I: TheVendor::PublicLocalPack@1.2.3 (cached)
@@ -132,13 +133,13 @@ func ExampleListInstalledPacks_listCached() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
-	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
+	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, !ListPublic, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListRequirements, ListFilter)
 	// Output:
 	// I: Listing cached packs
 	// I: TheVendor::PublicLocalPack@1.2.3
@@ -171,8 +172,8 @@ func TestListInstalledPacks(t *testing.T) {
 			Name:    "PublicLocalPack",
 			Version: "1.2.5",
 		}))
-		assert.Nil(installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, Timeout))
-		assert.Nil(installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, Timeout))
+		assert.Nil(installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout))
+		assert.Nil(installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout))
 		assert.Nil(installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout))
 
 		// Install a pack via PDSC file
@@ -185,7 +186,7 @@ func TestListInstalledPacks(t *testing.T) {
 		var buf bytes.Buffer
 		log.SetOutput(&buf)
 		defer log.SetOutput(io.Discard)
-		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, ListFilter))
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListRequirements, ListFilter))
 		stdout := buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
 		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.3 (installed via %s)", expectedPdscAbsPath))
@@ -215,7 +216,7 @@ func TestListInstalledPacks(t *testing.T) {
 		var buf bytes.Buffer
 		log.SetOutput(&buf)
 		defer log.SetOutput(io.Discard)
-		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, ListFilter))
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListRequirements, ListFilter))
 		stdout := buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
 		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.3 (installed via %s)", expectedPdscAbsPath))
@@ -225,7 +226,7 @@ func TestListInstalledPacks(t *testing.T) {
 		assert.Nil(pdscXML.Read())
 		pdscXML.ReleasesTag.Releases[0].Version = "1.2.4"
 		assert.Nil(utils.WriteXML(pdscPath, pdscXML))
-		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, ListFilter))
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListRequirements, ListFilter))
 		stdout = buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
 		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.4 (installed via %s)", expectedPdscAbsPath))
@@ -245,7 +246,7 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.3",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 
 	// Temper with the installation folder
 	currVendorFolder := filepath.Join(localTestingDir, "TheVendor")
@@ -263,7 +264,7 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, ListFilter)
+	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListRequirements, ListFilter)
 	// Output:
 	// I: Listing installed packs
 	// E: _TheVendor::_PublicLocalPack@1.2.3.4 - error: pack version incorrect format
@@ -293,13 +294,13 @@ func ExampleListInstalledPacks_filter() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
-	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
+	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, "1.2.4")
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListRequirements, "1.2.4")
 	// Output:
 	// I: Listing packs from the public index, filtering by "1.2.4"
 	// I: TheVendor::PublicLocalPack@1.2.4 (installed)
@@ -318,7 +319,7 @@ func ExampleListInstalledPacks_filterErrorPackages() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.3",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 
 	// Temper with the installation folder
 	currVendorFolder := filepath.Join(localTestingDir, "TheVendor")
@@ -336,7 +337,7 @@ func ExampleListInstalledPacks_filterErrorPackages() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, "TheVendor")
+	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListRequirements, "TheVendor")
 	// Output:
 	// I: Listing installed packs, filtering by "TheVendor"
 	// E: _TheVendor::_PublicLocalPack@1.2.3.4 - error: pack version incorrect format
@@ -365,13 +366,13 @@ func ExampleListInstalledPacks_filterInvalidChars() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
-	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
+	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, "@ :")
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListRequirements, "@ :")
 	// Output:
 	// I: Listing packs from the public index, filtering by "@ :"
 }
@@ -399,13 +400,13 @@ func ExampleListInstalledPacks_filteradditionalMessages() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
-	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
+	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, !ListPublic, "(installed)")
+	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListRequirements, "(installed)")
 	// Output:
 	// I: Listing cached packs, filtering by "(installed)"
 }

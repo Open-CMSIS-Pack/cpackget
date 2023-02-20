@@ -30,6 +30,9 @@ var extractEula bool
 // forceReinstall forces installation of an already installed pack
 var forceReinstall bool
 
+// noRequirements skips installing package requirements
+var noRequirements bool
+
 // packsListFileName is the file name where a list of pack urls is present
 var packsListFileName string
 
@@ -80,7 +83,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 		var firstError error
 		installer.UnlockPackRoot()
 		for _, packPath := range args {
-			if err := installer.AddPack(packPath, !skipEula, extractEula, forceReinstall, viper.GetInt("timeout")); err != nil {
+			if err := installer.AddPack(packPath, !skipEula, extractEula, forceReinstall, noRequirements, viper.GetInt("timeout")); err != nil {
 				if firstError == nil {
 					firstError = err
 				}
@@ -129,7 +132,7 @@ var packListCmd = &cobra.Command{
 	Long:  `Lists all installed packs and optionally cached pack files`,
 	Args:  cobra.MaximumNArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return installer.ListInstalledPacks(listCached, listPublic, listFilter)
+		return installer.ListInstalledPacks(listCached, listPublic, false, listFilter)
 	},
 }
 
@@ -139,6 +142,7 @@ func init() {
 	packAddCmd.Flags().BoolVarP(&extractEula, "extract-embedded-license", "x", false, "extracts the embedded license of the pack and aborts the installation")
 	packAddCmd.Flags().BoolVarP(&forceReinstall, "force-reinstall", "F", false, "forces installation of an already installed pack")
 	packAddCmd.Flags().StringVarP(&packsListFileName, "packs-list-filename", "f", "", "specifies a file listing packs urls, one per line")
+	packAddCmd.Flags().BoolVarP(&noRequirements, "no-dependencies", "n", false, "do not install package dependencies")
 	packListCmd.Flags().BoolVarP(&listCached, "cached", "c", false, "lists only cached packs")
 	packListCmd.Flags().BoolVarP(&listPublic, "public", "p", false, "lists packs in the public index")
 	PackCmd.AddCommand(packAddCmd, packRmCmd, packListCmd)

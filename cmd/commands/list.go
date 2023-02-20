@@ -23,11 +23,22 @@ var listCmdFlags struct {
 var ListCmd = &cobra.Command{
 	Use:               "list [--cached|--public]",
 	Short:             "List installed packs",
-	Long:              `List all installed packs and optionally cached pack files`,
+	Long:              "List all installed packs and optionally cached pack files",
 	Args:              cobra.MaximumNArgs(0),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic, listCmdFlags.listFilter)
+		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic, false, listCmdFlags.listFilter)
+	},
+}
+
+var listRequiredCmd = &cobra.Command{
+	Use:               "required",
+	Short:             "List dependencies of installed packs",
+	Long:              "List dependencies of all installed packs, public and local",
+	Args:              cobra.MaximumNArgs(0),
+	PersistentPreRunE: configureInstaller,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic, true, listCmdFlags.listFilter)
 	},
 }
 
@@ -35,7 +46,9 @@ func init() {
 	ListCmd.Flags().BoolVarP(&listCmdFlags.listCached, "cached", "c", false, "list only cached packs")
 	ListCmd.Flags().BoolVarP(&listCmdFlags.listPublic, "public", "p", false, "list packs in the public index")
 	ListCmd.Flags().StringVarP(&listCmdFlags.listFilter, "filter", "f", "", "filter results (case sensitive, accepts several expressions)")
+	ListCmd.AddCommand(listRequiredCmd)
 
+	listRequiredCmd.SetHelpFunc(ListCmd.HelpFunc())
 	ListCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		err := command.Flags().MarkHidden("concurrent-downloads")
 		_ = command.Flags().MarkHidden("timeout")

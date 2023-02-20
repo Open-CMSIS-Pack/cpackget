@@ -61,7 +61,7 @@ func GetDefaultCmsisPackRoot() string {
 }
 
 // AddPack adds a pack to the pack installation directory structure
-func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool, timeout int) error {
+func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirements bool, timeout int) error {
 
 	pack, err := preparePack(packPath, false, timeout)
 	if err != nil {
@@ -137,9 +137,39 @@ func AddPack(packPath string, checkEula, extractEula bool, forceReinstall bool, 
 		if err := os.RemoveAll(backupPackPath); err != nil {
 			return err
 		}
-		log.Debugf("Succesfully deleted temporary pack \"%s\"", backupPackPath)
+		log.Debugf("Successfully deleted temporary pack \"%s\"", backupPackPath)
 	}
 
+	if !noRequirements {
+		log.Debug("Installing package requirements")
+		err := pack.loadDependencies()
+		if err != nil {
+			return err
+		}
+		if !pack.RequirementsSatisfied() {
+			for _, req := range pack.Requirements.packages {
+				// Recursively install dependencies
+				path := req.info[1] + "." + req.info[0] + "." + req.info[2]
+				pack, err := preparePack(path, false, timeout)
+				if err != nil {
+					return err
+				}
+				if !pack.isInstalled {
+					log.Info("This pack has dependencies - installing them now if missing (use -n/--no-dependencies to avoid this)")
+					err := AddPack(path, checkEula, extractEula, forceReinstall, false, timeout)
+					if err != nil {
+						return err
+					}
+				} else {
+					log.Debugf("required pack %s already installed - skipping", path)
+				}
+			}
+		} else {
+			log.Infof("Pack has all required dependencies installed (%d packs)", len(pack.Requirements.packages))
+		}
+	} else {
+		log.Debug("skipping requirements checking and installation")
+	}
 	return Installation.touchPackIdx()
 }
 
@@ -380,7 +410,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 }
 
 // ListInstalledPacks generates a list of all packs present in the pack root folder
-func ListInstalledPacks(listCached, listPublic bool, listFilter string) error {
+func ListInstalledPacks(listCached, listPublic, listRequirements bool, listFilter string) error {
 	log.Debugf("Listing packs")
 	if listPublic {
 		if listFilter != "" {
@@ -459,10 +489,14 @@ func ListInstalledPacks(listCached, listPublic bool, listFilter string) error {
 			}
 		}
 	} else {
-		if listFilter != "" {
-			log.Infof("Listing installed packs, filtering by \"%s\"", listFilter)
+		if listRequirements {
+			log.Info("Listing installed packs with dependencies")
 		} else {
-			log.Infof("Listing installed packs")
+			if listFilter != "" {
+				log.Infof("Listing installed packs, filtering by \"%s\"", listFilter)
+			} else {
+				log.Infof("Listing installed packs")
+			}
 		}
 
 		type installedPack struct {
@@ -533,6 +567,39 @@ func ListInstalledPacks(listCached, listPublic bool, listFilter string) error {
 			return strings.ToLower(installedPacks[i].Key()) < strings.ToLower(installedPacks[j].Key())
 		})
 		for _, pack := range installedPacks {
+			logMessage := pack.YamlPackID()
+			// List installed packs and their dependencies
+			if listRequirements {
+				p, err := preparePack(pack.Vendor+"."+pack.Name+"."+pack.Version, false, 0)
+				if err != nil {
+					return err
+				}
+				p.Pdsc = xml.NewPdscXML(pack.pdscPath)
+				if err := p.Pdsc.Read(); err != nil {
+					return err
+				}
+				if err := p.loadDependencies(); err != nil {
+					return err
+				}
+				if len(p.Requirements.packages) > 0 {
+					logMessage += " - "
+					for _, req := range p.Requirements.packages {
+						if req.info[2] == "" {
+							logMessage += req.info[1] + "::" + req.info[0]
+						} else {
+							logMessage += req.info[1] + "::" + req.info[0] + "::" + req.info[2]
+						}
+						if req.installed {
+							logMessage += " (installed) "
+						} else {
+							logMessage += " (missing) "
+						}
+					}
+				} else {
+					// Not interested in packs with no dependencies
+					continue
+				}
+			}
 			errors := []string{}
 
 			// Validate names
@@ -548,10 +615,8 @@ func ListInstalledPacks(listCached, listPublic bool, listFilter string) error {
 				errors = append(errors, "pack version")
 			}
 
-			logMessage := pack.YamlPackID()
-
 			// Print the PDSC path on packs installed via PDSC file
-			if pack.isPdscInstalled {
+			if pack.isPdscInstalled && !listRequirements {
 				logMessage += fmt.Sprintf(" (installed via %s)", pack.pdscPath)
 			}
 
@@ -815,7 +880,6 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 		log.Debugf("Checking if \"%s\" exists", packDir)
 		return utils.DirExists(packDir)
 	}
-
 	installedVersions := []string{}
 	// Gather all versions in local_repository.idx for local .psdc installed packs
 	if err := p.LocalPidx.Read(); err != nil {
@@ -868,6 +932,19 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 			}
 		}
 
+		return false
+	}
+
+	// Ref: https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/element_requirements_pg.html#element_packages
+	if pack.versionModifier == utils.RangeVersion {
+		minVersion := strings.Split(pack.Version, ":")[0]
+		maxVersion := strings.Split(pack.Version, ":")[1]
+		for _, version := range installedVersions {
+			if semver.Compare("v"+minVersion, "v"+version) <= 0 && semver.Compare("v"+version, "v"+maxVersion) <= 0 {
+				pack.targetVersion = version
+				return true
+			}
+		}
 		return false
 	}
 
