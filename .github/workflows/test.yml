@@ -1,4 +1,5 @@
 name: Test
+
 on:
   pull_request:
     paths:
@@ -7,6 +8,10 @@ on:
       - testdata/**/*
       - makefile
       - .golangci.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
