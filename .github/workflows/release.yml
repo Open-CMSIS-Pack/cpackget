@@ -30,7 +30,6 @@ jobs:
 
       - name: Generate release notes
         run: |
-          git fetch --unshallow
           ./scripts/release_notes > /tmp/RELEASE_NOTES
 
       - name: Run GoReleaser
