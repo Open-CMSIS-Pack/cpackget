@@ -63,12 +63,20 @@ func GetDefaultCmsisPackRoot() string {
 // AddPack adds a pack to the pack installation directory structure
 func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirements bool, timeout int) error {
 
+	isDep := false
+	// tag dependency packs with $ for correct logging output
+	if strings.TrimPrefix(packPath, "$") != packPath {
+		isDep = true
+		packPath = packPath[1:]
+	}
 	pack, err := preparePack(packPath, false, timeout)
 	if err != nil {
 		return err
 	}
 
-	log.Infof("Adding pack \"%s\"", packPath)
+	if !isDep {
+		log.Infof("Adding pack \"%s\"", packPath)
+	}
 
 	dropPreInstalled := false
 	fullPackPath := ""
@@ -105,6 +113,11 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 		return err
 	}
 
+	// Since we only get the target version here, can only
+	// print the message now for dependencies
+	if isDep {
+		log.Infof("Adding pack %s", pack.Vendor+"."+pack.Name+"."+pack.targetVersion)
+	}
 	// Tells the UI to return right away with the [E]xtract option selected
 	ui.Extract = extractEula
 
@@ -141,12 +154,22 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 	}
 
 	if !noRequirements {
-		log.Debug("Installing package requirements")
+		log.Debug("installing package requirements")
 		err := pack.loadDependencies()
 		if err != nil {
 			return err
 		}
 		if !pack.RequirementsSatisfied() {
+			// Print all dependencies info on one message
+			msg := ""
+			for _, p := range pack.Requirements.packages {
+				if !p.installed {
+					msg += utils.FormatPackVersion(p.info) + " "
+				}
+			}
+			if msg != "" {
+				log.Infof("Package requirements not satisfied - installing %s", msg)
+			}
 			for _, req := range pack.Requirements.packages {
 				// Recursively install dependencies
 				path := req.info[1] + "." + req.info[0] + "." + req.info[2]
@@ -155,8 +178,8 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 					return err
 				}
 				if !pack.isInstalled {
-					log.Info("This pack has dependencies - installing them now if missing (use -n/--no-dependencies to avoid this)")
-					err := AddPack(path, checkEula, extractEula, forceReinstall, false, timeout)
+					log.Debug("pack has dependencies, installing")
+					err := AddPack("$"+path, checkEula, extractEula, forceReinstall, false, timeout)
 					if err != nil {
 						return err
 					}
@@ -165,7 +188,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 				}
 			}
 		} else {
-			log.Infof("Pack has all required dependencies installed (%d packs)", len(pack.Requirements.packages))
+			log.Debugf("pack has all required dependencies installed (%d packs)", len(pack.Requirements.packages))
 		}
 	} else {
 		log.Debug("skipping requirements checking and installation")
@@ -584,11 +607,7 @@ func ListInstalledPacks(listCached, listPublic, listRequirements bool, listFilte
 				if len(p.Requirements.packages) > 0 {
 					logMessage += " - "
 					for _, req := range p.Requirements.packages {
-						if req.info[2] == "" {
-							logMessage += req.info[1] + "::" + req.info[0]
-						} else {
-							logMessage += req.info[1] + "::" + req.info[0] + "::" + req.info[2]
-						}
+						logMessage += utils.FormatPackVersion(req.info)
 						if req.installed {
 							logMessage += " (installed) "
 						} else {
@@ -935,7 +954,6 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 		return false
 	}
 
-	// Ref: https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/element_requirements_pg.html#element_packages
 	if pack.versionModifier == utils.RangeVersion {
 		minVersion := strings.Split(pack.Version, ":")[0]
 		maxVersion := strings.Split(pack.Version, ":")[1]

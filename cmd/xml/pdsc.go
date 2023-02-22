@@ -5,6 +5,7 @@ package xml
 
 import (
 	"encoding/xml"
+	"strings"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
@@ -136,6 +137,12 @@ func (p *PdscXML) PackURL(version string) string {
 // Dependencies returns all the listed packs that need to be installed
 // alongside, as per the <requirements> section. It returns a [][]string
 // array containing the packs in [<Name>, <Vendor>, <Version>] format.
+// <Version> is an internal interpretation:
+// latest -> install the latest available
+// x.y.z:x.y.z -> install exact version
+// a.b.c:x.y.z -> install latest ranging from a.b.c to x.y.z
+// x.y.z:_ -> install latest newer than x.y.z
+// Ref: https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/element_requirements_pg.html#element_packages
 func (p *PdscXML) Dependencies() [][]string {
 	dependencies := [][]string{}
 	if p.RequirementsTag.Packages == nil {
@@ -143,6 +150,16 @@ func (p *PdscXML) Dependencies() [][]string {
 	}
 	for i, pack := range p.RequirementsTag.Packages {
 		for _, pk := range pack.Packages {
+			// empty -> install the latest
+			if pk.Version == "" {
+				pk.Version = "latest"
+			} else {
+				// If it's a single version, it's the minimum to install
+				// fake a range one
+				if strings.Count(pk.Version, ".") == 2 {
+					pk.Version = pk.Version + ":_"
+				}
+			}
 			dependencies = append(dependencies, []string{pk.Name, pk.Vendor, pk.Version})
 			log.Debugf("found %v dependency", dependencies[i])
 		}

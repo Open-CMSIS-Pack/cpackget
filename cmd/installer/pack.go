@@ -20,6 +20,7 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/mod/semver"
 )
 
 // PackType is the struct that represents the installation of a
@@ -505,6 +506,30 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 		return
 	}
 
+	// Try to install the highest available version in the
+	// specified min:max range.
+	if p.versionModifier == utils.RangeVersion {
+		minVersion := strings.Split(p.Version, ":")[0]
+		maxVersion := strings.Split(p.Version, ":")[1]
+		if pdscXML.LatestVersion() == maxVersion {
+			p.targetVersion = pdscXML.LatestVersion()
+			return
+		}
+		// If it's min:_, install the latest above the minimum
+		if maxVersion == "_" {
+			maxVersion = pdscXML.LatestVersion()
+		}
+		for _, version := range pdscXML.AllReleases() {
+			if semver.Compare("v"+minVersion, "v"+version) <= 0 && semver.Compare("v"+version, "v"+maxVersion) <= 0 {
+				// If the latest isn't available, try the highest possible
+				if semver.Compare("v"+version, "v"+p.targetVersion) > 0 {
+					p.targetVersion = version
+				}
+			}
+		}
+		return
+	}
+
 	log.Warn("Could not resolve version modifier")
 }
 
@@ -532,12 +557,15 @@ func (p *PackType) loadDependencies() error {
 		}
 
 		// Need to convert the spec <package/requirements/packages> "version" to the one internally used
-		// Ref: https://open-cmsis-pack.github.io/Open-CMSIS-Pack-Spec/main/html/element_requirements_pg.html#element_packages
-		if version != "" {
-			if len(strings.Split(version, ":")) > 1 {
-				pack.versionModifier = utils.RangeVersion
+		if version != "latest" {
+			if len(strings.Split(version, ":")) >= 1 {
+				if string(version[len(version)-1]) == "_" {
+					pack.versionModifier = utils.GreaterVersion
+				} else {
+					pack.versionModifier = utils.RangeVersion
+				}
 			} else {
-				pack.versionModifier = utils.GreaterVersion
+				pack.versionModifier = utils.ExactVersion
 			}
 		} else {
 			pack.versionModifier = utils.LatestVersion
