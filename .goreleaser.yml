@@ -9,9 +9,6 @@ builds:
       - amd64
       - arm64
     dir: cmd
-    ignore:
-      - goos: windows
-        goarch: arm64
 
 archives:
   - files:
