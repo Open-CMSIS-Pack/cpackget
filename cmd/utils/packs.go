@@ -175,9 +175,16 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 		maxVersion = strings.Split(packPath, ":")[1]
 		packPath = strings.Split(packPath, ":")[0]
 	}
+	// Matches Vendor.Pack.latest - small workaround for requirement packages with no version (latest is used)
+	r, err = regexp.Compile(`([\-_A-Za-z0-9]+\.){2}latest`)
+	if err != nil {
+		return info, err
+	}
+	if r.MatchString(packPath) {
+		packPath = strings.TrimSuffix(packPath, ".latest")
+	}
 	// packPath is normally either a file (Vendor.Pack.x.y.z.pack) or simply just the packID (Vendor.Pack)
 	location, packName := filepath.Split(packPath)
-
 	// Most common scenario should be the use of packId
 	matches := matchPackFileName(packName)
 	if len(matches) > 0 {
@@ -248,4 +255,29 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 
 	log.Debugf("\"%s\" is a packID with Vendor=\"%s\", Pack=\"%s\", Version=\"%s\", VersionModifier=\"%v\"", packPath, info.Vendor, info.Pack, info.Version, info.VersionModifier)
 	return info, nil
+}
+
+// FormatPackVersion returns a modern representation
+// of an internally versioned pack (for dependencies).
+// Example: CMSIS,ARM,5.6.0:_ -> ARM::CMSIS@>=5.6.0
+// Ref: https://github.com/Open-CMSIS-Pack/devtools/blob/main/tools/projmgr/docs/Manual/YML-Input-Format.md#pack-name-conventions
+func FormatPackVersion(pack []string) string {
+	name, vendor, version := pack[0], pack[1], pack[2]
+	if version == "latest" {
+		return vendor + "::" + name + "@latest"
+	} else {
+		if string(version[len(version)-1]) == "_" {
+			// @>=<version>
+			return vendor + "::" + name + "@>=" + strings.Split(version, ":")[0]
+		} else {
+			minVersion, maxVersion := strings.Split(version, ":")[0], strings.Split(version, ":")[1]
+			if minVersion == maxVersion {
+				// @<version>
+				return vendor + "::" + name + "@" + strings.Split(version, ":")[0]
+			} else {
+				// @<minVersion>:<maxVersion> - unspecified yet, it should not cross major version boundaries
+				return vendor + "::" + name + "@" + strings.Split(version, ":")[0] + ":" + strings.Split(version, ":")[1]
+			}
+		}
+	}
 }

@@ -340,3 +340,20 @@ func TestExtractPackInfo(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatPackVersion(t *testing.T) {
+	pack := []string{"Pack", "TheVendor", ""}
+
+	// exact
+	pack[2] = "1.0.0:1.0.0"
+	assert.Equal(t, "TheVendor::Pack@1.0.0", utils.FormatPackVersion(pack))
+	// latest
+	pack[2] = "latest"
+	assert.Equal(t, "TheVendor::Pack@latest", utils.FormatPackVersion(pack))
+	// minimum (greater than)
+	pack[2] = "1.0.0:_"
+	assert.Equal(t, "TheVendor::Pack@>=1.0.0", utils.FormatPackVersion(pack))
+	// range
+	pack[2] = "1.0.0:1.2.0"
+	assert.Equal(t, "TheVendor::Pack@1.0.0:1.2.0", utils.FormatPackVersion(pack))
+}
