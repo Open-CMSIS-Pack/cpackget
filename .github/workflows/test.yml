@@ -8,12 +8,12 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]
-        go: [1.19.x]
+        go: ['1.20']
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install go 1.19
+      - name: Install go ${{ matrix.go }}
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
@@ -28,13 +28,13 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]
-        go: [1.19.x]
+        go: ['1.20']
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-      - name: Install go 1.19
 
+      - name: Install go ${{ matrix.go }}
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
@@ -48,13 +48,13 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]
-        go: [1.19.x]
+        go: ['1.20']
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - name: Install go 1.19
+      - name: Install go ${{ matrix.go }}
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
@@ -73,13 +73,13 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]
-        go: [1.19.x]
+        go: ['1.20']
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - name: Install go 1.19
+      - name: Install go ${{ matrix.go }}
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
@@ -95,14 +95,14 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, windows-latest]
-        go: [1.19.x]
+        go: ['1.20']
     name: "${{ matrix.platform }} | ${{ matrix.go }}"
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - name: Install go 1.19
+      - name: Install go ${{ matrix.go }}
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
@@ -115,7 +115,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]
-        go: [1.19.x]
+        go: ['1.20']
         arch: [aarch64]
         distro: [ubuntu_latest]
     name: "${{ matrix.platform }} | ${{ matrix.go }} | ${{ matrix.arch }}"
@@ -133,9 +133,9 @@ jobs:
             apt-get install -qq -y software-properties-common git make
             add-apt-repository -y ppa:longsleep/golang-backports
             apt-get update -qq -y
-            apt-get install -qq -y golang-1.19
+            apt-get install -qq -y golang-${{ matrix.go }}
           run: |
-            export PATH=$PATH:/usr/lib/go-1.19/bin
+            export PATH=$PATH:/usr/lib/go-${{ matrix.go }}/bin
             git clone --depth 1 ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
             cd cpackget
             git fetch --depth 1 origin ${GITHUB_REF}

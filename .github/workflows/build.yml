@@ -9,7 +9,7 @@ jobs:
         platform: [ubuntu-latest]
         goos: [windows, linux, darwin]
         arch: [amd64, arm64]
-        go: [1.19.x]
+        go: ['1.20']
 
     name: "${{ matrix.platform }} | ${{ matrix.go }} | ${{ matrix.goos }} | ${{ matrix.arch }}"
     runs-on: ${{ matrix.platform }}
@@ -20,7 +20,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install go 1.19
+      - name: Install go ${{ matrix.go }}
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
