@@ -9,7 +9,7 @@ jobs:
         platform: [ubuntu-latest]
         goos: [windows, linux, darwin]
         arch: [amd64, arm64]
-        go: [1.20]
+        go: ['1.20']
 
     name: "${{ matrix.platform }} | ${{ matrix.go }} | ${{ matrix.goos }} | ${{ matrix.arch }}"
     runs-on: ${{ matrix.platform }}

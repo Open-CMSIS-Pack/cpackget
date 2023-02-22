@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]
-        go: [1.20]
+        go: ['1.20']
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v3
@@ -28,7 +28,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]
-        go: [1.20]
+        go: ['1.20']
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Check out repository code
@@ -48,7 +48,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]
-        go: [1.20]
+        go: ['1.20']
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Check out repository code
@@ -73,7 +73,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]
-        go: [1.20]
+        go: ['1.20']
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Check out repository code
@@ -95,7 +95,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, windows-latest]
-        go: [1.20]
+        go: ['1.20']
     name: "${{ matrix.platform }} | ${{ matrix.go }}"
     runs-on: ${{ matrix.platform }}
     steps:
@@ -115,7 +115,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]
-        go: [1.20]
+        go: ['1.20']
         arch: [aarch64]
         distro: [ubuntu_latest]
     name: "${{ matrix.platform }} | ${{ matrix.go }} | ${{ matrix.arch }}"
