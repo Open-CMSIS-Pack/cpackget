@@ -1,3 +1,12 @@
+# v0.9.2
+
+This v0.9.2 release contains:
+
+Bug fixes:
+- Install latest available version for pack dependencies if possible
+- Use modern version notation when referring to pack dependencies
+- Update copyright year
+
 # v0.9.1
 
 This v0.9.1 release contains:
