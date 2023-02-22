@@ -1,6 +1,14 @@
 name: Build
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - .github/workflows/build.yml
+      - cmd/**/*.go
+      - makefile
 
 jobs:
   build:

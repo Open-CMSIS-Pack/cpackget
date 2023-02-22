@@ -1,5 +1,12 @@
 name: Test
-on: [push, pull_request]
+on:
+  pull_request:
+    paths:
+      - .github/workflows/test.yml
+      - cmd/**/*.go
+      - testdata/**/*
+      - makefile
+      - .golangci.yml
 
 jobs:
   lint:
