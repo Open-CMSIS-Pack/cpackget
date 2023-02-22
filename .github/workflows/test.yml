@@ -1,5 +1,17 @@
 name: Test
-on: [push, pull_request]
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/test.yml
+      - cmd/**/*.go
+      - testdata/**/*
+      - makefile
+      - .golangci.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
