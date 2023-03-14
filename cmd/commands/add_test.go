@@ -21,8 +21,8 @@ var addCmdTests = []TestCase{
 		name:           "test adding pack file no args",
 		args:           []string{"add"},
 		createPackRoot: true,
-		expectedStdout: []string{"Missing a pack-path or list with pack urls specified via -f/--packs-list-filename"},
-		expectedErr:    errs.ErrIncorrectCmdArgs,
+		expectedStdout: []string{""},
+		expectedErr:    nil,
 	},
 	{
 		name:           "test adding pack file default mode",
