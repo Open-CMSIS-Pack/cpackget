@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"os"
 	"path/filepath"
+	"strings"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
@@ -72,7 +73,11 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 
 			scanner := bufio.NewScanner(file)
 			for scanner.Scan() {
-				args = append(args, scanner.Text())
+				tmpEntry := strings.TrimSpace(scanner.Text())
+				if len(tmpEntry) == 0 {
+					continue
+				}
+				args = append(args, tmpEntry)
 			}
 
 			if err := scanner.Err(); err != nil {
@@ -81,8 +86,8 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 		}
 
 		if len(args) == 0 {
-			log.Error("Missing a pack-path or list with pack urls specified via -f/--packs-list-filename")
-			return errs.ErrIncorrectCmdArgs
+			log.Warn("Missing a pack-path or list with pack urls specified via -f/--packs-list-filename")
+			return nil
 		}
 
 		log.Debugf("Specified packs %v", args)
