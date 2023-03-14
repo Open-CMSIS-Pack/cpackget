@@ -8,6 +8,8 @@ on:
       - testdata/**/*
       - makefile
       - .golangci.yml
+      - go.mod
+      - go.sum
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
