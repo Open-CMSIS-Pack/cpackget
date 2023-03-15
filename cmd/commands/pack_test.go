@@ -13,8 +13,9 @@ import (
 )
 
 var (
-	packFilePath        = filepath.Join(testingDir, "1.2.3", "TheVendor.PublicLocalPack.1.2.3.pack")
-	fileWithPacksListed = "file_with_listed_packs.txt"
+	packFilePath          = filepath.Join(testingDir, "1.2.3", "TheVendor.PublicLocalPack.1.2.3.pack")
+	fileWithPacksListed   = "file_with_listed_packs.txt"
+	fileWithNoPacksListed = "file_with_no_listed_packs.txt"
 )
 
 var packCmdTests = []TestCase{
@@ -72,11 +73,41 @@ var packCmdTests = []TestCase{
 			"Adding pack", filepath.Base(packFilePath)},
 		setUpFunc: func(t *TestCase) {
 			f, _ := os.Create(fileWithPacksListed)
-			_, _ = f.WriteString(packFilePath)
+			_, _ = f.WriteString("")
 			f.Close()
 		},
 		tearDownFunc: func() {
 			os.Remove(fileWithPacksListed)
+		},
+	},
+	{
+		name:           "test adding packs listed in file",
+		args:           []string{"pack", "add", "-f", fileWithPacksListed},
+		createPackRoot: true,
+		expectedStdout: []string{"Parsing packs urls via file " + fileWithPacksListed,
+			"Adding pack", filepath.Base(packFilePath)},
+		setUpFunc: func(t *TestCase) {
+			f, _ := os.Create(fileWithPacksListed)
+			_, _ = f.WriteString(" \n  \n ")
+			f.Close()
+		},
+		tearDownFunc: func() {
+			os.Remove(fileWithPacksListed)
+		},
+	},
+	{
+		name:           "test adding packs listed in file",
+		args:           []string{"pack", "add", "-f", fileWithNoPacksListed},
+		createPackRoot: true,
+		expectedStdout: []string{"Parsing packs urls via file " + fileWithNoPacksListed},
+		expectedErr:    nil,
+		setUpFunc: func(t *TestCase) {
+			f, _ := os.Create(fileWithNoPacksListed)
+			_, _ = f.WriteString(packFilePath)
+			f.Close()
+		},
+		tearDownFunc: func() {
+			os.Remove(fileWithNoPacksListed)
 		},
 	},
 
