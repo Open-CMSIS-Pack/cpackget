@@ -491,6 +491,6 @@ func UnsetReadOnlyR(path string) {
 }
 
 func init() {
-	rand.New(rand.NewSource(time.Now().UnixNano()))
+	rand.Seed(time.Now().UnixNano())
 	HTTPClient = &http.Client{}
 }
