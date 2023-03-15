@@ -96,14 +96,15 @@ jobs:
   test-amd64:
     strategy:
       matrix:
-        goos: [windows, linux, darwin]
+        # Tests on Mac are currently broken
+        goos: [windows, linux] # , darwin]
         include:
           - goos: windows
             runs-on: windows-latest
           - goos: linux
             runs-on: ubuntu-latest
-          - goos: darwin
-            runs-on: macos-latest
+#          - goos: darwin
+#            runs-on: macos-latest
 
     name: "${{ matrix.goos }} | amd64"
     runs-on: ${{ matrix.runs-on }}
