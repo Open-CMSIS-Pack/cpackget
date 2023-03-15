@@ -22,7 +22,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest]
-        go: ['1.20']
+        go: ['1.20.2']
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v3
