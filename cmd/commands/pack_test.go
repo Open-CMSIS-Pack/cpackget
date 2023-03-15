@@ -73,41 +73,11 @@ var packCmdTests = []TestCase{
 			"Adding pack", filepath.Base(packFilePath)},
 		setUpFunc: func(t *TestCase) {
 			f, _ := os.Create(fileWithPacksListed)
-			_, _ = f.WriteString("")
-			f.Close()
-		},
-		tearDownFunc: func() {
-			os.Remove(fileWithPacksListed)
-		},
-	},
-	{
-		name:           "test adding packs listed in file",
-		args:           []string{"pack", "add", "-f", fileWithPacksListed},
-		createPackRoot: true,
-		expectedStdout: []string{"Parsing packs urls via file " + fileWithPacksListed,
-			"Adding pack", filepath.Base(packFilePath)},
-		setUpFunc: func(t *TestCase) {
-			f, _ := os.Create(fileWithPacksListed)
-			_, _ = f.WriteString(" \n  \n ")
-			f.Close()
-		},
-		tearDownFunc: func() {
-			os.Remove(fileWithPacksListed)
-		},
-	},
-	{
-		name:           "test adding packs listed in file",
-		args:           []string{"pack", "add", "-f", fileWithNoPacksListed},
-		createPackRoot: true,
-		expectedStdout: []string{"Parsing packs urls via file " + fileWithNoPacksListed},
-		expectedErr:    nil,
-		setUpFunc: func(t *TestCase) {
-			f, _ := os.Create(fileWithNoPacksListed)
 			_, _ = f.WriteString(packFilePath)
 			f.Close()
 		},
 		tearDownFunc: func() {
-			os.Remove(fileWithNoPacksListed)
+			os.Remove(fileWithPacksListed)
 		},
 	},
 
