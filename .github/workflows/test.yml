@@ -19,18 +19,15 @@ jobs:
   lint:
     name: Lint
     timeout-minutes: 10
-    strategy:
-      matrix:
-        platform: [ubuntu-latest]
-        go: ['1.20']
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install go ${{ matrix.go }}
+      - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: ${{ matrix.go }}
+          go-version-file: go.mod
+          check-latest: true
 
       - uses: golangci/golangci-lint-action@v3
         with:
@@ -39,19 +36,16 @@ jobs:
 
   format:
     name: Format
-    strategy:
-      matrix:
-        platform: [ubuntu-latest]
-        go: ['1.20']
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - name: Install go ${{ matrix.go }}
+      - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: ${{ matrix.go }}
+          go-version-file: go.mod
+          check-latest: true
 
       - name: Check formatting
         run: |
@@ -59,19 +53,16 @@ jobs:
 
   vulnerability-check:
     name: "Vulnerability check"
-    strategy:
-      matrix:
-        platform: [ubuntu-latest]
-        go: ['1.20']
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - name: Install go ${{ matrix.go }}
+      - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: ${{ matrix.go }}
+          go-version-file: go.mod
+          check-latest: true
 
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
@@ -84,19 +75,16 @@ jobs:
   # Make sure local_repository.pidx is linted against PackIndex.xsd
   xmllint:
     name: Xmllint
-    strategy:
-      matrix:
-        platform: [ubuntu-latest]
-        go: ['1.20']
-    runs-on: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - name: Install go ${{ matrix.go }}
+      - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: ${{ matrix.go }}
+          go-version-file: go.mod
+          check-latest: true
 
       - name: Install xmllint
         run: sudo apt-get update && sudo apt-get install libxml2-utils
@@ -108,38 +96,36 @@ jobs:
   test:
     strategy:
       matrix:
-        platform: [ubuntu-latest, windows-latest]
-        go: ['1.20']
-    name: "${{ matrix.platform }} | ${{ matrix.go }}"
+        platform: [ubuntu-latest, windows-latest, macos-latest]
+
+    name: "Test ${{ matrix.platform }}"
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - name: Install go ${{ matrix.go }}
+      - name: Install Go
         uses: actions/setup-go@v3
         with:
-          go-version: ${{ matrix.go }}
+          go-version-file: go.mod
+          check-latest: true
 
       - name: Unit testing
         run: |
           make coverage-check
 
-  test-arm64:
-    strategy:
-      matrix:
-        platform: [ubuntu-latest]
-        go: ['1.20']
-        arch: [aarch64]
-        distro: [ubuntu_latest]
-    name: "${{ matrix.platform }} | ${{ matrix.go }} | ${{ matrix.arch }}"
-    runs-on: ${{ matrix.platform }}
+  test-linux-arm64:
+    name: "Test linux-arm64"
+    runs-on: ubuntu-latest
+    env:
+      GO_VERSION: 1.20
+
     steps:
       - name: Unit testing
         uses: uraimo/run-on-arch-action@v2
         with:
-          arch: ${{ matrix.arch }}
-          distro: ${{ matrix.distro }}
+          arch: aarch64
+          distro: ubuntu_latest
           env: |
             GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
           install: |
@@ -147,9 +133,9 @@ jobs:
             apt-get install -qq -y software-properties-common git make
             add-apt-repository -y ppa:longsleep/golang-backports
             apt-get update -qq -y
-            apt-get install -qq -y golang-${{ matrix.go }}
+            apt-get install -qq -y golang-${GO_VERSION}
           run: |
-            export PATH=$PATH:/usr/lib/go-${{ matrix.go }}/bin
+            export PATH=$PATH:/usr/lib/go-${GO_VERSION}/bin
             git clone --depth 1 ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
             cd cpackget
             git fetch --depth 1 origin ${GITHUB_REF}
