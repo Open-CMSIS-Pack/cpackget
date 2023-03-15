@@ -87,7 +87,12 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 
 		if len(args) == 0 {
 			log.Warn("Missing a pack-path or list with pack urls specified via -f/--packs-list-filename")
-			return nil
+
+			if addCmdFlags.packsListFileName != "" {
+				return nil
+			}
+
+			return errs.ErrIncorrectCmdArgs
 		}
 
 		log.Debugf("Specified packs %v", args)
