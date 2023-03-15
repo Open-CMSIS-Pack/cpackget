@@ -23,7 +23,7 @@ jobs:
         goos: [windows, linux, darwin]
         arch: [amd64, arm64]
 
-    name: "Build ${{ matrix.goos }} | ${{ matrix.arch }}"
+    name: "${{ matrix.goos }} | ${{ matrix.arch }}"
     runs-on: ubuntu-latest
 
     steps:
