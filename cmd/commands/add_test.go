@@ -72,6 +72,36 @@ var addCmdTests = []TestCase{
 			os.Remove(fileWithPacksListed)
 		},
 	},
+	{
+		name:           "test adding empty packs list file",
+		args:           []string{"add", "-f", fileWithNoPacksListed},
+		createPackRoot: true,
+		expectedStdout: []string{"Parsing packs urls via file " + fileWithNoPacksListed},
+		expectedErr:    nil,
+		setUpFunc: func(t *TestCase) {
+			f, _ := os.Create(fileWithNoPacksListed)
+			_, _ = f.WriteString("")
+			f.Close()
+		},
+		tearDownFunc: func() {
+			os.Remove(fileWithNoPacksListed)
+		},
+	},
+	{
+		name:           "test adding empty packs list file (but whitespace characters)",
+		args:           []string{"add", "-f", fileWithNoPacksListed},
+		createPackRoot: true,
+		expectedStdout: []string{"Parsing packs urls via file " + fileWithNoPacksListed},
+		expectedErr:    nil,
+		setUpFunc: func(t *TestCase) {
+			f, _ := os.Create(fileWithNoPacksListed)
+			_, _ = f.WriteString("  \n  \t  \n")
+			f.Close()
+		},
+		tearDownFunc: func() {
+			os.Remove(fileWithNoPacksListed)
+		},
+	},
 }
 
 func TestAddCmd(t *testing.T) {

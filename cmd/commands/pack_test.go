@@ -13,8 +13,9 @@ import (
 )
 
 var (
-	packFilePath        = filepath.Join(testingDir, "1.2.3", "TheVendor.PublicLocalPack.1.2.3.pack")
-	fileWithPacksListed = "file_with_listed_packs.txt"
+	packFilePath          = filepath.Join(testingDir, "1.2.3", "TheVendor.PublicLocalPack.1.2.3.pack")
+	fileWithPacksListed   = "file_with_listed_packs.txt"
+	fileWithNoPacksListed = "file_with_no_listed_packs.txt"
 )
 
 var packCmdTests = []TestCase{
