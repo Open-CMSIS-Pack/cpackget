@@ -125,9 +125,6 @@ jobs:
   test-linux-arm64:
     name: "linux | arm64"
     runs-on: ubuntu-latest
-    env:
-      GO_VERSION: 1.20
-
     steps:
       - name: Unit testing
         uses: uraimo/run-on-arch-action@v2
@@ -141,9 +138,9 @@ jobs:
             apt-get install -qq -y software-properties-common git make
             add-apt-repository -y ppa:longsleep/golang-backports
             apt-get update -qq -y
-            apt-get install -qq -y golang-${GO_VERSION}
+            apt-get install -qq -y golang-1.20
           run: |
-            export PATH=$PATH:/usr/lib/go-${GO_VERSION}/bin
+            export PATH=$PATH:/usr/lib/go-1.20/bin
             git clone --depth 1 ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
             cd cpackget
             git fetch --depth 1 origin ${GITHUB_REF}
