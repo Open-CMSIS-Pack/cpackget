@@ -1,6 +1,6 @@
 module github.com/open-cmsis-pack/cpackget
 
-go 1.19
+go 1.20
 
 require (
 	github.com/ProtonMail/gopenpgp/v2 v2.4.10
