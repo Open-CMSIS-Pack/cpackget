@@ -156,7 +156,7 @@ func (p *PdscXML) Dependencies() [][]string {
 			} else {
 				// If it's a single version, it's the minimum to install
 				// fake a range one
-				if strings.Count(pk.Version, ".") == 2 {
+				if strings.Count(pk.Version, ":") == 0 {
 					pk.Version = pk.Version + ":_"
 				}
 			}
