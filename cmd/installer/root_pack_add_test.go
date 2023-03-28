@@ -1440,6 +1440,23 @@ func TestAddPack(t *testing.T) {
 		checkPackIsInstalled(t, packInfoToType(packInfo))
 	})
 
+	t.Run("test installing a pack with dependencies, alpha version string", func(t *testing.T) {
+		localTestingDir := "test-installing-pack-with-dependencies-alpha"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		//defer removePackRoot(localTestingDir)
+
+		addPack(t, publicRemotePack123alpha, ConfigType{IsPublic: true})
+
+		err := installer.AddPack(packWithSingleDependencyAlpha, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
+		assert.Nil(err)
+
+		packInfo, err := utils.ExtractPackInfo(packWithSingleDependencyAlpha)
+		assert.Nil(err)
+		checkPackIsInstalled(t, packInfoToType(packInfo))
+	})
+
 	t.Run("test installing a pack and skipping dependencies", func(t *testing.T) {
 		localTestingDir := "test-installing-pack-with-dependencies-skip"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
