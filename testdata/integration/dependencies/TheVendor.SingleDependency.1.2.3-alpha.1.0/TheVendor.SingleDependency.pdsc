@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <package xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
    <vendor>TheVendor</vendor>
-   <url></url>
-   <name>PublicRemotePack</name>
+   <url>http://vendor.com/packs/</url>
+   <name>SingleDependency</name>
    <description>Sample pack just for testing</description>
    <releases>
-      <release version="1.2.4" date="2016-09-14">New release 2.</release>
-      <release version="1.2.3" date="2016-09-15">New release.</release>
-      <release version="1.2.3-alpha.1.0" date="2016-09-15">New release.</release>
+      <release version="1.2.3-alpha.1.0" date="2016-09-14">New release.</release>
       <release version="1.2.2">Initial release.</release>
    </releases>
+   <requirements>
+     <packages>
+       <package name="PublicRemotePack" vendor="TheVendor" version="1.2.3-alpha.1.0"/>
+     </packages>
+   </requirements>
 </package>

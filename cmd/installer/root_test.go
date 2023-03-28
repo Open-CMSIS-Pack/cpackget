@@ -239,11 +239,12 @@ var (
 	packWithTaintedCompressedFiles = filepath.Join(testDir, "PackWith.TaintedFiles.1.2.3.pack")
 
 	// Packs with packid names only
-	publicRemotePackPackID      = "TheVendor.PublicRemotePack"
-	publicRemotePack123PackID   = publicRemotePackPackID + ".1.2.3"
-	nonPublicLocalPackPackID    = "TheVendor.NonPublicLocalPack"
-	nonPublicLocalPack123PackID = nonPublicLocalPackPackID + ".1.2.3"
-	nonPublicLocalPack124PackID = nonPublicLocalPackPackID + ".1.2.4"
+	publicRemotePackPackID         = "TheVendor.PublicRemotePack"
+	publicRemotePack123PackID      = publicRemotePackPackID + ".1.2.3"
+	publicRemotePack123PackIDAlpha = publicRemotePackPackID + ".1.2.3-alpha.1.0"
+	nonPublicLocalPackPackID       = "TheVendor.NonPublicLocalPack"
+	nonPublicLocalPack123PackID    = nonPublicLocalPackPackID + ".1.2.3"
+	nonPublicLocalPack124PackID    = nonPublicLocalPackPackID + ".1.2.4"
 
 	// Packs with legacy packid names
 	publicRemotePackLegacyPackID                               = "TheVendor::PublicRemotePack"
@@ -262,14 +263,15 @@ var (
 	pack123VersionNotLatest   = filepath.Join(testDir, "TheVendor.LocalPackWithVersionNotLatest.1.2.3.pack")
 
 	// Public packs
-	publicLocalPack010     = filepath.Join(testDir, "0.1.0", "TheVendor.PublicLocalPack.0.1.0.pack")
-	publicLocalPack011     = filepath.Join(testDir, "0.1.1", "TheVendor.PublicLocalPack.0.1.1.pack")
-	publicLocalPack122     = filepath.Join(testDir, "1.2.2", "TheVendor.PublicLocalPack.1.2.2.pack")
-	publicLocalPack123     = filepath.Join(testDir, "1.2.3", "TheVendor.PublicLocalPack.1.2.3.pack")
-	publicLocalPack124     = filepath.Join(testDir, "1.2.4", "TheVendor.PublicLocalPack.1.2.4.pack")
-	publicLocalPack123Pdsc = filepath.Join(testDir, "1.2.3", "TheVendor.PublicLocalPack.pdsc")
-	publicLocalPack124Pdsc = filepath.Join(testDir, "1.2.4", "TheVendor.PublicLocalPack.pdsc")
-	publicRemotePack123    = filepath.Join(testDir, "1.2.3", publicRemotePack123PackID+".pack")
+	publicLocalPack010       = filepath.Join(testDir, "0.1.0", "TheVendor.PublicLocalPack.0.1.0.pack")
+	publicLocalPack011       = filepath.Join(testDir, "0.1.1", "TheVendor.PublicLocalPack.0.1.1.pack")
+	publicLocalPack122       = filepath.Join(testDir, "1.2.2", "TheVendor.PublicLocalPack.1.2.2.pack")
+	publicLocalPack123       = filepath.Join(testDir, "1.2.3", "TheVendor.PublicLocalPack.1.2.3.pack")
+	publicLocalPack124       = filepath.Join(testDir, "1.2.4", "TheVendor.PublicLocalPack.1.2.4.pack")
+	publicLocalPack123Pdsc   = filepath.Join(testDir, "1.2.3", "TheVendor.PublicLocalPack.pdsc")
+	publicLocalPack124Pdsc   = filepath.Join(testDir, "1.2.4", "TheVendor.PublicLocalPack.pdsc")
+	publicRemotePack123      = filepath.Join(testDir, "1.2.3", publicRemotePack123PackID+".pack")
+	publicRemotePack123alpha = filepath.Join(testDir, "1.2.3-alpha.1.0", publicRemotePack123PackIDAlpha+".pack")
 
 	// Private packs
 	nonPublicLocalPack123  = filepath.Join(testDir, "1.2.3", nonPublicLocalPack123PackID+".pack")
@@ -286,7 +288,8 @@ var (
 	packWithSubSubFolder = filepath.Join(testDir, "TheVendor.PackWithSubSubFolder.1.2.3.pack")
 
 	// Packs with dependencies
-	packWithSingleDependency = filepath.Join(testDir, "dependencies", "TheVendor.SingleDependency.1.2.3.pack")
+	packWithSingleDependency      = filepath.Join(testDir, "dependencies", "TheVendor.SingleDependency.1.2.3.pack")
+	packWithSingleDependencyAlpha = filepath.Join(testDir, "dependencies", "TheVendor.SingleDependency.1.2.3-alpha.1.0.pack")
 
 	// Concurrent download PDSC base name
 	publicConcurrentLocalPdscBase = "TheVendor.PublicLocalPack"
