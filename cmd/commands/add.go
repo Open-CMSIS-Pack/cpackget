@@ -112,6 +112,8 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 				lastErr = err
 				if !errs.AlreadyLogged(err) {
 					log.Error(err)
+					err = errs.ErrAlreadyLogged
+					lastErr = err
 				}
 			}
 		}
