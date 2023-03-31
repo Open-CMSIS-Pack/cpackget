@@ -3,7 +3,7 @@ name: Feature request
 about: "For feature requests. Please search for existing issues first. Also see CONTRIBUTING."
 title: ''
 labels: 'enhancement'
-assignees: lud0v1c
+assignees: thorstendb-ARM
 
 ---
 
