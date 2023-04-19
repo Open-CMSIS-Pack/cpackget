@@ -61,7 +61,7 @@ func GetDefaultCmsisPackRoot() string {
 }
 
 // AddPack adds a pack to the pack installation directory structure
-func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirements bool, timeout int) error {
+func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirements, skipTouch bool, timeout int) error {
 
 	isDep := false
 	// tag dependency packs with $ for correct logging output
@@ -179,7 +179,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 				}
 				if !pack.isInstalled {
 					log.Debug("pack has dependencies, installing")
-					err := AddPack("$"+path, checkEula, extractEula, forceReinstall, false, timeout)
+					err := AddPack("$"+path, checkEula, extractEula, forceReinstall, false, skipTouch, timeout)
 					if err != nil {
 						return err
 					}
@@ -192,6 +192,9 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 		}
 	} else {
 		log.Debug("skipping requirements checking and installation")
+	}
+	if skipTouch {
+		return nil
 	}
 	return Installation.touchPackIdx()
 }

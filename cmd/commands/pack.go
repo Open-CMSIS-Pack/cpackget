@@ -83,7 +83,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 		var firstError error
 		installer.UnlockPackRoot()
 		for _, packPath := range args {
-			if err := installer.AddPack(packPath, !skipEula, extractEula, forceReinstall, noRequirements, viper.GetInt("timeout")); err != nil {
+			if err := installer.AddPack(packPath, !skipEula, extractEula, forceReinstall, noRequirements, false, viper.GetInt("timeout")); err != nil {
 				if firstError == nil {
 					firstError = err
 				}
