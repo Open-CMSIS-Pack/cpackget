@@ -30,6 +30,9 @@ var addCmdFlags struct {
 
 	// skipEula tells whether pack's license should be presented to the user or not for a yay-or-nay acceptance
 	skipEula bool
+
+	// skipTouch does not touch pack.idx after adding
+	skipTouch bool
 }
 
 var AddCmd = &cobra.Command{
@@ -103,7 +106,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 			if filepath.Ext(packPath) == ".pdsc" {
 				err = installer.AddPdsc(packPath)
 			} else {
-				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, addCmdFlags.noRequirements, viper.GetInt("timeout"))
+				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, addCmdFlags.noRequirements, addCmdFlags.skipTouch, viper.GetInt("timeout"))
 			}
 			if err != nil {
 				lastErr = err
@@ -123,6 +126,7 @@ func init() {
 	AddCmd.Flags().BoolVarP(&addCmdFlags.forceReinstall, "force-reinstall", "F", false, "forces installation of an already installed pack")
 	AddCmd.Flags().BoolVarP(&addCmdFlags.noRequirements, "no-dependencies", "n", false, "do not install package dependencies")
 	AddCmd.Flags().StringVarP(&addCmdFlags.packsListFileName, "packs-list-filename", "f", "", "specifies a file listing packs urls, one per line")
+	AddCmd.Flags().BoolVar(&addCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
 
 	AddCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		// Small workaround to keep the linter happy, not
