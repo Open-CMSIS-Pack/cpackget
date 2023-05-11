@@ -128,7 +128,7 @@ type ConfigType struct {
 	ForceReinstall bool
 	IsPublic       bool
 	NoRequirements bool
-	SkipTouch	   bool
+	SkipTouch      bool
 }
 
 func addPack(t *testing.T, packPath string, config ConfigType) {
