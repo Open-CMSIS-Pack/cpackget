@@ -7,6 +7,8 @@ import (
 	"errors"
 )
 
+var lastLoggedMessage string
+
 // Is returns true if err is equals to target
 func Is(err, target error) bool {
 	return err == target
@@ -14,6 +16,12 @@ func Is(err, target error) bool {
 
 // AlreadyLogged returns true if the error log has already been logged
 func AlreadyLogged(err error) bool {
+	if err.Error() == lastLoggedMessage {
+		return true
+	}
+
+	lastLoggedMessage = err.Error()
+
 	return err == ErrAlreadyLogged
 }
 
