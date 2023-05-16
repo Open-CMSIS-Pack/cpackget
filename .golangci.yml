@@ -21,3 +21,9 @@ linters:
     - gosec
     - goimports
     - gci
+
+linters-settings:
+  staticcheck:
+    checks:
+      - all
+      - "-SA1019" # Disable "rand.Seed has been deprecated"
