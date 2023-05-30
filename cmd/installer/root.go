@@ -961,9 +961,11 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 		minVersion := strings.Split(pack.Version, ":")[0]
 		maxVersion := strings.Split(pack.Version, ":")[1]
 		for _, version := range installedVersions {
-			if semver.Compare("v"+minVersion, "v"+version) <= 0 && semver.Compare("v"+version, "v"+maxVersion) <= 0 {
-				pack.targetVersion = version
-				return true
+			if semver.Compare("v"+minVersion, "v"+version) <= 0 {
+				if (maxVersion == "_") || (semver.Compare("v"+version, "v"+maxVersion) <= 0) {
+					pack.targetVersion = version
+					return true
+				}
 			}
 		}
 		return false
