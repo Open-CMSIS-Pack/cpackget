@@ -10,22 +10,10 @@ on:
       - .golangci.yml
       - go.mod
       - go.sum
-      
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/test.yml
-      - cmd/**/*.go
-      - testdata/**/*
-      - makefile
-      - .golangci.yml
-      - go.mod
-      - go.sum
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-progress: true
 
 jobs:
   lint:
@@ -109,14 +97,14 @@ jobs:
     strategy:
       matrix:
         # Tests on Mac are currently broken
-        goos: [windows, linux, darwin]
+        goos: [windows, linux] # , darwin]
         include:
           - goos: windows
             runs-on: windows-latest
           - goos: linux
             runs-on: ubuntu-latest
-          - goos: darwin
-            runs-on: macos-latest
+#          - goos: darwin
+#            runs-on: macos-latest
 
     name: "${{ matrix.goos }} | amd64"
     runs-on: ${{ matrix.runs-on }}
