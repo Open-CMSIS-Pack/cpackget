@@ -223,7 +223,7 @@ func MoveFile(source, destination string) error {
 	UnsetReadOnly(destination)
 	tmpErr := os.RemoveAll(destination)
 	if tmpErr != nil {
-		log.Errorf("Can't remove temp folder \"%s\"", destination)
+		log.Errorf("Can't remove folder \"%s\"", destination)
 		return tmpErr
 	}
 
