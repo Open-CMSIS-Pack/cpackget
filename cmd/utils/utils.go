@@ -220,11 +220,10 @@ func MoveFile(source, destination string) error {
 	}
 
 	UnsetReadOnly(source)
-	UnsetReadOnly(destination)
-	tmpErr := os.RemoveAll(destination)
-	if tmpErr != nil {
-		log.Errorf("Can't remove folder \"%s\"", destination)
-		return tmpErr
+
+	if DirExists(destination) || FileExists(destination) {
+		log.Errorf("Destination file or folder '\"%s\"' (to move file/dir to) already exists.", destination)
+		return errs.ErrPathAlreadyExists
 	}
 
 	err := os.Rename(source, destination)
