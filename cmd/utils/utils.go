@@ -219,6 +219,14 @@ func MoveFile(source, destination string) error {
 		return errs.ErrCopyingEqualPaths
 	}
 
+	UnsetReadOnly(source)
+	UnsetReadOnly(destination)
+	tmpErr := os.RemoveAll(destination)
+	if tmpErr != nil {
+		log.Errorf("Can't remove temp folder \"%s\"", destination)
+		return tmpErr
+	}
+
 	err := os.Rename(source, destination)
 	if err != nil {
 		log.Errorf("Can't move file \"%s\" to \"%s\": %s", source, destination, err)
