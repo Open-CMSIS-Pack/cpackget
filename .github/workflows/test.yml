@@ -97,7 +97,7 @@ jobs:
     strategy:
       matrix:
         # Tests on Mac are currently broken
-        goos: [windows, linux] # , darwin]
+        goos: [windows, linux, darwin]
         include:
           - goos: windows
             runs-on: windows-latest
