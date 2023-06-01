@@ -219,7 +219,7 @@ func MoveFile(source, destination string) error {
 		return errs.ErrCopyingEqualPaths
 	}
 
-	UnsetReadOnly(source)
+	//UnsetReadOnly(source)
 
 	if DirExists(destination) || FileExists(destination) {
 		log.Errorf("Destination file or folder '\"%s\"' (to move file/dir to) already exists.", destination)
