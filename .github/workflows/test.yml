@@ -115,8 +115,8 @@ jobs:
             runs-on: windows-latest
           - goos: linux
             runs-on: ubuntu-latest
-#          - goos: darwin
-#            runs-on: macos-latest
+          - goos: darwin
+            runs-on: macos-latest
 
     name: "${{ matrix.goos }} | amd64"
     runs-on: ${{ matrix.runs-on }}
