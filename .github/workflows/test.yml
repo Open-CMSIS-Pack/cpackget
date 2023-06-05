@@ -1,6 +1,7 @@
 name: Test
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - .github/workflows/test.yml
@@ -13,7 +14,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-progress: true
+  cancel-in-progress: true
 
 jobs:
   lint:
