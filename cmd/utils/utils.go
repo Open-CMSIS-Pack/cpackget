@@ -219,6 +219,8 @@ func MoveFile(source, destination string) error {
 		return errs.ErrCopyingEqualPaths
 	}
 
+	UnsetReadOnly(source)
+
 	err := os.Rename(source, destination)
 	if err != nil {
 		log.Errorf("Can't move file \"%s\" to \"%s\": %s", source, destination, err)
