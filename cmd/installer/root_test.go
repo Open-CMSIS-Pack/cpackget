@@ -387,7 +387,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 	// t.Run("test add http server index.pidx", func(t *testing.T) {
 	// 	localTestingDir := "test-add-http-server-index"
 	// 	assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-	installer.UnlockPackRoot()
+	//  installer.UnlockPackRoot()
 	// 	defer os.RemoveAll(localTestingDir)
 
 	// 	httpServer := httptest.NewServer(
