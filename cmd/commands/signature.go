@@ -96,7 +96,8 @@ These can be viewed with any text/hex editor or dedicated zip tools like "zipinf
 The referenced pack must be in its original/compressed form (.pack), and be present locally:
 
   $ cpackget signature-create Vendor.Pack.1.2.3.pack -k private.key -c certificate.pem`,
-	Args: cobra.ExactArgs(1),
+	Args:              cobra.ExactArgs(1),
+	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if signatureCreateflags.keyPath == "" {
 			if !signatureCreateflags.certOnly {
@@ -152,7 +153,8 @@ the publisher's public PGP key.
 The referenced pack must be in its original/compressed form (.pack), and be present locally:
 
   $ cpackget signature-verify Vendor.Pack.1.2.3.pack.signed`,
-	Args: cobra.ExactArgs(1),
+	Args:              cobra.ExactArgs(1),
+	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if signatureVerifyflags.export && (signatureVerifyflags.skipCertValidation || signatureVerifyflags.skipInfo) {
 			log.Error("-e/--export does not need any other flags")
