@@ -12,6 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// foo comment
 func main() {
 	log.SetFormatter(new(LogFormatter))
 	log.SetOutput(os.Stdout)
