@@ -42,8 +42,7 @@ const defaultPublicIndex = "https://www.keil.com/pack/index.pidx"
 
 var viper *viperType.Viper
 
-// configureInstaller configures cpackget installer for adding or removing pack/pdsc
-func configureInstaller(cmd *cobra.Command, args []string) error {
+func configureInstallerVerbose(cmd *cobra.Command, args []string) error {
 	verbosiness := viper.GetBool("verbose")
 	quiet := viper.GetBool("quiet")
 	if quiet && verbosiness {
@@ -59,6 +58,16 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 
 	if verbosiness {
 		log.SetLevel(log.DebugLevel)
+	}
+
+	return nil
+}
+
+// configureInstaller configures cpackget installer for adding or removing pack/pdsc
+func configureInstaller(cmd *cobra.Command, args []string) error {
+	err := configureInstallerVerbose(cmd, args)
+	if err != nil {
+		return err
 	}
 
 	targetPackRoot := viper.GetString("pack-root")

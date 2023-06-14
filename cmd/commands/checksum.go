@@ -55,7 +55,8 @@ The default Cryptographic Hash Function used is "` + cryptography.Hashes[0] + `"
 might be supported. The used function will be prefixed to the ".checksum" extension.
 
 By default the checksum file will be created in the same directory as the provided pack.`,
-	Args: cobra.ExactArgs(1),
+	Args:              cobra.ExactArgs(1),
+	PersistentPreRunE: configureInstallerVerbose,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cryptography.GenerateChecksum(args[0], checksumCreateCmdFlags.outputDir, checksumCreateCmdFlags.hashAlgorithm)
 	},
@@ -73,7 +74,8 @@ with "checksum-create"), present in the same directory:
 The used hash function is inferred from the checksum filename, and if any of the digests
 computed doesn't match the one provided in the checksum file an error will be thrown.
 If the .checksum file is in another directory, specify it with the -p/--path flag`,
-	Args: cobra.ExactArgs(1),
+	Args:              cobra.ExactArgs(1),
+	PersistentPreRunE: configureInstallerVerbose,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if checksumVerifyCmdFlags.checksumPath != "" {
 			return cryptography.VerifyChecksum(args[0], checksumVerifyCmdFlags.checksumPath)
