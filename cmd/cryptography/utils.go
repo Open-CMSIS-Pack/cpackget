@@ -200,7 +200,7 @@ func isPrivateKeyFromCertificate(cert *x509.Certificate, keyDER []byte, keyType 
 // from source vs an automated release.
 func sanitizeVersionForSignature(version string) string {
 	v := sigVersionPrefix
-	if string(version[0]) != "v" {
+	if version != "" && string(version[0]) != "v" {
 		return v + "v" + version
 	}
 	return v + version
