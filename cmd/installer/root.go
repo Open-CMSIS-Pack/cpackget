@@ -22,7 +22,7 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-const keilDefaultPackRoot = "https://www.keil.com/pack/"
+const keilDefaultPackRoot string = "https://www.keil.com/pack/"
 
 // GetDefaultCmsisPackRoot provides a default location
 // for the pack root if not provided. This is to enable
