@@ -22,7 +22,7 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-const keilDefaultPackRoot string = "https://www.keil.com/pack/"
+const keilDefaultPackRoot = "https://www.keil.com/pack/"
 
 // GetDefaultCmsisPackRoot provides a default location
 // for the pack root if not provided. This is to enable
@@ -1052,6 +1052,8 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, wg *sync.W
 	}
 
 	var pdscURL string = pdscTag.URL
+
+	Installation.
 
 	// switch  to keil.com cache for PDSC file
 	if pdscURL != keilDefaultPackRoot {
