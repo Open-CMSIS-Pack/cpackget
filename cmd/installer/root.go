@@ -22,6 +22,8 @@ import (
 	"golang.org/x/mod/semver"
 )
 
+const keilDefaultPackRoot string = "https://www.keil.com/pack/"
+
 // GetDefaultCmsisPackRoot provides a default location
 // for the pack root if not provided. This is to enable
 // a "default mode", where the public index will be
@@ -1049,14 +1051,24 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, wg *sync.W
 		defer wg.Done()
 	}
 
+	var pdscURL string = pdscTag.URL
+
+	// switch  to keil.com cache for PDSC file
+	if pdscURL != keilDefaultPackRoot {
+		if Installation.PublicIndexXML.URL == keilDefaultPackRoot {
+			log.Debugf("Switching to cache: \"%s\"", keilDefaultPackRoot)
+			pdscURL = keilDefaultPackRoot
+		}
+	}
+
 	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
 	pdscFilePath := filepath.Join(p.WebDir, basePdscFile)
 
-	log.Debugf("Downloading %s from \"%s\"", basePdscFile, pdscTag.URL)
+	log.Debugf("Downloading %s from \"%s\"", basePdscFile, pdscURL)
 
-	pdscFileURL, err := url.Parse(pdscTag.URL)
+	pdscFileURL, err := url.Parse(pdscURL)
 	if err != nil {
-		log.Errorf("Could not parse pdsc url \"%s\": %s", pdscTag.URL, err)
+		log.Errorf("Could not parse pdsc url \"%s\": %s", pdscURL, err)
 		return errs.ErrAlreadyLogged
 	}
 
