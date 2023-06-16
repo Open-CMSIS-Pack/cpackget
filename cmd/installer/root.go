@@ -1051,7 +1051,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, wg *sync.W
 		defer wg.Done()
 	}
 
-	var pdscURL string = pdscTag.URL
+	pdscURL := pdscTag.URL
 
 	// switch  to keil.com cache for PDSC file
 	if pdscURL != keilDefaultPackRoot {
