@@ -1054,11 +1054,9 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, wg *sync.W
 	pdscURL := pdscTag.URL
 
 	// switch  to keil.com cache for PDSC file
-	if pdscURL != KeilDefaultPackRoot {
-		if Installation.PublicIndexXML.URL == KeilDefaultPackRoot {
-			log.Debugf("Switching to cache: \"%s\"", KeilDefaultPackRoot)
-			pdscURL = KeilDefaultPackRoot
-		}
+	if pdscURL != KeilDefaultPackRoot && Installation.PublicIndexXML.URL == KeilDefaultPackRoot {
+		log.Debugf("Switching to cache: \"%s\"", KeilDefaultPackRoot)
+		pdscURL = KeilDefaultPackRoot
 	}
 
 	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
