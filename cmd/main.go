@@ -5,6 +5,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/commands"
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -17,6 +18,7 @@ func main() {
 	log.SetOutput(os.Stdout)
 
 	utils.StartSignalWatcher()
+	start := time.Now()
 
 	commands.Version = version
 	commands.CopyRight = copyRight
@@ -29,5 +31,6 @@ func main() {
 		os.Exit(-1)
 	}
 
+	log.Debugf("Took %v", time.Since(start))
 	utils.StopSignalWatcher()
 }
