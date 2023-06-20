@@ -405,7 +405,9 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 			// Warn the user if the pack is no longer present in index.pidx
 			tags := pidxXML.FindPdscTags(searchTag)
 			if len(tags) == 0 {
-				log.Warnf("The pack %s::%s is no longer present in the updated index.pidx", pdscXML.Vendor, pdscXML.Name)
+				log.Warnf("The pack %s::%s is no longer present in the updated index.pidx, deleting PDSC file \"%v\"", pdscXML.Vendor, pdscXML.Name, pdscFile)
+				utils.UnsetReadOnly(pdscFile)
+				os.Remove(pdscFile)
 				continue
 			}
 
