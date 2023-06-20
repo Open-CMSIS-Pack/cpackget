@@ -300,6 +300,7 @@ var (
 	pdscPack123         = filepath.Join(testDir, "1.2.3", "TheVendor.PackName.pdsc")
 	pdscPack124         = filepath.Join(testDir, "1.2.4", "TheVendor.PackName.pdsc")
 	pdscPublicLocalPack = filepath.Join(testDir, "public_index", "TheVendor.PublicLocalPack.pdsc")
+	pdscPackNotInIndex  = filepath.Join(testDir, "TheVendor.PackNotInIndex.pdsc")
 
 	// Bad local_repository.pidx
 	badLocalRepositoryPidx = filepath.Join(testDir, "bad_local_repository.pidx")
@@ -462,6 +463,38 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err2)
 
 		assert.Equal(copied, indexContent)
+	})
+
+	t.Run("test update-index delete pdsc when not in index.pidx", func(t *testing.T) {
+		localTestingDir := "test-update-index-delete-pdsc-when-not-in-index"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer os.RemoveAll(localTestingDir)
+
+		indexContent, err := os.ReadFile(samplePublicIndex)
+		assert.Nil(err)
+		indexServer := NewServer()
+		indexServer.AddRoute("index.pidx", indexContent)
+		indexPath := indexServer.URL() + "index.pidx"
+
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, Concurrency, Timeout)
+		assert.Nil(err)
+
+		publicIndex := installer.Installation.PublicIndex
+		assert.True(utils.FileExists(publicIndex))
+
+		//copy pdscPack123
+		err = utils.CopyFile(pdscPack123, filepath.Join(localTestingDir, ".Web", "TheVendor.PackName.pdsc"))
+		assert.Nil(err)
+
+		//copy pdscPackNotInIndex
+		err = utils.CopyFile(pdscPackNotInIndex, filepath.Join(localTestingDir, ".Web", "TheVendor.PackNotInIndex.pdsc"))
+		assert.Nil(err)
+
+		err = installer.UpdatePublicIndex(indexPath, Overwrite, false, DownloadPdsc, Concurrency, Timeout)
+		assert.Nil(err)
+
+		assert.False(utils.FileExists(filepath.Join(localTestingDir, ".Web", "TheVendor.PackNotInIndex.pdsc")))
 	})
 
 	t.Run("test add local file index.pidx", func(t *testing.T) {

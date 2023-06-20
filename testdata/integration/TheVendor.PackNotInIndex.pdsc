@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+   <vendor>TheVendor</vendor>
+   <url>http://vendor.com/packs/</url>
+   <name>PackNotInIndex</name>
+   <description>Sample pack just for testing</description>
+   <releases>
+      <release version="1.0.0">Initial release.</release>
+   </releases>
+</package>
