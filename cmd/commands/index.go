@@ -26,7 +26,7 @@ var IndexCmd = &cobra.Command{
 		log.Infof("Updating index %v", args)
 		indexPath := args[0]
 		installer.UnlockPackRoot()
-		err := installer.UpdatePublicIndex(indexPath, overwrite, true, false, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
+		err := installer.UpdatePublicIndex(indexPath, overwrite, true, false, false, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
 		installer.LockPackRoot()
 		return err
 	},
