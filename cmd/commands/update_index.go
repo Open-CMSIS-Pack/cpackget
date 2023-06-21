@@ -48,5 +48,5 @@ By default it will also check if all PDSC files under .Web/ need update as well.
 
 func init() {
 	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.sparse, "sparse", "s", false, "avoid updating the pdsc files within .Web/ folder")
-	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.downloadUpdatePdscFiles, "all-pdsc-files", "a", false, "updates / downloads all the latest .pdsc files from the public index")
+	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.downloadUpdatePdscFiles, "all-pdsc-files", "a", false, "updates/downloads all the latest .pdsc files from the public index")
 }
