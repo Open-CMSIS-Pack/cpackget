@@ -436,7 +436,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 		}
 	}
 
-	return nil
+	return Installation.touchPackIdx()
 }
 
 // ListInstalledPacks generates a list of all packs present in the pack root folder
