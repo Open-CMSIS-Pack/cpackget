@@ -28,7 +28,7 @@ var UpdateIndexCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Updating public index")
 		installer.UnlockPackRoot()
-		err := installer.UpdatePublicIndex("", true, updateIndexCmdFlags.sparse, updateIndexCmdFlags.downloadUpdatePdscFiles, updateIndexCmdFlags.downloadUpdatePdscFiles, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
+		err := installer.UpdatePublicIndex("", true, updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
 		installer.LockPackRoot()
 		return err
 	},

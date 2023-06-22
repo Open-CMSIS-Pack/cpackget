@@ -286,13 +286,13 @@ func RemovePdsc(pdscPath string) error {
 }
 
 // Workaround wrapper function to still log errors
-func massDownloadPdscFiles(pdscTag xml.PdscTag, downloadRemainingPdscFiles bool, wg *sync.WaitGroup, timeout int) {
-	if err := Installation.downloadPdscFile(pdscTag, downloadRemainingPdscFiles, wg, timeout); err != nil {
+func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, wg *sync.WaitGroup, timeout int) {
+	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, wg, timeout); err != nil {
 		log.Error(err)
 	}
 }
 
-func DownloadPDSCFiles(downloadRemainingPdscFiles bool, concurrency int, timeout int) error {
+func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int) error {
 	var wg sync.WaitGroup
 	log.Info("Downloading all PDSC files available on the public index")
 	if err := Installation.PublicIndexXML.Read(); err != nil {
@@ -308,20 +308,20 @@ func DownloadPDSCFiles(downloadRemainingPdscFiles bool, concurrency int, timeout
 	queue := concurrency
 	for _, pdscTag := range pdscTags {
 		if concurrency == 0 || len(pdscTags) <= concurrency {
-			if err := Installation.downloadPdscFile(pdscTag, downloadRemainingPdscFiles, nil, timeout); err != nil {
+			if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, nil, timeout); err != nil {
 				log.Error(err)
 			}
 		} else {
 			// Don't queue more downloads than specified
 			if queue == 0 {
-				if err := Installation.downloadPdscFile(pdscTag, downloadRemainingPdscFiles, nil, timeout); err != nil {
+				if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, nil, timeout); err != nil {
 					log.Error(err)
 				}
 				wg.Add(concurrency)
 				queue = concurrency
 			} else {
 				wg.Add(1)
-				go massDownloadPdscFiles(pdscTag, downloadRemainingPdscFiles, &wg, timeout)
+				go massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, &wg, timeout)
 				queue--
 			}
 		}
@@ -439,8 +439,8 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 	}
 	utils.SetReadOnly(Installation.PublicIndex)
 
-	if downloadPdsc || downloadRemainingPdscFiles {
-		err = DownloadPDSCFiles(downloadRemainingPdscFiles, concurrency, timeout)
+	if downloadPdsc {
+		err = DownloadPDSCFiles(false, concurrency, timeout)
 		if err != nil {
 			return err
 		}
@@ -448,6 +448,13 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 
 	if !sparse {
 		err = UpdateInstalledPDSCFiles(pidxXML, concurrency, timeout)
+		if err != nil {
+			return err
+		}
+	}
+
+	if downloadRemainingPdscFiles {
+		err = DownloadPDSCFiles(true, concurrency, timeout)
 		if err != nil {
 			return err
 		}
@@ -1064,7 +1071,7 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool,
 
 // downloadPdscFile takes in a xml.PdscTag containing URL, Vendor and Name of the pack
 // so it can be downloaded into .Web/
-func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, downloadRemainingPdscFiles bool, wg *sync.WaitGroup, timeout int) error {
+func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, wg *sync.WaitGroup, timeout int) error {
 	// Only change use if it's not a concurrent download
 	if wg != nil {
 		defer wg.Done()
@@ -1073,7 +1080,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, downloadRe
 	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
 	pdscFilePath := filepath.Join(p.WebDir, basePdscFile)
 
-	if downloadRemainingPdscFiles {
+	if skipInstalledPdscFiles {
 		if utils.FileExists(pdscFilePath) {
 			return nil
 		}
