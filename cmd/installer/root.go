@@ -285,8 +285,110 @@ func RemovePdsc(pdscPath string) error {
 	return Installation.touchPackIdx()
 }
 
+// Workaround wrapper function to still log errors
+func massDownloadPdscFiles(pdscTag xml.PdscTag, downloadRemainingPdscFiles bool, wg *sync.WaitGroup, timeout int) {
+	if err := Installation.downloadPdscFile(pdscTag, downloadRemainingPdscFiles, wg, timeout); err != nil {
+		log.Error(err)
+	}
+}
+
+func DownloadPDSCFiles(downloadRemainingPdscFiles bool, concurrency int, timeout int) error {
+	var wg sync.WaitGroup
+	log.Info("Downloading all PDSC files available on the public index")
+	if err := Installation.PublicIndexXML.Read(); err != nil {
+		return err
+	}
+
+	pdscTags := Installation.PublicIndexXML.ListPdscTags()
+	if len(pdscTags) == 0 {
+		log.Info("(no packs in public index)")
+		return nil
+	}
+
+	queue := concurrency
+	for _, pdscTag := range pdscTags {
+		if concurrency == 0 || len(pdscTags) <= concurrency {
+			if err := Installation.downloadPdscFile(pdscTag, downloadRemainingPdscFiles, nil, timeout); err != nil {
+				log.Error(err)
+			}
+		} else {
+			// Don't queue more downloads than specified
+			if queue == 0 {
+				if err := Installation.downloadPdscFile(pdscTag, downloadRemainingPdscFiles, nil, timeout); err != nil {
+					log.Error(err)
+				}
+				wg.Add(concurrency)
+				queue = concurrency
+			} else {
+				wg.Add(1)
+				go massDownloadPdscFiles(pdscTag, downloadRemainingPdscFiles, &wg, timeout)
+				queue--
+			}
+		}
+	}
+	return nil
+}
+
+func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int) error {
+	var wg sync.WaitGroup
+	log.Info("Updating PDSC files of installed packs referenced in index.pidx")
+	pdscFiles, err := utils.ListDir(Installation.WebDir, ".pdsc$")
+	if err != nil {
+		return err
+	}
+
+	queue := concurrency
+	for _, pdscFile := range pdscFiles {
+		log.Debugf("Checking if \"%s\" needs updating", pdscFile)
+		pdscXML := xml.NewPdscXML(pdscFile)
+		err := pdscXML.Read()
+		if err != nil {
+			log.Errorf("%s: %v", pdscFile, err)
+			continue
+		}
+
+		searchTag := xml.PdscTag{
+			Vendor: pdscXML.Vendor,
+			Name:   pdscXML.Name,
+		}
+
+		// Warn the user if the pack is no longer present in index.pidx
+		tags := pidxXML.FindPdscTags(searchTag)
+		if len(tags) == 0 {
+			log.Warnf("The pack %s::%s is no longer present in the updated index.pidx, deleting PDSC file \"%v\"", pdscXML.Vendor, pdscXML.Name, pdscFile)
+			utils.UnsetReadOnly(pdscFile)
+			os.Remove(pdscFile)
+			continue
+		}
+
+		versionInIndex := tags[0].Version
+		latestVersion := pdscXML.LatestVersion()
+		if versionInIndex != latestVersion {
+			log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
+			if concurrency == 0 || len(pdscFiles) <= concurrency {
+				if err := Installation.downloadPdscFile(tags[0], false, nil, timeout); err != nil {
+					log.Error(err)
+				}
+			} else {
+				if queue == 0 {
+					if err := Installation.downloadPdscFile(tags[0], false, nil, timeout); err != nil {
+						log.Error(err)
+					}
+					wg.Add(concurrency)
+					queue = concurrency
+				} else {
+					wg.Add(1)
+					go massDownloadPdscFiles(tags[0], false, &wg, timeout)
+					queue--
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // UpdatePublicIndex receives a index path and place it under .Web/index.pidx.
-func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPdsc bool, downloadUpdatePdscFiles bool, concurrency int, timeout int) error {
+func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPdsc bool, downloadRemainingPdscFiles bool, concurrency int, timeout int) error {
 	// TODO: Remove overwrite when cpackget v1 gets released
 	if !overwrite {
 		return errs.ErrCannotOverwritePublicIndex
@@ -337,103 +439,12 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 	}
 	utils.SetReadOnly(Installation.PublicIndex)
 
-	// Workaround wrapper function to still log errors
-	// and not make the linter angry
-	massDownloadPdscFiles := func(pdscTag xml.PdscTag, downloadUpdatePdscFiles bool, wg *sync.WaitGroup, timeout int) {
-		if err := Installation.downloadPdscFile(pdscTag, downloadUpdatePdscFiles, wg, timeout); err != nil {
-			log.Error(err)
-		}
+	if downloadPdsc || downloadRemainingPdscFiles {
+		DownloadPDSCFiles(downloadRemainingPdscFiles, concurrency, timeout)
 	}
-	if downloadPdsc || downloadUpdatePdscFiles {
-		var wg sync.WaitGroup
-		log.Info("Downloading all PDSC files available on the public index")
-		if err := Installation.PublicIndexXML.Read(); err != nil {
-			return err
-		}
 
-		pdscTags := Installation.PublicIndexXML.ListPdscTags()
-		if len(pdscTags) == 0 {
-			log.Info("(no packs in public index)")
-			return nil
-		}
-
-		queue := concurrency
-		for _, pdscTag := range pdscTags {
-			if concurrency == 0 || len(pdscTags) <= concurrency {
-				if err := Installation.downloadPdscFile(pdscTag, downloadUpdatePdscFiles, nil, timeout); err != nil {
-					log.Error(err)
-				}
-			} else {
-				// Don't queue more downloads than specified
-				if queue == 0 {
-					if err := Installation.downloadPdscFile(pdscTag, downloadUpdatePdscFiles, nil, timeout); err != nil {
-						log.Error(err)
-					}
-					wg.Add(concurrency)
-					queue = concurrency
-				} else {
-					wg.Add(1)
-					go massDownloadPdscFiles(pdscTag, downloadUpdatePdscFiles, &wg, timeout)
-					queue--
-				}
-			}
-		}
-	}
 	if !sparse {
-		var wg sync.WaitGroup
-		log.Info("Updating PDSC files of installed packs referenced in index.pidx")
-		pdscFiles, err := utils.ListDir(Installation.WebDir, ".pdsc$")
-		if err != nil {
-			return err
-		}
-
-		queue := concurrency
-		for _, pdscFile := range pdscFiles {
-			log.Debugf("Checking if \"%s\" needs updating", pdscFile)
-			pdscXML := xml.NewPdscXML(pdscFile)
-			err := pdscXML.Read()
-			if err != nil {
-				log.Errorf("%s: %v", pdscFile, err)
-				continue
-			}
-
-			searchTag := xml.PdscTag{
-				Vendor: pdscXML.Vendor,
-				Name:   pdscXML.Name,
-			}
-
-			// Warn the user if the pack is no longer present in index.pidx
-			tags := pidxXML.FindPdscTags(searchTag)
-			if len(tags) == 0 {
-				log.Warnf("The pack %s::%s is no longer present in the updated index.pidx, deleting PDSC file \"%v\"", pdscXML.Vendor, pdscXML.Name, pdscFile)
-				utils.UnsetReadOnly(pdscFile)
-				os.Remove(pdscFile)
-				continue
-			}
-
-			versionInIndex := tags[0].Version
-			latestVersion := pdscXML.LatestVersion()
-			if versionInIndex != latestVersion {
-				log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
-				if concurrency == 0 || len(pdscFiles) <= concurrency {
-					if err := Installation.downloadPdscFile(tags[0], false, nil, timeout); err != nil {
-						log.Error(err)
-					}
-				} else {
-					if queue == 0 {
-						if err := Installation.downloadPdscFile(tags[0], false, nil, timeout); err != nil {
-							log.Error(err)
-						}
-						wg.Add(concurrency)
-						queue = concurrency
-					} else {
-						wg.Add(1)
-						go massDownloadPdscFiles(tags[0], false, &wg, timeout)
-						queue--
-					}
-				}
-			}
-		}
+		UpdateInstalledPDSCFiles(pidxXML, concurrency, timeout)
 	}
 
 	return nil
@@ -1047,7 +1058,7 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool,
 
 // downloadPdscFile takes in a xml.PdscTag containing URL, Vendor and Name of the pack
 // so it can be downloaded into .Web/
-func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, downloadUpdatePdscFiles bool, wg *sync.WaitGroup, timeout int) error {
+func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, downloadRemainingPdscFiles bool, wg *sync.WaitGroup, timeout int) error {
 	// Only change use if it's not a concurrent download
 	if wg != nil {
 		defer wg.Done()
@@ -1056,7 +1067,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, downloadUp
 	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
 	pdscFilePath := filepath.Join(p.WebDir, basePdscFile)
 
-	if downloadUpdatePdscFiles {
+	if downloadRemainingPdscFiles {
 		if utils.FileExists(pdscFilePath) {
 			return nil
 		}
