@@ -440,11 +440,17 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 	utils.SetReadOnly(Installation.PublicIndex)
 
 	if downloadPdsc || downloadRemainingPdscFiles {
-		DownloadPDSCFiles(downloadRemainingPdscFiles, concurrency, timeout)
+		err = DownloadPDSCFiles(downloadRemainingPdscFiles, concurrency, timeout)
+		if err != nil {
+			return err
+		}
 	}
 
 	if !sparse {
-		UpdateInstalledPDSCFiles(pidxXML, concurrency, timeout)
+		err = UpdateInstalledPDSCFiles(pidxXML, concurrency, timeout)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
