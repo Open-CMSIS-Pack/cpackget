@@ -15,6 +15,8 @@ import (
 var updateIndexCmdFlags struct {
 	// sparse indicates whether the update should update all installed pack's pdscs (false) or simply update the index (true)
 	sparse bool
+	// downloadPdscFiles forces all pdsc files from the public index to be downloaded
+	downloadUpdatePdscFiles bool
 }
 
 var UpdateIndexCmd = &cobra.Command{
@@ -26,7 +28,7 @@ var UpdateIndexCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Infof("Updating public index")
 		installer.UnlockPackRoot()
-		err := installer.UpdatePublicIndex("", true, updateIndexCmdFlags.sparse, false, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
+		err := installer.UpdatePublicIndex("", true, updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
 		installer.LockPackRoot()
 		return err
 	},
@@ -46,4 +48,5 @@ By default it will also check if all PDSC files under .Web/ need update as well.
 
 func init() {
 	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.sparse, "sparse", "s", false, "avoid updating the pdsc files within .Web/ folder")
+	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.downloadUpdatePdscFiles, "all-pdsc-files", "a", false, "updates/downloads all the latest .pdsc files from the public index")
 }
