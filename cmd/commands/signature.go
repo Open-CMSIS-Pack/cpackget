@@ -97,7 +97,7 @@ The referenced pack must be in its original/compressed form (.pack), and be pres
 
   $ cpackget signature-create Vendor.Pack.1.2.3.pack -k private.key -c certificate.pem`,
 	Args:              cobra.ExactArgs(1),
-	PersistentPreRunE: configureInstallerVerbose,
+	PersistentPreRunE: configureInstallerGlobalCmd,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if signatureCreateflags.keyPath == "" {
 			if !signatureCreateflags.certOnly {
@@ -154,7 +154,7 @@ The referenced pack must be in its original/compressed form (.pack), and be pres
 
   $ cpackget signature-verify Vendor.Pack.1.2.3.pack.signed`,
 	Args:              cobra.ExactArgs(1),
-	PersistentPreRunE: configureInstallerVerbose,
+	PersistentPreRunE: configureInstallerGlobalCmd,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if signatureVerifyflags.export && (signatureVerifyflags.skipCertValidation || signatureVerifyflags.skipInfo) {
 			log.Error("-e/--export does not need any other flags")

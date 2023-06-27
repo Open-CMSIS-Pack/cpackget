@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"math"
@@ -29,9 +30,21 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
+var g_encodedProgress = false
+
+func SetEncodedProgress(encodedProgress bool) {
+	g_encodedProgress = encodedProgress
+}
+
+func GetEncodedProgress() bool {
+	return g_encodedProgress
+}
+
 // CacheDir is used for cpackget to temporarily host downloaded pack files
 // before moving it to CMSIS_PACK_ROOT
 var CacheDir string
+
+var instCnt = 0
 
 var HTTPClient *http.Client
 
@@ -139,15 +152,22 @@ func DownloadFile(URL string, timeout int) (string, error) {
 	log.Infof("Downloading %s...", fileBase)
 	writers := []io.Writer{out}
 	if log.GetLevel() != log.ErrorLevel {
-		if IsTerminalInteractive() {
-			length := resp.ContentLength
-			progressWriter := progressbar.DefaultBytes(length, "I:")
+		length := resp.ContentLength
+		if GetEncodedProgress() {
+			progressWriter := NewEncodedProgress(length, instCnt, fileBase)
 			writers = append(writers, progressWriter)
+			instCnt++
+		} else {
+			if IsTerminalInteractive() {
+				progressWriter := progressbar.DefaultBytes(length, "I:")
+				writers = append(writers, progressWriter)
+			}
 		}
 	}
 
 	// Download file in smaller bits straight to a local file
 	written, err := SecureCopy(io.MultiWriter(writers...), resp.Body)
+	fmt.Printf("\n")
 	log.Debugf("Downloaded %d bytes", written)
 
 	if err != nil {
