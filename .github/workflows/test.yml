@@ -2,6 +2,8 @@ name: Test
 
 on:
   workflow_dispatch:
+  push: 
+    branches: [main]
   pull_request:
     paths:
       - .github/workflows/test.yml
@@ -123,6 +125,15 @@ jobs:
         run: |
           make coverage-check
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          files: cover.out
+          os: ${{ matrix.goos }}
+          fail_ci_if_error: true
+          functionalities: fix
+
   test-linux-arm64:
     name: "linux | arm64"
     runs-on: ubuntu-latest
@@ -147,3 +158,4 @@ jobs:
             git fetch --depth 1 origin ${GITHUB_REF}
             git checkout FETCH_HEAD
             make coverage-check
+          
