@@ -30,14 +30,14 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
-var g_encodedProgress = false
+var gEncodedProgress = false
 
 func SetEncodedProgress(encodedProgress bool) {
-	g_encodedProgress = encodedProgress
+	gEncodedProgress = encodedProgress
 }
 
 func GetEncodedProgress() bool {
-	return g_encodedProgress
+	return gEncodedProgress
 }
 
 // CacheDir is used for cpackget to temporarily host downloaded pack files
