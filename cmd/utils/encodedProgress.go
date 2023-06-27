@@ -36,11 +36,8 @@ func (p *EncodedProgress) Add(count int) int {
 }
 
 func (p *EncodedProgress) Write(bs []byte) (int, error) {
-	p.mu.Lock()
 	newCount := len(bs)
-	p.current += newCount
-	p.Print()
-	p.mu.Unlock()
+	p.Add(newCount)
 	return newCount, nil
 }
 
