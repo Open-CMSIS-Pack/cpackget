@@ -4,6 +4,7 @@
 package utils_test
 
 import (
+	"fmt"
 	"io"
 	"testing"
 
@@ -72,4 +73,20 @@ func TestEncodedProgres(t *testing.T) {
 
 		assert.True(gText == "I: [I0:FTesting,T10,P10]\nI: [I0:P20,C2]\nI: [I0:P30,C3]\nI: [I0:P40,C4]\nI: [I0:P50,C5]\nI: [I0:P60,C6]\nI: [I0:P70,C7]\nI: [I0:P80,C8]\nI: [I0:P90,C9]\nI: [I0:P100,C10]\n")
 	})
+
+	t.Run("test encoded progress with write interface", func(t *testing.T) {
+		Log := CaptureLog(t)
+		defer Log.Release()
+
+		text := "ProgressWriter: Write interface"
+		length := int64(len(text))
+		instCnt := 0
+		fileBase := "Testing"
+		progressWriter := utils.NewEncodedProgress(length, instCnt, fileBase)
+
+		fmt.Fprint(progressWriter, text)
+
+		assert.True(gText == "I: [I0:FTesting,T31,P100]\n")
+	})
+
 }
