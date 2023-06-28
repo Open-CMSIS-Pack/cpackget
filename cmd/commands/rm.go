@@ -8,6 +8,7 @@ import (
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -15,6 +16,9 @@ import (
 var rmCmdFlags struct {
 	// purge stores the value of "--purge" flag for the "pack rm" command
 	purge bool
+
+	// skipTouch does not touch pack.idx after adding
+	skipTouch bool
 }
 
 var RmCmd = &cobra.Command{
@@ -50,6 +54,7 @@ please use "--purge".`,
 	Args:              cobra.MinimumNArgs(1),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		utils.SetSkipTouch(rmCmdFlags.skipTouch)
 		log.Infof("Removing %v", args)
 		var lastErr error
 		installer.UnlockPackRoot()
@@ -80,6 +85,7 @@ please use "--purge".`,
 
 func init() {
 	RmCmd.Flags().BoolVarP(&rmCmdFlags.purge, "purge", "p", false, "forces deletion of cached pack files")
+	RmCmd.Flags().BoolVar(&rmCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
 
 	RmCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		err := command.Flags().MarkHidden("concurrent-downloads")

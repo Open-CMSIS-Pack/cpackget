@@ -129,7 +129,6 @@ type ConfigType struct {
 	ForceReinstall bool
 	IsPublic       bool
 	NoRequirements bool
-	SkipTouch      bool
 }
 
 func addPack(t *testing.T, packPath string, config ConfigType) {
@@ -138,7 +137,7 @@ func addPack(t *testing.T, packPath string, config ConfigType) {
 	// Get pack.idx before removing pack
 	packIdxModTime := getPackIdxModTime(t, Start)
 
-	err := installer.AddPack(packPath, config.CheckEula, config.ExtractEula, config.ForceReinstall, config.NoRequirements, config.SkipTouch, Timeout)
+	err := installer.AddPack(packPath, config.CheckEula, config.ExtractEula, config.ForceReinstall, config.NoRequirements, Timeout)
 	assert.Nil(err)
 
 	if config.ExtractEula {
@@ -225,7 +224,6 @@ var (
 	IsPublic       = true
 	NotPublic      = false
 	NoRequirements = true
-	SkipTouch      = true
 	Timeout        = 0
 
 	CreatePackRoot = true

@@ -21,6 +21,9 @@ var updateIndexCmdFlags struct {
 
 	// Reports encoded progress for files and download when used by other tools
 	encodedProgress bool
+
+	// skipTouch does not touch pack.idx after adding
+	skipTouch bool
 }
 
 var UpdateIndexCmd = &cobra.Command{
@@ -31,6 +34,7 @@ var UpdateIndexCmd = &cobra.Command{
 	Args:              cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		utils.SetEncodedProgress(updateIndexCmdFlags.encodedProgress)
+		utils.SetSkipTouch(updateIndexCmdFlags.skipTouch)
 		log.Infof("Updating public index")
 		installer.UnlockPackRoot()
 		err := installer.UpdatePublicIndex("", true, updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
@@ -55,4 +59,5 @@ func init() {
 	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.sparse, "sparse", "s", false, "avoid updating the pdsc files within .Web/ folder")
 	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.downloadUpdatePdscFiles, "all-pdsc-files", "a", false, "updates/downloads all the latest .pdsc files from the public index")
 	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.encodedProgress, "encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
+	UpdateIndexCmd.Flags().BoolVar(&updateIndexCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
 }
