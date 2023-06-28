@@ -11,6 +11,7 @@ import (
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -33,6 +34,9 @@ var addCmdFlags struct {
 
 	// skipTouch does not touch pack.idx after adding
 	skipTouch bool
+
+	// Reports encoded progress for files and download when used by other tools
+	encodedProgress bool
 }
 
 var AddCmd = &cobra.Command{
@@ -64,6 +68,8 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 	Args:              cobra.MinimumNArgs(0),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
+
+		utils.SetEncodedProgress(addCmdFlags.encodedProgress)
 
 		if addCmdFlags.packsListFileName != "" {
 			log.Infof("Parsing packs urls via file %v", addCmdFlags.packsListFileName)
@@ -127,6 +133,7 @@ func init() {
 	AddCmd.Flags().BoolVarP(&addCmdFlags.noRequirements, "no-dependencies", "n", false, "do not install package dependencies")
 	AddCmd.Flags().StringVarP(&addCmdFlags.packsListFileName, "packs-list-filename", "f", "", "specifies a file listing packs urls, one per line")
 	AddCmd.Flags().BoolVar(&addCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
+	AddCmd.Flags().BoolVarP(&addCmdFlags.encodedProgress, "encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
 
 	AddCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		// Small workaround to keep the linter happy, not

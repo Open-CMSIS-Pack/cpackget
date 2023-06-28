@@ -36,9 +36,7 @@ func (p *EncodedProgress) Add(count int) int {
 }
 
 func (p *EncodedProgress) Write(bs []byte) (int, error) {
-	newCount := len(bs)
-	p.Add(newCount)
-	return newCount, nil
+	return p.Add(len(bs)), nil
 }
 
 /* Encodes information to show progress when called by GUI or other tools

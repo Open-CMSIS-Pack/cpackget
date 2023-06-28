@@ -60,9 +60,6 @@ func configureInstallerGlobalCmd(cmd *cobra.Command, args []string) error {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	encodedProgress := viper.GetBool("encoded-progress")
-	utils.SetEncodedProgress(encodedProgress)
-
 	return nil
 }
 
@@ -176,7 +173,6 @@ func NewCli() *cobra.Command {
 	rootCmd.Flags().BoolVarP(&flags.version, "version", "V", false, "Prints the version number of cpackget and exit")
 	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "Run cpackget silently, printing only error messages")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Sets verboseness level: None (Errors + Info + Warnings), -v (all + Debugging). Specify \"-q\" for no messages")
-	rootCmd.PersistentFlags().BoolP("encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
 	rootCmd.PersistentFlags().StringP("pack-root", "R", defaultPackRoot, "Specifies pack root folder. Defaults to CMSIS_PACK_ROOT environment variable")
 	rootCmd.PersistentFlags().UintP("concurrent-downloads", "C", 5, "Number of concurrent batch downloads. Set to 0 to disable concurrency")
 	rootCmd.PersistentFlags().UintP("timeout", "T", 0, "Set maximum duration (in seconds) of a download. Disabled by default")
@@ -185,7 +181,6 @@ func NewCli() *cobra.Command {
 	_ = viper.BindPFlag("pack-root", rootCmd.PersistentFlags().Lookup("pack-root"))
 	_ = viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 	_ = viper.BindPFlag("quiet", rootCmd.PersistentFlags().Lookup("quiet"))
-	_ = viper.BindPFlag("encoded-progress", rootCmd.PersistentFlags().Lookup("encoded-progress"))
 
 	for _, cmd := range AllCommands {
 		rootCmd.AddCommand(cmd)

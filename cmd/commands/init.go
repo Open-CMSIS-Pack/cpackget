@@ -5,6 +5,7 @@ package commands
 
 import (
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -12,6 +13,7 @@ import (
 var initCmdFlags struct {
 	// downloadPdscFiles forces all pdsc files from the public index to be downloaded
 	downloadPdscFiles bool
+	encodedProgress   bool
 }
 
 var InitCmd = &cobra.Command{
@@ -27,6 +29,8 @@ The index-url is mandatory. Ex "cpackget init --pack-root path/to/mypackroot htt
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		packRoot := viper.GetString("pack-root")
+		utils.SetEncodedProgress(initCmdFlags.encodedProgress)
+
 		indexPath := args[0]
 
 		log.Debugf("Initializing a new pack root in \"%v\" using index url \"%v\"", packRoot, indexPath)
@@ -46,4 +50,5 @@ The index-url is mandatory. Ex "cpackget init --pack-root path/to/mypackroot htt
 
 func init() {
 	InitCmd.Flags().BoolVarP(&initCmdFlags.downloadPdscFiles, "all-pdsc-files", "a", false, "downloads all the latest .pdsc files from the public index")
+	InitCmd.Flags().BoolVarP(&initCmdFlags.encodedProgress, "encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
 }
