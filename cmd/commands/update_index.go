@@ -8,6 +8,7 @@ import (
 	"runtime"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -17,6 +18,9 @@ var updateIndexCmdFlags struct {
 	sparse bool
 	// downloadPdscFiles forces all pdsc files from the public index to be downloaded
 	downloadUpdatePdscFiles bool
+
+	// Reports encoded progress for files and download when used by other tools
+	encodedProgress bool
 }
 
 var UpdateIndexCmd = &cobra.Command{
@@ -26,6 +30,7 @@ var UpdateIndexCmd = &cobra.Command{
 	PersistentPreRunE: configureInstaller,
 	Args:              cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		utils.SetEncodedProgress(updateIndexCmdFlags.encodedProgress)
 		log.Infof("Updating public index")
 		installer.UnlockPackRoot()
 		err := installer.UpdatePublicIndex("", true, updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
@@ -49,4 +54,5 @@ By default it will also check if all PDSC files under .Web/ need update as well.
 func init() {
 	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.sparse, "sparse", "s", false, "avoid updating the pdsc files within .Web/ folder")
 	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.downloadUpdatePdscFiles, "all-pdsc-files", "a", false, "updates/downloads all the latest .pdsc files from the public index")
+	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.encodedProgress, "encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
 }

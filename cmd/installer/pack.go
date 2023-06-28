@@ -297,13 +297,23 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	// as it cleans the stdout buffer
 	interactiveTerminal := utils.IsTerminalInteractive()
 	var progress *progressbar.ProgressBar
-	if interactiveTerminal && log.GetLevel() != log.ErrorLevel {
-		progress = progressbar.Default(int64(len(p.zipReader.File)), "I:")
+	var encodedProgress *utils.EncodedProgress
+
+	if utils.GetEncodedProgress() {
+		encodedProgress = utils.NewEncodedProgress(int64(len(p.zipReader.File)), 0, p.path)
+	} else {
+		if interactiveTerminal && log.GetLevel() != log.ErrorLevel {
+			progress = progressbar.Default(int64(len(p.zipReader.File)), "I:")
+		}
 	}
 
 	for _, file := range p.zipReader.File {
 		if interactiveTerminal && log.GetLevel() != log.ErrorLevel {
-			_ = progress.Add64(1)
+			if utils.GetEncodedProgress() {
+				_ = encodedProgress.Add(1)
+			} else {
+				_ = progress.Add64(1)
+			}
 		}
 		err = utils.SecureInflateFile(file, packHomeDir, p.Subfolder)
 		if err != nil {
