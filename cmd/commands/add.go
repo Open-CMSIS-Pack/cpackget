@@ -70,6 +70,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		utils.SetEncodedProgress(addCmdFlags.encodedProgress)
+		utils.SetSkipTouch(addCmdFlags.skipTouch)
 
 		if addCmdFlags.packsListFileName != "" {
 			log.Infof("Parsing packs urls via file %v", addCmdFlags.packsListFileName)
@@ -112,7 +113,7 @@ If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in
 			if filepath.Ext(packPath) == ".pdsc" {
 				err = installer.AddPdsc(packPath)
 			} else {
-				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, addCmdFlags.noRequirements, addCmdFlags.skipTouch, viper.GetInt("timeout"))
+				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, addCmdFlags.noRequirements, viper.GetInt("timeout"))
 			}
 			if err != nil {
 				lastErr = err

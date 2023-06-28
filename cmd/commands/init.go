@@ -16,6 +16,9 @@ var initCmdFlags struct {
 
 	// Reports encoded progress for files and download when used by other tools
 	encodedProgress bool
+
+	// skipTouch does not touch pack.idx after adding
+	skipTouch bool
 }
 
 var InitCmd = &cobra.Command{
@@ -32,6 +35,7 @@ The index-url is mandatory. Ex "cpackget init --pack-root path/to/mypackroot htt
 	RunE: func(cmd *cobra.Command, args []string) error {
 		packRoot := viper.GetString("pack-root")
 		utils.SetEncodedProgress(initCmdFlags.encodedProgress)
+		utils.SetSkipTouch(initCmdFlags.skipTouch)
 
 		indexPath := args[0]
 
@@ -53,4 +57,5 @@ The index-url is mandatory. Ex "cpackget init --pack-root path/to/mypackroot htt
 func init() {
 	InitCmd.Flags().BoolVarP(&initCmdFlags.downloadPdscFiles, "all-pdsc-files", "a", false, "downloads all the latest .pdsc files from the public index")
 	InitCmd.Flags().BoolVarP(&initCmdFlags.encodedProgress, "encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
+	InitCmd.Flags().BoolVar(&initCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
 }

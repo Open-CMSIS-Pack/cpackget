@@ -31,6 +31,7 @@ import (
 )
 
 var gEncodedProgress = false
+var gSkipTouch = false
 
 func SetEncodedProgress(encodedProgress bool) {
 	gEncodedProgress = encodedProgress
@@ -38,6 +39,14 @@ func SetEncodedProgress(encodedProgress bool) {
 
 func GetEncodedProgress() bool {
 	return gEncodedProgress
+}
+
+func SetSkipTouch(skipTouch bool) {
+	gSkipTouch = skipTouch
+}
+
+func GetSkipTouch() bool {
+	return gSkipTouch
 }
 
 // CacheDir is used for cpackget to temporarily host downloaded pack files
