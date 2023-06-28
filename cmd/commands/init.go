@@ -13,9 +13,7 @@ import (
 var initCmdFlags struct {
 	// downloadPdscFiles forces all pdsc files from the public index to be downloaded
 	downloadPdscFiles bool
-
-	// Reports encoded progress for files and download when used by other tools
-	encodedProgress bool
+	encodedProgress   bool
 }
 
 var InitCmd = &cobra.Command{
