@@ -298,10 +298,13 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 	}
 
 	pdscTags := Installation.PublicIndexXML.ListPdscTags()
-	if len(pdscTags) == 0 {
+	numPdsc := len(pdscTags)
+	if numPdsc == 0 {
 		log.Info("(no packs in public index)")
 		return nil
 	}
+
+	log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.PublicIndex)
 
 	queue := concurrency
 	for _, pdscTag := range pdscTags {
