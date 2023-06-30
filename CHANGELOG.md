@@ -1,3 +1,37 @@
+# v1.0.0
+
+This v1.0.0 release contains:
+
+Bug fixes:
+- Debug log level not working on some commands
+- Use keil.com/pack/ as default address to fetch PDSC files, if index.pidx has been downloaded from keil.com/pack
+- If PDSC file is no longer listed in index.pidx, it shall be removed from .Web folder
+- touch pack.idx after init command
+- refined --skip-touch option
+  
+New features:
+- update-index: added option "-a" to download all missing PDSC files that are listed in index.pidx
+- Encoded progress, when tool is called from other tools
+
+# v0.9.4
+
+This v0.9.4 release contains:
+
+Bug fixes:
+- MacOS tests failing
+
+# v0.9.3
+
+This v0.9.3 release contains:
+
+Bug fixes:
+- cpackget add -f packlist.txt throws an error when the file is empty
+- Installing a local pack that does not exist triggers error message twice
+- add -f packs.txt: does not check if the required/dependent pack is installed already
+  
+New features:
+- added --skip-touch flag to not touch pack.idx
+
 # v0.9.2
 
 This v0.9.2 release contains:
