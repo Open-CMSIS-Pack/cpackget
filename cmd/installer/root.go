@@ -304,7 +304,9 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 		return nil
 	}
 
-	log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.PublicIndex)
+	if utils.GetEncodedProgress() {
+		log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.PublicIndex)
+	}
 
 	queue := concurrency
 	for _, pdscTag := range pdscTags {
@@ -1087,8 +1089,10 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 
 	if skipInstalledPdscFiles {
 		if utils.FileExists(pdscFilePath) {
+			log.Debugf("File already exists: \"%s\"", pdscFilePath)
 			return nil
 		}
+		log.Debugf("File does not exist and will be copied: \"%s\"", pdscFilePath)
 	}
 
 	pdscURL := pdscTag.URL
@@ -1119,6 +1123,11 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 	utils.UnsetReadOnly(pdscFilePath)
 	err = utils.MoveFile(localFileName, pdscFilePath)
 	utils.SetReadOnly(pdscFilePath)
+
+	if !utils.FileExists(pdscFilePath) {
+		log.Errorf("File was not copied: \"%s\"", pdscFilePath)
+	}
+
 	return err
 }
 
