@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/lu4p/cat"
-	"github.com/open-cmsis-pack/cpackget/cmd/errors"
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/ui"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
@@ -473,7 +472,7 @@ func (p *PackType) extractEula(packPath string) error {
 	}
 	if utils.FileExists(eulaFileName) {
 		log.Errorf("Cannot remove previous copy of license file: \"%s\"", eulaFileName)
-		return errors.ErrFailedCreatingFile
+		return errs.ErrFailedCreatingFile
 	}
 
 	return os.WriteFile(eulaFileName, eulaContents, utils.FileModeRO)
