@@ -174,7 +174,7 @@ func NewCli() *cobra.Command {
 	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "Run cpackget silently, printing only error messages")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Sets verboseness level: None (Errors + Info + Warnings), -v (all + Debugging). Specify \"-q\" for no messages")
 	rootCmd.PersistentFlags().StringP("pack-root", "R", defaultPackRoot, "Specifies pack root folder. Defaults to CMSIS_PACK_ROOT environment variable")
-	rootCmd.PersistentFlags().UintP("concurrent-downloads", "C", 5, "Number of concurrent batch downloads. Set to 0 to disable concurrency")
+	rootCmd.PersistentFlags().UintP("concurrent-downloads", "C", 0, "Number of concurrent batch downloads. Set to 0 to disable concurrency")
 	rootCmd.PersistentFlags().UintP("timeout", "T", 0, "Set maximum duration (in seconds) of a download. Disabled by default")
 	_ = viper.BindPFlag("concurrent-downloads", rootCmd.PersistentFlags().Lookup("concurrent-downloads"))
 	_ = viper.BindPFlag("timeout", rootCmd.PersistentFlags().Lookup("timeout"))
