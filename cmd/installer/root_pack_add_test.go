@@ -511,6 +511,7 @@ func TestAddPack(t *testing.T) {
 			CheckEula:   true,
 			ExtractEula: true,
 		})
+		assert.True(utils.FileExists(extractedLicensePath))
 
 		addPack(t, packPath, ConfigType{
 			CheckEula:   true,

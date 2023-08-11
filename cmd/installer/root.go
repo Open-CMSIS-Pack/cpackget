@@ -24,6 +24,8 @@ import (
 
 const KeilDefaultPackRoot = "https://www.keil.com/pack/"
 
+var stickyDownloadError bool = false
+
 // GetDefaultCmsisPackRoot provides a default location
 // for the pack root if not provided. This is to enable
 // a "default mode", where the public index will be
@@ -287,6 +289,7 @@ func RemovePdsc(pdscPath string) error {
 func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, wg *sync.WaitGroup, timeout int) {
 	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, wg, timeout); err != nil {
 		log.Error(err)
+		stickyDownloadError = true
 	}
 }
 
@@ -310,15 +313,18 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 
 	queue := concurrency
 	for _, pdscTag := range pdscTags {
+
 		if concurrency == 0 || len(pdscTags) <= concurrency {
 			if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, nil, timeout); err != nil {
 				log.Error(err)
+				stickyDownloadError = true
 			}
 		} else {
 			// Don't queue more downloads than specified
 			if queue == 0 {
 				if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, nil, timeout); err != nil {
 					log.Error(err)
+					stickyDownloadError = true
 				}
 				wg.Add(concurrency)
 				queue = concurrency
@@ -329,6 +335,11 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 			}
 		}
 	}
+
+	if stickyDownloadError {
+		return errs.ErrDownloadingPdsc
+	}
+
 	return nil
 }
 
@@ -347,6 +358,8 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		err := pdscXML.Read()
 		if err != nil {
 			log.Errorf("%s: %v", pdscFile, err)
+			utils.UnsetReadOnly(pdscFile)
+			os.Remove(pdscFile)
 			continue
 		}
 
@@ -1121,11 +1134,25 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 	}
 
 	utils.UnsetReadOnly(pdscFilePath)
+	os.Remove(pdscFilePath)
 	err = utils.MoveFile(localFileName, pdscFilePath)
 	utils.SetReadOnly(pdscFilePath)
 
+	if err != nil {
+		return err
+	}
+
 	if !utils.FileExists(pdscFilePath) {
 		log.Errorf("File was not copied: \"%s\"", pdscFilePath)
+	}
+
+	pdscXML := xml.NewPdscXML(pdscFilePath)
+	err = pdscXML.Read()
+	if err != nil {
+		log.Errorf("XML File Read failed: %s : %v", pdscFilePath, err)
+		utils.UnsetReadOnly(pdscFilePath)
+		os.Remove(pdscFilePath)
+		return errs.ErrReadingPdsc
 	}
 
 	return err

@@ -94,4 +94,7 @@ var (
 
 	// Error/Flag to detect when a user has requested early termination
 	ErrTerminatedByUser = errors.New("terminated by user request")
+
+	ErrReadingPdsc     = errors.New("reading PDSC failed")
+	ErrDownloadingPdsc = errors.New("download of some PDSC failed, please run 'cpackget update-index -a'") // add: -C 0
 )
