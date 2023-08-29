@@ -4,6 +4,7 @@
 package installer
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -20,6 +21,7 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/mod/semver"
+	"golang.org/x/sync/semaphore"
 )
 
 const KeilDefaultPackRoot = "https://www.keil.com/pack/"
@@ -304,29 +306,31 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 		return nil
 	}
 
-	log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.PublicIndex)
-
-	queue := concurrency
-	for _, pdscTag := range pdscTags {
-		if concurrency == 0 || len(pdscTags) <= concurrency {
-			if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, nil, timeout); err != nil {
-				log.Error(err)
-			}
-		} else {
-			// Don't queue more downloads than specified
-			if queue == 0 {
-				if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, nil, timeout); err != nil {
-					log.Error(err)
-				}
-				wg.Add(concurrency)
-				queue = concurrency
-			} else {
-				wg.Add(1)
-				go massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, &wg, timeout)
-				queue--
-			}
-		}
+	if utils.GetEncodedProgress() {
+		log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.PublicIndex)
 	}
+
+	ctx := context.TODO()
+	maxWorkers := runtime.GOMAXPROCS(0)
+	if maxWorkers > concurrency {
+		maxWorkers = concurrency
+	}
+	sem := semaphore.NewWeighted(int64(maxWorkers))
+
+	for _, pdscTag := range pdscTags {
+		if err := sem.Acquire(ctx, 1); err != nil {
+			log.Errorf("Failed to acquire semaphore: %v", err)
+			break
+		}
+
+		go func(pdscTag xml.PdscTag) {
+			defer sem.Release(1)
+			wg.Add(1)
+			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, &wg, timeout)
+		}(pdscTag)
+	}
+	wg.Wait()
+
 	return nil
 }
 
@@ -345,6 +349,8 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		err := pdscXML.Read()
 		if err != nil {
 			log.Errorf("%s: %v", pdscFile, err)
+			utils.UnsetReadOnly(pdscFile)
+			os.Remove(pdscFile)
 			continue
 		}
 
@@ -1087,8 +1093,10 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 
 	if skipInstalledPdscFiles {
 		if utils.FileExists(pdscFilePath) {
+			log.Debugf("File already exists: \"%s\"", pdscFilePath)
 			return nil
 		}
+		log.Debugf("File does not exist and will be copied: \"%s\"", pdscFilePath)
 	}
 
 	pdscURL := pdscTag.URL
@@ -1108,6 +1116,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 	}
 
 	pdscFileURL.Path = path.Join(pdscFileURL.Path, basePdscFile)
+
 	localFileName, err := utils.DownloadFile(pdscFileURL.String(), timeout)
 	defer os.Remove(localFileName)
 
@@ -1116,9 +1125,35 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 		return errs.ErrPackPdscCannotBeFound
 	}
 
+	pdscXMLTmp := xml.NewPdscXML(localFileName)
+	err = pdscXMLTmp.Read()
+	if err != nil {
+		log.Errorf("XML Temp File Read failed: %s : %v", localFileName, err)
+		return err
+	}
+
 	utils.UnsetReadOnly(pdscFilePath)
+	os.Remove(pdscFilePath)
 	err = utils.MoveFile(localFileName, pdscFilePath)
 	utils.SetReadOnly(pdscFilePath)
+
+	if err != nil {
+		return err
+	}
+
+	if !utils.FileExists(pdscFilePath) {
+		log.Errorf("File was not copied: \"%s\"", pdscFilePath)
+		return err
+	}
+
+	pdscXML := xml.NewPdscXML(pdscFilePath)
+	err = pdscXML.Read()
+	if err != nil {
+		log.Errorf("XML File Read failed: %s : %v", pdscFilePath, err)
+		utils.UnsetReadOnly(pdscFilePath)
+		os.Remove(pdscFilePath)
+	}
+
 	return err
 }
 
