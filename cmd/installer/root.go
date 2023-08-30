@@ -342,7 +342,13 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		return err
 	}
 
-	queue := concurrency
+	ctx := context.TODO()
+	maxWorkers := runtime.GOMAXPROCS(0)
+	if maxWorkers > concurrency {
+		maxWorkers = concurrency
+	}
+	sem := semaphore.NewWeighted(int64(maxWorkers))
+
 	for _, pdscFile := range pdscFiles {
 		log.Debugf("Checking if \"%s\" needs updating", pdscFile)
 		pdscXML := xml.NewPdscXML(pdscFile)
@@ -372,25 +378,23 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		latestVersion := pdscXML.LatestVersion()
 		if versionInIndex != latestVersion {
 			log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
-			if concurrency == 0 || len(pdscFiles) <= concurrency {
-				if err := Installation.downloadPdscFile(tags[0], false, nil, timeout); err != nil {
-					log.Error(err)
-				}
-			} else {
-				if queue == 0 {
-					if err := Installation.downloadPdscFile(tags[0], false, nil, timeout); err != nil {
-						log.Error(err)
-					}
-					wg.Add(concurrency)
-					queue = concurrency
-				} else {
-					wg.Add(1)
-					go massDownloadPdscFiles(tags[0], false, &wg, timeout)
-					queue--
-				}
+
+			if err := sem.Acquire(ctx, 1); err != nil {
+				log.Errorf("Failed to acquire semaphore: %v", err)
+				break
 			}
+			wg.Add(1)
+
+			pdscTag := tags[0]
+			go func(pdscTag xml.PdscTag) {
+				defer sem.Release(1)
+				massDownloadPdscFiles(pdscTag, false, &wg, timeout)
+			}(pdscTag)
 		}
 	}
+
+	wg.Wait()
+
 	return nil
 }
 
@@ -1125,13 +1129,6 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 		return errs.ErrPackPdscCannotBeFound
 	}
 
-	pdscXMLTmp := xml.NewPdscXML(localFileName)
-	err = pdscXMLTmp.Read()
-	if err != nil {
-		log.Errorf("XML Temp File Read failed: %s : %v", localFileName, err)
-		return err
-	}
-
 	utils.UnsetReadOnly(pdscFilePath)
 	os.Remove(pdscFilePath)
 	err = utils.MoveFile(localFileName, pdscFilePath)
@@ -1139,19 +1136,6 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 
 	if err != nil {
 		return err
-	}
-
-	if !utils.FileExists(pdscFilePath) {
-		log.Errorf("File was not copied: \"%s\"", pdscFilePath)
-		return err
-	}
-
-	pdscXML := xml.NewPdscXML(pdscFilePath)
-	err = pdscXML.Read()
-	if err != nil {
-		log.Errorf("XML File Read failed: %s : %v", pdscFilePath, err)
-		utils.UnsetReadOnly(pdscFilePath)
-		os.Remove(pdscFilePath)
 	}
 
 	return err
