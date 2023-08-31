@@ -391,7 +391,7 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		if versionInIndex != latestVersion {
 			log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
 
-			if maxWorkers == 0 {
+			if concurrency == 0 {
 				massDownloadPdscFiles(tags[0], false, timeout)
 			} else {
 				if err := sem.Acquire(ctx, 1); err != nil {
