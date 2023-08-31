@@ -4,7 +4,6 @@
 package installer
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -315,8 +314,8 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 	}
 	cnt := int(0)
 	for _, pdscTag := range pdscTags {
+		wg.Add(1)
 		go func(pdscTag xml.PdscTag) {
-			wg.Add(1)
 			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, &wg, timeout)
 		}(pdscTag)
 
@@ -339,7 +338,6 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		return err
 	}
 
-	ctx := context.TODO()
 	maxWorkers := runtime.GOMAXPROCS(0)
 	if maxWorkers > concurrency {
 		maxWorkers = concurrency
@@ -377,7 +375,6 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 			log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
 
 			wg.Add(1)
-
 			pdscTag := tags[0]
 			go func(pdscTag xml.PdscTag) {
 				massDownloadPdscFiles(pdscTag, false, &wg, timeout)
