@@ -357,6 +357,11 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		return err
 	}
 
+	numPdsc := len(pdscFiles)
+	if utils.GetEncodedProgress() {
+		log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.PublicIndex)
+	}
+
 	ctx := context.TODO()
 	concurrency = CheckConcurrency(concurrency)
 	sem := semaphore.NewWeighted(int64(concurrency))
