@@ -315,6 +315,9 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 		if maxWorkers > concurrency {
 			maxWorkers = concurrency
 		}
+		if maxWorkers == 0 {
+			concurrency = 0
+		}
 	}
 
 	sem := semaphore.NewWeighted(int64(maxWorkers))
@@ -356,6 +359,9 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 	if concurrency > 1 {
 		if maxWorkers > concurrency {
 			maxWorkers = concurrency
+		}
+		if maxWorkers == 0 {
+			concurrency = 0
 		}
 	}
 
