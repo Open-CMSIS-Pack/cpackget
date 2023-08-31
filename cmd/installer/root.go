@@ -13,7 +13,6 @@ import (
 	"runtime"
 	"sort"
 	"strings"
-	"sync"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/ui"
@@ -286,14 +285,13 @@ func RemovePdsc(pdscPath string) error {
 }
 
 // Workaround wrapper function to still log errors
-func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, wg *sync.WaitGroup, timeout int) {
-	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, wg, timeout); err != nil {
+func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, timeout int) {
+	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, timeout); err != nil {
 		log.Error(err)
 	}
 }
 
 func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int) error {
-	var wg sync.WaitGroup
 	log.Info("Downloading all PDSC files available on the public index")
 	if err := Installation.PublicIndexXML.Read(); err != nil {
 		return err
@@ -320,22 +318,20 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 
 	for _, pdscTag := range pdscTags {
 		if maxWorkers == 0 {
-			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, nil, timeout)
+			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, timeout)
 		} else {
 			if err := sem.Acquire(ctx, 1); err != nil {
 				log.Errorf("Failed to acquire semaphore: %v", err)
 				break
 			}
 
-			wg.Add(1)
 			go func(pdscTag xml.PdscTag) {
 				defer sem.Release(1)
-				massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, &wg, timeout)
+				massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, timeout)
 			}(pdscTag)
 		}
 	}
 	if maxWorkers > 1 {
-		//	wg.Wait()
 		if err := sem.Acquire(ctx, int64(maxWorkers)); err != nil {
 			log.Errorf("Failed to acquire semaphore: %v", err)
 		}
@@ -345,7 +341,6 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 }
 
 func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int) error {
-	var wg sync.WaitGroup
 	log.Info("Updating PDSC files of installed packs referenced in index.pidx")
 	pdscFiles, err := utils.ListDir(Installation.WebDir, ".pdsc$")
 	if err != nil {
@@ -390,25 +385,23 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 			log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
 
 			if maxWorkers == 0 {
-				massDownloadPdscFiles(tags[0], false, nil, timeout)
+				massDownloadPdscFiles(tags[0], false, timeout)
 			} else {
 				if err := sem.Acquire(ctx, 1); err != nil {
 					log.Errorf("Failed to acquire semaphore: %v", err)
 					break
 				}
-				wg.Add(1)
 
 				pdscTag := tags[0]
 				go func(pdscTag xml.PdscTag) {
 					defer sem.Release(1)
-					massDownloadPdscFiles(pdscTag, false, &wg, timeout)
+					massDownloadPdscFiles(pdscTag, false, timeout)
 				}(pdscTag)
 			}
 		}
 	}
 
 	if maxWorkers > 1 {
-		//	wg.Wait()
 		if err := sem.Acquire(ctx, int64(maxWorkers)); err != nil {
 			log.Errorf("Failed to acquire semaphore: %v", err)
 		}
@@ -1100,17 +1093,12 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool,
 	// Sometimes a pidx file might have multiple pdsc tags for same key
 	// which is not the case here, so we'll take only the first one
 	pdscTag := pdscTags[0]
-	return true, p.downloadPdscFile(pdscTag, false, nil, timeout)
+	return true, p.downloadPdscFile(pdscTag, false, timeout)
 }
 
 // downloadPdscFile takes in a xml.PdscTag containing URL, Vendor and Name of the pack
 // so it can be downloaded into .Web/
-func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, wg *sync.WaitGroup, timeout int) error {
-	// Only change use if it's not a concurrent download
-	if wg != nil {
-		defer wg.Done()
-	}
-
+func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, timeout int) error {
 	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
 	pdscFilePath := filepath.Join(p.WebDir, basePdscFile)
 
