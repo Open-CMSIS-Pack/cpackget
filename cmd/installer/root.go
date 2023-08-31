@@ -21,7 +21,6 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/mod/semver"
-	"golang.org/x/sync/semaphore"
 )
 
 const KeilDefaultPackRoot = "https://www.keil.com/pack/"
@@ -310,24 +309,22 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 		log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.PublicIndex)
 	}
 
-	ctx := context.TODO()
 	maxWorkers := runtime.GOMAXPROCS(0)
 	if maxWorkers > concurrency {
 		maxWorkers = concurrency
 	}
-	sem := semaphore.NewWeighted(int64(maxWorkers))
-
+	cnt := int(0)
 	for _, pdscTag := range pdscTags {
-		if err := sem.Acquire(ctx, 1); err != nil {
-			log.Errorf("Failed to acquire semaphore: %v", err)
-			break
-		}
-
 		go func(pdscTag xml.PdscTag) {
-			defer sem.Release(1)
 			wg.Add(1)
 			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, &wg, timeout)
 		}(pdscTag)
+
+		cnt++
+		if cnt > maxWorkers {
+			cnt = 0
+			wg.Wait()
+		}
 	}
 	wg.Wait()
 
@@ -347,7 +344,6 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 	if maxWorkers > concurrency {
 		maxWorkers = concurrency
 	}
-	sem := semaphore.NewWeighted(int64(maxWorkers))
 
 	for _, pdscFile := range pdscFiles {
 		log.Debugf("Checking if \"%s\" needs updating", pdscFile)
@@ -374,22 +370,24 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 			continue
 		}
 
+		cnt := int(0)
 		versionInIndex := tags[0].Version
 		latestVersion := pdscXML.LatestVersion()
 		if versionInIndex != latestVersion {
 			log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
 
-			if err := sem.Acquire(ctx, 1); err != nil {
-				log.Errorf("Failed to acquire semaphore: %v", err)
-				break
-			}
 			wg.Add(1)
 
 			pdscTag := tags[0]
 			go func(pdscTag xml.PdscTag) {
-				defer sem.Release(1)
 				massDownloadPdscFiles(pdscTag, false, &wg, timeout)
 			}(pdscTag)
+
+			cnt++
+			if cnt > maxWorkers {
+				cnt = 0
+				wg.Wait()
+			}
 		}
 	}
 
