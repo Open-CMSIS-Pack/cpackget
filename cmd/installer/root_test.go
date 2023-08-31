@@ -586,9 +586,9 @@ func TestUpdatePublicIndex(t *testing.T) {
 	})
 
 	t.Run("test check concurrency function call", func(t *testing.T) {
-		assert.Equal(installer.CheckConcurrency(0), 0)
-		assert.Equal(installer.CheckConcurrency(5), 5)
-		assert.NotEqual(installer.CheckConcurrency(999999), 5)
+		assert.Equal(0, installer.CheckConcurrency(0))
+		assert.Equal(2, installer.CheckConcurrency(2))
+		assert.NotEqual(999999, installer.CheckConcurrency(999999))
 	})
 
 	t.Run("test add remote index.pidx and dowload pdsc files", func(t *testing.T) {
