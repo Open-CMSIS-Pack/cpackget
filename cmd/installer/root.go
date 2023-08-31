@@ -315,21 +315,28 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 	if maxWorkers > concurrency {
 		maxWorkers = concurrency
 	}
+
 	sem := semaphore.NewWeighted(int64(maxWorkers))
 
 	for _, pdscTag := range pdscTags {
-		if err := sem.Acquire(ctx, 1); err != nil {
-			log.Errorf("Failed to acquire semaphore: %v", err)
-			break
-		}
+		if maxWorkers == 0 {
+			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, nil, timeout)
+		} else {
+			if err := sem.Acquire(ctx, 1); err != nil {
+				log.Errorf("Failed to acquire semaphore: %v", err)
+				break
+			}
 
-		wg.Add(1)
-		go func(pdscTag xml.PdscTag) {
-			defer sem.Release(1)
-			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, &wg, timeout)
-		}(pdscTag)
+			wg.Add(1)
+			go func(pdscTag xml.PdscTag) {
+				defer sem.Release(1)
+				massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, &wg, timeout)
+			}(pdscTag)
+		}
 	}
-	wg.Wait()
+	if maxWorkers > 1 {
+		wg.Wait()
+	}
 
 	return nil
 }
@@ -379,21 +386,27 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		if versionInIndex != latestVersion {
 			log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
 
-			if err := sem.Acquire(ctx, 1); err != nil {
-				log.Errorf("Failed to acquire semaphore: %v", err)
-				break
-			}
-			wg.Add(1)
+			if maxWorkers == 0 {
+				massDownloadPdscFiles(tags[0], false, nil, timeout)
+			} else {
+				if err := sem.Acquire(ctx, 1); err != nil {
+					log.Errorf("Failed to acquire semaphore: %v", err)
+					break
+				}
+				wg.Add(1)
 
-			pdscTag := tags[0]
-			go func(pdscTag xml.PdscTag) {
-				defer sem.Release(1)
-				massDownloadPdscFiles(pdscTag, false, &wg, timeout)
-			}(pdscTag)
+				pdscTag := tags[0]
+				go func(pdscTag xml.PdscTag) {
+					defer sem.Release(1)
+					massDownloadPdscFiles(pdscTag, false, &wg, timeout)
+				}(pdscTag)
+			}
 		}
 	}
 
-	wg.Wait()
+	if maxWorkers > 1 {
+		wg.Wait()
+	}
 
 	return nil
 }
