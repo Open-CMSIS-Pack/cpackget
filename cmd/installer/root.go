@@ -310,14 +310,17 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 
 	ctx := context.TODO()
 	maxWorkers := runtime.GOMAXPROCS(0)
-	if maxWorkers > concurrency {
-		maxWorkers = concurrency
+
+	if concurrency > 1 {
+		if maxWorkers > concurrency {
+			maxWorkers = concurrency
+		}
 	}
 
 	sem := semaphore.NewWeighted(int64(maxWorkers))
 
 	for _, pdscTag := range pdscTags {
-		if maxWorkers == 0 {
+		if concurrency == 0 {
 			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, timeout)
 		} else {
 			if err := sem.Acquire(ctx, 1); err != nil {
@@ -331,7 +334,7 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 			}(pdscTag)
 		}
 	}
-	if maxWorkers > 1 {
+	if concurrency > 1 {
 		if err := sem.Acquire(ctx, int64(maxWorkers)); err != nil {
 			log.Errorf("Failed to acquire semaphore: %v", err)
 		}
@@ -349,9 +352,13 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 
 	ctx := context.TODO()
 	maxWorkers := runtime.GOMAXPROCS(0)
-	if maxWorkers > concurrency {
-		maxWorkers = concurrency
+
+	if concurrency > 1 {
+		if maxWorkers > concurrency {
+			maxWorkers = concurrency
+		}
 	}
+
 	sem := semaphore.NewWeighted(int64(maxWorkers))
 
 	for _, pdscFile := range pdscFiles {
@@ -401,7 +408,7 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		}
 	}
 
-	if maxWorkers > 1 {
+	if concurrency > 1 {
 		if err := sem.Acquire(ctx, int64(maxWorkers)); err != nil {
 			log.Errorf("Failed to acquire semaphore: %v", err)
 		}
