@@ -291,6 +291,20 @@ func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, tim
 	}
 }
 
+func CheckConcurrency(concurrency int) int {
+	maxWorkers := runtime.GOMAXPROCS(0)
+
+	if concurrency > 1 {
+		if concurrency > maxWorkers {
+			concurrency = maxWorkers
+		}
+	} else {
+		concurrency = 0
+	}
+
+	return concurrency
+}
+
 func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int) error {
 	log.Info("Downloading all PDSC files available on the public index")
 	if err := Installation.PublicIndexXML.Read(); err != nil {
@@ -309,18 +323,8 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 	}
 
 	ctx := context.TODO()
-	maxWorkers := runtime.GOMAXPROCS(0)
-
-	if concurrency > 1 {
-		if maxWorkers > concurrency {
-			maxWorkers = concurrency
-		}
-		if maxWorkers == 0 {
-			concurrency = 0
-		}
-	}
-
-	sem := semaphore.NewWeighted(int64(maxWorkers))
+	concurrency = CheckConcurrency(concurrency)
+	sem := semaphore.NewWeighted(int64(concurrency))
 
 	for _, pdscTag := range pdscTags {
 		if concurrency == 0 {
@@ -338,7 +342,7 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 		}
 	}
 	if concurrency > 1 {
-		if err := sem.Acquire(ctx, int64(maxWorkers)); err != nil {
+		if err := sem.Acquire(ctx, int64(concurrency)); err != nil {
 			log.Errorf("Failed to acquire semaphore: %v", err)
 		}
 	}
@@ -354,18 +358,8 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 	}
 
 	ctx := context.TODO()
-	maxWorkers := runtime.GOMAXPROCS(0)
-
-	if concurrency > 1 {
-		if maxWorkers > concurrency {
-			maxWorkers = concurrency
-		}
-		if maxWorkers == 0 {
-			concurrency = 0
-		}
-	}
-
-	sem := semaphore.NewWeighted(int64(maxWorkers))
+	concurrency = CheckConcurrency(concurrency)
+	sem := semaphore.NewWeighted(int64(concurrency))
 
 	for _, pdscFile := range pdscFiles {
 		log.Debugf("Checking if \"%s\" needs updating", pdscFile)
@@ -415,7 +409,7 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 	}
 
 	if concurrency > 1 {
-		if err := sem.Acquire(ctx, int64(maxWorkers)); err != nil {
+		if err := sem.Acquire(ctx, int64(concurrency)); err != nil {
 			log.Errorf("Failed to acquire semaphore: %v", err)
 		}
 	}
