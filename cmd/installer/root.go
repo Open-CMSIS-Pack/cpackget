@@ -335,7 +335,10 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 		}
 	}
 	if maxWorkers > 1 {
-		wg.Wait()
+		//	wg.Wait()
+		if err := sem.Acquire(ctx, int64(maxWorkers)); err != nil {
+			log.Errorf("Failed to acquire semaphore: %v", err)
+		}
 	}
 
 	return nil
@@ -405,7 +408,10 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 	}
 
 	if maxWorkers > 1 {
-		wg.Wait()
+		//	wg.Wait()
+		if err := sem.Acquire(ctx, int64(maxWorkers)); err != nil {
+			log.Errorf("Failed to acquire semaphore: %v", err)
+		}
 	}
 
 	return nil
