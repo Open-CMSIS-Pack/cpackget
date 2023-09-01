@@ -460,7 +460,20 @@ func (p *PackType) extractEula(packPath string) error {
 
 	eulaFileName := packPath + "." + path.Base(p.Pdsc.License)
 
-	log.Infof("Extracting embedded license to %v", eulaFileName)
+	if utils.GetEncodedProgress() {
+		log.Infof("[L:F\"%s\"]", eulaFileName)
+	} else {
+		log.Infof("Extracting embedded license to %v", eulaFileName)
+	}
+
+	if utils.FileExists(eulaFileName) {
+		utils.UnsetReadOnly(eulaFileName)
+		os.Remove(eulaFileName)
+	}
+	if utils.FileExists(eulaFileName) {
+		log.Errorf("Cannot remove previous copy of license file: \"%s\"", eulaFileName)
+		return errs.ErrFailedCreatingFile
+	}
 
 	return os.WriteFile(eulaFileName, eulaContents, utils.FileModeRO)
 }
