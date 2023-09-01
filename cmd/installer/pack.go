@@ -281,6 +281,9 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 			fmt.Println()
 		}
 	} else if ui.Extract {
+		if utils.GetEncodedProgress() {
+			return nil
+		}
 		return errs.ErrLicenseNotFound
 	}
 
