@@ -4,6 +4,7 @@
 package installer
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -12,7 +13,6 @@ import (
 	"runtime"
 	"sort"
 	"strings"
-	"sync"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/ui"
@@ -20,6 +20,7 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/mod/semver"
+	"golang.org/x/sync/semaphore"
 )
 
 const KeilDefaultPackRoot = "https://www.keil.com/pack/"
@@ -284,14 +285,27 @@ func RemovePdsc(pdscPath string) error {
 }
 
 // Workaround wrapper function to still log errors
-func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, wg *sync.WaitGroup, timeout int) {
-	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, wg, timeout); err != nil {
+func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, timeout int) {
+	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, timeout); err != nil {
 		log.Error(err)
 	}
 }
 
+func CheckConcurrency(concurrency int) int {
+	maxWorkers := runtime.GOMAXPROCS(0)
+
+	if concurrency > 1 {
+		if concurrency > maxWorkers {
+			concurrency = maxWorkers
+		}
+	} else {
+		concurrency = 0
+	}
+
+	return concurrency
+}
+
 func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int) error {
-	var wg sync.WaitGroup
 	log.Info("Downloading all PDSC files available on the public index")
 	if err := Installation.PublicIndexXML.Read(); err != nil {
 		return err
@@ -304,47 +318,62 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 		return nil
 	}
 
-	log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.PublicIndex)
+	if utils.GetEncodedProgress() {
+		log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.PublicIndex)
+	}
 
-	queue := concurrency
+	ctx := context.TODO()
+	concurrency = CheckConcurrency(concurrency)
+	sem := semaphore.NewWeighted(int64(concurrency))
+
 	for _, pdscTag := range pdscTags {
-		if concurrency == 0 || len(pdscTags) <= concurrency {
-			if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, nil, timeout); err != nil {
-				log.Error(err)
-			}
+		if concurrency == 0 {
+			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, timeout)
 		} else {
-			// Don't queue more downloads than specified
-			if queue == 0 {
-				if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, nil, timeout); err != nil {
-					log.Error(err)
-				}
-				wg.Add(concurrency)
-				queue = concurrency
-			} else {
-				wg.Add(1)
-				go massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, &wg, timeout)
-				queue--
+			if err := sem.Acquire(ctx, 1); err != nil {
+				log.Errorf("Failed to acquire semaphore: %v", err)
+				break
 			}
+
+			go func(pdscTag xml.PdscTag) {
+				defer sem.Release(1)
+				massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, timeout)
+			}(pdscTag)
 		}
 	}
+	if concurrency > 1 {
+		if err := sem.Acquire(ctx, int64(concurrency)); err != nil {
+			log.Errorf("Failed to acquire semaphore: %v", err)
+		}
+	}
+
 	return nil
 }
 
 func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int) error {
-	var wg sync.WaitGroup
 	log.Info("Updating PDSC files of installed packs referenced in index.pidx")
 	pdscFiles, err := utils.ListDir(Installation.WebDir, ".pdsc$")
 	if err != nil {
 		return err
 	}
 
-	queue := concurrency
+	numPdsc := len(pdscFiles)
+	if utils.GetEncodedProgress() {
+		log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.PublicIndex)
+	}
+
+	ctx := context.TODO()
+	concurrency = CheckConcurrency(concurrency)
+	sem := semaphore.NewWeighted(int64(concurrency))
+
 	for _, pdscFile := range pdscFiles {
 		log.Debugf("Checking if \"%s\" needs updating", pdscFile)
 		pdscXML := xml.NewPdscXML(pdscFile)
 		err := pdscXML.Read()
 		if err != nil {
 			log.Errorf("%s: %v", pdscFile, err)
+			utils.UnsetReadOnly(pdscFile)
+			os.Remove(pdscFile)
 			continue
 		}
 
@@ -366,25 +395,30 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		latestVersion := pdscXML.LatestVersion()
 		if versionInIndex != latestVersion {
 			log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
-			if concurrency == 0 || len(pdscFiles) <= concurrency {
-				if err := Installation.downloadPdscFile(tags[0], false, nil, timeout); err != nil {
-					log.Error(err)
-				}
+
+			if concurrency == 0 {
+				massDownloadPdscFiles(tags[0], false, timeout)
 			} else {
-				if queue == 0 {
-					if err := Installation.downloadPdscFile(tags[0], false, nil, timeout); err != nil {
-						log.Error(err)
-					}
-					wg.Add(concurrency)
-					queue = concurrency
-				} else {
-					wg.Add(1)
-					go massDownloadPdscFiles(tags[0], false, &wg, timeout)
-					queue--
+				if err := sem.Acquire(ctx, 1); err != nil {
+					log.Errorf("Failed to acquire semaphore: %v", err)
+					break
 				}
+
+				pdscTag := tags[0]
+				go func(pdscTag xml.PdscTag) {
+					defer sem.Release(1)
+					massDownloadPdscFiles(pdscTag, false, timeout)
+				}(pdscTag)
 			}
 		}
 	}
+
+	if concurrency > 1 {
+		if err := sem.Acquire(ctx, int64(concurrency)); err != nil {
+			log.Errorf("Failed to acquire semaphore: %v", err)
+		}
+	}
+
 	return nil
 }
 
@@ -1071,24 +1105,21 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool,
 	// Sometimes a pidx file might have multiple pdsc tags for same key
 	// which is not the case here, so we'll take only the first one
 	pdscTag := pdscTags[0]
-	return true, p.downloadPdscFile(pdscTag, false, nil, timeout)
+	return true, p.downloadPdscFile(pdscTag, false, timeout)
 }
 
 // downloadPdscFile takes in a xml.PdscTag containing URL, Vendor and Name of the pack
 // so it can be downloaded into .Web/
-func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, wg *sync.WaitGroup, timeout int) error {
-	// Only change use if it's not a concurrent download
-	if wg != nil {
-		defer wg.Done()
-	}
-
+func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, timeout int) error {
 	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
 	pdscFilePath := filepath.Join(p.WebDir, basePdscFile)
 
 	if skipInstalledPdscFiles {
 		if utils.FileExists(pdscFilePath) {
+			log.Debugf("File already exists: \"%s\"", pdscFilePath)
 			return nil
 		}
+		log.Debugf("File does not exist and will be copied: \"%s\"", pdscFilePath)
 	}
 
 	pdscURL := pdscTag.URL
@@ -1108,6 +1139,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 	}
 
 	pdscFileURL.Path = path.Join(pdscFileURL.Path, basePdscFile)
+
 	localFileName, err := utils.DownloadFile(pdscFileURL.String(), timeout)
 	defer os.Remove(localFileName)
 
@@ -1117,8 +1149,10 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 	}
 
 	utils.UnsetReadOnly(pdscFilePath)
+	os.Remove(pdscFilePath)
 	err = utils.MoveFile(localFileName, pdscFilePath)
 	utils.SetReadOnly(pdscFilePath)
+
 	return err
 }
 

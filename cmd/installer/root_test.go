@@ -585,6 +585,12 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Equal(copied, indexContent)
 	})
 
+	t.Run("test check concurrency function call", func(t *testing.T) {
+		assert.Equal(0, installer.CheckConcurrency(0))
+		assert.Equal(2, installer.CheckConcurrency(2))
+		assert.NotEqual(999999, installer.CheckConcurrency(999999))
+	})
+
 	t.Run("test add remote index.pidx and dowload pdsc files", func(t *testing.T) {
 		localTestingDir := "test-add-remote-index-download-pdsc"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
