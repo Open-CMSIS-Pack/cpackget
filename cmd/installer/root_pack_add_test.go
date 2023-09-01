@@ -1471,7 +1471,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
-		//defer removePackRoot(localTestingDir)
+		defer removePackRoot(localTestingDir)
 
 		addPack(t, publicRemotePack123alpha, ConfigType{IsPublic: true})
 
