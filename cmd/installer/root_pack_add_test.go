@@ -496,6 +496,32 @@ func TestAddPack(t *testing.T) {
 		os.Remove(extractedLicensePath)
 	})
 
+	t.Run("test installing pack with license extracted but prev license exist", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-license-extracted-but-prev-license-exist"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+
+		packPath := packWithLicense
+
+		extractedLicensePath := filepath.Join(installer.Installation.DownloadDir, filepath.Base(packPath)+".LICENSE.txt")
+
+		ui.LicenseAgreed = nil
+		addPack(t, packPath, ConfigType{
+			CheckEula:   true,
+			ExtractEula: true,
+		})
+
+		addPack(t, packPath, ConfigType{
+			CheckEula:   true,
+			ExtractEula: true,
+		})
+
+		assert.True(utils.FileExists(extractedLicensePath))
+
+		os.Remove(extractedLicensePath)
+	})
+
 	t.Run("test installing pack with missing license", func(t *testing.T) {
 		// Missing license means it is specified in the PDSC file, but the actual license
 		// file is not there
