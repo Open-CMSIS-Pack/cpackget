@@ -92,7 +92,7 @@ coverage-report: test
 
 coverage-check: test
 	@echo Checking if test coverage is atleast 85%
-	test `go tool cover -func cover.out | tail -1 | awk '{print ($$3 + 0)*10}'` -ge 800
+	test `go tool cover -func cover.out | tail -1 | awk '{print ($$3 + 0)*10}'` -ge 840
 
 test-public-index:
 	@./scripts/test-public-index

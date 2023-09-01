@@ -1153,10 +1153,6 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 	err = utils.MoveFile(localFileName, pdscFilePath)
 	utils.SetReadOnly(pdscFilePath)
 
-	if err != nil {
-		return err
-	}
-
 	return err
 }
 
