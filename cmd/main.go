@@ -31,6 +31,6 @@ func main() {
 		os.Exit(-1)
 	}
 
-	log.Debugf("took %v", time.Since(start))
+	log.Debugf("Took %v", time.Since(start))
 	utils.StopSignalWatcher()
 }
