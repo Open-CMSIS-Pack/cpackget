@@ -1,0 +1,50 @@
+name: TPIP Check
+
+on:
+  # Trigger on pull request any Go package is changed.
+  pull_request:
+    paths:
+      - ".github/workflows/tpip-check.yml"
+      - "**/go.mod"
+      - "**/go.sum"
+      - "scripts/template/**"
+  workflow_dispatch:
+      
+jobs:
+  check-licenses:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - name: Go tidy
+        run:  go mod tidy
+
+      - name: Install go-licenses
+        run:  go install github.com/google/go-licenses@latest
+
+      - name: Generate TPIP Report
+        run:  |
+          go-licenses report . --ignore github.com/Open-CMSIS-Pack/cpackget --template ../scripts/template/tpip-license.template > ../scripts/tpip.md
+          date +"%Y/%m/%d %T" >> ../scripts/tpip.md
+        working-directory: ./cmd
+        
+      - name: Archive tpip report
+        uses: actions/upload-artifact@v3
+        with:
+          name: tpip-report
+          path: ./scripts/tpip.md
+
+      - name: Print TPIP Report
+        run: cat tpip.md >> $GITHUB_STEP_SUMMARY
+        working-directory: scripts
+
+      - name: Check Licenses
+        run: go-licenses check . --ignore github.com/Open-CMSIS-Pack/cpackget --disallowed_types=forbidden,restricted
+        working-directory: ./cmd
