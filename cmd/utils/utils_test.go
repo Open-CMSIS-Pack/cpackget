@@ -636,6 +636,16 @@ func TestUnsetReadOnlyR(t *testing.T) {
 	assert.Equal(t, fs.FileMode(0777), permBits&0777)
 }
 
+func TestTinyFunctions(t *testing.T) {
+	assert := assert.New(t)
+
+	utils.SetEncodedProgress(true)
+	assert.True(utils.GetEncodedProgress())
+
+	utils.SetSkipTouch(true)
+	assert.True(utils.GetSkipTouch())
+}
+
 func init() {
 	logLevel := log.InfoLevel
 	if os.Getenv("LOG_LEVEL") == "debug" {

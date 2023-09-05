@@ -5,7 +5,6 @@ package commands
 
 import (
 	"os"
-	"runtime"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
@@ -43,16 +42,9 @@ var UpdateIndexCmd = &cobra.Command{
 	},
 }
 
-// getLongUpdateDescription prints a "Windows friendly" long description,
-// using the correct path slashes
 func getLongUpdateDescription() string {
-	if runtime.GOOS == "windows" {
-		return `Updates the public index in ` + os.Getenv("CMSIS_PACK_ROOT") + `\.Web\index.pidx using the URL in <url> tag inside index.pidx.
+	return `Updates the public index in ` + os.Getenv("CMSIS_PACK_ROOT") + `/.Web/index.pidx using the URL in <url> tag inside index.pidx.
 By default it will also check if all PDSC files under .Web/ need update as well. This can be disabled via the "--sparse" flag.`
-	} else {
-		return `Updates the public index in ` + os.Getenv("CMSIS_PACK_ROOT") + `/.Web/index.pidx using the URL in <url> tag inside index.pidx.
-By default it will also check if all PDSC files under .Web/ need update as well. This can be disabled via the "--sparse" flag.`
-	}
 }
 
 func init() {

@@ -5,7 +5,6 @@ package commands
 
 import (
 	"os"
-	"runtime"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	log "github.com/sirupsen/logrus"
@@ -32,16 +31,9 @@ var IndexCmd = &cobra.Command{
 	},
 }
 
-// getLongIndexDescription prints a "Windows friendly" long description,
-// using the correct path slashes
 func getLongIndexDescription() string {
-	if runtime.GOOS == "windows" {
-		return `Updates the public index in ` + os.Getenv("CMSIS_PACK_ROOT") + `\.Web\index.pidx using the file specified by the given url.
+	return `Updates the public index in ` + os.Getenv("CMSIS_PACK_ROOT") + `/.Web/index.pidx using the file specified by the given url.
 If there's already an index file, cpackget won't overwrite it. Use "-f" to do so.`
-	} else {
-		return `Updates the public index in ` + os.Getenv("CMSIS_PACK_ROOT") + `/.Web/index.pidx using the file specified by the given url.
-If there's already an index file, cpackget won't overwrite it. Use "-f" to do so.`
-	}
 }
 
 func init() {
