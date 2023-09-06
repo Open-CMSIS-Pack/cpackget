@@ -9,7 +9,10 @@ on:
       - "**/go.sum"
       - "scripts/template/**"
   workflow_dispatch:
-      
+
+env:
+  report_name: "third_party_licenses.md"
+
 jobs:
   check-licenses:
     runs-on: ubuntu-latest
@@ -31,20 +34,43 @@ jobs:
 
       - name: Generate TPIP Report
         run:  |
-          go-licenses report . --ignore github.com/Open-CMSIS-Pack/cpackget --template ../scripts/template/tpip-license.template > ../scripts/tpip.md
-          date +"%Y/%m/%d %T" >> ../scripts/tpip.md
+          go-licenses report . --ignore github.com/Open-CMSIS-Pack/cpackget --template ../scripts/template/tpip-license.template > ../${{ env.report_name }}
+          date +"%Y/%m/%d %T" >> ../${{ env.report_name }}
         working-directory: ./cmd
         
       - name: Archive tpip report
         uses: actions/upload-artifact@v3
         with:
           name: tpip-report
-          path: ./scripts/tpip.md
+          path: ./${{ env.report_name }}
 
       - name: Print TPIP Report
-        run: cat tpip.md >> $GITHUB_STEP_SUMMARY
-        working-directory: scripts
+        run: cat ${{ env.report_name }} >> $GITHUB_STEP_SUMMARY
 
       - name: Check Licenses
         run: go-licenses check . --ignore github.com/Open-CMSIS-Pack/cpackget --disallowed_types=forbidden,restricted
         working-directory: ./cmd
+
+  commit-changes:
+    needs: [ check-licenses ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Restore Changes
+        uses: actions/download-artifact@v3
+        with:
+          name: tpip-report
+
+      - name: Commit Changes
+        shell: bash
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Update TPIP report"
+          git push
+      

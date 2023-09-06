@@ -15,6 +15,7 @@ archives:
       - LICENSE.txt
       - README.md
       - CHANGELOG.md
+      - third_party_licenses.md
 
     format_overrides:
       - goos: windows
