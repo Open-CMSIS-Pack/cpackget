@@ -77,9 +77,6 @@ If the .checksum file is in another directory, specify it with the -p/--path fla
 	Args:              cobra.ExactArgs(1),
 	PersistentPreRunE: configureInstallerGlobalCmd,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if checksumVerifyCmdFlags.checksumPath != "" {
-			return cryptography.VerifyChecksum(args[0], checksumVerifyCmdFlags.checksumPath)
-		}
-		return cryptography.VerifyChecksum(args[0], "")
+		return cryptography.VerifyChecksum(args[0], checksumVerifyCmdFlags.checksumPath)
 	},
 }

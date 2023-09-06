@@ -1,0 +1,13 @@
+{
+    "name": "Ubuntu-23.04",
+    "build": { "dockerfile": "Dockerfile" },
+  
+    "customizations": {
+      "vscode": {
+        "extensions": [
+          "golang.go",
+          "ms-azuretools.vscode-docker"
+        ]
+      }
+    }
+  }

@@ -106,6 +106,24 @@ func TestAddPack(t *testing.T) {
 		checkPackIsInstalled(t, packInfoToType(packToReinstall))
 	})
 
+	t.Run("test force-reinstalling an installed pack using encoded progress", func(t *testing.T) {
+		localTestingDir := "test-add-pack-force-reinstall-already-installed-using-encoded-progress"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+		utils.SetEncodedProgress(true)
+
+		packPath := packToReinstall
+		addPack(t, packPath, ConfigType{})
+
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, Timeout)
+		assert.Nil(err)
+
+		packToReinstall, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		checkPackIsInstalled(t, packInfoToType(packToReinstall))
+	})
+
 	t.Run("test force-reinstalling a pack with a user interruption", func(t *testing.T) {
 		localTestingDir := "test-add-pack-force-reinstall-user-interruption"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
@@ -1471,7 +1489,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
-		//defer removePackRoot(localTestingDir)
+		defer removePackRoot(localTestingDir)
 
 		addPack(t, publicRemotePack123alpha, ConfigType{IsPublic: true})
 

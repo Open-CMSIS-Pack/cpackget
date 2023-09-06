@@ -26,7 +26,7 @@ func generatePaths(t *testing.T) map[string]string {
 	return map[string]string{
 		"regular absolute path":     absPath,
 		"absolute path with ..":     filepath.Join(absPath, "..", dirName),
-		"absolute path with :/":     strings.Replace(absPath, ":\\", "/", 1),
+		"absolute path with :/":     strings.Replace(absPath, ":\\", "/", 1), // creates issues on Windows-FS, defer delete not working
 		"all forward slashes":       strings.ReplaceAll(absPath, "\\", "/"),
 		"multiple leading slashes":  strings.Replace(absPath, ":\\", ":\\\\\\\\", 1),
 		"multiple trailing slashes": absPath + "\\\\\\\\",
