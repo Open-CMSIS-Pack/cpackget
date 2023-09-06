@@ -38,12 +38,12 @@ var initCmdTests = []TestCase{
 			server := NewServer()
 			t.args = append(t.args, server.URL()+"index.pidx")
 			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?>
-<index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
+<index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="https://www.w3.org/2001/XMLSchema-instance">
 <vendor>TheVendor</vendor>
-<url>http://the.vendor/</url>
+<url>https://the.vendor/</url>
 <timestamp>2021-10-17T12:21:59.1747971+00:00</timestamp>
 <pindex>
-  <pdsc url="http://the.vendor/" vendor="TheVendor" name="PackName" version="1.2.3" />
+  <pdsc url="https://the.vendor/" vendor="TheVendor" name="PackName" version="1.2.3" />
 </pindex>
 </index>`))
 		},
