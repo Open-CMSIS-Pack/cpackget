@@ -20,9 +20,6 @@ import (
 
 // AllCommands contains all available commands for cpackget
 var AllCommands = []*cobra.Command{
-	PackCmd,
-	PdscCmd,
-	IndexCmd,
 	InitCmd,
 	AddCmd,
 	RmCmd,

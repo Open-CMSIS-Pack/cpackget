@@ -11,6 +11,13 @@ import (
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 )
 
+var (
+	packFilePath          = filepath.Join(testingDir, "1.2.3", "TheVendor.PublicLocalPack.1.2.3.pack")
+	fileWithPacksListed   = "file_with_listed_packs.txt"
+	fileWithNoPacksListed = "file_with_no_listed_packs.txt"
+	pdscFilePath          = filepath.Join(testingDir, "1.2.3", "TheVendor.PackName.pdsc")
+)
+
 var addCmdTests = []TestCase{
 	{
 		name:        "test help command",
