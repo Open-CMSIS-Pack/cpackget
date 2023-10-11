@@ -125,15 +125,15 @@ jobs:
         run: |
           make coverage-check
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        if: always()
-        continue-on-error: true
+      - name: Publish coverage report to Code Climate
+        if: ${{ startsWith(matrix.runs-on, 'ubuntu') }}
+        uses: paambaati/codeclimate-action@v5.0.0
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
         with:
-          files: cover.out
-          os: ${{ matrix.goos }}
-          fail_ci_if_error: true
-          functionalities: fix
+          debug: true
+          coverageLocations: ./cover.out:gocov
+          prefix: github.com/open-cmsis-pack/cpackget
 
   test-linux-arm64:
     name: "linux | arm64"

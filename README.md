@@ -4,6 +4,9 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/open-cmsis-pack/cpackget)](https://goreportcard.com/report/github.com/open-cmsis-pack/cpackget)
 [![GoDoc](https://godoc.org/github.com/open-cmsis-pack/cpackget?status.svg)](https://godoc.org/github.com/open-cmsis-pack/cpackget)
 
+[![Maintainability](https://api.codeclimate.com/v1/badges/eea6cb90a9a1e39bcff7/maintainability)](https://codeclimate.com/github/Open-CMSIS-Pack/cpackget/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/eea6cb90a9a1e39bcff7/test_coverage)](https://codeclimate.com/github/Open-CMSIS-Pack/cpackget/test_coverage)
+
 # cpackget: Open-CMSIS-Pack Package Installer
 
 This utility allows embedded developers to install (or uninstall) Open-CMSIS-Pack software packs to their local
