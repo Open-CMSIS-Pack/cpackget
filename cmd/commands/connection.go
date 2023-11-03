@@ -37,12 +37,14 @@ The url is optional. Ex "cpackget connection https://www.keil.com/pack"`,
 		if len(args) > 0 {
 			indexPath = args[0]
 		}
-
 		createPackRoot = false
+		var err error
 
-		err := configureInstaller(cmd, args)
-		if err != nil {
-			return err
+		if indexPath == "" { // try to fetch from environment
+			err = configureInstaller(cmd, args)
+			if err != nil {
+				return err
+			}
 		}
 
 		indexPath, err = installer.GetIndexPath(indexPath)
