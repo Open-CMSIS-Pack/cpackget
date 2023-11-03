@@ -47,7 +47,7 @@ func (p *EncodedProgress) Write(bs []byte) (int, error) {
  * C: Currently processed bytes or numbers of files
  * J: Total number of files beeing processed
  * L: License file follows
- * C: Connection Status [offline|online]
+ * O: Online connection Status [offline|online]
  */
 func (p *EncodedProgress) Print() {
 	newPercent := int(float64(p.current) / float64(p.total) * 100)

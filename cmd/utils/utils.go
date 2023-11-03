@@ -207,7 +207,11 @@ func CheckConnection(url string, timeOut int) error {
 	}
 
 	if GetEncodedProgress() {
-		log.Infof("[C:%v]", connStatus)
+		log.Infof("[O:%v]", connStatus)
+	}
+
+	if connStatus == "offline" {
+		return errors.New("remote server is offline or cannot be reached")
 	}
 
 	return nil

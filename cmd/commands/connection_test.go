@@ -4,11 +4,13 @@
 package commands_test
 
 import (
+	"errors"
 	"testing"
 )
 
 var (
-	urlPath string = "https://www.keil.com"
+	urlPath      string = "https://www.keil.com"
+	wrongUrlPath string = "https://www.keilll.com"
 )
 
 var connectionCmdTests = []TestCase{
@@ -22,8 +24,13 @@ var connectionCmdTests = []TestCase{
 		args:        []string{"connection", urlPath},
 		expectedErr: nil,
 	},
-
 	{
+		name:        "test checking invalid url",
+		args:        []string{"connection", wrongUrlPath},
+		expectedErr: errors.New("remote server is offline or cannot be reached"),
+	},
+
+	{ // set up environment for next test
 		name:      "test checking default connection",
 		args:      []string{"init"},
 		noCleanup: true,
