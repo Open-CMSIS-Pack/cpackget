@@ -92,7 +92,7 @@ coverage-report: test
 
 coverage-check: test
 	@echo Checking if test coverage is atleast 75%
-	@echo GetIndexPath() is always executed but not recognized by coverage tool (TODO)
+	@echo TODO func GetIndexPath is always executed but not recognized by coverage tool
 	test `go tool cover -func cover.out | tail -1 | awk '{print ($$3 + 0)*10}'` -ge 750
 
 test-public-index:
