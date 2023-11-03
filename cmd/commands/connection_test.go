@@ -10,7 +10,7 @@ import (
 
 var (
 	urlPath      string = "https://www.keil.com"
-	wrongUrlPath string = "https://www.keilll.com"
+	wrongURLPath string = "https://www.keilll.com"
 )
 
 var connectionCmdTests = []TestCase{
@@ -26,7 +26,7 @@ var connectionCmdTests = []TestCase{
 	},
 	{
 		name:        "test checking invalid url",
-		args:        []string{"connection", wrongUrlPath},
+		args:        []string{"connection", wrongURLPath},
 		expectedErr: errors.New("remote server is offline or cannot be reached"),
 	},
 
