@@ -21,7 +21,7 @@ func main() {
 	start := time.Now()
 
 	commands.Version = version
-	commands.CopyRight = copyRight
+	commands.Copyright = copyRight
 	cmd := commands.NewCli()
 	err := cmd.Execute()
 	if err != nil {

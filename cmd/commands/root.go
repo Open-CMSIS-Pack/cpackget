@@ -113,10 +113,10 @@ var flags struct {
 }
 
 var Version string
-var CopyRight string
+var Copyright string
 
 func printVersionAndLicense(file io.Writer) {
-	fmt.Fprintf(file, "cpackget version %v %s\n", strings.ReplaceAll(Version, "v", ""), CopyRight)
+	fmt.Fprintf(file, "cpackget version %v %s\n", strings.ReplaceAll(Version, "v", ""), Copyright)
 }
 
 // UsageTemplate returns usage template for the command.
