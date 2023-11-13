@@ -47,6 +47,7 @@ type TestCase struct {
 	validationFunc func(t *testing.T)
 	assert         *assert.Assertions
 	env            map[string]string
+	noCleanup      bool
 }
 
 type Server struct {
@@ -161,8 +162,10 @@ func runTests(t *testing.T, tests []TestCase) {
 			}
 
 			defer func() {
-				utils.UnsetReadOnlyR(localTestingDir)
-				os.RemoveAll(localTestingDir)
+				if !test.noCleanup {
+					utils.UnsetReadOnlyR(localTestingDir)
+					os.RemoveAll(localTestingDir)
+				}
 			}()
 
 			cmd := commands.NewCli()

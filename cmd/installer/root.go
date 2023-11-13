@@ -19,6 +19,7 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"golang.org/x/mod/semver"
 	"golang.org/x/sync/semaphore"
 )
@@ -420,6 +421,26 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 	}
 
 	return nil
+}
+
+func GetIndexPath(indexPath string) (string, error) {
+	if indexPath == "" {
+		indexPath = strings.TrimSuffix(Installation.PublicIndexXML.URL, "/")
+	}
+
+	if !utils.GetEncodedProgress() {
+		log.Infof("Using path: \"%v\"", indexPath)
+	}
+
+	var err error
+
+	if strings.HasPrefix(indexPath, "http://") || strings.HasPrefix(indexPath, "https://") {
+		if !strings.HasPrefix(indexPath, "https://") {
+			log.Warnf("Non-HTTPS url: \"%s\"", indexPath)
+		}
+	}
+
+	return indexPath, err
 }
 
 // UpdatePublicIndex receives a index path and place it under .Web/index.pidx.
@@ -843,10 +864,14 @@ func SetPackRoot(packRoot string, create bool) error {
 	if !utils.DirExists(packRoot) && !create {
 		return errs.ErrPackRootDoesNotExist
 	}
-	if packRoot == GetDefaultCmsisPackRoot() {
-		log.Infof("Using pack root: \"%v\" (default mode - no specific CMSIS_PACK_ROOT chosen)", packRoot)
-	} else {
-		log.Infof("Using pack root: \"%v\"", packRoot)
+
+	checkConnection := viper.GetBool("check-connection")
+	if checkConnection && !utils.GetEncodedProgress() {
+		if packRoot == GetDefaultCmsisPackRoot() {
+			log.Infof("Using pack root: \"%v\" (default mode - no specific CMSIS_PACK_ROOT chosen)", packRoot)
+		} else {
+			log.Infof("Using pack root: \"%v\"", packRoot)
+		}
 	}
 
 	Installation = &PacksInstallationType{
