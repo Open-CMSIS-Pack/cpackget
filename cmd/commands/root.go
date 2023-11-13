@@ -29,6 +29,7 @@ var AllCommands = []*cobra.Command{
 	ChecksumVerifyCmd,
 	SignatureCreateCmd,
 	SignatureVerifyCmd,
+	ConnectionCmd,
 }
 
 // createPackRoot is a flag that determines if the pack root should be created or not
@@ -68,10 +69,12 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 	}
 
 	targetPackRoot := viper.GetString("pack-root")
+	checkConnection := viper.GetBool("check-connection")
+
 	if targetPackRoot == installer.GetDefaultCmsisPackRoot() {
 		// If using the default pack root path and the public index is not found,
 		// initialize it
-		if !utils.FileExists(filepath.Join(targetPackRoot, ".Web", "index.pidx")) {
+		if !checkConnection && !utils.FileExists(filepath.Join(targetPackRoot, ".Web", "index.pidx")) {
 			err := installer.SetPackRoot(targetPackRoot, true)
 			if err != nil {
 				return err
@@ -110,10 +113,10 @@ var flags struct {
 }
 
 var Version string
-var CopyRight string
+var Copyright string
 
 func printVersionAndLicense(file io.Writer) {
-	fmt.Fprintf(file, "cpackget version %v %s\n", strings.ReplaceAll(Version, "v", ""), CopyRight)
+	fmt.Fprintf(file, "cpackget version %v %s\n", strings.ReplaceAll(Version, "v", ""), Copyright)
 }
 
 // UsageTemplate returns usage template for the command.

@@ -187,6 +187,36 @@ func DownloadFile(URL string, timeout int) (string, error) {
 	return filePath, err
 }
 
+func CheckConnection(url string, timeOut int) error {
+	timeout := time.Duration(timeOut) * time.Second
+	client := http.Client{
+		Timeout: timeout,
+	}
+	resp, err := client.Get(url)
+	connStatus := "offline"
+	if err != nil {
+		if !GetEncodedProgress() {
+			log.Info(err)
+		}
+	} else {
+		connStatus = "online"
+		if !GetEncodedProgress() {
+			text := fmt.Sprintf("Respond: %v:%v (%v)", resp.StatusCode, resp.Status, connStatus)
+			log.Info(text)
+		}
+	}
+
+	if GetEncodedProgress() {
+		log.Infof("[O:%v]", connStatus)
+	}
+
+	if connStatus == "offline" {
+		return errors.New("remote server is offline or cannot be reached")
+	}
+
+	return nil
+}
+
 // FileExists checks if filePath is an actual file in the local file system
 func FileExists(filePath string) bool {
 	info, err := os.Stat(filePath)
