@@ -157,11 +157,37 @@ jobs:
             add-apt-repository -y ppa:longsleep/golang-backports
             apt-get update -qq -y
             apt-get install -qq -y golang-1.21
-
+          setup: |
+            mkdir -p "${PWD}/artifacts"
+          dockerRunArgs: |
+            --volume "${PWD}/artifacts:/artifacts"
           run: |
             export PATH=$PATH:/usr/lib/go-1.21/bin
             git clone --depth 1 ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
             cd cpackget
             git fetch --depth 1 origin ${GITHUB_REF}
             git checkout FETCH_HEAD
-            make coverage-check
+            mkdir -p build
+            make test > build/cpackgettests-linux-arm64.txt
+            cp build/cpackgettests-linux-arm64.txt "/artifacts/cpackgettests-linux-arm64.txt"
+
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          check-latest: true
+
+      - name: Install go-junit-report
+        run: go install github.com/jstemmer/go-junit-report/v2@latest
+
+      - name: Generate JUnit test report
+        run: |
+          go-junit-report -set-exit-code -in ${PWD}/artifacts/cpackgettests-linux-arm64.txt -iocopy -out ./cpackget-testreport-linux-arm64.xml
+  
+      - name: Archive unit test results
+        uses: actions/upload-artifact@v3.1.3
+        with:
+          name: test-results
+          path: ./cpackget-testreport-linux-arm64.xml
+          if-no-files-found: error
+
