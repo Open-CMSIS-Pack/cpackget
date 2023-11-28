@@ -13,7 +13,7 @@ on:
       - .golangci.yml
       - go.mod
       - go.sum
-
+  workflow_call:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -110,12 +110,21 @@ jobs:
           go-version-file: go.mod
           check-latest: true
 
-      - name: Unit testing
-        run: |
-          make coverage-check
+      - name: Install go-junit-report
+        run: go install github.com/jstemmer/go-junit-report/v2@latest
 
+      - name: Run unit tests
+        run: |
+          mkdir -p build
+          make test > build/cpackgettests-${{ matrix.goos }}-amd64.txt
+
+      - name: Generate JUnit test report
+        if: always()
+        run: |
+          go-junit-report -set-exit-code -in build/cpackgettests-${{ matrix.goos }}-amd64.txt -iocopy -out build/cpackget-testreport-${{ matrix.goos }}-amd64.xml
+ 
       - name: Publish coverage report to Code Climate
-        if: ${{ startsWith(matrix.runs-on, 'ubuntu') }}
+        if: ${{ startsWith(matrix.runs-on, 'ubuntu') && (github.workflow != 'Release') }}
         uses: paambaati/codeclimate-action@v5.0.0
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
@@ -123,6 +132,13 @@ jobs:
           debug: true
           coverageLocations: ./cover.out:gocov
           prefix: github.com/open-cmsis-pack/cpackget
+
+      - name: Archive unit test results
+        uses: actions/upload-artifact@v3.1.3
+        with:
+          name: test-results
+          path: ./build/cpackget-testreport-*.xml
+          if-no-files-found: error
 
   test-linux-arm64:
     name: "linux | arm64"
@@ -140,12 +156,12 @@ jobs:
             apt-get install -qq -y software-properties-common git make
             add-apt-repository -y ppa:longsleep/golang-backports
             apt-get update -qq -y
-            apt-get install -qq -y golang-1.20
+            apt-get install -qq -y golang-1.21
+
           run: |
-            export PATH=$PATH:/usr/lib/go-1.20/bin
+            export PATH=$PATH:/usr/lib/go-1.21/bin
             git clone --depth 1 ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
             cd cpackget
             git fetch --depth 1 origin ${GITHUB_REF}
             git checkout FETCH_HEAD
             make coverage-check
-          

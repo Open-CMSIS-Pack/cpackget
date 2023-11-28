@@ -12,9 +12,28 @@ on:
       - "v*"
 
 jobs:
+  test:
+    uses: Open-CMSIS-Pack/cpackget/.github/workflows/test.yml@main
+
   goreleaser:
+    needs: test
     runs-on: ubuntu-latest
     steps:
+      - name: Download coverage report
+        uses: actions/download-artifact@v3
+        with:
+          name: test-results
+          path: testreport/
+
+      - name: Attach coverage report to release assets
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: testreport/*
+          asset_name: testreport
+          tag: ${{ github.ref }}
+          overwrite: true
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
