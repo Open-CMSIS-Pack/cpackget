@@ -25,12 +25,15 @@ jobs:
           name: test-results
           path: testreport/
 
+      - name: Zip test reports
+        run: |
+          zip -r testreport.zip testreport
+
       - name: Attach coverage report to release assets
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: testreport/*
-          asset_name: testreport
+          file: testreport.zip
           tag: ${{ github.ref }}
           overwrite: true
 
