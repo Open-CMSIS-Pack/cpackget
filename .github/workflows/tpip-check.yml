@@ -40,7 +40,7 @@ jobs:
         working-directory: ./cmd
         
       - name: Archive tpip report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tpip-report
           path: ./${{ env.report_name }}
