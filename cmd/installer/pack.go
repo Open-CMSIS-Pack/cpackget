@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -457,7 +456,7 @@ func (p *PackType) extractEula(packPath string) error {
 		return err
 	}
 
-	eulaFileName := packPath + "." + path.Base(p.Pdsc.License)
+	eulaFileName := packPath + "." + filepath.Base(p.Pdsc.License)
 
 	if utils.GetEncodedProgress() {
 		log.Infof("[L:F\"%s\"]", eulaFileName)
