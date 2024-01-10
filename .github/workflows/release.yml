@@ -30,6 +30,7 @@ jobs:
           zip -r testreport.zip testreport
 
       - name: Attach coverage report to release assets
+        if: startsWith(github.ref, 'refs/tags/')
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -53,6 +54,7 @@ jobs:
           ./scripts/release_notes > /tmp/RELEASE_NOTES
 
       - name: Run GoReleaser
+        if: startsWith(github.ref, 'refs/tags/')
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
