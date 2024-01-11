@@ -220,7 +220,7 @@ func CheckConnection(url string, timeOut int) error {
 // FileExists checks if filePath is an actual file in the local file system
 func FileExists(filePath string) bool {
 	info, err := os.Stat(filePath)
-	if os.IsNotExist(err) {
+	if info == nil || os.IsNotExist(err) {
 		return false
 	}
 	return !info.IsDir()
