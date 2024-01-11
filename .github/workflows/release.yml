@@ -19,17 +19,17 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - name: Download coverage report
-        uses: actions/download-artifact@v3
+      - name: Download test results
+        uses: actions/download-artifact@v4
         with:
-          name: test-results
+          pattern: test-results-*
           path: testreport/
 
       - name: Zip test reports
         run: |
           zip -r testreport.zip testreport
 
-      - name: Attach coverage report to release assets
+      - name: Attach test reports to release assets
         if: startsWith(github.ref, 'refs/tags/')
         uses: svenstaro/upload-release-action@v2
         with:
