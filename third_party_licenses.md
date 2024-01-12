@@ -6,7 +6,7 @@
 | github.com/ProtonMail/go-crypto | v0.0.0-20230923063757-afb1ddc0824c  | [BSD-3-Clause](https://github.com/ProtonMail/go-crypto/blob/afb1ddc0824c/LICENSE) |
 | github.com/ProtonMail/go-mime | v0.0.0-20230322103455-7d82a3887f2f  | [MIT](https://github.com/ProtonMail/go-mime/blob/7d82a3887f2f/LICENSE) |
 | github.com/ProtonMail/gopenpgp/v2 | v2.7.4  | [MIT](https://github.com/ProtonMail/gopenpgp/blob/v2.7.4/LICENSE) |
-| github.com/cloudflare/circl | v1.3.6  | [BSD-3-Clause](https://github.com/cloudflare/circl/blob/v1.3.6/LICENSE) |
+| github.com/cloudflare/circl | v1.3.7  | [BSD-3-Clause](https://github.com/cloudflare/circl/blob/v1.3.7/LICENSE) |
 | github.com/fsnotify/fsnotify | v1.7.0  | [BSD-3-Clause](https://github.com/fsnotify/fsnotify/blob/v1.7.0/LICENSE) |
 | github.com/gabriel-vasile/mimetype | v1.4.3  | [MIT](https://github.com/gabriel-vasile/mimetype/blob/v1.4.3/LICENSE) |
 | github.com/hashicorp/hcl | v1.0.0  | [MPL-2.0](https://github.com/hashicorp/hcl/blob/v1.0.0/LICENSE) |
