@@ -102,7 +102,8 @@ Install a pack version from the public package index. The download url will be l
 
 * `cpackget add Vendor.PackName.x.y.z` or `cpackget add Vendor::PackName@x.y.z`
 
-Install the latest published version of a public package listed in the package index, if no other version of this pack is already installed:
+Install the latest published version of a public package listed in the package index,
+if no other version of this pack is already installed:
 
 * `cpackget add Vendor.PackName` or `cpackget add Vendor::PackName`
 
