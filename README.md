@@ -59,8 +59,8 @@ For example, if one wanted help removing a pack, running `cpackget rm --help` wo
 
 If cpackget is going to work on an existing pack root folder, there are two ways to specify it:
 
-1. `export CMSIS_PACK_ROOT=path/to/pack-root; cpackget add ARM.CMSIS`
-2. `cpackget --pack-root path/to/pack-root pack add ARM.CMSIS`
+1. `export CMSIS_PACK_ROOT=path/to/pack-root; cpackget add ARM::CMSIS`
+2. `cpackget --pack-root path/to/pack-root add ARM::CMSIS`
 
 To create a new pack root folder with an up-to-date index file of publicly available Open-CMSIS-Pack packs run:
 
@@ -100,16 +100,11 @@ Install a pack version that can be downloaded using a web link:
 
 Install a pack version from the public package index. The download url will be looked up by the tool:
 
-* `cpackget add Vendor.PackName.x.y.z` or `cpackget pack add Vendor::PackName@x.y.z`
+* `cpackget add Vendor.PackName.x.y.z` or `cpackget add Vendor::PackName@x.y.z`
 
-Install the latest published version of a public package listed in the package index:
+Install the latest published version of a public package listed in the package index, if no other version of this pack is already installed:
 
-* `cpackget add Vendor.PackName` or `cpackget pack add Vendor::PackName`
-
-Install packs using version modifiers:
-
-* `cpackget add Vendor::PackName>=x.y.z`, check if there is any version greater than or equal to x.y.z, install latest otherwise
-* `cpackget add Vendor::PackName@~x.y.z`, check if there is any version greater than or equal to x.y.z
+* `cpackget add Vendor.PackName` or `cpackget add Vendor::PackName`
 
 Install the pack versions specified in the ascii file. Each line specifies a single pack.
 
@@ -119,7 +114,7 @@ The command below is an example how to add packs via PDSC files:
 
 * `cpackget add path/to/Vendor.PackName.pdsc`
 
-Note that for adding packs via PDSC files is not possible to provide an URL as input. Only local files are allowed.
+Note that for adding packs via PDSC files is not possible to provide a URL as input. Only local files are allowed.
 
 ### Listing installed packs
 
