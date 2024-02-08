@@ -2,7 +2,7 @@ name: Test
 
 on:
   workflow_dispatch:
-  push: 
+  push:
     branches: [main]
   pull_request:
     paths:
@@ -85,20 +85,27 @@ jobs:
         run: |
           make test-xmllint-localrepository
 
-  test-amd64:
+  test-native:
     strategy:
       matrix:
-        # Tests on Mac are currently broken
+        # Runners
+        # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners/about-github-hosted-runners
         goos: [windows, linux, darwin]
         include:
           - goos: windows
             runs-on: windows-latest
+            arch: amd64
           - goos: linux
             runs-on: ubuntu-latest
+            arch: amd64
           - goos: darwin
             runs-on: macos-latest
+            arch: amd64
+          - goos: darwin
+            runs-on: macos-14
+            arch: arm64
 
-    name: "${{ matrix.goos }} | amd64"
+    name: "${{ matrix.goos }} | ${{ matrix.arch }} native"
     runs-on: ${{ matrix.runs-on }}
     steps:
       - name: Check out repository code
@@ -116,13 +123,13 @@ jobs:
       - name: Run unit tests
         run: |
           mkdir -p build
-          make test > build/cpackgettests-${{ matrix.goos }}-amd64.txt
+          make test > build/cpackgettests-${{ matrix.goos }}-${{ matrix.arch }}.txt
 
       - name: Generate JUnit test report
         if: always()
         run: |
-          go-junit-report -set-exit-code -in build/cpackgettests-${{ matrix.goos }}-amd64.txt -iocopy -out build/cpackget-testreport-${{ matrix.goos }}-amd64.xml
- 
+          go-junit-report -set-exit-code -in build/cpackgettests-${{ matrix.goos }}-${{ matrix.arch }}.txt -iocopy -out build/cpackget-testreport-${{ matrix.goos }}-${{ matrix.arch }}.xml
+
       - name: Publish coverage report to Code Climate
         if: ${{ startsWith(matrix.runs-on, 'ubuntu') && (github.workflow != 'Release') }}
         uses: paambaati/codeclimate-action@v5.0.0
@@ -136,12 +143,12 @@ jobs:
       - name: Archive unit test results
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.goos }}-amd64
-          path: ./build/cpackget-testreport-${{ matrix.goos }}-amd64.xml
+          name: test-results-${{ matrix.goos }}-${{ matrix.arch }}
+          path: ./build/cpackget-testreport-${{ matrix.goos }}-${{ matrix.arch }}.xml
           if-no-files-found: error
 
-  test-linux-arm64:
-    name: "linux | arm64"
+  test-linux-arm64-emulated:
+    name: "linux | arm64 emulated"
     runs-on: ubuntu-latest
     steps:
       - name: Unit testing
@@ -183,7 +190,7 @@ jobs:
       - name: Generate JUnit test report
         run: |
           go-junit-report -set-exit-code -in ${PWD}/artifacts/cpackgettests-linux-arm64.txt -iocopy -out ./cpackget-testreport-linux-arm64.xml
-  
+
       - name: Archive unit test results
         uses: actions/upload-artifact@v4
         with:
