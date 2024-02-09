@@ -14,23 +14,25 @@ jobs:
     name: Set up
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout PR head
+      - name: Checkout PR head commit
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
-      # - name: Download and Extract Artifacts
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: |
-      #      mkdir -p artifacts && cd artifacts
-      #      artifacts_url=${{ github.event.workflow_run.artifacts_url }}
-      #      gh api "$artifacts_url" -q '.artifacts[] | [.name, .archive_download_url] | @tsv' | while read artifact
-      #      do
-      #        IFS=$'\t' read name url <<< "$artifact"
-      #        if  [[ $name == "Event File"* ]]; then
-      #            name="Event File"
-      #        fi
-      #        gh api $url > "$name.zip"
-      #        unzip -d "$name" "$name.zip"
-      #      done
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - name: Install code climate cli
+        run: |
+          curl -L https://github.com/codeclimate/codeclimate/archive/master.tar.gz | tar xvz
+          cd codeclimate-* && sudo make install
+          ls -la
+
+      - name: Run unit tests
+        run: |
+          mkdir -p build
+          make test > build/cpackgettests-linux-amd64.txt
+
