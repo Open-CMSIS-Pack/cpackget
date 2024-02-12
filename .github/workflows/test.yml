@@ -140,6 +140,7 @@ jobs:
       #     coverageLocations: ./cover.out:gocov
       #     prefix: github.com/open-cmsis-pack/cpackget
 
+
       - name: Archive unit test results
         uses: actions/upload-artifact@v4
         with:
