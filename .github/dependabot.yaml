@@ -4,5 +4,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "sunday"
     open-pull-requests-limit: 10
     rebase-strategy: disabled
+
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: daily
