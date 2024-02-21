@@ -3,7 +3,7 @@ module github.com/open-cmsis-pack/cpackget
 go 1.21
 
 require (
-	github.com/ProtonMail/gopenpgp/v2 v2.7.4
+	github.com/ProtonMail/gopenpgp/v2 v2.7.5
 	github.com/jroimartin/gocui v0.5.0
 	github.com/lu4p/cat v0.1.5
 	github.com/schollz/progressbar/v3 v3.14.1
