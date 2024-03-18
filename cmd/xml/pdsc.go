@@ -95,7 +95,7 @@ func (p *PdscXML) FindReleaseTagByVersion(version string) *ReleaseTag {
 		}
 
 		for _, releaseTag := range releases {
-			if releaseTag.Version == version {
+			if utils.SemverCompare(releaseTag.Version, version) == 0 {
 				return &releaseTag
 			}
 		}
@@ -131,7 +131,7 @@ func (p *PdscXML) PackURL(version string) string {
 		version = p.LatestVersion()
 	}
 
-	return baseURL + p.Vendor + "." + p.Name + "." + version + ".pack"
+	return baseURL + p.Vendor + "." + p.Name + "." + utils.SemverStripMeta(version) + ".pack"
 }
 
 // Dependencies returns all the listed packs that need to be installed
