@@ -164,7 +164,7 @@ func (p *PackType) validate() error {
 			}
 
 			// Read pack's pdsc
-			tmpPdscFileName := utils.RandStringBytes(10)
+			tmpPdscFileName := filepath.Join(os.TempDir(), utils.RandStringBytes(10))
 			defer os.RemoveAll(tmpPdscFileName)
 
 			if err := utils.SecureInflateFile(file, tmpPdscFileName, ""); err != nil {
