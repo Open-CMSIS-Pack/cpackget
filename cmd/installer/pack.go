@@ -19,7 +19,6 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/mod/semver"
 )
 
 // PackType is the struct that represents the installation of a
@@ -61,7 +60,7 @@ type PackType struct {
 	// Pdsc holds a pointer to the PDSC file already parsed as XML
 	Pdsc *xml.PdscXML
 
-	// zipReader holds a pointer to the uncompress pack file
+	// zipReader holds a pointer to the uncompressed pack file
 	zipReader *zip.ReadCloser
 
 	// Requirements represents a packs' dependencies
@@ -182,7 +181,7 @@ func (p *PackType) validate() error {
 
 			log.Debugf("Making sure %s is the latest release in %s", p.targetVersion, pdscFileName)
 
-			if latestVersion != version {
+			if utils.SemverCompare(version, latestVersion) != 0 {
 				releaseTag := p.Pdsc.FindReleaseTagByVersion(version)
 				if releaseTag == nil {
 					log.Errorf("The pack's pdsc (%s) has no release tag matching version \"%s\"", pdscFileName, version)
@@ -530,25 +529,14 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 	// Try to install the highest available version in the
 	// specified min:max range.
 	if p.versionModifier == utils.RangeVersion {
-		minVersion := strings.Split(p.Version, ":")[0]
-		maxVersion := strings.Split(p.Version, ":")[1]
-		if pdscXML.LatestVersion() == maxVersion {
-			p.targetVersion = pdscXML.LatestVersion()
-			return
-		}
-		// If it's min:_, install the latest above the minimum
-		if maxVersion == "_" {
-			maxVersion = pdscXML.LatestVersion()
-		}
 		for _, version := range pdscXML.AllReleases() {
-			if semver.Compare("v"+minVersion, "v"+version) <= 0 && semver.Compare("v"+version, "v"+maxVersion) <= 0 {
-				// If the latest isn't available, try the highest possible
-				if semver.Compare("v"+version, "v"+p.targetVersion) > 0 {
-					p.targetVersion = version
-				}
+			if utils.SemverCompareRange(p.Version, version) == 0 {
+				// the first matching is the best (latest)
+				p.targetVersion = version
+				log.Debugf("- resolved range %s as %s", p.Version, p.targetVersion)
+				return
 			}
 		}
-		return
 	}
 
 	log.Warn("Could not resolve version modifier")
@@ -621,7 +609,7 @@ func (p *PackType) PackID() string {
 
 // PackIDWithVersion returns the packID with version: Vendor.PackName.x.y.z
 func (p *PackType) PackIDWithVersion() string {
-	return p.PackID() + "." + p.GetVersion()
+	return p.PackID() + "." + utils.SemverStripMeta(p.GetVersion())
 }
 
 // PackFileName returns a string with how the pack file name would be: Vendor.PackName.x.y.z.pack
@@ -651,7 +639,7 @@ func (p *PackType) GetVersion() string {
 // toggleReadOnly will be used by Lock() and Unlock() to set or unset Read-Only flag on all pack files
 func (p *PackType) toggleReadOnly(setReadOnly bool) {
 	// Vendor/Pack/x.y.z/
-	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.GetVersion())
+	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, utils.SemverStripMeta(p.GetVersion()))
 
 	// .Download/Vendor.Pack.z.y.z.pack
 	packBackupPath := filepath.Join(Installation.DownloadDir, p.PackFileName())

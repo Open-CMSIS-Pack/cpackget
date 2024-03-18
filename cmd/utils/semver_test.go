@@ -45,3 +45,31 @@ func TestSemverMajor(t *testing.T) {
 		assert.Equal("1", utils.SemverMajor("1.02.03"))
 	})
 }
+func TestSemverStripMeta(t *testing.T) {
+	assert := assert.New(t)
+
+	t.Run("test strip meta", func(t *testing.T) {
+		assert.Equal("1.2.3", utils.SemverStripMeta("1.2.3"))
+		assert.Equal("1.2.3", utils.SemverStripMeta("1.2.3+meta"))
+	})
+}
+
+func TestSemverCompareRange(t *testing.T) {
+	assert := assert.New(t)
+
+	t.Run("test version range compare", func(t *testing.T) {
+		assert.True(utils.SemverCompareRange("1.2.3", "1.2.3") == 0)
+		assert.True(utils.SemverCompareRange("1.2.3", "1.2.3:") == 0)
+		assert.True(utils.SemverCompareRange("1.2.3", ":1.2.3") == 0)
+		assert.True(utils.SemverCompareRange("1.2.3", "1.2.3:1.2.3") == 0)
+		assert.True(utils.SemverCompareRange("1.2.3", "1.2.0:1.2.3") == 0)
+		assert.True(utils.SemverCompareRange("1.2.3", "1.2.3:1.2.4") == 0)
+		assert.True(utils.SemverCompareRange("1.2.3", "1.2.0:1.2.4") == 0)
+		assert.True(utils.SemverCompareRange("1.2.3", "1.2.0") == 0)
+		assert.True(utils.SemverCompareRange("1.2.3", ":1.2.4") == 0)
+		assert.True(utils.SemverCompareRange("1.2.3", "1.2.4") < 0)
+		assert.True(utils.SemverCompareRange("1.2.3", ":1.2.0") > 0)
+		assert.True(utils.SemverCompareRange("1.2.3", "1.2.4:1.2.5") < 0)
+		assert.True(utils.SemverCompareRange("1.2.3", "1.2.0:1.2.1") > 0)
+	})
+}
