@@ -27,9 +27,33 @@ func SemverCompare(version1, version2 string) int {
 	return semver.Compare(version1, version2)
 }
 
+// SemverCompareRange returns an integer comparing version to range given as low[:high]
+// according to semantic version precedence.
+//
+// The result is 0 if version withing range, -1 if < low, 1 if > high,
+func SemverCompareRange(version, vrange string) int {
+	low, high, found := strings.Cut(vrange, ":")
+	if found && high != "" && SemverCompare(version, high) > 0 {
+		return 1
+	}
+	if low != "" && SemverCompare(version, low) < 0 {
+		return -1
+	}
+	return 0
+}
+
 // SemverMajor extends `semver.Major` to work with leading zeros
 func SemverMajor(version string) string {
 	version = "v" + stripLeadingZeros(version)
 	version = semver.Major(version)
 	return strings.TrimLeft(version, "v")
+}
+
+// strips `+meta` from the supplied version string
+func SemverStripMeta(version string) string {
+	before, _, found := strings.Cut(version, "+")
+	if found {
+		return before
+	}
+	return version
 }

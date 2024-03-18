@@ -7,6 +7,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	"github.com/stretchr/testify/assert"
 )
@@ -98,7 +99,8 @@ func TestPdscXML(t *testing.T) {
 		assert.Equal(pdsc.Vendor, "TheVendor")
 		assert.Equal(pdsc.URL, "file:///testdata/devpack/1.2.3/")
 		assert.Equal(pdsc.Name, "DevPack")
-		assert.Equal(pdsc.LatestVersion(), "1.2.3")
+		assert.Equal(0, utils.SemverCompare(pdsc.LatestVersion(), "1.2.3"))
+		assert.Equal("1.2.3+meta3", pdsc.LatestVersion())
 	})
 
 	t.Run("test finding release tag", func(t *testing.T) {
@@ -106,11 +108,23 @@ func TestPdscXML(t *testing.T) {
 		assert.Nil(pdsc.Read())
 		releaseTag := pdsc.FindReleaseTagByVersion("1.2.3")
 		assert.NotNil(releaseTag)
-		assert.Equal(releaseTag.Version, "1.2.3")
+		assert.Equal("1.2.3+meta3", releaseTag.Version)
+
+		releaseTag = pdsc.FindReleaseTagByVersion("1.2.3+meta0")
+		assert.NotNil(releaseTag)
+		assert.Equal("1.2.3+meta3", releaseTag.Version)
+
+		releaseTag = pdsc.FindReleaseTagByVersion("1.2.2")
+		assert.NotNil(releaseTag)
+		assert.Equal("1.2.2", releaseTag.Version)
+
+		releaseTag = pdsc.FindReleaseTagByVersion("1.2.2+meta")
+		assert.NotNil(releaseTag)
+		assert.Equal("1.2.2", releaseTag.Version)
 
 		releaseTag = pdsc.FindReleaseTagByVersion("")
 		assert.NotNil(releaseTag)
-		assert.Equal(releaseTag.Version, "1.2.3")
+		assert.Equal("1.2.3+meta3", releaseTag.Version)
 	})
 
 	t.Run("test building pack url", func(t *testing.T) {
