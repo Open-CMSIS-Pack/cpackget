@@ -702,7 +702,7 @@ func TestAddPack(t *testing.T) {
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 			assert.Nil(err)
 
-			pack.Version = "1.2.3"
+			pack.Version = "1.2.3+metaInjected"
 			pack.IsPublic = true
 			checkPackIsInstalled(t, pack)
 		})
@@ -717,7 +717,7 @@ func TestAddPack(t *testing.T) {
 			packInfo, err := utils.ExtractPackInfo(packPath)
 			assert.Nil(err)
 			pack := packInfoToType(packInfo)
-			pack.Version = "1.2.3"
+			pack.Version = "1.2.3+meta"
 
 			// Prep the pdsc file to go in .Web/
 			packPdscFilePath := filepath.Join(installer.Installation.WebDir, pack.PdscFileName())
@@ -916,6 +916,7 @@ func TestAddPack(t *testing.T) {
 
 		// Make sure there's no pack folder in Vendor/PackName/x.y.z/, Vendor/PackName/ and Vendor/
 		assert.False(utils.DirExists(filepath.Join(installer.Installation.PackRoot, pack.Vendor, pack.Name, pack.Version)))
+		assert.False(utils.DirExists(filepath.Join(installer.Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta())))
 		assert.False(utils.DirExists(filepath.Join(installer.Installation.PackRoot, pack.Vendor, pack.Name)))
 		assert.False(utils.DirExists(filepath.Join(installer.Installation.PackRoot, pack.Vendor)))
 

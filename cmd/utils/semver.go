@@ -15,8 +15,12 @@ import (
 // to re-use `semver` Compare and Major functions
 func stripLeadingZeros(version string) string {
 	regex := regexp.MustCompile(`\.0*(\d+)`)
-	version = strings.TrimLeft(version, "0")
 	version = regex.ReplaceAllString(version, ".$1")
+	version = strings.TrimLeft(version, "0") // trim leading zeros
+	if strings.HasPrefix(version, ".") {
+		// restore the only zero
+		version = "0" + version
+	}
 	return version
 }
 

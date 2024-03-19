@@ -91,7 +91,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 			log.Debugf("Making temporary backup of pack \"%s\"", packPath)
 
 			// Get target pack's full path and move it to a temporary "_tmp" directory
-			fullPackPath = filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.Version)
+			fullPackPath = filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta())
 			backupPackPath = fullPackPath + "_tmp"
 
 			if err := utils.MoveFile(fullPackPath, backupPackPath); err != nil {
@@ -101,7 +101,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 			log.Debugf("Moved pack to temporary path \"%s\"", backupPackPath)
 			dropPreInstalled = true
 		} else {
-			log.Errorf("Pack \"%s\" is already installed here: \"%s\", use the --force-reinstall (-F) flag to force installation", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersion()))
+			log.Errorf("Pack \"%s\" is already installed here: \"%s\", use the --force-reinstall (-F) flag to force installation", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta()))
 			return nil
 		}
 	}
@@ -990,7 +990,7 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 
 	// Exact version is easy, just find a matching installation folder
 	if pack.versionModifier == utils.ExactVersion {
-		packDir := filepath.Join(installationDir, pack.Version)
+		packDir := filepath.Join(installationDir, pack.GetVersionNoMeta())
 		log.Debugf("Checking if \"%s\" exists", packDir)
 		return utils.DirExists(packDir)
 	}
@@ -1023,7 +1023,7 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 		log.Debugf("Checking for installed packs >=%s", pack.Version)
 		for _, version := range installedVersions {
 			log.Debugf("- checking if %s >= %s", version, pack.Version)
-			if semver.Compare("v"+version, "v"+pack.Version) >= 0 {
+			if utils.SemverCompare(version, pack.Version) >= 0 {
 				log.Debugf("- found newer version %s", version)
 				pack.targetVersion = version
 				return true
@@ -1040,7 +1040,7 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 		for _, version := range installedVersions {
 			log.Debugf("- checking against: %s", version)
 			sameMajor := semver.Major("v"+version) == semver.Major("v"+pack.Version)
-			if sameMajor && semver.Compare("v"+version, "v"+pack.Version) >= 0 {
+			if sameMajor && utils.SemverCompare(version, pack.Version) >= 0 {
 				pack.targetVersion = version
 				return true
 			}
@@ -1050,14 +1050,9 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 	}
 
 	if pack.versionModifier == utils.RangeVersion {
-		minVersion := strings.Split(pack.Version, ":")[0]
-		maxVersion := strings.Split(pack.Version, ":")[1]
 		for _, version := range installedVersions {
-			if semver.Compare("v"+minVersion, "v"+version) <= 0 {
-				if (maxVersion == "_") || (semver.Compare("v"+version, "v"+maxVersion) <= 0) {
-					pack.targetVersion = version
-					return true
-				}
+			if utils.SemverCompareRange(version, pack.Version) == 0 {
+				return true
 			}
 		}
 		return false

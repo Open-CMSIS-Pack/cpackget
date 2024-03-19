@@ -33,6 +33,19 @@ func TestSemverCompare(t *testing.T) {
 		assert.True(utils.SemverCompare(version1, version2) < 0)
 		assert.True(utils.SemverCompare(version2, version1) > 0)
 	})
+	t.Run("test comparing two equal versions with and without leading zeros", func(t *testing.T) {
+		version1 := "01.02.03"
+		version2 := "1.2.3"
+		assert.True(utils.SemverCompare(version1, version2) == 0)
+	})
+	t.Run("test comparing two zero major versions with and without leading zeros", func(t *testing.T) {
+		version1 := "00.02.03"
+		version2 := "0.2.3"
+		version3 := "0.2.4"
+		assert.True(utils.SemverCompare(version1, version2) == 0)
+		assert.True(utils.SemverCompare(version1, version3) < 0)
+		assert.True(utils.SemverCompare(version2, version3) < 0)
+	})
 }
 
 func TestSemverMajor(t *testing.T) {

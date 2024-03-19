@@ -210,7 +210,7 @@ func (p *PackType) purge() error {
 
 	fileNamePattern := p.Vendor + "\\." + p.Name
 	if len(p.Version) > 0 {
-		fileNamePattern += "\\." + p.Version
+		fileNamePattern += "\\." + p.GetVersionNoMeta() + ".*"
 	} else {
 		fileNamePattern += "\\..*?"
 	}
@@ -256,7 +256,7 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 		return err
 	}
 
-	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.GetVersion())
+	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.GetVersionNoMeta())
 	packBackupPath := filepath.Join(Installation.DownloadDir, p.PackFileName())
 
 	if len(p.Pdsc.License) > 0 {
@@ -365,7 +365,7 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 	log.Debugf("Uninstalling \"%v\"", p.path)
 
 	// Remove Vendor/Pack/x.y.z
-	packPath := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.GetVersion())
+	packPath := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.GetVersionNoMeta())
 	if err := os.RemoveAll(packPath); err != nil {
 		return err
 	}
@@ -609,7 +609,7 @@ func (p *PackType) PackID() string {
 
 // PackIDWithVersion returns the packID with version: Vendor.PackName.x.y.z
 func (p *PackType) PackIDWithVersion() string {
-	return p.PackID() + "." + utils.SemverStripMeta(p.GetVersion())
+	return p.PackID() + "." + p.GetVersionNoMeta()
 }
 
 // PackFileName returns a string with how the pack file name would be: Vendor.PackName.x.y.z.pack
@@ -636,10 +636,15 @@ func (p *PackType) GetVersion() string {
 	return p.Version
 }
 
+// GetVersionNoMeta return the version without meta information
+func (p *PackType) GetVersionNoMeta() string {
+	return utils.SemverStripMeta(p.GetVersion())
+}
+
 // toggleReadOnly will be used by Lock() and Unlock() to set or unset Read-Only flag on all pack files
 func (p *PackType) toggleReadOnly(setReadOnly bool) {
 	// Vendor/Pack/x.y.z/
-	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, utils.SemverStripMeta(p.GetVersion()))
+	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.GetVersionNoMeta())
 
 	// .Download/Vendor.Pack.z.y.z.pack
 	packBackupPath := filepath.Join(Installation.DownloadDir, p.PackFileName())
