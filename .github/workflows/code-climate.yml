@@ -1,0 +1,38 @@
+name: Code Climate
+
+on:
+  workflow_run:
+    workflows: ["Test"]
+    # avoid running once merged on main branch, this should be run only on PRs
+    branches-ignore: ["main"]
+    # run this once one of the workflow is triggered.
+    types:
+      - requested
+
+jobs:
+  code-climate:
+    name: Set up
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout PR head commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - name: Install code climate cli
+        run: |
+          curl -L https://github.com/codeclimate/codeclimate/archive/master.tar.gz | tar xvz
+          cd codeclimate-* && sudo make install
+          ls -la
+
+      - name: Run unit tests
+        run: |
+          mkdir -p build
+          make test > build/cpackgettests-linux-amd64.txt
+
