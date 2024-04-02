@@ -243,6 +243,11 @@ func (p *PackType) purge() error {
 //   - If "CMSIS_PACK_ROOT/.Web/p.Vendor.p.Name.pdsc" does not exist then
 //   - Save an unversioned copy of the pdsc file in "CMSIS_PACK_ROOT/.Local/"
 func (p *PackType) install(installation *PacksInstallationType, checkEula bool) error {
+
+	// normalize pack path
+	p.path = filepath.FromSlash(p.path)
+	p.path = filepath.Clean(p.path)
+
 	log.Debugf("Installing \"%s\"", p.path)
 
 	var err error
@@ -258,6 +263,11 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 
 	packHomeDir := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.GetVersionNoMeta())
 	packBackupPath := filepath.Join(Installation.DownloadDir, p.PackFileName())
+	packBackupPath = filepath.FromSlash(packBackupPath)
+	packBackupPath = filepath.Clean(packBackupPath)
+	if packBackupPath == p.path {
+		p.isDownloaded = true
+	}
 
 	if len(p.Pdsc.License) > 0 {
 		if checkEula {

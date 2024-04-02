@@ -233,7 +233,8 @@ var (
 
 	malformedPackNames             = []string{"pAck-WiTH-HiFenS", "[$pecialC#aracter£]", "Spaced Pack Name", " "}
 	packThatDoesNotExist           = "ThisPack.DoesNotExist.0.0.1.pack"
-	packToReinstall                = filepath.Join(testDir, "TheVendor.PackToReinstall.1.2.3.pack")
+	packToReinstallFileName        = "TheVendor.PackToReinstall.1.2.3.pack"
+	packToReinstall                = filepath.Join(testDir, packToReinstallFileName)
 	packWithCorruptZip             = filepath.Join(testDir, "FakeZip.PackName.1.2.3.pack")
 	packWithMalformedURL           = "http://:malformed-url*/TheVendor.PackName.1.2.3.pack"
 	packWithoutPdscFileInside      = filepath.Join(testDir, "PackWithout.PdscFileInside.1.2.3.pack")
