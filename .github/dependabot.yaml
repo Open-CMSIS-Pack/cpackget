@@ -9,6 +9,6 @@ updates:
     rebase-strategy: disabled
 
   - package-ecosystem: gomod
-    directory: /
+    directory: "/"
     schedule:
       interval: daily
