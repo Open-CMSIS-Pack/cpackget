@@ -106,6 +106,28 @@ func TestAddPack(t *testing.T) {
 		checkPackIsInstalled(t, packInfoToType(packToReinstall))
 	})
 
+	t.Run("test installing downloaded pack", func(t *testing.T) {
+		localTestingDir := "test-add-downloaded-pack"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+
+		packPath := packToReinstall
+		addPack(t, packPath, ConfigType{})
+		removePack(t, packPath, true, true, false)
+		packPath = filepath.Join(installer.Installation.DownloadDir, packToReinstallFileName)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
+		assert.Nil(err)
+
+		// ensure downloaded pack remains valid
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, Timeout)
+		assert.Nil(err)
+
+		packToReinstall, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		checkPackIsInstalled(t, packInfoToType(packToReinstall))
+	})
+
 	t.Run("test force-reinstalling an installed pack using encoded progress", func(t *testing.T) {
 		localTestingDir := "test-add-pack-force-reinstall-already-installed-using-encoded-progress"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
