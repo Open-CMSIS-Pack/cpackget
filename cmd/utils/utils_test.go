@@ -171,11 +171,10 @@ func TestEnsureDir(t *testing.T) {
 func TestCopyFile(t *testing.T) {
 	assert := assert.New(t)
 
-	t.Run("test fail if copying to same file", func(t *testing.T) {
+	t.Run("test succeeds if copying to same file", func(t *testing.T) {
 		fileName := "dummy-file"
 		err := utils.CopyFile(fileName, fileName)
-		assert.NotNil(err)
-		errs.Is(err, errs.ErrCopyingEqualPaths)
+		assert.Nil(err)
 	})
 
 	t.Run("test failed to open source", func(t *testing.T) {
@@ -240,11 +239,10 @@ func TestCopyFile(t *testing.T) {
 func TestMoveFile(t *testing.T) {
 	assert := assert.New(t)
 
-	t.Run("test fail if moving to same file", func(t *testing.T) {
+	t.Run("test succeeds if moving to same file", func(t *testing.T) {
 		fileName := "dummy-file"
 		err := utils.MoveFile(fileName, fileName)
-		assert.NotNil(err)
-		errs.Is(err, errs.ErrMovingEqualPaths)
+		assert.Nil(err)
 	})
 
 	t.Run("test fail moving files", func(t *testing.T) {

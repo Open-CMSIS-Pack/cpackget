@@ -265,7 +265,7 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	packBackupPath := filepath.Join(Installation.DownloadDir, p.PackFileName())
 	packBackupPath = filepath.FromSlash(packBackupPath)
 	packBackupPath = filepath.Clean(packBackupPath)
-	if packBackupPath == p.path {
+	if utils.SameFile(packBackupPath, p.path) {
 		p.isDownloaded = true
 	}
 

@@ -246,12 +246,27 @@ func EnsureDir(dirName string) error {
 	return nil
 }
 
+func SameFile(source, destination string) bool {
+	if source == destination {
+		return true
+	}
+	srcInfo, err := os.Stat(source)
+	if err != nil {
+		return false
+	}
+	dstInfo, err := os.Stat(destination)
+	if err != nil {
+		return false
+	}
+	return os.SameFile(srcInfo, dstInfo)
+}
+
 // CopyFile copies the contents of source into a new file in destination
 func CopyFile(source, destination string) error {
 	log.Debugf("Copying file from \"%s\" to \"%s\"", source, destination)
 
-	if source == destination {
-		return errs.ErrCopyingEqualPaths
+	if SameFile(source, destination) {
+		return nil
 	}
 
 	sourceFile, err := os.Open(source)
@@ -274,8 +289,8 @@ func CopyFile(source, destination string) error {
 func MoveFile(source, destination string) error {
 	log.Debugf("Moving file from \"%s\" to \"%s\"", source, destination)
 
-	if source == destination {
-		return errs.ErrCopyingEqualPaths
+	if SameFile(source, destination) {
+		return nil
 	}
 
 	UnsetReadOnly(source)
