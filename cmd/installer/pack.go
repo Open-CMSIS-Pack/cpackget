@@ -540,7 +540,7 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 	// specified min:max range.
 	if p.versionModifier == utils.RangeVersion {
 		for _, version := range pdscXML.AllReleases() {
-			if utils.SemverCompareRange(p.Version, version) == 0 {
+			if utils.SemverCompareRange(version, p.Version) == 0 {
 				// the first matching is the best (latest)
 				p.targetVersion = version
 				log.Debugf("- resolved range %s as %s", p.Version, p.targetVersion)
