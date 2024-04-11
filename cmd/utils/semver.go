@@ -37,7 +37,7 @@ func SemverCompare(version1, version2 string) int {
 // The result is 0 if version withing range, -1 if < low, 1 if > high,
 func SemverCompareRange(version, vrange string) int {
 	low, high, found := strings.Cut(vrange, ":")
-	if found && high != "" && SemverCompare(version, high) > 0 {
+	if found && high != "" && high != "_" && SemverCompare(version, high) > 0 {
 		return 1
 	}
 	if low != "" && SemverCompare(version, low) < 0 {
