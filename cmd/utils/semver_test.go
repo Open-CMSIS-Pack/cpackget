@@ -73,6 +73,7 @@ func TestSemverCompareRange(t *testing.T) {
 	t.Run("test version range compare", func(t *testing.T) {
 		assert.True(utils.SemverCompareRange("1.2.3", "1.2.3") == 0)
 		assert.True(utils.SemverCompareRange("1.2.3", "1.2.3:") == 0)
+		assert.True(utils.SemverCompareRange("1.2.3", "1.2.3:_") == 0)
 		assert.True(utils.SemverCompareRange("1.2.3", ":1.2.3") == 0)
 		assert.True(utils.SemverCompareRange("1.2.3", "1.2.3:1.2.3") == 0)
 		assert.True(utils.SemverCompareRange("1.2.3", "1.2.0:1.2.3") == 0)
