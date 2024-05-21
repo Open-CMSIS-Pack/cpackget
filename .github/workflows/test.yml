@@ -125,7 +125,7 @@ jobs:
  
       - name: Publish coverage report to Code Climate
         if: ${{ startsWith(matrix.runs-on, 'ubuntu') && (github.workflow != 'Release') }}
-        uses: paambaati/codeclimate-action@v5.0.0
+        uses: paambaati/codeclimate-action@v6.0.0
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
         with:
