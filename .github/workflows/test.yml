@@ -32,7 +32,7 @@ jobs:
           go-version-file: go.mod
           check-latest: true
 
-      - uses: golangci/golangci-lint-action@v4
+      - uses: golangci/golangci-lint-action@v5
         with:
           version: latest
 
@@ -156,13 +156,13 @@ jobs:
             apt-get install -qq -y software-properties-common git make
             add-apt-repository -y ppa:longsleep/golang-backports
             apt-get update -qq -y
-            apt-get install -qq -y golang-1.21
+            apt-get install -qq -y golang-1.22
           setup: |
             mkdir -p "${PWD}/artifacts"
           dockerRunArgs: |
             --volume "${PWD}/artifacts:/artifacts"
           run: |
-            export PATH=$PATH:/usr/lib/go-1.21/bin
+            export PATH=$PATH:/usr/lib/go-1.22/bin
             git clone --depth 1 ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}
             cd cpackget
             git fetch --depth 1 origin ${GITHUB_REF}
@@ -174,7 +174,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.22'
           check-latest: true
 
       - name: Install go-junit-report
