@@ -64,7 +64,7 @@ func DisplayAndWaitForEULA(licenseTitle, licenseContents string) (bool, error) {
 		}
 
 		var input string
-		fmt.Scanln(&input)
+		_, _ = fmt.Scanln(&input)
 
 		if input == "a" || input == "A" {
 			return true, nil
