@@ -254,9 +254,9 @@ var (
 	publicRemotePack123LegacyPackID                            = publicRemotePackLegacyPackID + "@1.2.3"
 	publicLocalPack123WithMinimumVersionLegacyPackID           = publicLocalPackLegacyPackID + ">=1.2.3"
 	publicLocalPack125WithMinimumVersionLegacyPackID           = publicLocalPackLegacyPackID + ">=1.2.5"
-	publicLocalPack010WithMinimumCompatibleVersionLegacyPackID = publicLocalPackLegacyPackID + "@~0.1.0"
-	publicLocalPack011WithMinimumCompatibleVersionLegacyPackID = publicLocalPackLegacyPackID + "@~0.1.1"
-	publicLocalPack211WithMinimumCompatibleVersionLegacyPackID = publicLocalPackLegacyPackID + "@~2.1.1"
+	publicLocalPack010WithMinimumCompatibleVersionLegacyPackID = publicLocalPackLegacyPackID + "@^0.1.0"
+	publicLocalPack011WithMinimumCompatibleVersionLegacyPackID = publicLocalPackLegacyPackID + "@^0.1.1"
+	publicLocalPack211WithMinimumCompatibleVersionLegacyPackID = publicLocalPackLegacyPackID + "@^2.1.1"
 	publicLocalPackLatestVersionLegacyPackID                   = publicLocalPackLegacyPackID + "@latest"
 
 	// Pdsc files to test out installing packs with pack id only
