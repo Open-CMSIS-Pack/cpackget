@@ -23,7 +23,7 @@ func sendCtrlC(t *testing.T, pid int) {
 	//
 	// At D:\a\_temp\c2f70f1b-ad63-45ae-b2ec-8226d8ffe991.ps1:4 char:5
 	// + if ((Test-Path -LiteralPath variable:\LASTEXITCODE)) { exit $LASTEXIT …
-	// +     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// +     ------------------------------------------------
 	// [DBG]: PS D:\a\cpackget\cpackget>>
 	// Error: Process completed with exit code 1.
 	//
