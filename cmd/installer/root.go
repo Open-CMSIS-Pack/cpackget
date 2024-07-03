@@ -1036,7 +1036,7 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 
 	// Check if there is a greater version with same Major number
 	if pack.versionModifier == utils.GreatestCompatibleVersion {
-		log.Debugf("Checking for installed packs @~%s", pack.Version)
+		log.Debugf("Checking for installed packs @^%s", pack.Version)
 		for _, version := range installedVersions {
 			log.Debugf("- checking against: %s", version)
 			sameMajor := semver.Major("v"+version) == semver.Major("v"+pack.Version)

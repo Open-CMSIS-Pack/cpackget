@@ -23,7 +23,7 @@ import (
 // cpackget pack add Vendor.PackName.x.y.z                         # packID with version
 // cpackget pack add Vendor::PackName                              # packID using legacy syntax
 // cpackget pack add Vendor::PackName@x.y.z                        # packID using legacy syntax specifying an exact version
-// cpackget pack add Vendor::PackName@~x.y.z                       # packID using legacy syntax specifying a minimum compatible version
+// cpackget pack add Vendor::PackName@^x.y.z                       # packID using legacy syntax specifying a minimum compatible version
 // cpackget pack add Vendor::PackName>=x.y.z                       # packID using legacy syntax specifying a minimum version
 // cpackget pack add Vendor.PackName.x.y.z.pack                    # pack file name
 // cpackget pack add https://vendor.com/Vendor.PackName.x.y.z.pack # pack URL
@@ -951,7 +951,7 @@ func TestAddPack(t *testing.T) {
 	// - TheVendor::PackName
 	// - TheVendor::PackName@latest
 	// - TheVendor::PackName@1.2.3
-	// - TheVendor::PackName@~1.2.3
+	// - TheVendor::PackName@^1.2.3
 	// - TheVendor::PackName>=1.2.3
 
 	t.Run("test installing a pack with a minimum version specified and newer version pre-installed", func(t *testing.T) {
@@ -1101,7 +1101,7 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with a minimum compatible version specified and newer major version pre-installed", func(t *testing.T) {
 		// This test case checks the following use case:
 		// 1. There's already a pack 1.2.4 installed
-		// 2. An attempt to install a pack with @~0.1.0
+		// 2. An attempt to install a pack with @^0.1.0
 		// 3. Should install 0.1.1 because it's the latest compatible version with 0.1.0
 
 		localTestingDir := "test-installing-pack-with-minimum-compatible-version-new-major-pre-installed"
@@ -1138,7 +1138,7 @@ func TestAddPack(t *testing.T) {
 		pdscXML.URL = server.URL()
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
-		// Install @~0.1.0
+		// Install @^0.1.0
 		err = installer.AddPack(publicLocalPack010WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 		assert.Nil(err)
 
@@ -1149,7 +1149,7 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with a minimum compatible version specified without any pre-installed version", func(t *testing.T) {
 		// This test case checks the following use case:
 		// 1. There are no packs installed
-		// 2. An attempt to install a pack with @~0.1.0
+		// 2. An attempt to install a pack with @^0.1.0
 		// 3. Should install 0.1.1 because it's the latest compatible version with 0.1.0
 
 		localTestingDir := "test-installing-pack-with-minimum-compatible-none-pre-installed"
@@ -1180,7 +1180,7 @@ func TestAddPack(t *testing.T) {
 		pdscXML.URL = server.URL()
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
-		// Install @~0.1.0
+		// Install @^0.1.0
 		err = installer.AddPack(publicLocalPack010WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 		assert.Nil(err)
 
@@ -1191,7 +1191,7 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with a minimum compatible version specified and older version pre-installed", func(t *testing.T) {
 		// This test case checks the following use case:
 		// 1. There's already a pack 0.1.0 installed
-		// 2. An attempt to install a pack with @~0.1.1
+		// 2. An attempt to install a pack with @^0.1.1
 		// 3. Should install 0.1.1 because it's the more recent compatible version if compared to with 0.1.0
 
 		localTestingDir := "test-installing-pack-with-minimum-compatible-version-older-pre-installed"
@@ -1228,7 +1228,7 @@ func TestAddPack(t *testing.T) {
 		pdscXML.URL = server.URL()
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
-		// Install @~0.1.0
+		// Install @^0.1.0
 		err = installer.AddPack(publicLocalPack011WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 		assert.Nil(err)
 
@@ -1239,7 +1239,7 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with a minimum compatible version specified and exact version pre-installed", func(t *testing.T) {
 		// This test case checks the following use case:
 		// 1. There's already a pack 0.1.1 installed
-		// 2. An attempt to install a pack with @~0.1.1
+		// 2. An attempt to install a pack with @^0.1.1
 		// 3. Should not do anything
 
 		localTestingDir := "test-installing-pack-with-minimum-compatible-version-same-pre-installed"
@@ -1256,7 +1256,7 @@ func TestAddPack(t *testing.T) {
 			IsPublic: true,
 		})
 
-		// Install @~0.1.1 and make sure nothing gets installed
+		// Install @^0.1.1 and make sure nothing gets installed
 		packIdx, err := os.Stat(installer.Installation.PackIdx)
 		assert.Nil(err)
 		packIdxModTime := packIdx.ModTime()
@@ -1274,7 +1274,7 @@ func TestAddPack(t *testing.T) {
 		// This test case checks the following use case:
 		// 1. There are no packs installed
 		// 2. Versions 1.2.2, 1.2.3, 1.2.4 are available to install
-		// 3. Attempt to install @~2.1.1
+		// 3. Attempt to install @^2.1.1
 		// 4. Should fail as the minimum comaptible version is not available to install
 
 		localTestingDir := "test-installing-pack-with-minimum-compatible-version-higher-latest"

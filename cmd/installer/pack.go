@@ -375,13 +375,13 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 	log.Debugf("Uninstalling \"%v\"", p.path)
 
 	// Remove Vendor/Pack/x.y.z
-	packPath := filepath.Join(Installation.PackRoot, p.Vendor, p.Name, p.GetVersionNoMeta())
+	packPath := filepath.Join(installation.PackRoot, p.Vendor, p.Name, p.GetVersionNoMeta())
 	if err := os.RemoveAll(packPath); err != nil {
 		return err
 	}
 
 	// Remove Vendor/Pack/ if empty
-	packPath = filepath.Join(Installation.PackRoot, p.Vendor, p.Name)
+	packPath = filepath.Join(installation.PackRoot, p.Vendor, p.Name)
 	if utils.IsEmpty(packPath) {
 		if err := os.Remove(packPath); err != nil {
 			return err
@@ -390,7 +390,7 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 		// Remove local pdsc file if pack is not public and if there are no more versions of this pack installed
 		if !p.IsPublic {
 			localPdscFileName := p.PdscFileName()
-			filePath := filepath.Join(Installation.LocalDir, localPdscFileName)
+			filePath := filepath.Join(installation.LocalDir, localPdscFileName)
 			if err := os.Remove(filePath); err != nil {
 				return err
 			}
@@ -398,7 +398,7 @@ func (p *PackType) uninstall(installation *PacksInstallationType) error {
 	}
 
 	// Remove Vendor/ if empty
-	vendorPath := filepath.Join(Installation.PackRoot, p.Vendor)
+	vendorPath := filepath.Join(installation.PackRoot, p.Vendor)
 	if utils.IsEmpty(vendorPath) {
 		if err := os.Remove(vendorPath); err != nil {
 			return err
@@ -485,7 +485,7 @@ func (p *PackType) extractEula(packPath string) error {
 	return os.WriteFile(eulaFileName, eulaContents, utils.FileModeRO)
 }
 
-// resolveVersionModifier takes into account eventual versionModifiers (@, @~ and >=) to determine
+// resolveVersionModifier takes into account eventual versionModifiers (@, @^ and >=) to determine
 // which version of a pack should be targeted for installation
 func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 	log.Debugf("Resolving version modifier for \"%s\" using PDSC \"%s\"", p.path, pdscXML.FileName)
@@ -514,7 +514,7 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 		return
 	}
 
-	// The trickiest one is @~, because it needs to be the latest
+	// The trickiest one is @^, because it needs to be the latest
 	// release matching the major number.
 	// The releases in the PDSC file are sorted from latest to oldest
 	if p.versionModifier == utils.GreatestCompatibleVersion {
@@ -522,14 +522,14 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 			sameMajor := utils.SemverMajor(version) == utils.SemverMajor(p.Version)
 			if sameMajor && utils.SemverCompare(version, p.Version) >= 0 {
 				p.targetVersion = version
-				log.Debugf("- resolved (@~) as %s", p.targetVersion)
+				log.Debugf("- resolved (@^) as %s", p.targetVersion)
 				return
 			}
 		}
 		// Check if at least same Major version exists
 		if utils.SemverCompare(p.targetVersion, p.Version) > 0 {
 			p.targetVersion = pdscXML.LatestVersion()
-			log.Debugf("- resolved (@~) as %s", p.targetVersion)
+			log.Debugf("- resolved (@^) as %s", p.targetVersion)
 		} else {
 			log.Errorf("Tried to install major version %s.x.x, highest available major version is %s.x.x", p.Version[:1], pdscXML.LatestVersion()[:1])
 		}
@@ -638,7 +638,7 @@ func (p *PackType) PdscFileNameWithVersion() string {
 }
 
 // GetVersion makes sure to get the latest version for the pack
-// after parsing possible version modifiers (@~, >=)
+// after parsing possible version modifiers (@^, >=)
 func (p *PackType) GetVersion() string {
 	if p.versionModifier != utils.ExactVersion {
 		return p.targetVersion

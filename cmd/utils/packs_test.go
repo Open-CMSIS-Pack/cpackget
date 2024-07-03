@@ -108,7 +108,7 @@ func TestExtractPackInfo(t *testing.T) {
 		},
 		{
 			name: "test extract pack info using legacy format with minimum version alternative syntax",
-			path: "TheVendor::ThePack@~1.0.0",
+			path: "TheVendor::ThePack@^1.0.0",
 			expected: utils.PackInfo{
 				Vendor:          "TheVendor",
 				Pack:            "ThePack",
