@@ -3,12 +3,12 @@
 | __Name__ | __Version__ | __Licence__ |
 |----------|-------------|-------------|
 | github.com/EndFirstCorp/peekingReader | v0.0.0-20171012052444-257fb6f1a1a6  | [MIT](https://github.com/EndFirstCorp/peekingReader/blob/257fb6f1a1a6/LICENSE) |
-| github.com/ProtonMail/go-crypto | v0.0.0-20230923063757-afb1ddc0824c  | [BSD-3-Clause](https://github.com/ProtonMail/go-crypto/blob/afb1ddc0824c/LICENSE) |
+| github.com/ProtonMail/go-crypto | v1.0.0  | [BSD-3-Clause](https://github.com/ProtonMail/go-crypto/blob/v1.0.0/LICENSE) |
 | github.com/ProtonMail/go-mime | v0.0.0-20230322103455-7d82a3887f2f  | [MIT](https://github.com/ProtonMail/go-mime/blob/7d82a3887f2f/LICENSE) |
 | github.com/ProtonMail/gopenpgp/v2 | v2.7.5  | [MIT](https://github.com/ProtonMail/gopenpgp/blob/v2.7.5/LICENSE) |
-| github.com/cloudflare/circl | v1.3.7  | [BSD-3-Clause](https://github.com/cloudflare/circl/blob/v1.3.7/LICENSE) |
+| github.com/cloudflare/circl | v1.3.9  | [BSD-3-Clause](https://github.com/cloudflare/circl/blob/v1.3.9/LICENSE) |
 | github.com/fsnotify/fsnotify | v1.7.0  | [BSD-3-Clause](https://github.com/fsnotify/fsnotify/blob/v1.7.0/LICENSE) |
-| github.com/gabriel-vasile/mimetype | v1.4.3  | [MIT](https://github.com/gabriel-vasile/mimetype/blob/v1.4.3/LICENSE) |
+| github.com/gabriel-vasile/mimetype | v1.4.4  | [MIT](https://github.com/gabriel-vasile/mimetype/blob/v1.4.4/LICENSE) |
 | github.com/hashicorp/hcl | v1.0.0  | [MPL-2.0](https://github.com/hashicorp/hcl/blob/v1.0.0/LICENSE) |
 | github.com/jroimartin/gocui | v0.5.0  | [BSD-3-Clause](https://github.com/jroimartin/gocui/blob/v0.5.0/LICENSE) |
 | github.com/lu4p/cat | v0.1.5  | [Unlicense](https://github.com/lu4p/cat/blob/v0.1.5/LICENSE) |
