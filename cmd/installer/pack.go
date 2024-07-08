@@ -45,7 +45,7 @@ type PackType struct {
 	toBeRemoved bool
 
 	// exactVersion tells whether this pack identifier is specifying an exact version
-	// or is requesting a newer one, e.g. >=x.y.z
+	// or is requesting a newer one, e.g. @>=x.y.z
 	versionModifier int
 
 	// targetVersion is the most recent version of a pack in case exactVersion==true
@@ -485,7 +485,7 @@ func (p *PackType) extractEula(packPath string) error {
 	return os.WriteFile(eulaFileName, eulaContents, utils.FileModeRO)
 }
 
-// resolveVersionModifier takes into account eventual versionModifiers (@, @^ and >=) to determine
+// resolveVersionModifier takes into account eventual versionModifiers (@, @^ and @>=) to determine
 // which version of a pack should be targeted for installation
 func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 	log.Debugf("Resolving version modifier for \"%s\" using PDSC \"%s\"", p.path, pdscXML.FileName)
@@ -509,7 +509,7 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 			log.Errorf("Tried to install at least version %s, highest available version is %s", p.Version, pdscXML.LatestVersion())
 		} else {
 			p.targetVersion = pdscXML.LatestVersion()
-			log.Debugf("- resolved(>=) as %s", p.targetVersion)
+			log.Debugf("- resolved(@>=) as %s", p.targetVersion)
 		}
 		return
 	}
@@ -638,7 +638,7 @@ func (p *PackType) PdscFileNameWithVersion() string {
 }
 
 // GetVersion makes sure to get the latest version for the pack
-// after parsing possible version modifiers (@^, >=)
+// after parsing possible version modifiers (@^, @>=)
 func (p *PackType) GetVersion() string {
 	if p.versionModifier != utils.ExactVersion {
 		return p.targetVersion
