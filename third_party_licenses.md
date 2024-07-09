@@ -3,12 +3,12 @@
 | __Name__ | __Version__ | __Licence__ |
 |----------|-------------|-------------|
 | github.com/EndFirstCorp/peekingReader | v0.0.0-20171012052444-257fb6f1a1a6  | [MIT](https://github.com/EndFirstCorp/peekingReader/blob/257fb6f1a1a6/LICENSE) |
-| github.com/ProtonMail/go-crypto | v0.0.0-20230923063757-afb1ddc0824c  | [BSD-3-Clause](https://github.com/ProtonMail/go-crypto/blob/afb1ddc0824c/LICENSE) |
+| github.com/ProtonMail/go-crypto | v1.0.0  | [BSD-3-Clause](https://github.com/ProtonMail/go-crypto/blob/v1.0.0/LICENSE) |
 | github.com/ProtonMail/go-mime | v0.0.0-20230322103455-7d82a3887f2f  | [MIT](https://github.com/ProtonMail/go-mime/blob/7d82a3887f2f/LICENSE) |
 | github.com/ProtonMail/gopenpgp/v2 | v2.7.5  | [MIT](https://github.com/ProtonMail/gopenpgp/blob/v2.7.5/LICENSE) |
-| github.com/cloudflare/circl | v1.3.7  | [BSD-3-Clause](https://github.com/cloudflare/circl/blob/v1.3.7/LICENSE) |
+| github.com/cloudflare/circl | v1.3.9  | [BSD-3-Clause](https://github.com/cloudflare/circl/blob/v1.3.9/LICENSE) |
 | github.com/fsnotify/fsnotify | v1.7.0  | [BSD-3-Clause](https://github.com/fsnotify/fsnotify/blob/v1.7.0/LICENSE) |
-| github.com/gabriel-vasile/mimetype | v1.4.3  | [MIT](https://github.com/gabriel-vasile/mimetype/blob/v1.4.3/LICENSE) |
+| github.com/gabriel-vasile/mimetype | v1.4.4  | [MIT](https://github.com/gabriel-vasile/mimetype/blob/v1.4.4/LICENSE) |
 | github.com/hashicorp/hcl | v1.0.0  | [MPL-2.0](https://github.com/hashicorp/hcl/blob/v1.0.0/LICENSE) |
 | github.com/jroimartin/gocui | v0.5.0  | [BSD-3-Clause](https://github.com/jroimartin/gocui/blob/v0.5.0/LICENSE) |
 | github.com/lu4p/cat | v0.1.5  | [Unlicense](https://github.com/lu4p/cat/blob/v0.1.5/LICENSE) |
@@ -32,11 +32,11 @@
 | github.com/spf13/viper | v1.19.0  | [MIT](https://github.com/spf13/viper/blob/v1.19.0/LICENSE) |
 | github.com/subosito/gotenv | v1.6.0  | [MIT](https://github.com/subosito/gotenv/blob/v1.6.0/LICENSE) |
 | golang.org/x/crypto | v0.24.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.24.0:LICENSE) |
-| golang.org/x/mod/semver | v0.18.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.18.0:LICENSE) |
+| golang.org/x/mod/semver | v0.19.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.19.0:LICENSE) |
 | golang.org/x/net/html | v0.26.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.26.0:LICENSE) |
 | golang.org/x/sync/semaphore | v0.7.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.7.0:LICENSE) |
-| golang.org/x/sys | v0.21.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.21.0:LICENSE) |
-| golang.org/x/term | v0.21.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/term/+/v0.21.0:LICENSE) |
+| golang.org/x/sys | v0.22.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.22.0:LICENSE) |
+| golang.org/x/term | v0.22.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/term/+/v0.22.0:LICENSE) |
 | golang.org/x/text | v0.16.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.16.0:LICENSE) |
 | gopkg.in/ini.v1 | v1.67.0  | [Apache-2.0](https://github.com/go-ini/ini/blob/v1.67.0/LICENSE) |
 | gopkg.in/yaml.v3 | v3.0.1  | [MIT](https://github.com/go-yaml/yaml/blob/v3.0.1/LICENSE) |
