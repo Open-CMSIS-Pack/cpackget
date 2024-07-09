@@ -520,7 +520,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 }
 
 // ListInstalledPacks generates a list of all packs present in the pack root folder
-func ListInstalledPacks(listCached, listPublic, listRequirements bool, listFilter string) error {
+func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bool, listFilter string) error {
 	log.Debugf("Listing packs")
 	if listPublic {
 		if listFilter != "" {
@@ -599,13 +599,21 @@ func ListInstalledPacks(listCached, listPublic, listRequirements bool, listFilte
 			}
 		}
 	} else {
-		if listRequirements {
-			log.Info("Listing installed packs with dependencies")
-		} else {
+		if listUpdates {
 			if listFilter != "" {
-				log.Infof("Listing installed packs, filtering by \"%s\"", listFilter)
+				log.Infof("Listing installed updateable packs, filtering by \"%s\"", listFilter)
 			} else {
-				log.Infof("Listing installed packs")
+				log.Infof("Listing installed updateable packs")
+			}
+		} else {
+			if listRequirements {
+				log.Info("Listing installed packs with dependencies")
+			} else {
+				if listFilter != "" {
+					log.Infof("Listing installed packs, filtering by \"%s\"", listFilter)
+				} else {
+					log.Infof("Listing installed packs")
+				}
 			}
 		}
 

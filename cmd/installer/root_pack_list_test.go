@@ -23,6 +23,7 @@ var (
 	ListCached       = true
 	ListFilter       = ""
 	ListPublic       = true
+	ListUpdates      = true
 	ListRequirements = true
 )
 
@@ -35,7 +36,7 @@ func ExampleListInstalledPacks() {
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
 
-	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListRequirements, ListFilter)
+	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter)
 	// Output:
 	// I: Listing installed packs
 	// I: (no packs installed)
@@ -49,7 +50,7 @@ func ExampleListInstalledPacks_emptyCache() {
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
 
-	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListRequirements, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter)
 	// Output:
 	// I: Listing cached packs
 	// I: (no packs cached)
@@ -63,7 +64,7 @@ func ExampleListInstalledPacks_emptyPublicIndex() {
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
 
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListRequirements, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, ListFilter)
 	// Output:
 	// I: Listing packs from the public index
 	// I: (no packs in public index)
@@ -102,7 +103,7 @@ func ExampleListInstalledPacks_list() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListRequirements, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, ListFilter)
 	// Output:
 	// I: Listing packs from the public index
 	// I: TheVendor::PublicLocalPack@1.2.3 (cached)
@@ -139,7 +140,7 @@ func ExampleListInstalledPacks_listCached() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListRequirements, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter)
 	// Output:
 	// I: Listing cached packs
 	// I: TheVendor::PublicLocalPack@1.2.3
@@ -186,7 +187,7 @@ func TestListInstalledPacks(t *testing.T) {
 		var buf bytes.Buffer
 		log.SetOutput(&buf)
 		defer log.SetOutput(io.Discard)
-		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListRequirements, ListFilter))
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter))
 		stdout := buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
 		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.3 (installed via %s)", expectedPdscAbsPath))
@@ -216,7 +217,7 @@ func TestListInstalledPacks(t *testing.T) {
 		var buf bytes.Buffer
 		log.SetOutput(&buf)
 		defer log.SetOutput(io.Discard)
-		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListRequirements, ListFilter))
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter))
 		stdout := buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
 		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.3 (installed via %s)", expectedPdscAbsPath))
@@ -226,7 +227,7 @@ func TestListInstalledPacks(t *testing.T) {
 		assert.Nil(pdscXML.Read())
 		pdscXML.ReleasesTag.Releases[0].Version = "1.2.4"
 		assert.Nil(utils.WriteXML(pdscPath, pdscXML))
-		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListRequirements, ListFilter))
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter))
 		stdout = buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
 		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.4 (installed via %s)", expectedPdscAbsPath))
@@ -264,7 +265,7 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListRequirements, ListFilter)
+	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter)
 	// Output:
 	// I: Listing installed packs
 	// E: _TheVendor::_PublicLocalPack@1.2.3.4 - error: pack version incorrect format
@@ -300,7 +301,7 @@ func ExampleListInstalledPacks_filter() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListRequirements, "1.2.4")
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, "1.2.4")
 	// Output:
 	// I: Listing packs from the public index, filtering by "1.2.4"
 	// I: TheVendor::PublicLocalPack@1.2.4 (installed)
@@ -337,7 +338,7 @@ func ExampleListInstalledPacks_filterErrorPackages() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListRequirements, "TheVendor")
+	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, "TheVendor")
 	// Output:
 	// I: Listing installed packs, filtering by "TheVendor"
 	// E: _TheVendor::_PublicLocalPack@1.2.3.4 - error: pack version incorrect format
@@ -372,7 +373,7 @@ func ExampleListInstalledPacks_filterInvalidChars() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListRequirements, "@ :")
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, "@ :")
 	// Output:
 	// I: Listing packs from the public index, filtering by "@ :"
 }
@@ -406,7 +407,7 @@ func ExampleListInstalledPacks_filteradditionalMessages() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListRequirements, "(installed)")
+	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListRequirements, "(installed)")
 	// Output:
 	// I: Listing cached packs, filtering by "(installed)"
 }
