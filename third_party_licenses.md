@@ -23,7 +23,7 @@
 | github.com/pkg/errors | v0.9.1  | [BSD-2-Clause](https://github.com/pkg/errors/blob/v0.9.1/LICENSE) |
 | github.com/rivo/uniseg | v0.4.7  | [MIT](https://github.com/rivo/uniseg/blob/v0.4.7/LICENSE.txt) |
 | github.com/sagikazarmark/slog-shim | v0.1.0  | [BSD-3-Clause](https://github.com/sagikazarmark/slog-shim/blob/v0.1.0/LICENSE) |
-| github.com/schollz/progressbar/v3 | v3.14.5  | [MIT](https://github.com/schollz/progressbar/blob/v3.14.5/LICENSE) |
+| github.com/schollz/progressbar/v3 | v3.14.6  | [MIT](https://github.com/schollz/progressbar/blob/v3.14.6/LICENSE) |
 | github.com/sirupsen/logrus | v1.9.3  | [MIT](https://github.com/sirupsen/logrus/blob/v1.9.3/LICENSE) |
 | github.com/spf13/afero | v1.11.0  | [Apache-2.0](https://github.com/spf13/afero/blob/v1.11.0/LICENSE.txt) |
 | github.com/spf13/cast | v1.6.0  | [MIT](https://github.com/spf13/cast/blob/v1.6.0/LICENSE) |
@@ -32,9 +32,9 @@
 | github.com/spf13/viper | v1.19.0  | [MIT](https://github.com/spf13/viper/blob/v1.19.0/LICENSE) |
 | github.com/subosito/gotenv | v1.6.0  | [MIT](https://github.com/subosito/gotenv/blob/v1.6.0/LICENSE) |
 | golang.org/x/crypto | v0.25.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.25.0:LICENSE) |
-| golang.org/x/mod/semver | v0.19.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.19.0:LICENSE) |
+| golang.org/x/mod/semver | v0.20.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.20.0:LICENSE) |
 | golang.org/x/net/html | v0.27.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.27.0:LICENSE) |
-| golang.org/x/sync/semaphore | v0.7.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.7.0:LICENSE) |
+| golang.org/x/sync/semaphore | v0.8.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.8.0:LICENSE) |
 | golang.org/x/sys | v0.22.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.22.0:LICENSE) |
 | golang.org/x/term | v0.22.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/term/+/v0.22.0:LICENSE) |
 | golang.org/x/text | v0.16.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.16.0:LICENSE) |
