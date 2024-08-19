@@ -420,6 +420,50 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		}
 	}
 
+	pdscFiles, err = utils.ListDir(Installation.LocalDir, ".pdsc$")
+	if err != nil {
+		return err
+	}
+
+	numPdsc = len(pdscFiles)
+	if utils.GetEncodedProgress() {
+		log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.PublicIndex)
+	}
+
+	for _, pdscFile := range pdscFiles {
+		log.Debugf("Checking if \"%s\" needs updating", pdscFile)
+		pdscXML := xml.NewPdscXML(pdscFile)
+		err := pdscXML.Read()
+		if err != nil {
+			log.Errorf("%s: %v", pdscFile, err)
+			utils.UnsetReadOnly(pdscFile)
+			os.Remove(pdscFile)
+			continue
+		}
+		originalLatestVersion := pdscXML.LatestVersion()
+
+		var pdscTag xml.PdscTag
+		pdscTag.Name = pdscXML.Name
+		pdscTag.Vendor = pdscXML.Vendor
+		pdscTag.URL = pdscXML.URL
+		if err := Installation.loadPdscFile(pdscTag, timeout); err != nil {
+			log.Error(err)
+		}
+
+		pdscXML = xml.NewPdscXML(pdscFile)
+		err = pdscXML.Read()
+		if err != nil {
+			log.Errorf("%s: %v", pdscFile, err)
+			utils.UnsetReadOnly(pdscFile)
+			os.Remove(pdscFile)
+			continue
+		}
+		latestVersion := pdscXML.LatestVersion()
+		if originalLatestVersion != latestVersion {
+			log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, originalLatestVersion, latestVersion)
+		}
+	}
+
 	return nil
 }
 
@@ -1167,6 +1211,51 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 	}
 
 	pdscFileURL.Path = path.Join(pdscFileURL.Path, basePdscFile)
+
+	localFileName, err := utils.DownloadFile(pdscFileURL.String(), timeout)
+	defer os.Remove(localFileName)
+
+	if err != nil {
+		log.Errorf("Could not download \"%s\": %s", pdscFileURL, err)
+		return errs.ErrPackPdscCannotBeFound
+	}
+
+	utils.UnsetReadOnly(pdscFilePath)
+	os.Remove(pdscFilePath)
+	err = utils.MoveFile(localFileName, pdscFilePath)
+	utils.SetReadOnly(pdscFilePath)
+
+	return err
+}
+
+func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) error {
+	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
+	pdscFilePath := filepath.Join(p.LocalDir, basePdscFile)
+
+	pdscURL := pdscTag.URL
+
+	log.Debugf("Loading %s from \"%s\"", basePdscFile, pdscURL)
+
+	pdscFileURL, err := url.Parse(pdscURL)
+	if err != nil {
+		log.Errorf("Could not parse pdsc url \"%s\": %s", pdscURL, err)
+		return errs.ErrAlreadyLogged
+	}
+
+	pdscFileURL.Path = path.Join(pdscFileURL.Path, basePdscFile)
+	if pdscFileURL.Scheme == "file" {
+		sourceFilePath := pdscFileURL.Path
+		if runtime.GOOS == "windows" && strings.HasPrefix(sourceFilePath, "/") {
+			sourceFilePath = sourceFilePath[1:]
+		}
+		utils.UnsetReadOnly(pdscFilePath)
+		defer utils.SetReadOnly(pdscFilePath)
+		if err = utils.CopyFile(sourceFilePath, pdscFilePath); err != nil {
+			log.Errorf("Could not copy pdsc \"%s\": %s", sourceFilePath, err)
+			return errs.ErrAlreadyLogged
+		}
+		return nil
+	}
 
 	localFileName, err := utils.DownloadFile(pdscFileURL.String(), timeout)
 	defer os.Remove(localFileName)
