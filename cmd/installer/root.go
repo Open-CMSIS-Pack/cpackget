@@ -427,7 +427,7 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 
 	numPdsc = len(pdscFiles)
 	if utils.GetEncodedProgress() {
-		log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.PublicIndex)
+		log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.LocalDir)
 	}
 
 	for _, pdscFile := range pdscFiles {
@@ -438,6 +438,9 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 			log.Errorf("%s: %v", pdscFile, err)
 			utils.UnsetReadOnly(pdscFile)
 			os.Remove(pdscFile)
+			continue
+		}
+		if pdscXML.URL == "" {
 			continue
 		}
 		originalLatestVersion := pdscXML.LatestVersion()
