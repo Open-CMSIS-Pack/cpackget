@@ -1276,51 +1276,6 @@ func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) e
 	return err
 }
 
-func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) error {
-	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
-	pdscFilePath := filepath.Join(p.LocalDir, basePdscFile)
-
-	pdscURL := pdscTag.URL
-
-	log.Debugf("Loading %s from \"%s\"", basePdscFile, pdscURL)
-
-	pdscFileURL, err := url.Parse(pdscURL)
-	if err != nil {
-		log.Errorf("Could not parse pdsc url \"%s\": %s", pdscURL, err)
-		return errs.ErrAlreadyLogged
-	}
-
-	pdscFileURL.Path = path.Join(pdscFileURL.Path, basePdscFile)
-	if pdscFileURL.Scheme == "file" {
-		sourceFilePath := pdscFileURL.Path
-		if runtime.GOOS == "windows" && strings.HasPrefix(sourceFilePath, "/") {
-			sourceFilePath = sourceFilePath[1:]
-		}
-		utils.UnsetReadOnly(pdscFilePath)
-		defer utils.SetReadOnly(pdscFilePath)
-		if err = utils.CopyFile(sourceFilePath, pdscFilePath); err != nil {
-			log.Errorf("Could not copy pdsc \"%s\": %s", sourceFilePath, err)
-			return errs.ErrAlreadyLogged
-		}
-		return nil
-	}
-
-	localFileName, err := utils.DownloadFile(pdscFileURL.String(), timeout)
-	defer os.Remove(localFileName)
-
-	if err != nil {
-		log.Errorf("Could not download \"%s\": %s", pdscFileURL, err)
-		return errs.ErrPackPdscCannotBeFound
-	}
-
-	utils.UnsetReadOnly(pdscFilePath)
-	os.Remove(pdscFilePath)
-	err = utils.MoveFile(localFileName, pdscFilePath)
-	utils.SetReadOnly(pdscFilePath)
-
-	return err
-}
-
 // LockPackRoot enable the read-only flag for the pack-root directory
 func LockPackRoot() {
 	utils.SetReadOnly(Installation.WebDir)
