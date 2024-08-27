@@ -1220,7 +1220,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 
 	if err != nil {
 		log.Errorf("Could not download \"%s\": %s", pdscFileURL, err)
-		return errs.ErrPackPdscCannotBeFound
+		return fmt.Errorf("\"%s\": %w", pdscFileURL, errs.ErrPackPdscCannotBeFound)
 	}
 
 	utils.UnsetReadOnly(pdscFilePath)
@@ -1265,7 +1265,7 @@ func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) e
 
 	if err != nil {
 		log.Errorf("Could not download \"%s\": %s", pdscFileURL, err)
-		return errs.ErrPackPdscCannotBeFound
+		return fmt.Errorf("\"%s\": %w", pdscFileURL, errs.ErrPackPdscCannotBeFound)
 	}
 
 	utils.UnsetReadOnly(pdscFilePath)
