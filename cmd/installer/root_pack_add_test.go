@@ -283,8 +283,8 @@ func TestAddPack(t *testing.T) {
 			err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 
 			// Sanity check
-			assert.Nil(err)
-			// assert.Equal(err, errs.ErrFailedCreatingDirectory)
+			assert.NotNil(err)
+			assert.Equal(err, errs.ErrFailedCreatingDirectory)
 
 			// Make sure pack.idx never got touched
 			assert.False(utils.FileExists(installer.Installation.PackIdx))
