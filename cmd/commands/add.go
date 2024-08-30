@@ -64,6 +64,7 @@ Add a pack using the following "<pack>" specification or using packs provided by
 
   To select a specific version use: Vendor::Pack@x.y.z
   To select the newest version of a major version use: Vendor::Pack@^x.y.z
+  To select the newest version of a major, minor version use: Vendor::Pack@~x.y.z
   To select any newer version use: Vendor::Pack@>=x.y.z
 
  The file can be a local file or a file hosted somewhere else on the Internet.

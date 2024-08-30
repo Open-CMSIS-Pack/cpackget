@@ -485,7 +485,7 @@ func (p *PackType) extractEula(packPath string) error {
 	return os.WriteFile(eulaFileName, eulaContents, utils.FileModeRO)
 }
 
-// resolveVersionModifier takes into account eventual versionModifiers (@, @^ and @>=) to determine
+// resolveVersionModifier takes into account eventual versionModifiers (@, @^, @~ and @>=) to determine
 // which version of a pack should be targeted for installation
 func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 	log.Debugf("Resolving version modifier for \"%s\" using PDSC \"%s\"", p.path, pdscXML.FileName)
@@ -531,7 +531,29 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 			p.targetVersion = pdscXML.LatestVersion()
 			log.Debugf("- resolved (@^) as %s", p.targetVersion)
 		} else {
-			log.Errorf("Tried to install major version %s.x.x, highest available major version is %s.x.x", p.Version[:1], pdscXML.LatestVersion()[:1])
+			log.Errorf("No compatible minor version available for pack version >= %s, highest available major version is %s.x.x", p.Version, utils.SemverMajor(pdscXML.LatestVersion()))
+		}
+		return
+	}
+
+	// The next tricky one is @~, because it needs to be the latest
+	// release matching the major and minor number.
+	// The releases in the PDSC file are sorted from latest to oldest
+	if p.versionModifier == utils.PatchVersion {
+		for _, version := range pdscXML.AllReleases() {
+			sameMajorMinor := utils.SemverMajorMinor(version) == utils.SemverMajorMinor(p.Version)
+			if sameMajorMinor && utils.SemverCompare(version, p.Version) >= 0 {
+				p.targetVersion = version
+				log.Debugf("- resolved (@~) as %s", p.targetVersion)
+				return
+			}
+		}
+		// Check if at least same Major.Minor version exists
+		if utils.SemverCompare(p.targetVersion, p.Version) > 0 {
+			p.targetVersion = pdscXML.LatestVersion()
+			log.Debugf("- resolved (@~) as %s", p.targetVersion)
+		} else {
+			log.Errorf("No compatible patch version available for pack version >= %s, highest available major.minor version is %s.x", p.Version, utils.SemverMajorMinor(pdscXML.LatestVersion()))
 		}
 		return
 	}
@@ -638,7 +660,7 @@ func (p *PackType) PdscFileNameWithVersion() string {
 }
 
 // GetVersion makes sure to get the latest version for the pack
-// after parsing possible version modifiers (@^, @>=)
+// after parsing possible version modifiers (@^, @~, @>=)
 func (p *PackType) GetVersion() string {
 	if p.versionModifier != utils.ExactVersion {
 		return p.targetVersion

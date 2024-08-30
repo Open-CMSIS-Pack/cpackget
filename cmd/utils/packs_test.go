@@ -118,6 +118,17 @@ func TestExtractPackInfo(t *testing.T) {
 			},
 		},
 		{
+			name: "test extract pack info using legacy format with patch alternative syntax",
+			path: "TheVendor::ThePack@~1.0.0",
+			expected: utils.PackInfo{
+				Vendor:          "TheVendor",
+				Pack:            "ThePack",
+				Version:         "1.0.0",
+				VersionModifier: utils.PatchVersion,
+				IsPackID:        true,
+			},
+		},
+		{
 			name: "test pdsc path with bad vendor name",
 			path: "not-a-valid-vendor-name?.ThePack.pdsc",
 			err:  errs.ErrBadPackName,
