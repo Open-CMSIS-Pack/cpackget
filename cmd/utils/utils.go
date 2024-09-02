@@ -142,13 +142,13 @@ func DownloadFile(URL string, timeout int) (string, error) {
 	resp, err := client.Get(URL)
 	if err != nil {
 		log.Error(err)
-		return "", errs.ErrFailedDownloadingFile
+		return "", fmt.Errorf("\"%s\": %w", URL, errs.ErrFailedDownloadingFile)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		log.Debugf("bad status: %s", resp.Status)
-		return "", errs.ErrBadRequest
+		return "", fmt.Errorf("\"%s\": %w", URL, errs.ErrBadRequest)
 	}
 
 	out, err := os.Create(filePath)

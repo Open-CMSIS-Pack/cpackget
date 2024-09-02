@@ -46,10 +46,11 @@ var packFileNameRegex = regexp.MustCompile(packFileNamePattern)
 // - Vendor::Pack
 // - Vendor::Pack@x.y.z
 // - Vendor::Pack@^x.y.z
+// - Vendor::Pack@~x.y.z
 // - Vendor::Pack@>=x.y.z
 // - Vendor::Pack>=x.y.z
 var dottedPackIDPattern = fmt.Sprintf(`^(?P<vendor>%s)\.(?P<pack>%s)(?:\.(?P<version>%s))?$`, namePattern, namePattern, versionPattern)
-var legacyPackIDPattern = fmt.Sprintf(`^(?P<vendor>%s)::(?P<pack>%s)(?:(@|@\^|@>=|>=)(?P<version>%s|latest))?$`, namePattern, namePattern, versionPattern)
+var legacyPackIDPattern = fmt.Sprintf(`^(?P<vendor>%s)::(?P<pack>%s)(?:(@|@\^|@~|@>=|>=)(?P<version>%s|latest))?$`, namePattern, namePattern, versionPattern)
 var packIDPattern = fmt.Sprintf(`(?:%s|%s)`, dottedPackIDPattern, legacyPackIDPattern)
 
 // packIDRegex pre-compiles packIdPattern
@@ -133,13 +134,17 @@ const (
 	// Example: Vendor::PackName@^x.y.z (the greatest version of the pack keeping the same major number)
 	GreatestCompatibleVersion = 4
 
+	// Example: Vendor::PackName@~x.y.z (the greatest version of the pack keeping the same major and minor number)
+	PatchVersion = 5
+
 	// For the <package/requirements/packages> spec only. Example: Vendor.PackName.a.b.c:x.y.z
-	RangeVersion = 5
+	RangeVersion = 6
 )
 
 var versionModMap = map[string]int{
 	"@":   ExactVersion,
 	"@^":  GreatestCompatibleVersion,
+	"@~":  PatchVersion,
 	"@>=": GreaterVersion,
 	">=":  GreaterVersion,
 }
@@ -243,7 +248,7 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 			info.VersionModifier = ExactVersion
 		}
 	} else if len(matches) == 5 {
-		// 5 matches: [Vendor::Pack(@|@^|@>=|>=)x.y.z, Vendor, Pack, (@|@^|@>=|>=), x.y.z] (legacy version)
+		// 5 matches: [Vendor::Pack(@|@^|@~|@>=|>=)x.y.z, Vendor, Pack, (@|@^|@~|@>=|>=), x.y.z] (legacy version)
 		versionModifier := matches[3]
 		version := matches[4]
 

@@ -53,6 +53,13 @@ func SemverMajor(version string) string {
 	return strings.TrimLeft(version, "v")
 }
 
+// SemverMajorMinor extends `semver.Major+Minor` to work with leading zeros
+func SemverMajorMinor(version string) string {
+	version = "v" + stripLeadingZeros(version)
+	version = semver.MajorMinor(version)
+	return strings.TrimLeft(version, "v")
+}
+
 // strips `+meta` from the supplied version string
 func SemverStripMeta(version string) string {
 	before, _, found := strings.Cut(version, "+")

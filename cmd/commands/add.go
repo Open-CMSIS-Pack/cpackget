@@ -59,16 +59,16 @@ Add a pack using the following "<pack>" specification or using packs provided by
   $ cpackget add path/to/Vendor.Pack.pdsc
 
   Use this syntax if you are installing a pack that has not
-  been released yet. This will install it as a local pack and
-  keep a reference in ".Local/local_repository.pidx".
+  been released yet. This will add a reference in ".Local/local_repository.pidx".
 
-  To select a specific version use: Vendor::Pack@x.y.z
-  To select the newest version of a major version use: Vendor::Pack@^x.y.z
-  To select any newer version use: Vendor::Pack@>=x.y.z
+  To install a specific version use: Vendor::Pack@x.y.z
+  To install the newest version of the major version if a version greater equal x.y.z is not already installed use: Vendor::Pack@^x.y.z
+  To install the newest version of the major and the minor version if a version greater or equal x.y.z is not already installed use: Vendor::Pack@~x.y.z
+  To install the newest available version if a version greater or equal x.y.z is not already installed use: Vendor::Pack@>=x.y.z
 
- The file can be a local file or a file hosted somewhere else on the Internet.
-If it's hosted somewhere, cpackget will first download it then extract all pack files into "CMSIS_PACK_ROOT/<vendor>/<packName>/<x.y.z>/"
-If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in the <packs list> file.`,
+  The file can be a local file or a file hosted somewhere else on the Internet.
+  If it's hosted somewhere, cpackget will first download it then extract all pack files into "CMSIS_PACK_ROOT/<vendor>/<packName>/<x.y.z>/"
+  If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in the <packs list> file.`,
 	Args:              cobra.MinimumNArgs(0),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
