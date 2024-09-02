@@ -147,7 +147,7 @@ func DownloadFile(URL string, timeout int) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Errorf("bad status: %s", resp.Status)
+		log.Debugf("bad status: %s", resp.Status)
 		return "", errs.ErrBadRequest
 	}
 
