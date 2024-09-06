@@ -5,6 +5,7 @@ package utils_test
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -56,7 +57,7 @@ func TestDownloadFile(t *testing.T) {
 
 		_, err := utils.DownloadFile(fileName, 0)
 		assert.NotNil(err)
-		assert.True(errs.Is(err, errs.ErrFailedDownloadingFile))
+		assert.Equal(errors.Unwrap(err), errs.ErrFailedDownloadingFile)
 	})
 
 	t.Run("test fail with bad http request", func(t *testing.T) {
@@ -72,7 +73,7 @@ func TestDownloadFile(t *testing.T) {
 
 		_, err := utils.DownloadFile(notFoundServer.URL+"/"+fileName, 0)
 		assert.NotNil(err)
-		assert.True(errs.Is(err, errs.ErrBadRequest))
+		assert.Equal(errors.Unwrap(err), errs.ErrBadRequest)
 		assert.False(utils.FileExists(fileName))
 	})
 

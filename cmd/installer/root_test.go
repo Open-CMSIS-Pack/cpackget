@@ -5,6 +5,7 @@ package installer_test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -257,6 +258,9 @@ var (
 	publicLocalPack010WithMinimumCompatibleVersionLegacyPackID = publicLocalPackLegacyPackID + "@^0.1.0"
 	publicLocalPack011WithMinimumCompatibleVersionLegacyPackID = publicLocalPackLegacyPackID + "@^0.1.1"
 	publicLocalPack211WithMinimumCompatibleVersionLegacyPackID = publicLocalPackLegacyPackID + "@^2.1.1"
+	publicLocalPack010WithPatchVersionLegacyPackID             = publicLocalPackLegacyPackID + "@~0.1.0"
+	publicLocalPack011WithPatchVersionLegacyPackID             = publicLocalPackLegacyPackID + "@~0.1.1"
+	publicLocalPack211WithPatchVersionLegacyPackID             = publicLocalPackLegacyPackID + "@~2.1.1"
 	publicLocalPackLatestVersionLegacyPackID                   = publicLocalPackLegacyPackID + "@latest"
 
 	// Pdsc files to test out installing packs with pack id only
@@ -420,7 +424,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		err := installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, Concurrency, Timeout)
 
 		assert.NotNil(err)
-		assert.Equal(errs.ErrBadRequest, err)
+		assert.Equal(errors.Unwrap(err), errs.ErrBadRequest)
 	})
 
 	t.Run("test add malformed index.pidx", func(t *testing.T) {

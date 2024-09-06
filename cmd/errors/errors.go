@@ -27,7 +27,7 @@ func AlreadyLogged(err error) bool {
 
 var (
 	// Errors related to package file name
-	ErrBadPackName = errors.New("bad pack name: it should be one of the following formats: Vendor.Pack, Vendor.Pack.x.y.z, Vendor.Pack.x.y.z.pack, or Vendor.Pack.pdsc")
+	ErrBadPackName = errors.New("bad pack name: it must be either a PackID:  packVendor::Pack[@version|@~version|@^version|@>=version] or a local Pack file: <path>/Vendor.Pack.version.pack or a local Pack Description file: <path>/Vendor.Pack.pdsc")
 	ErrBadPackURL  = errors.New("bad pack url: the url provided for this pack is malformed")
 
 	// Errors related to package content
@@ -83,7 +83,7 @@ var (
 	// Errors on installation strucuture
 	ErrCannotOverwritePublicIndex      = errors.New("cannot replace \"index.pidx\", use the flag \"-f/--force\" to force overwritting it")
 	ErrInvalidPublicIndexReference     = errors.New("the specified index path can only either empty, a local file or an HTTP(S) URL - not a directory")
-	ErrPackPdscCannotBeFound           = errors.New("the URL for the pack pdsc file seems not to exist or it didn't return the file")
+	ErrPackPdscCannotBeFound           = errors.New("the URL is invalid or does not return the file")
 	ErrPackVersionNotFoundInPdsc       = errors.New("pack version not found in the pdsc file")
 	ErrPackVersionNotLatestReleasePdsc = errors.New("pack version is not the latest in the pdsc file")
 	ErrPackVersionNotAvailable         = errors.New("target pack version is not available")

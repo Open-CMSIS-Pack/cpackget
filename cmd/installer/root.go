@@ -855,6 +855,11 @@ func FindPackURL(pack *PackType) (string, error) {
 				return "", errs.ErrPackVersionNotAvailable
 			}
 		}
+		if pack.versionModifier == utils.PatchVersion {
+			if semver.MajorMinor("v"+releaseTag.Version) != semver.MajorMinor("v"+pack.Version) {
+				return "", errs.ErrPackVersionNotAvailable
+			}
+		}
 
 		if releaseTag == nil {
 			return "", errs.ErrPackVersionNotFoundInPdsc
@@ -889,6 +894,11 @@ func FindPackURL(pack *PackType) (string, error) {
 	}
 	if pack.versionModifier == utils.GreatestCompatibleVersion {
 		if semver.Major("v"+releaseTag.Version) != semver.Major("v"+pack.Version) {
+			return "", errs.ErrPackVersionNotAvailable
+		}
+	}
+	if pack.versionModifier == utils.PatchVersion {
+		if semver.MajorMinor("v"+releaseTag.Version) != semver.MajorMinor("v"+pack.Version) {
 			return "", errs.ErrPackVersionNotAvailable
 		}
 	}
@@ -1104,6 +1114,21 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 		return false
 	}
 
+	// Check if there is a greater version with same Major and Minor number
+	if pack.versionModifier == utils.PatchVersion {
+		log.Debugf("Checking for installed packs @~%s", pack.Version)
+		for _, version := range installedVersions {
+			log.Debugf("- checking against: %s", version)
+			sameMajorMinor := semver.MajorMinor("v"+version) == semver.MajorMinor("v"+pack.Version)
+			if sameMajorMinor && utils.SemverCompare(version, pack.Version) >= 0 {
+				pack.targetVersion = version
+				return true
+			}
+		}
+
+		return false
+	}
+
 	if pack.versionModifier == utils.RangeVersion {
 		for _, version := range installedVersions {
 			if utils.SemverCompareRange(version, pack.Version) == 0 {
@@ -1220,7 +1245,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 
 	if err != nil {
 		log.Errorf("Could not download \"%s\": %s", pdscFileURL, err)
-		return errs.ErrPackPdscCannotBeFound
+		return fmt.Errorf("\"%s\": %w", pdscFileURL, errs.ErrPackPdscCannotBeFound)
 	}
 
 	utils.UnsetReadOnly(pdscFilePath)
@@ -1265,7 +1290,7 @@ func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) e
 
 	if err != nil {
 		log.Errorf("Could not download \"%s\": %s", pdscFileURL, err)
-		return errs.ErrPackPdscCannotBeFound
+		return fmt.Errorf("\"%s\": %w", pdscFileURL, errs.ErrPackPdscCannotBeFound)
 	}
 
 	utils.UnsetReadOnly(pdscFilePath)
