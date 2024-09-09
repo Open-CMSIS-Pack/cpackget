@@ -5,6 +5,7 @@ package installer
 
 import (
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -84,16 +85,24 @@ func (p *PdscType) install(installation *PacksInstallationType) error {
 		Vendor: tag.Vendor,
 		Name:   tag.Name,
 	}
+	tagURL := tag.URL
+	if strings.HasPrefix(tagURL, "file://") && runtime.GOOS == "windows" {
+		tagURL = strings.ToLower(tagURL) // case insensitive if windows
+	}
 	foundTags := installation.LocalPidx.FindPdscTags(searchTag)
 	if len(foundTags) > 0 {
 		for _, foundTag := range foundTags {
-			if strings.ReplaceAll(foundTag.URL, "\\", "/") == tag.URL {
-				log.Warn("Found PDSC file with an equal but malformed path (using '\\'). Correcting entry and reinstalling.")
-				if err := installation.LocalPidx.RemovePdsc(foundTag); err != nil {
-					return err
-				}
+			foundURL := foundTag.URL
+			if strings.HasPrefix(foundURL, "file://") && runtime.GOOS == "windows" {
+				foundURL = strings.ToLower(foundURL) // case insensitive if windows
 			}
-			if foundTag.URL == tag.URL {
+			if foundURL == tagURL {
+				if strings.Contains(foundTag.URL, "\\") {
+					log.Warn("Found PDSC file with an equal but malformed path (using '\\'). Correcting entry and reinstall.")
+					if err := installation.LocalPidx.RemovePdsc(foundTag); err != nil {
+						return err
+					}
+				}
 				return errs.ErrPdscEntryExists
 			}
 		}

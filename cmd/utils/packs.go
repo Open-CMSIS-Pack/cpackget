@@ -208,9 +208,13 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 		// in case the file is coming from the current directory
 		if !(strings.HasPrefix(location, "http://") || strings.HasPrefix(location, "https://") || strings.HasPrefix(location, "file://")) {
 			if !filepath.IsAbs(location) {
-				absPath, _ := os.Getwd()
-				location = filepath.Join(absPath, location)
-				location, _ = filepath.Abs(location)
+				if len(filepath.VolumeName(location)) == 0 && len(location) > 0 && (location[0] == '/' || location[0] == '\\') {
+					location, _ = filepath.Abs(location) // relative from root, only in windows
+				} else {
+					absPath, _ := os.Getwd()
+					location = filepath.Join(absPath, location)
+					location, _ = filepath.Abs(location)
+				}
 			} else {
 				location = filepath.Clean(location)
 			}
