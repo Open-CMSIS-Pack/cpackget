@@ -176,7 +176,7 @@ func DownloadFile(URL string, timeout int) (string, error) {
 
 	// Download file in smaller bits straight to a local file
 	written, err := SecureCopy(io.MultiWriter(writers...), resp.Body)
-	fmt.Printf("\n")
+	//	fmt.Printf("\n")
 	log.Debugf("Downloaded %d bytes", written)
 
 	if err != nil {

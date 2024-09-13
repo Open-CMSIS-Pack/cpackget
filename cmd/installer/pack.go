@@ -75,7 +75,7 @@ type PackType struct {
 
 // preparePack does some sanity validation regarding pack name
 // and check if it's public and if it's installed or not
-func preparePack(packPath string, toBeRemoved bool, timeout int) (*PackType, error) {
+func preparePack(packPath string, toBeRemoved, forceLatest, noLocal bool, timeout int) (*PackType, error) {
 	pack := &PackType{
 		path:        packPath,
 		toBeRemoved: toBeRemoved,
@@ -102,6 +102,10 @@ func preparePack(packPath string, toBeRemoved bool, timeout int) (*PackType, err
 		return pack, err
 	}
 
+	if forceLatest {
+		info.Version = "latest"
+		info.VersionModifier = utils.LatestVersion
+	}
 	pack.URL = info.Location
 	pack.Name = info.Pack
 	pack.Vendor = info.Vendor
@@ -117,7 +121,7 @@ func preparePack(packPath string, toBeRemoved bool, timeout int) (*PackType, err
 		return pack, err
 	}
 
-	pack.isInstalled = Installation.PackIsInstalled(pack)
+	pack.isInstalled = Installation.PackIsInstalled(pack, noLocal)
 
 	return pack, nil
 }
@@ -586,12 +590,12 @@ func (p *PackType) loadDependencies() error {
 		var pack *PackType
 		var err error
 		if version == "" {
-			pack, err = preparePack(deps[i][1]+"."+deps[i][0], false, 0)
+			pack, err = preparePack(deps[i][1]+"."+deps[i][0], false, false, false, 0)
 			if err != nil {
 				return err
 			}
 		} else {
-			pack, err = preparePack(deps[i][1]+"."+deps[i][0]+"."+deps[i][2], false, 0)
+			pack, err = preparePack(deps[i][1]+"."+deps[i][0]+"."+deps[i][2], false, false, false, 0)
 			if err != nil {
 				return err
 			}
@@ -611,7 +615,7 @@ func (p *PackType) loadDependencies() error {
 		} else {
 			pack.versionModifier = utils.LatestVersion
 		}
-		if Installation.PackIsInstalled(pack) {
+		if Installation.PackIsInstalled(pack, false) {
 			p.Requirements.packages = append(p.Requirements.packages, struct {
 				info      []string
 				installed bool

@@ -477,7 +477,7 @@ func TestAddPack(t *testing.T) {
 
 		// Check in installer internals
 		pack := packInfoToType(info)
-		assert.False(installer.Installation.PackIsInstalled(pack))
+		assert.False(installer.Installation.PackIsInstalled(pack, false))
 	})
 
 	t.Run("test installing pack with license agreed", func(t *testing.T) {
@@ -587,7 +587,7 @@ func TestAddPack(t *testing.T) {
 
 		// Check in installer internals
 		pack := packInfoToType(info)
-		assert.False(installer.Installation.PackIsInstalled(pack))
+		assert.False(installer.Installation.PackIsInstalled(pack, false))
 	})
 
 	t.Run("test installing pack with missing license extracted", func(t *testing.T) {
