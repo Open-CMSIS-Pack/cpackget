@@ -97,7 +97,7 @@ func getPackIdxModTime(t *testing.T, pushBack bool) time.Time {
 func checkPackIsInstalled(t *testing.T, pack *installer.PackType) {
 	assert := assert.New(t)
 
-	assert.True(installer.Installation.PackIsInstalled(pack))
+	assert.True(installer.Installation.PackIsInstalled(pack, false))
 
 	// Make sure there's a copy of the pack file in .Download/
 	assert.True(utils.FileExists(filepath.Join(installer.Installation.DownloadDir, pack.PackFileName())))
@@ -174,7 +174,7 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 
 	// Check in installer internals
 	pack := packInfoToType(info)
-	isInstalled := installer.Installation.PackIsInstalled(pack)
+	isInstalled := installer.Installation.PackIsInstalled(pack, false)
 
 	purgeOnly := !isInstalled && purge
 
@@ -184,7 +184,7 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 	removeAll := false
 
 	if removeAll {
-		assert.False(installer.Installation.PackIsInstalled(pack))
+		assert.False(installer.Installation.PackIsInstalled(pack, false))
 
 		if !withVersion {
 			// If withVersion=false, it means shortPackPath=TheVendor.PackName only

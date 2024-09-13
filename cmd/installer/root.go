@@ -73,7 +73,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 		isDep = true
 		packPath = packPath[1:]
 	}
-	pack, err := preparePack(packPath, false, timeout)
+	pack, err := preparePack(packPath, false, false, false, timeout)
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 			for _, req := range pack.Requirements.packages {
 				// Recursively install dependencies
 				path := req.info[1] + "." + req.info[0] + "." + req.info[2]
-				pack, err := preparePack(path, false, timeout)
+				pack, err := preparePack(path, false, false, false, timeout)
 				if err != nil {
 					return err
 				}
@@ -208,7 +208,7 @@ func RemovePack(packPath string, purge bool, timeout int) error {
 	// TODO: by default, remove latest version first
 	// if no version is given
 
-	pack, err := preparePack(packPath, true, timeout)
+	pack, err := preparePack(packPath, true, false, false, timeout)
 	if err != nil {
 		return err
 	}
@@ -290,6 +290,100 @@ func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, tim
 	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, timeout); err != nil {
 		log.Error(err)
 	}
+}
+
+// UpdatePack updates an installed pack to the latest version
+func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) error {
+
+	if packPath == "" {
+		installedPacks, err := findInstalledPacks(false, true)
+		if err != nil {
+			return err
+		}
+		for _, installedPack := range installedPacks {
+			err = UpdatePack(installedPack.Vendor+"."+installedPack.Name, checkEula, noRequirements, timeout)
+			if err != nil {
+				log.Error(err)
+			}
+		}
+		return nil
+	}
+	pack, err := preparePack(packPath, false, true, true, timeout)
+	if err != nil {
+		return err
+	}
+
+	if !pack.IsPublic || pack.isInstalled {
+		return nil
+	}
+
+	log.Infof("Updating pack \"%s\"", packPath)
+
+	if pack.isPackID {
+		pack.path, err = FindPackURL(pack)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err = pack.fetch(timeout); err != nil {
+		return err
+	}
+
+	// Unlock the pack (to enable reinstalling) and lock it afterwards
+	pack.Unlock()
+	defer pack.Lock()
+
+	if err = pack.install(Installation, checkEula); err != nil {
+		// Just for internal purposes, is not presented as an error to the user
+		if err == errs.ErrEula {
+			return nil
+		}
+		return err
+	}
+
+	if !noRequirements {
+		log.Debug("installing package requirements")
+		err := pack.loadDependencies()
+		if err != nil {
+			return err
+		}
+		if !pack.RequirementsSatisfied() {
+			// Print all dependencies info on one message
+			msg := ""
+			for _, p := range pack.Requirements.packages {
+				if !p.installed {
+					msg += utils.FormatPackVersion(p.info) + " "
+				}
+			}
+			if msg != "" {
+				log.Infof("Package requirements not satisfied - installing %s", msg)
+			}
+			for _, req := range pack.Requirements.packages {
+				// Recursively install dependencies
+				path := req.info[1] + "." + req.info[0] + "." + req.info[2]
+				pack, err := preparePack(path, false, false, false, timeout)
+				if err != nil {
+					return err
+				}
+				if !pack.isInstalled {
+					log.Debug("pack has dependencies, installing")
+					err := AddPack("$"+path, checkEula, false, false, false, timeout)
+					if err != nil {
+						return err
+					}
+				} else {
+					log.Debugf("required pack %s already installed - skipping", path)
+				}
+			}
+		} else {
+			log.Debugf("pack has all required dependencies installed (%d packs)", len(pack.Requirements.packages))
+		}
+	} else {
+		log.Debug("skipping requirements checking and installation")
+	}
+
+	return Installation.touchPackIdx()
 }
 
 func CheckConcurrency(concurrency int) int {
@@ -566,6 +660,98 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 	return Installation.touchPackIdx()
 }
 
+type installedPack struct {
+	xml.PdscTag
+	pdscPath        string
+	isPdscInstalled bool
+	err             error
+}
+
+func findInstalledPacks(addLocalPacks, removeDuplicates bool) ([]installedPack, error) {
+	installedPacks := []installedPack{}
+
+	// First, get installed packs from *.pack files
+	pattern := filepath.Join(Installation.PackRoot, "*", "*", "*", "*.pdsc")
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return nil, err
+	}
+	for _, match := range matches {
+		pdscPath := strings.Replace(match, Installation.PackRoot, "", -1)
+		packName, _ := filepath.Split(pdscPath)
+		packName = strings.Replace(packName, "/", " ", -1)
+		packName = strings.Replace(packName, "\\", " ", -1)
+		packName = strings.Trim(packName, " ")
+		packName = strings.Replace(packName, " ", ".", -1)
+
+		packNameBits := strings.SplitN(packName, ".", 3)
+
+		pack := installedPack{pdscPath: match}
+		pack.Vendor = packNameBits[0]
+		pack.Name = packNameBits[1]
+		pack.Version = packNameBits[2]
+		installedPacks = append(installedPacks, pack)
+	}
+
+	if addLocalPacks {
+		// Add packs listed in .Local/local_repository.pidx to the list
+		if err := Installation.LocalPidx.Read(); err != nil {
+			log.Error(err)
+		} else {
+			installedPdscs := Installation.LocalPidx.ListPdscTags()
+			for _, pdsc := range installedPdscs {
+				pack := installedPack{PdscTag: pdsc, isPdscInstalled: true}
+				pack.pdscPath = pdsc.URL + pack.Vendor + "/" + pack.Name + ".pdsc"
+
+				parsedURL, err := url.ParseRequestURI(pdsc.URL)
+				pack.err = err
+				if pack.err != nil {
+					installedPacks = append(installedPacks, pack)
+					continue
+				}
+
+				pack.pdscPath = filepath.Join(utils.CleanPath(parsedURL.Path), pack.Vendor+"."+pack.Name+".pdsc")
+				pdscXML := xml.NewPdscXML(pack.pdscPath)
+				pack.err = pdscXML.Read()
+				if pack.err == nil {
+					pack.Version = pdscXML.LatestVersion()
+				}
+				installedPacks = append(installedPacks, pack)
+			}
+		}
+	}
+	if removeDuplicates {
+		sort.Slice(installedPacks, func(i, j int) bool {
+			vi := strings.ToLower(installedPacks[i].Vendor)
+			vj := strings.ToLower(installedPacks[j].Vendor)
+			if vi == vj {
+				ai := strings.ToLower(installedPacks[i].Name)
+				aj := strings.ToLower(installedPacks[j].Name)
+				if ai == aj {
+					return installedPacks[i].Version > installedPacks[j].Version
+				}
+				return ai < aj
+			}
+			return vi < vj
+		})
+		noDupInstalledPacks := []installedPack{}
+		if len(installedPacks) > 0 {
+			last := 0
+			noDupInstalledPacks = append(noDupInstalledPacks, installedPacks[0])
+			for i, installedPack := range installedPacks {
+				if i > 0 {
+					if !(installedPacks[last].Vendor == installedPack.Vendor && installedPacks[last].Name == installedPack.Name) {
+						noDupInstalledPacks = append(noDupInstalledPacks, installedPack)
+						last = i
+					}
+				}
+			}
+		}
+		return noDupInstalledPacks, nil
+	}
+	return installedPacks, nil
+}
+
 // ListInstalledPacks generates a list of all packs present in the pack root folder
 func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bool, listFilter string) error {
 	log.Debugf("Listing packs")
@@ -591,7 +777,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bo
 			logMessage := pdscTag.YamlPackID()
 			packFilePath := filepath.Join(Installation.DownloadDir, pdscTag.Key()) + ".pack"
 
-			if Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}) {
+			if Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}, false) {
 				logMessage += " (installed)"
 			} else if utils.FileExists(packFilePath) {
 				logMessage += " (cached)"
@@ -637,7 +823,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bo
 			}
 
 			logMessage := pdscTag.YamlPackID()
-			if Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}) {
+			if Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}, false) {
 				logMessage += " (installed)"
 			}
 
@@ -648,9 +834,9 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bo
 	} else {
 		if listUpdates {
 			if listFilter != "" {
-				log.Infof("Listing installed updateable packs, filtering by \"%s\"", listFilter)
+				log.Infof("Listing installed packs with available update, filtering by \"%s\"", listFilter)
 			} else {
-				log.Infof("Listing installed updateable packs")
+				log.Infof("Listing installed packs with available update")
 			}
 		} else {
 			if listRequirements {
@@ -664,61 +850,9 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bo
 			}
 		}
 
-		type installedPack struct {
-			xml.PdscTag
-			pdscPath        string
-			isPdscInstalled bool
-			err             error
-		}
-		installedPacks := []installedPack{}
-
-		// First, get installed packs from *.pack files
-		pattern := filepath.Join(Installation.PackRoot, "*", "*", "*", "*.pdsc")
-		matches, err := filepath.Glob(pattern)
+		installedPacks, err := findInstalledPacks(!listUpdates, listUpdates)
 		if err != nil {
 			return err
-		}
-		for _, match := range matches {
-			pdscPath := strings.Replace(match, Installation.PackRoot, "", -1)
-			packName, _ := filepath.Split(pdscPath)
-			packName = strings.Replace(packName, "/", " ", -1)
-			packName = strings.Replace(packName, "\\", " ", -1)
-			packName = strings.Trim(packName, " ")
-			packName = strings.Replace(packName, " ", ".", -1)
-
-			packNameBits := strings.SplitN(packName, ".", 3)
-
-			pack := installedPack{pdscPath: match}
-			pack.Vendor = packNameBits[0]
-			pack.Name = packNameBits[1]
-			pack.Version = packNameBits[2]
-			installedPacks = append(installedPacks, pack)
-		}
-
-		// Add packs listed in .Local/local_repository.pidx to the list
-		if err := Installation.LocalPidx.Read(); err != nil {
-			log.Error(err)
-		} else {
-			installedPdscs := Installation.LocalPidx.ListPdscTags()
-			for _, pdsc := range installedPdscs {
-				pack := installedPack{PdscTag: pdsc, isPdscInstalled: true}
-				pack.pdscPath = pdsc.URL + pack.Vendor + "/" + pack.Name + ".pdsc"
-
-				parsedURL, err := url.ParseRequestURI(pdsc.URL)
-				pack.err = err
-				if pack.err != nil {
-					installedPacks = append(installedPacks, pack)
-					continue
-				}
-
-				pack.pdscPath = filepath.Join(utils.CleanPath(parsedURL.Path), pack.Vendor+"."+pack.Name+".pdsc")
-				pdscXML := xml.NewPdscXML(pack.pdscPath)
-				pack.err = pdscXML.Read()
-				if pack.err == nil {
-					pack.Version = pdscXML.LatestVersion()
-				}
-				installedPacks = append(installedPacks, pack)
-			}
 		}
 
 		if len(installedPacks) == 0 {
@@ -728,17 +862,28 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bo
 
 		numErrors := 0
 		printWarning := true
-		sort.Slice(installedPacks, func(i, j int) bool {
-			return strings.ToLower(installedPacks[i].Key()) < strings.ToLower(installedPacks[j].Key())
-		})
+		if !listUpdates {
+			sort.Slice(installedPacks, func(i, j int) bool {
+				return strings.ToLower(installedPacks[i].Key()) < strings.ToLower(installedPacks[j].Key())
+			})
+		}
 		for _, pack := range installedPacks {
 			logMessage := pack.YamlPackID()
 			// List installed packs and their dependencies
-			if listRequirements {
-				p, err := preparePack(pack.Vendor+"."+pack.Name+"."+pack.Version, false, 0)
-				if err != nil {
-					return err
+			p, err := preparePack(pack.Key(), false, listUpdates, listUpdates, 0)
+			if err == nil {
+				if listUpdates && !p.IsPublic {
+					continue // ignore local packs
 				}
+				if listUpdates && p.isInstalled {
+					continue // ignore already installed packs of newest version
+				}
+			}
+			if listUpdates {
+				logMessage = strings.Replace(logMessage, "@", " can be updated from \"", 1)
+				logMessage += "\" to \"" + p.targetVersion + "\""
+			}
+			if listRequirements {
 				p.Pdsc = xml.NewPdscXML(pack.pdscPath)
 				if err := p.Pdsc.Read(); err != nil {
 					return err
@@ -988,7 +1133,7 @@ func SetPackRoot(packRoot string, create bool) error {
 	return nil
 }
 
-// PacksInstallationType is the scruct tha manages Open-CMSIS-Pack installation/deletion.
+// PacksInstallationType is the struct that manages Open-CMSIS-Pack installation/deletion.
 type PacksInstallationType struct {
 	// PackRoot is the working directory if the packs installation
 	PackRoot string
@@ -1039,7 +1184,7 @@ func (p *PacksInstallationType) touchPackIdx() error {
 }
 
 // PackIsInstalled checks whether a given pack is already installed or not
-func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
+func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bool {
 	log.Debugf("Checking if %s is installed", pack.PackIDWithVersion())
 
 	// First make sure there's at least one version of the pack installed
@@ -1060,14 +1205,16 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 		return utils.DirExists(packDir)
 	}
 	installedVersions := []string{}
-	// Gather all versions in local_repository.idx for local .psdc installed packs
-	if err := p.LocalPidx.Read(); err != nil {
-		log.Warn("Could not read local index")
-		return false
-	}
-	for _, pdsc := range p.LocalPidx.ListPdscTags() {
-		if pack.Vendor == pdsc.Vendor && pack.Name == pdsc.Name {
-			installedVersions = append(installedVersions, pdsc.Version)
+	if !noLocal {
+		// Gather all versions in local_repository.idx for local .psdc installed packs
+		if err := p.LocalPidx.Read(); err != nil {
+			log.Warn("Could not read local index")
+			return false
+		}
+		for _, pdsc := range p.LocalPidx.ListPdscTags() {
+			if pack.Vendor == pdsc.Vendor && pack.Name == pdsc.Name {
+				installedVersions = append(installedVersions, pdsc.Version)
+			}
 		}
 	}
 
@@ -1094,7 +1241,6 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 				return true
 			}
 		}
-
 		log.Debugf("- no version matched")
 		return false
 	}
@@ -1110,7 +1256,6 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 				return true
 			}
 		}
-
 		return false
 	}
 
@@ -1125,7 +1270,6 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 				return true
 			}
 		}
-
 		return false
 	}
 
@@ -1161,9 +1305,7 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType) bool {
 	latestVersion := pdscXML.LatestVersion()
 	packDir := filepath.Join(installationDir, latestVersion)
 	found := utils.DirExists(packDir)
-	if found {
-		pack.targetVersion = latestVersion
-	}
+	pack.targetVersion = latestVersion
 	return found
 }
 
