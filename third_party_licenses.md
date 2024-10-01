@@ -14,7 +14,7 @@
 | github.com/lu4p/cat | v0.1.5  | [Unlicense](https://github.com/lu4p/cat/blob/v0.1.5/LICENSE) |
 | github.com/lu4p/cat/rtftxt | v0.1.5  | [MIT](https://github.com/lu4p/cat/blob/v0.1.5/rtftxt/LICENSE) |
 | github.com/magiconair/properties | v1.8.7  | [BSD-2-Clause](https://github.com/magiconair/properties/blob/v1.8.7/LICENSE.md) |
-| github.com/mattn/go-runewidth | v0.0.15  | [MIT](https://github.com/mattn/go-runewidth/blob/v0.0.15/LICENSE) |
+| github.com/mattn/go-runewidth | v0.0.16  | [MIT](https://github.com/mattn/go-runewidth/blob/v0.0.16/LICENSE) |
 | github.com/mitchellh/colorstring | v0.0.0-20190213212951-d06e56a500db  | [MIT](https://github.com/mitchellh/colorstring/blob/d06e56a500db/LICENSE) |
 | github.com/mitchellh/mapstructure | v1.5.0  | [MIT](https://github.com/mitchellh/mapstructure/blob/v1.5.0/LICENSE) |
 | github.com/nsf/termbox-go | v1.1.1  | [MIT](https://github.com/nsf/termbox-go/blob/v1.1.1/LICENSE) |
@@ -23,7 +23,7 @@
 | github.com/pkg/errors | v0.9.1  | [BSD-2-Clause](https://github.com/pkg/errors/blob/v0.9.1/LICENSE) |
 | github.com/rivo/uniseg | v0.4.7  | [MIT](https://github.com/rivo/uniseg/blob/v0.4.7/LICENSE.txt) |
 | github.com/sagikazarmark/slog-shim | v0.1.0  | [BSD-3-Clause](https://github.com/sagikazarmark/slog-shim/blob/v0.1.0/LICENSE) |
-| github.com/schollz/progressbar/v3 | v3.15.0  | [MIT](https://github.com/schollz/progressbar/blob/v3.15.0/LICENSE) |
+| github.com/schollz/progressbar/v3 | v3.16.0  | [MIT](https://github.com/schollz/progressbar/blob/v3.16.0/LICENSE) |
 | github.com/sirupsen/logrus | v1.9.3  | [MIT](https://github.com/sirupsen/logrus/blob/v1.9.3/LICENSE) |
 | github.com/spf13/afero | v1.11.0  | [Apache-2.0](https://github.com/spf13/afero/blob/v1.11.0/LICENSE.txt) |
 | github.com/spf13/cast | v1.6.0  | [MIT](https://github.com/spf13/cast/blob/v1.6.0/LICENSE) |
