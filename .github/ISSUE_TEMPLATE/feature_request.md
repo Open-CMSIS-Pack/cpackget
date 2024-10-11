@@ -1,9 +1,8 @@
 ---
 name: Feature request
 about: "For feature requests. Please search for existing issues first. Also see CONTRIBUTING."
-title: ''
+title: '[cpackget] ... enhancement ...'
 labels: 'enhancement'
-assignees: thorstendb-ARM
 
 ---
 
