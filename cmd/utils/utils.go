@@ -32,6 +32,7 @@ import (
 
 var gEncodedProgress = false
 var gSkipTouch = false
+var gUserAgent string
 
 func SetEncodedProgress(encodedProgress bool) {
 	gEncodedProgress = encodedProgress
@@ -47,6 +48,10 @@ func SetSkipTouch(skipTouch bool) {
 
 func GetSkipTouch() bool {
 	return gSkipTouch
+}
+
+func SetUserAgent(userAgent string) {
+	gUserAgent = userAgent
 }
 
 // CacheDir is used for cpackget to temporarily host downloaded pack files
@@ -139,7 +144,9 @@ func DownloadFile(URL string, timeout int) (string, error) {
 		},
 	}
 
-	resp, err := client.Get(URL)
+	req, _ := http.NewRequest("GET", URL, nil)
+	req.Header.Add("User-Agent", gUserAgent)
+	resp, err := client.Do(req)
 	if err != nil {
 		log.Error(err)
 		return "", fmt.Errorf("\"%s\": %w", URL, errs.ErrFailedDownloadingFile)

@@ -22,6 +22,7 @@ func main() {
 
 	commands.Version = version
 	commands.Copyright = copyRight
+	utils.SetUserAgent("cpackget/" + version)
 	cmd := commands.NewCli()
 	err := cmd.Execute()
 	if err != nil {
