@@ -146,4 +146,71 @@ func TestPdscXML(t *testing.T) {
 		assert.Equal(expectedURL, pdscXML.PackURL(""))
 		assert.Equal(expectedURL, pdscXML.PackURL(version))
 	})
+
+	t.Run("test Dependencies1", func(t *testing.T) {
+		var name = "TheName"
+		var vendor = "TheVendor"
+		var version = "0.0.1"
+		pdscXML := xml.PdscXML{}
+		pack := xml.PackageTag{
+			Vendor:  vendor,
+			Name:    name,
+			Version: version,
+		}
+		packs := xml.PackagesTag{}
+		packs.Packages = append(packs.Packages, pack)
+		pdscXML.RequirementsTag.Packages = append(pdscXML.RequirementsTag.Packages, packs)
+
+		expectedDeps := [][]string{}
+		expectedDep := []string{name, vendor, version + ":_"}
+		expectedDeps = append(expectedDeps, expectedDep)
+		assert.Equal(expectedDeps, pdscXML.Dependencies())
+	})
+
+	t.Run("test Dependencies2", func(t *testing.T) {
+		var name = "TheName"
+		var vendor = "TheVendor"
+		var version = "0.0.1:0.0.2"
+		pdscXML := xml.PdscXML{}
+		pack := xml.PackageTag{
+			Vendor:  vendor,
+			Name:    name,
+			Version: version,
+		}
+		packs := xml.PackagesTag{}
+		packs.Packages = append(packs.Packages, pack)
+		pdscXML.RequirementsTag.Packages = append(pdscXML.RequirementsTag.Packages, packs)
+
+		expectedDeps := [][]string{}
+		expectedDep := []string{name, vendor, version}
+		expectedDeps = append(expectedDeps, expectedDep)
+		assert.Equal(expectedDeps, pdscXML.Dependencies())
+	})
+
+	t.Run("test Dependencies3", func(t *testing.T) {
+		var name = "TheName"
+		var vendor = "TheVendor"
+		var version = ""
+		pdscXML := xml.PdscXML{}
+		pack := xml.PackageTag{
+			Vendor:  vendor,
+			Name:    name,
+			Version: version,
+		}
+		packs := xml.PackagesTag{}
+		packs.Packages = append(packs.Packages, pack)
+		pdscXML.RequirementsTag.Packages = append(pdscXML.RequirementsTag.Packages, packs)
+
+		expectedDeps := [][]string{}
+		expectedDep := []string{name, vendor, "latest"}
+		expectedDeps = append(expectedDeps, expectedDep)
+		assert.Equal(expectedDeps, pdscXML.Dependencies())
+	})
+
+	t.Run("test Dependencies4", func(t *testing.T) {
+		pdscXML := xml.PdscXML{}
+
+		pdscXML.RequirementsTag.Packages = nil
+		assert.Nil(pdscXML.Dependencies())
+	})
 }
