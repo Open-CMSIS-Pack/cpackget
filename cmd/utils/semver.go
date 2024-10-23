@@ -27,7 +27,9 @@ func stripLeadingZeros(version string) string {
 // SemverCompare extends `semver.Compare` to work with leading zeros
 func SemverCompare(version1, version2 string) int {
 	version1 = "v" + stripLeadingZeros(version1)
+	version1, _, _ = strings.Cut(version1, ":")
 	version2 = "v" + stripLeadingZeros(version2)
+	version2, _, _ = strings.Cut(version2, ":")
 	return semver.Compare(version1, version2)
 }
 

@@ -1274,7 +1274,9 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 	}
 
 	if pack.versionModifier == utils.RangeVersion {
+		log.Debugf("Checking for installed packs %s", pack.Version)
 		for _, version := range installedVersions {
+			log.Debugf("- checking against: %s", version)
 			if utils.SemverCompareRange(version, pack.Version) == 0 {
 				return true
 			}

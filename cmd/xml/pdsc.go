@@ -148,7 +148,7 @@ func (p *PdscXML) Dependencies() [][]string {
 	if p.RequirementsTag.Packages == nil {
 		return nil
 	}
-	for i, pack := range p.RequirementsTag.Packages {
+	for _, pack := range p.RequirementsTag.Packages {
 		for _, pk := range pack.Packages {
 			// empty -> install the latest
 			if pk.Version == "" {
@@ -160,8 +160,9 @@ func (p *PdscXML) Dependencies() [][]string {
 					pk.Version = pk.Version + ":_"
 				}
 			}
-			dependencies = append(dependencies, []string{pk.Name, pk.Vendor, pk.Version})
-			log.Debugf("found %v dependency", dependencies[i])
+			dependency := []string{pk.Name, pk.Vendor, pk.Version}
+			log.Debugf("found %v dependency", dependency)
+			dependencies = append(dependencies, dependency)
 		}
 	}
 	return dependencies

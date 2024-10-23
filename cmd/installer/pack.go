@@ -604,11 +604,7 @@ func (p *PackType) loadDependencies() error {
 		// Need to convert the spec <package/requirements/packages> "version" to the one internally used
 		if version != "latest" {
 			if len(strings.Split(version, ":")) >= 1 {
-				if string(version[len(version)-1]) == "_" {
-					pack.versionModifier = utils.GreaterVersion
-				} else {
-					pack.versionModifier = utils.RangeVersion
-				}
+				pack.versionModifier = utils.RangeVersion
 			} else {
 				pack.versionModifier = utils.ExactVersion
 			}
