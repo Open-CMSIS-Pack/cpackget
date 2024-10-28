@@ -6,6 +6,7 @@
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/eea6cb90a9a1e39bcff7/maintainability)](https://codeclimate.com/github/Open-CMSIS-Pack/cpackget/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/eea6cb90a9a1e39bcff7/test_coverage)](https://codeclimate.com/github/Open-CMSIS-Pack/cpackget/test_coverage)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Open-CMSIS-Pack/cpackget/badge)](https://securityscorecards.dev/viewer/?uri=github.com/Open-CMSIS-Pack/cpackget)
 
 # cpackget: Open-CMSIS-Pack Package Installer
 
