@@ -23,7 +23,7 @@
 | github.com/pkg/errors | v0.9.1  | [BSD-2-Clause](https://github.com/pkg/errors/blob/v0.9.1/LICENSE) |
 | github.com/rivo/uniseg | v0.4.7  | [MIT](https://github.com/rivo/uniseg/blob/v0.4.7/LICENSE.txt) |
 | github.com/sagikazarmark/slog-shim | v0.1.0  | [BSD-3-Clause](https://github.com/sagikazarmark/slog-shim/blob/v0.1.0/LICENSE) |
-| github.com/schollz/progressbar/v3 | v3.16.1  | [MIT](https://github.com/schollz/progressbar/blob/v3.16.1/LICENSE) |
+| github.com/schollz/progressbar/v3 | v3.17.0  | [MIT](https://github.com/schollz/progressbar/blob/v3.17.0/LICENSE) |
 | github.com/sirupsen/logrus | v1.9.3  | [MIT](https://github.com/sirupsen/logrus/blob/v1.9.3/LICENSE) |
 | github.com/spf13/afero | v1.11.0  | [Apache-2.0](https://github.com/spf13/afero/blob/v1.11.0/LICENSE.txt) |
 | github.com/spf13/cast | v1.6.0  | [MIT](https://github.com/spf13/cast/blob/v1.6.0/LICENSE) |
