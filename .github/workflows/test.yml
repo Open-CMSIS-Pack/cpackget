@@ -24,15 +24,20 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Harden Runner
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: go.mod
           check-latest: true
 
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
         with:
           version: latest
 
@@ -40,11 +45,16 @@ jobs:
     name: Format
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: go.mod
           check-latest: true
@@ -57,8 +67,13 @@ jobs:
     name: "Vulnerability check"
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
       - name: Scan for Vulnerabilities
-        uses: golang/govulncheck-action@v1
+        uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
         with:
           go-version-file: go.mod
           check-latest: true
@@ -69,11 +84,16 @@ jobs:
     name: Xmllint
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: go.mod
           check-latest: true
@@ -101,11 +121,16 @@ jobs:
     name: "${{ matrix.goos }} | amd64"
     runs-on: ${{ matrix.runs-on }}
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: go.mod
           check-latest: true
@@ -125,7 +150,7 @@ jobs:
  
       - name: Publish coverage report to Code Climate
         if: ${{ startsWith(matrix.runs-on, 'ubuntu') && (github.workflow != 'Release') }}
-        uses: paambaati/codeclimate-action@v9.0.0
+        uses: paambaati/codeclimate-action@f429536ee076d758a24705203199548125a28ca7 # v9.0.0
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
         with:
@@ -134,7 +159,7 @@ jobs:
           prefix: github.com/open-cmsis-pack/cpackget
 
       - name: Archive unit test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: test-results-${{ matrix.goos }}-amd64
           path: ./build/cpackget-testreport-${{ matrix.goos }}-amd64.xml
@@ -144,8 +169,13 @@ jobs:
     name: "linux | arm64"
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
+        with:
+          egress-policy: audit
+
       - name: Unit testing
-        uses: uraimo/run-on-arch-action@v2
+        uses: uraimo/run-on-arch-action@ac33288c3728ca72563c97b8b88dda5a65a84448 # v2
         with:
           arch: aarch64
           distro: ubuntu_latest
@@ -172,7 +202,7 @@ jobs:
             cp build/cpackgettests-linux-arm64.txt "/artifacts/cpackgettests-linux-arm64.txt"
 
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version: '1.22'
           check-latest: true
@@ -185,7 +215,7 @@ jobs:
           go-junit-report -set-exit-code -in ${PWD}/artifacts/cpackgettests-linux-arm64.txt -iocopy -out ./cpackget-testreport-linux-arm64.xml
   
       - name: Archive unit test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: test-results-linux-arm64
           path: ./cpackget-testreport-linux-arm64.xml
