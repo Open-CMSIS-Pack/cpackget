@@ -6,6 +6,10 @@ on:
       - '.github/markdownlint.json'
       - '.github/markdownlint.jsonc'
       - '**/*.md'
+
+# Declare default permissions as read only.
+permissions: read-all
+
 jobs:
   markdown-lint:
     name: Lint markdown files

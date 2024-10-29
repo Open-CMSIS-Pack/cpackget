@@ -40,7 +40,7 @@ jobs:
         run:  go mod tidy
 
       - name: Install go-licenses
-        run:  go install github.com/google/go-licenses@latest
+        run:  go install github.com/google/go-licenses@5348b744d0983d85713295ea08a20cca1654a45e # v1.6.0
 
       - name: Generate TPIP Report
         run:  |
