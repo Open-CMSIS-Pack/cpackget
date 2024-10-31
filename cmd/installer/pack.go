@@ -166,6 +166,11 @@ func (p *PackType) validate() error {
 				p.Subfolder = filepath.Dir(file.Name)
 			}
 
+			// Ensure the file path does not contain ".."
+			if strings.Contains(file.Name, "..") {
+				return fmt.Errorf("invalid file path: %s", file.Name)
+			}
+
 			// Read pack's pdsc
 			tmpPdscFileName := filepath.Join(os.TempDir(), utils.RandStringBytes(10))
 			defer os.RemoveAll(tmpPdscFileName)
