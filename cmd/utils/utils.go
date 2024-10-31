@@ -116,12 +116,14 @@ func DownloadFile(URL string, timeout int) (string, error) {
 		return filePath, nil
 	}
 
-	// For now, skip insecure HTTPS downloads verification only for localhost
-	var tls tls.Config
+	// Load self-signed certificate for localhost
+	var tlsConfig tls.Config
 	if strings.Contains(URL, "https://127.0.0.1") {
-		tls.InsecureSkipVerify = true //nolint:gosec
-	} else {
-		tls.InsecureSkipVerify = false
+		cert, err := tls.LoadX509KeyPair("path/to/localhost.crt", "path/to/localhost.key")
+		if err != nil {
+			return "", fmt.Errorf("failed to load localhost certificate: %v", err)
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
 
 	var rtt time.Duration
@@ -137,7 +139,7 @@ func DownloadFile(URL string, timeout int) (string, error) {
 				Dial: func(netw, addr string) (net.Conn, error) {
 					return net.Dial(netw, addr)
 				},
-				TLSClientConfig: &tls,
+				TLSClientConfig: &tlsConfig,
 				Proxy:           http.ProxyFromEnvironment,
 			},
 			RoundTripTimeout: rtt,
