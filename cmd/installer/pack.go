@@ -168,7 +168,8 @@ func (p *PackType) validate() error {
 
 			// Ensure the file path does not contain ".."
 			if strings.Contains(file.Name, "..") {
-				return fmt.Errorf("invalid file path: %s", file.Name)
+				log.Errorf("File \"%s\" invalid file path", file.Name)
+				return errs.ErrInvalidFilePath
 			}
 
 			// Read pack's pdsc
@@ -203,6 +204,10 @@ func (p *PackType) validate() error {
 
 			p.Pdsc.FileName = file.Name
 			return nil
+		} else {
+			if strings.Contains(file.Name, "..") {
+				return errs.ErrInsecureZipFileName
+			}
 		}
 	}
 

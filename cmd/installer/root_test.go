@@ -240,6 +240,7 @@ var (
 	packWithMalformedURL           = "http://:malformed-url*/TheVendor.PackName.1.2.3.pack"
 	packWithoutPdscFileInside      = filepath.Join(testDir, "PackWithout.PdscFileInside.1.2.3.pack")
 	packWithTaintedCompressedFiles = filepath.Join(testDir, "PackWith.TaintedFiles.1.2.3.pack")
+	packWithParentDirectoryFiles   = filepath.Join(testDir, "PackWith.ParentDirectoryFiles.1.2.3.pack")
 
 	// Packs with packid names only
 	publicRemotePackPackID         = "TheVendor.PublicRemotePack"

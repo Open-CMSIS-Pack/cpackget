@@ -311,6 +311,25 @@ func TestAddPack(t *testing.T) {
 		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
+	t.Run("test installing a pack with .. in pdsc name", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-dot-dot-name"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		defer removePackRoot(localTestingDir)
+
+		packPath := packWithParentDirectoryFiles
+
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
+
+		// Sanity check
+		assert.NotNil(err)
+		assert.Equal(errs.ErrInvalidFilePath, err)
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
+	})
+
 	t.Run("test installing a pack with version not present in the pdsc file", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-version-not-present-in-the-pdsc-file"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
