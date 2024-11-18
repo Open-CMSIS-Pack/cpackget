@@ -58,6 +58,7 @@ var (
 	ErrPathAlreadyExists         = errors.New("path already exists")
 	ErrCopyingEqualPaths         = errors.New("failed copying files: source is the same as destination")
 	ErrMovingEqualPaths          = errors.New("failed moving files: source is the same as destination")
+	ErrInvalidFilePath           = errors.New("invalid file path")
 
 	// Cryptography errors
 	ErrIntegrityCheckFailed  = errors.New("checksum verification failed")
