@@ -3,9 +3,9 @@
 | __Name__ | __Version__ | __Licence__ |
 |----------|-------------|-------------|
 | github.com/EndFirstCorp/peekingReader | v0.0.0-20171012052444-257fb6f1a1a6  | [MIT](https://github.com/EndFirstCorp/peekingReader/blob/257fb6f1a1a6/LICENSE) |
-| github.com/ProtonMail/go-crypto | v1.0.0  | [BSD-3-Clause](https://github.com/ProtonMail/go-crypto/blob/v1.0.0/LICENSE) |
+| github.com/ProtonMail/go-crypto | v1.1.0  | [BSD-3-Clause](https://github.com/ProtonMail/go-crypto/blob/v1.1.0/LICENSE) |
 | github.com/ProtonMail/go-mime | v0.0.0-20230322103455-7d82a3887f2f  | [MIT](https://github.com/ProtonMail/go-mime/blob/7d82a3887f2f/LICENSE) |
-| github.com/ProtonMail/gopenpgp/v2 | v2.7.5  | [MIT](https://github.com/ProtonMail/gopenpgp/blob/v2.7.5/LICENSE) |
+| github.com/ProtonMail/gopenpgp/v2 | v2.8.0  | [MIT](https://github.com/ProtonMail/gopenpgp/blob/v2.8.0/LICENSE) |
 | github.com/cloudflare/circl | v1.3.9  | [BSD-3-Clause](https://github.com/cloudflare/circl/blob/v1.3.9/LICENSE) |
 | github.com/fsnotify/fsnotify | v1.7.0  | [BSD-3-Clause](https://github.com/fsnotify/fsnotify/blob/v1.7.0/LICENSE) |
 | github.com/gabriel-vasile/mimetype | v1.4.4  | [MIT](https://github.com/gabriel-vasile/mimetype/blob/v1.4.4/LICENSE) |
@@ -32,9 +32,9 @@
 | github.com/spf13/viper | v1.19.0  | [MIT](https://github.com/spf13/viper/blob/v1.19.0/LICENSE) |
 | github.com/subosito/gotenv | v1.6.0  | [MIT](https://github.com/subosito/gotenv/blob/v1.6.0/LICENSE) |
 | golang.org/x/crypto | v0.28.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.28.0:LICENSE) |
-| golang.org/x/mod/semver | v0.21.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.21.0:LICENSE) |
+| golang.org/x/mod/semver | v0.22.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.22.0:LICENSE) |
 | golang.org/x/net/html | v0.30.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.30.0:LICENSE) |
-| golang.org/x/sync/semaphore | v0.8.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.8.0:LICENSE) |
+| golang.org/x/sync/semaphore | v0.9.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.9.0:LICENSE) |
 | golang.org/x/sys | v0.26.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.26.0:LICENSE) |
 | golang.org/x/term | v0.25.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/term/+/v0.25.0:LICENSE) |
 | golang.org/x/text | v0.19.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.19.0:LICENSE) |
