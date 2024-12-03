@@ -414,7 +414,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test add not found remote index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-not-found-remote-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
@@ -430,7 +430,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test add malformed index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-malformed-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
@@ -449,7 +449,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test add remote index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-remote-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
@@ -473,7 +473,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test add remaining PDSC from index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-remaining-PDSC-from-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
@@ -497,7 +497,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test update-index delete pdsc when not in index.pidx", func(t *testing.T) {
 		localTestingDir := "test-update-index-delete-pdsc-when-not-in-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
@@ -529,7 +529,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test add local file index.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-local-file-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
@@ -548,7 +548,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test do not overwrite index.pidx", func(t *testing.T) {
 		localTestingDir := "test-do-not-overwrite-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
@@ -568,7 +568,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test overwrite index.pidx", func(t *testing.T) {
 		localTestingDir := "test-overwrite-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
@@ -599,7 +599,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test add remote index.pidx and dowload pdsc files", func(t *testing.T) {
 		localTestingDir := "test-add-remote-index-download-pdsc"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
@@ -629,7 +629,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test add remote index.pidx and concurrent dowload pdsc files", func(t *testing.T) {
 		localTestingDir := "test-add-remote-index-concurrent-download-pdsc"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
@@ -667,7 +667,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test full update when sparse is false", func(t *testing.T) {
 		localTestingDir := "test-sparse-update"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
@@ -736,7 +736,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	t.Run("test full concurrent update when sparse is false", func(t *testing.T) {
 		localTestingDir := "test-concurrent-sparse-update"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer os.RemoveAll(localTestingDir)
 
@@ -829,28 +829,28 @@ func TestSetPackRoot(t *testing.T) {
 	// Sanity tests
 	t.Run("test fail to initialize empty pack root", func(t *testing.T) {
 		localTestingDir := ""
-		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot)
+		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot, false)
 		assert.Equal(errs.ErrPackRootNotFound, err)
 
-		err = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+		err = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
 		assert.Equal(errs.ErrPackRootNotFound, err)
 	})
 
 	t.Run("test fail to use non-existing directory", func(t *testing.T) {
 		localTestingDir := "non-existing-dir"
-		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot)
+		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot, false)
 		assert.Equal(errs.ErrPackRootDoesNotExist, err)
 	})
 
 	t.Run("test initialize pack root", func(t *testing.T) {
 		localTestingDir := "valid-pack-root"
 		defer removePackRoot(localTestingDir)
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 
 		checkPackRoot(t, localTestingDir)
 
 		// Now just make sure it's usable, even when not forced to initialize
-		assert.Nil(installer.SetPackRoot(localTestingDir, !CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, !CreatePackRoot, false))
 	})
 
 	// Define a few paths to try out per operating system
@@ -858,12 +858,12 @@ func TestSetPackRoot(t *testing.T) {
 	for description, path := range paths {
 		t.Run("test "+description, func(t *testing.T) {
 			defer os.RemoveAll(path)
-			assert.Nil(installer.SetPackRoot(path, CreatePackRoot))
+			assert.Nil(installer.SetPackRoot(path, CreatePackRoot, false))
 
 			checkPackRoot(t, path)
 
 			// Now just make sure it's usable, even when not forced to initialize
-			assert.Nil(installer.SetPackRoot(path, !CreatePackRoot))
+			assert.Nil(installer.SetPackRoot(path, !CreatePackRoot, false))
 		})
 	}
 }

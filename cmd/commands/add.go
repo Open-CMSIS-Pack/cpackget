@@ -69,12 +69,17 @@ Add a pack using the following "<pack>" specification or using packs provided by
   The file can be a local file or a file hosted somewhere else on the Internet.
   If it's hosted somewhere, cpackget will first download it then extract all pack files into "CMSIS_PACK_ROOT/<vendor>/<packName>/<x.y.z>/"
   If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in the <packs list> file.`,
-	Args:              cobra.MinimumNArgs(0),
-	PersistentPreRunE: configureInstaller,
+	Args: cobra.MinimumNArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		utils.SetEncodedProgress(addCmdFlags.encodedProgress)
 		utils.SetSkipTouch(addCmdFlags.skipTouch)
+
+		createPackRoot = true
+		err := configureInstaller(cmd, args)
+		if err != nil {
+			return err
+		}
 
 		if addCmdFlags.packsListFileName != "" {
 			log.Infof("Parsing packs urls via file %v", addCmdFlags.packsListFileName)

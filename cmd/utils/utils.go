@@ -218,7 +218,7 @@ func CheckConnection(url string, timeOut int) error {
 	}
 
 	if connStatus == "offline" {
-		return errors.New("remote server is offline or cannot be reached")
+		return errs.ErrOffline
 	}
 
 	return nil

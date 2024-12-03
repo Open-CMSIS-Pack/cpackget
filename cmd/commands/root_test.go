@@ -143,7 +143,7 @@ func runTests(t *testing.T, tests []TestCase) {
 
 			os.Setenv("CMSIS_PACK_ROOT", localTestingDir)
 			if test.createPackRoot {
-				assert.Nil(installer.SetPackRoot(localTestingDir, test.createPackRoot))
+				assert.Nil(installer.SetPackRoot(localTestingDir, test.createPackRoot, false))
 				installer.UnlockPackRoot()
 			}
 

@@ -54,6 +54,7 @@ var (
 	ErrFailedInflatingFile       = errors.New("fail to inflate file")
 	ErrFailedCreatingDirectory   = errors.New("fail to create directory")
 	ErrFileNotFound              = errors.New("file not found")
+	ErrFileNotFoundUseInit       = errors.New("index.pdix file not found; use cpackget init command to retrieve it")
 	ErrDirectoryNotFound         = errors.New("directory not found")
 	ErrPathAlreadyExists         = errors.New("path already exists")
 	ErrCopyingEqualPaths         = errors.New("failed copying files: source is the same as destination")
@@ -95,4 +96,7 @@ var (
 
 	// Error/Flag to detect when a user has requested early termination
 	ErrTerminatedByUser = errors.New("terminated by user request")
+
+	ErrIndexTooOld = errors.New("public index too old")
+	ErrOffline     = errors.New("remote server is offline or cannot be reached")
 )
