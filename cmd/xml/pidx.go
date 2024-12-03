@@ -187,6 +187,9 @@ func (p *PidxXML) CheckTime() error {
 	if err := utils.ReadXML(p.fileName, p); err != nil {
 		return err
 	}
+	if len(p.TimeStamp) == 0 {
+		return errs.ErrIndexTooOld // if there is no timestamp it always is too old
+	}
 	if t, err := time.Parse(time.RFC3339Nano, p.TimeStamp); err != nil {
 		return err
 	} else {
