@@ -97,7 +97,7 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 			}
 		}
 	} else {
-		err := installer.SetPackRoot(targetPackRoot, createPackRoot, true)
+		err := installer.SetPackRoot(targetPackRoot, createPackRoot, cmd.Name() != "init")
 		if err != nil {
 			return err
 		}
