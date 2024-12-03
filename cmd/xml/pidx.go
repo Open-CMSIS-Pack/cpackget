@@ -216,6 +216,8 @@ func (p *PidxXML) Read() error {
 		} else {
 			vendorName = path.Base(p.fileName)
 		}
+		t := time.Now()
+		p.TimeStamp = t.Format(time.RFC3339Nano)
 		p.Vendor = strings.TrimSuffix(vendorName, filepath.Ext(vendorName))
 		return p.Write()
 	}
