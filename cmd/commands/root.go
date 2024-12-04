@@ -72,7 +72,7 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 	if targetPackRoot == installer.GetDefaultCmsisPackRoot() {
 		// If using the default pack root path and the public index is not found,
 		// initialize it
-		if !checkConnection && !utils.FileExists(filepath.Join(targetPackRoot, ".Web", "index.pidx")) {
+		if !checkConnection && !utils.FileExists(filepath.Join(targetPackRoot, ".Web", installer.PublicIndex)) {
 			err := installer.SetPackRoot(targetPackRoot, true, true)
 			if err != nil {
 				return err

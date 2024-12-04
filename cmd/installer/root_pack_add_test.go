@@ -792,7 +792,7 @@ func TestAddPack(t *testing.T) {
 		})
 	}
 
-	t.Run("test installing pack with pack id using pdsc url when version is not the latest in index.pidx", func(t *testing.T) {
+	t.Run("test installing pack with pack id using pdsc url when version is not the latest in "+installer.PublicIndex, func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-pack-id-using-pdsc-url-version-not-the-latest"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()

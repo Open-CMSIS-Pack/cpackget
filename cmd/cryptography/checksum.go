@@ -1,7 +1,6 @@
 package cryptography
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,7 +45,7 @@ func WriteChecksumFile(digests map[string]string, filename string) error {
 // GenerateChecksum creates a .checksum file for a pack.
 func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 	if !isValidHash(hashFunction) {
-		return errors.New("provided hash function is not supported")
+		return errs.ErrHashNotSupported
 	}
 	if !utils.FileExists(sourcePack) {
 		log.Errorf("\"%s\" does not exist", sourcePack)
@@ -106,7 +105,7 @@ func VerifyChecksum(packPath, checksumPath string) error {
 	}
 	hashFunction := filepath.Ext(strings.Split(checksumPath, ".checksum")[0])[1:]
 	if !isValidHash(hashFunction) {
-		return errors.New("not a valid .checksum file (correct format is [<pack>].[<hash-algorithm>].checksum). Please confirm if the hash is supported")
+		return errs.ErrNotValidChecksumFile
 	}
 
 	// Compute pack's digests
@@ -144,7 +143,7 @@ func VerifyChecksum(packPath, checksumPath string) error {
 		}
 	}
 	if failure {
-		return errors.New("bad pack integrity")
+		return errs.ErrBadIntegrity
 	}
 
 	log.Info("pack integrity verified, all checksums match.")

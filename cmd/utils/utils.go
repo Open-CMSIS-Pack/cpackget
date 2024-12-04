@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -89,7 +88,7 @@ func (t *TimeoutTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	select {
 	case <-timeout:
 		t.Transport.CancelRequest(req)
-		return nil, errors.New("HTTP get timed out")
+		return nil, errs.ErrHTTPtimeout
 	case r := <-resp:
 		return r.resp, r.err
 	}
@@ -218,7 +217,7 @@ func CheckConnection(url string, timeOut int) error {
 	}
 
 	if connStatus == "offline" {
-		return errs.ErrOffline
+		return fmt.Errorf("\"%s\": %w", url, errs.ErrOffline)
 	}
 
 	return nil

@@ -6,6 +6,8 @@ package commands_test
 import (
 	"errors"
 	"testing"
+
+	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 )
 
 var (
@@ -36,8 +38,8 @@ var connectionCmdTests = []TestCase{
 		noCleanup: true,
 		setUpFunc: func(t *TestCase) {
 			server := NewServer()
-			t.args = append(t.args, server.URL()+"index.pidx")
-			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?>
+			t.args = append(t.args, server.URL()+installer.PublicIndex)
+			server.AddRoute(installer.PublicIndex, []byte(`<?xml version="1.0" encoding="UTF-8" ?>
 <index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="https://www.w3.org/2001/XMLSchema-instance">
 <vendor>TheVendor</vendor>
 <url>https://www.keil.com/</url>

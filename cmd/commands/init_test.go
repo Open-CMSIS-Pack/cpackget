@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
+	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 )
 
 // Tests for init command are placed here because there was something wrong
@@ -17,7 +18,7 @@ import (
 
 var (
 	pidxFilePath         = filepath.Join(testingDir, "SamplePublicIndex.pidx")
-	notFoundPidxFilePath = filepath.Join("path", "to", "index.pidx")
+	notFoundPidxFilePath = filepath.Join("path", "to", installer.PublicIndex)
 )
 
 var initCmdTests = []TestCase{
@@ -32,12 +33,12 @@ var initCmdTests = []TestCase{
 		expectedErr: nil,
 	},
 	{
-		name: "test create using an index.pidx",
+		name: "test create using an " + installer.PublicIndex,
 		args: []string{"init"},
 		setUpFunc: func(t *TestCase) {
 			server := NewServer()
-			t.args = append(t.args, server.URL()+"index.pidx")
-			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?>
+			t.args = append(t.args, server.URL()+installer.PublicIndex)
+			server.AddRoute(installer.PublicIndex, []byte(`<?xml version="1.0" encoding="UTF-8" ?>
 <index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="https://www.w3.org/2001/XMLSchema-instance">
 <vendor>TheVendor</vendor>
 <url>https://the.vendor/</url>
@@ -49,12 +50,12 @@ var initCmdTests = []TestCase{
 		},
 	},
 	{
-		name:           "test create using local index.pidx",
+		name:           "test create using local " + installer.PublicIndex,
 		args:           []string{"init", pidxFilePath},
 		createPackRoot: true,
 	},
 	{
-		name:           "test create using local index.pidx that do not exist",
+		name:           "test create using local " + installer.PublicIndex + " that does not exist",
 		args:           []string{"init", notFoundPidxFilePath},
 		createPackRoot: true,
 		expectedErr:    errs.ErrFileNotFoundUseInit,
