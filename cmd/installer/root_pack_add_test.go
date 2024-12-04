@@ -185,7 +185,7 @@ func TestAddPack(t *testing.T) {
 
 		// Sanity check
 		assert.NotNil(err)
-		assert.Equal(err, errs.ErrFileNotFound)
+		assert.Equal(err, errs.ErrFileNotFoundUseInit)
 
 		// Make sure pack.idx never got touched
 		assert.False(utils.FileExists(installer.Installation.PackIdx))
@@ -259,7 +259,7 @@ func TestAddPack(t *testing.T) {
 
 		// Sanity check
 		assert.NotNil(err)
-		assert.Equal(err, errs.ErrPdscFileNotFound)
+		assert.Equal(err, errs.ErrFileNotFoundUseInit)
 
 		// Make sure pack.idx never got touched
 		assert.False(utils.FileExists(installer.Installation.PackIdx))
