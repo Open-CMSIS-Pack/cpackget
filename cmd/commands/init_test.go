@@ -57,7 +57,7 @@ var initCmdTests = []TestCase{
 		name:           "test create using local index.pidx that do not exist",
 		args:           []string{"init", notFoundPidxFilePath},
 		createPackRoot: true,
-		expectedErr:    errs.ErrFileNotFound,
+		expectedErr:    errs.ErrFileNotFoundUseInit,
 	},
 	{
 		name:           "test create using directory as path",
