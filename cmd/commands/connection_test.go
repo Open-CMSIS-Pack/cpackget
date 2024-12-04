@@ -4,9 +4,9 @@
 package commands_test
 
 import (
-	"errors"
 	"testing"
 
+	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 )
 
@@ -27,9 +27,10 @@ var connectionCmdTests = []TestCase{
 		expectedErr: nil,
 	},
 	{
-		name:        "test checking invalid url",
-		args:        []string{"connection", wrongURLPath},
-		expectedErr: errors.New("remote server is offline or cannot be reached"),
+		name:          "test checking invalid url",
+		args:          []string{"connection", wrongURLPath},
+		expectedErr:   errs.ErrOffline,
+		expErrUnwwrap: true,
 	},
 
 	{ // set up environment for next test
