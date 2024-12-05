@@ -5,6 +5,7 @@ package installer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -24,7 +25,11 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+const PublicIndex = "index.pidx"
 const KeilDefaultPackRoot = "https://www.keil.com/pack/"
+
+// DefaultPublicIndex is the public index to use in "default mode"
+const DefaultPublicIndex = KeilDefaultPackRoot + PublicIndex
 
 // GetDefaultCmsisPackRoot provides a default location
 // for the pack root if not provided. This is to enable
@@ -446,7 +451,7 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 }
 
 func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int) error {
-	log.Info("Updating PDSC files of installed packs referenced in index.pidx")
+	log.Info("Updating PDSC files of installed packs referenced in " + PublicIndex)
 	pdscFiles, err := utils.ListDir(Installation.WebDir, ".pdsc$")
 	if err != nil {
 		return err
@@ -480,7 +485,7 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		// Warn the user if the pack is no longer present in index.pidx
 		tags := pidxXML.FindPdscTags(searchTag)
 		if len(tags) == 0 {
-			log.Warnf("The pack %s::%s is no longer present in the updated index.pidx, deleting PDSC file \"%v\"", pdscXML.Vendor, pdscXML.Name, pdscFile)
+			log.Warnf("The pack %s::%s is no longer present in the updated \"%s\", deleting PDSC file \"%v\"", pdscXML.Vendor, pdscXML.Name, PublicIndex, pdscFile)
 			utils.UnsetReadOnly(pdscFile)
 			os.Remove(pdscFile)
 			continue
@@ -593,7 +598,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 
 	// For backwards compatibility, allow indexPath to be a file, but ideally it should be empty
 	if indexPath == "" {
-		indexPath = fmt.Sprintf("%s/index.pidx", strings.TrimSuffix(Installation.PublicIndexXML.URL, "/"))
+		indexPath = strings.TrimSuffix(Installation.PublicIndexXML.URL, "/") + "/" + PublicIndex
 	}
 
 	log.Debugf("Updating public index with \"%v\"", indexPath)
@@ -613,7 +618,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 	} else {
 		if indexPath != "" {
 			if !utils.FileExists(indexPath) && !utils.DirExists(indexPath) {
-				return errs.ErrFileNotFound
+				return errs.ErrFileNotFoundUseInit
 			}
 			fileInfo, err := os.Stat(indexPath)
 			if err != nil {
@@ -1065,7 +1070,7 @@ var Installation *PacksInstallationType
 
 // SetPackRoot sets the working directory of the packs installation
 // if create == true, cpackget will try to create needed resources
-func SetPackRoot(packRoot string, create bool) error {
+func SetPackRoot(packRoot string, create, download bool) error {
 	if len(packRoot) == 0 {
 		return errs.ErrPackRootNotFound
 	}
@@ -1075,7 +1080,7 @@ func SetPackRoot(packRoot string, create bool) error {
 		return errs.ErrPackRootDoesNotExist
 	}
 
-	checkConnection := viper.GetBool("check-connection")
+	checkConnection := viper.GetBool("check-connection") // TODO: never set
 	if checkConnection && !utils.GetEncodedProgress() {
 		if packRoot == GetDefaultCmsisPackRoot() {
 			log.Infof("Using pack root: \"%v\" (default mode - no specific CMSIS_PACK_ROOT chosen)", packRoot)
@@ -1092,7 +1097,7 @@ func SetPackRoot(packRoot string, create bool) error {
 	}
 	Installation.LocalPidx = xml.NewPidxXML(filepath.Join(Installation.LocalDir, "local_repository.pidx"))
 	Installation.PackIdx = filepath.Join(packRoot, "pack.idx")
-	Installation.PublicIndex = filepath.Join(Installation.WebDir, "index.pidx")
+	Installation.PublicIndex = filepath.Join(Installation.WebDir, PublicIndex)
 	Installation.PublicIndexXML = xml.NewPidxXML(Installation.PublicIndex)
 
 	missingDirs := []string{}
@@ -1117,6 +1122,36 @@ func SetPackRoot(packRoot string, create bool) error {
 
 	// Make sure utils.DownloadFile always downloads files to .Download/
 	utils.CacheDir = Installation.DownloadDir
+
+	// If public index already exists then first check if online, then its timestamp
+	// if we are online and it is too old then download a current version
+	if download && utils.FileExists(Installation.PublicIndex) {
+		err := utils.CheckConnection(DefaultPublicIndex, 0)
+		if err != nil && errors.Unwrap(err) != errs.ErrOffline {
+			return err
+		}
+		if errors.Unwrap(err) != errs.ErrOffline {
+			err = Installation.PublicIndexXML.CheckTime()
+			if err != nil && err != errs.ErrIndexTooOld {
+				return err
+			}
+			if err == errs.ErrIndexTooOld {
+				UnlockPackRoot()
+				err := UpdatePublicIndex(DefaultPublicIndex, true, true, false, false, 0, 0)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	// if public index does not or not yet exist then download without check
+	if download && !utils.FileExists(Installation.PublicIndex) {
+		UnlockPackRoot()
+		err := UpdatePublicIndex(DefaultPublicIndex, true, true, false, false, 0, 0)
+		if err != nil {
+			return err
+		}
+	}
 
 	err := Installation.PublicIndexXML.Read()
 	if err != nil {

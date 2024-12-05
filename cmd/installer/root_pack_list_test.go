@@ -30,7 +30,7 @@ var (
 // Listing on empty
 func ExampleListInstalledPacks() {
 	localTestingDir := "test-list-empty-pack-root"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
 	defer removePackRoot(localTestingDir)
 
 	log.SetOutput(os.Stdout)
@@ -44,7 +44,7 @@ func ExampleListInstalledPacks() {
 
 func ExampleListInstalledPacks_emptyCache() {
 	localTestingDir := "test-list-empty-cache"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
 	defer removePackRoot(localTestingDir)
 
 	log.SetOutput(os.Stdout)
@@ -58,7 +58,7 @@ func ExampleListInstalledPacks_emptyCache() {
 
 func ExampleListInstalledPacks_emptyPublicIndex() {
 	localTestingDir := "test-list-empty-index"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
 	defer removePackRoot(localTestingDir)
 
 	log.SetOutput(os.Stdout)
@@ -76,7 +76,7 @@ func ExampleListInstalledPacks_emptyPublicIndex() {
 // * 1 is neither installer or cached, it's just available in the public index
 func ExampleListInstalledPacks_list() {
 	localTestingDir := "test-list-packs"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
 	installer.UnlockPackRoot()
 	defer removePackRoot(localTestingDir)
 
@@ -113,7 +113,7 @@ func ExampleListInstalledPacks_list() {
 
 func ExampleListInstalledPacks_listCached() {
 	localTestingDir := "test-list-cached-packs"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
 	installer.UnlockPackRoot()
 	defer removePackRoot(localTestingDir)
 
@@ -152,7 +152,7 @@ func TestListInstalledPacks(t *testing.T) {
 
 	t.Run("test listing all installed packs", func(t *testing.T) {
 		localTestingDir := "test-list-installed-packs"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer removePackRoot(localTestingDir)
 
@@ -196,7 +196,7 @@ func TestListInstalledPacks(t *testing.T) {
 
 	t.Run("test listing local packs with updated version", func(t *testing.T) {
 		localTestingDir := "test-list-installed-local-packs-with-updated-version"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
 		installer.UnlockPackRoot()
 		defer removePackRoot(localTestingDir)
 
@@ -236,7 +236,7 @@ func TestListInstalledPacks(t *testing.T) {
 
 func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 	localTestingDir := "test-list-malformed-installed-packs"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
 	installer.UnlockPackRoot()
 	defer removePackRoot(localTestingDir)
 
@@ -274,7 +274,7 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 
 func ExampleListInstalledPacks_filter() {
 	localTestingDir := "test-list-packs-filter"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
 	installer.UnlockPackRoot()
 	defer removePackRoot(localTestingDir)
 
@@ -309,7 +309,7 @@ func ExampleListInstalledPacks_filter() {
 
 func ExampleListInstalledPacks_filterErrorPackages() {
 	localTestingDir := "test-list-filter-error-message"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
 	installer.UnlockPackRoot()
 	defer removePackRoot(localTestingDir)
 
@@ -346,7 +346,7 @@ func ExampleListInstalledPacks_filterErrorPackages() {
 
 func ExampleListInstalledPacks_filterInvalidChars() {
 	localTestingDir := "test-list-filter-invalid-chars"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
 	installer.UnlockPackRoot()
 	defer removePackRoot(localTestingDir)
 
@@ -380,7 +380,7 @@ func ExampleListInstalledPacks_filterInvalidChars() {
 
 func ExampleListInstalledPacks_filteradditionalMessages() {
 	localTestingDir := "test-list-filter-additional-messages"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
 	installer.UnlockPackRoot()
 	defer removePackRoot(localTestingDir)
 
