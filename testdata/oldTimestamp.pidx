@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?> 
-<index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
-<vendor>Keil</vendor>
-<url>https://www.keil.com/pack/</url>
-<timestamp>2024-11-20T04:01:41.5636929+00:00</timestamp>
-<pindex>
-  <pdsc url="https://www.silabs.com/documents/public/cmsis-packs/" vendor="SiliconLabs" name="BGM21_DFP" version="5.8.10" deprecated="2019-11-12" replacement="SiliconLabs.GeckoPlatform_BGM21_DFP" />
-</pindex>
-</index>
