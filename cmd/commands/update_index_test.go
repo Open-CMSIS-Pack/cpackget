@@ -16,7 +16,7 @@ var updateIndexServer Server
 var updateIndexCmdTests = []TestCase{
 	{
 		name:        "test no parameter is required",
-		args:        []string{"update-index", "index.pidx"},
+		args:        []string{"update-index", installer.PublicIndex},
 		expectedErr: errors.New("accepts 0 arg(s), received 1"),
 	},
 	{
@@ -29,7 +29,7 @@ var updateIndexCmdTests = []TestCase{
 		args:           []string{"update-index"},
 		createPackRoot: true,
 		defaultMode:    true,
-		expectedStdout: []string{"Updating public index", "Downloading index.pidx"},
+		expectedStdout: []string{"Updating public index", "Downloading " + installer.PublicIndex},
 		setUpFunc: func(t *TestCase) {
 			indexContent := `<?xml version="1.0" encoding="UTF-8" ?>
 <index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
@@ -43,14 +43,14 @@ var updateIndexCmdTests = []TestCase{
 			indexContent = fmt.Sprintf(indexContent, updateIndexServer.URL())
 			_ = os.WriteFile(installer.Installation.PublicIndex, []byte(indexContent), 0600)
 
-			updateIndexServer.AddRoute("index.pidx", []byte(indexContent))
+			updateIndexServer.AddRoute(installer.PublicIndex, []byte(indexContent))
 		},
 	},
 	{
 		name:           "test updating index",
 		args:           []string{"update-index"},
 		createPackRoot: true,
-		expectedStdout: []string{"Updating public index", "Downloading index.pidx"},
+		expectedStdout: []string{"Updating public index", "Downloading " + installer.PublicIndex},
 		setUpFunc: func(t *TestCase) {
 			indexContent := `<?xml version="1.0" encoding="UTF-8" ?>
 <index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
@@ -64,7 +64,7 @@ var updateIndexCmdTests = []TestCase{
 			indexContent = fmt.Sprintf(indexContent, updateIndexServer.URL())
 			_ = os.WriteFile(installer.Installation.PublicIndex, []byte(indexContent), 0600)
 
-			updateIndexServer.AddRoute("index.pidx", []byte(indexContent))
+			updateIndexServer.AddRoute(installer.PublicIndex, []byte(indexContent))
 		},
 	},
 }

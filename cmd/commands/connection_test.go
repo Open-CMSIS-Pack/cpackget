@@ -4,8 +4,10 @@
 package commands_test
 
 import (
-	"errors"
 	"testing"
+
+	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
+	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 )
 
 var (
@@ -25,9 +27,10 @@ var connectionCmdTests = []TestCase{
 		expectedErr: nil,
 	},
 	{
-		name:        "test checking invalid url",
-		args:        []string{"connection", wrongURLPath},
-		expectedErr: errors.New("remote server is offline or cannot be reached"),
+		name:          "test checking invalid url",
+		args:          []string{"connection", wrongURLPath},
+		expectedErr:   errs.ErrOffline,
+		expErrUnwwrap: true,
 	},
 
 	{ // set up environment for next test
@@ -36,8 +39,8 @@ var connectionCmdTests = []TestCase{
 		noCleanup: true,
 		setUpFunc: func(t *TestCase) {
 			server := NewServer()
-			t.args = append(t.args, server.URL()+"index.pidx")
-			server.AddRoute("index.pidx", []byte(`<?xml version="1.0" encoding="UTF-8" ?>
+			t.args = append(t.args, server.URL()+installer.PublicIndex)
+			server.AddRoute(installer.PublicIndex, []byte(`<?xml version="1.0" encoding="UTF-8" ?>
 <index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="https://www.w3.org/2001/XMLSchema-instance">
 <vendor>TheVendor</vendor>
 <url>https://www.keil.com/</url>

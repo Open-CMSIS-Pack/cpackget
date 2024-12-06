@@ -460,6 +460,7 @@ func verifyPackFullSignature(zip *zip.ReadCloser, vendor, b64Cert, b64Hash strin
 // verifyPackCertOnlySignature validates the integrity of a pack
 // by performing some validations on the embed certificate.
 func verifyPackCertOnlySignature(zip *zip.ReadCloser, vendor, b64Cert string, skipCertValidation, skipInfo bool) error {
+	_ = zip
 	rawCert, err := base64.StdEncoding.DecodeString(b64Cert)
 	if err != nil {
 		return err

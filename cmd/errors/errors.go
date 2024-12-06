@@ -46,6 +46,8 @@ var (
 	// Errors related to network
 	ErrBadRequest            = errors.New("bad request")
 	ErrFailedDownloadingFile = errors.New("failed to download file")
+	ErrOffline               = errors.New("remote server is offline or cannot be reached")
+	ErrHTTPtimeout           = errors.New("HTTP get timed out")
 
 	// Errors related to file system
 	ErrFailedCreatingFile        = errors.New("failed to create a local file")
@@ -54,6 +56,7 @@ var (
 	ErrFailedInflatingFile       = errors.New("fail to inflate file")
 	ErrFailedCreatingDirectory   = errors.New("fail to create directory")
 	ErrFileNotFound              = errors.New("file not found")
+	ErrFileNotFoundUseInit       = errors.New("\"index.pidx\" file not found; use cpackget init command to retrieve it")
 	ErrDirectoryNotFound         = errors.New("directory not found")
 	ErrPathAlreadyExists         = errors.New("path already exists")
 	ErrCopyingEqualPaths         = errors.New("failed copying files: source is the same as destination")
@@ -69,6 +72,9 @@ var (
 	ErrUnsupportedKeyAlgo    = errors.New("unsupported key algorithm")
 	ErrCannotVerifySignature = errors.New("cannot verify pack signature")
 	ErrPossibleMaliciousPack = errors.New("bad pack integrity! signature does not match pack contents - might have been tampered")
+	ErrHashNotSupported      = errors.New("provided hash function is not supported")
+	ErrNotValidChecksumFile  = errors.New("not a valid .checksum file (correct format is [<pack>].[<hash-algorithm>].checksum). Please confirm if the hash is supported")
+	ErrBadIntegrity          = errors.New("bad pack integrity")
 
 	// Security errors
 	ErrInsecureZipFileName = errors.New("zip file contains insecure characters: ../")
@@ -81,7 +87,7 @@ var (
 	// Cmdline errors
 	ErrIncorrectCmdArgs = errors.New("incorrect setup of command line arguments")
 
-	// Errors on installation strucuture
+	// Errors on installation structure
 	ErrCannotOverwritePublicIndex      = errors.New("cannot replace \"index.pidx\", use the flag \"-f/--force\" to force overwritting it")
 	ErrInvalidPublicIndexReference     = errors.New("the specified index path can only either empty, a local file or an HTTP(S) URL - not a directory")
 	ErrPackPdscCannotBeFound           = errors.New("the URL is invalid or does not return the file")
@@ -95,4 +101,6 @@ var (
 
 	// Error/Flag to detect when a user has requested early termination
 	ErrTerminatedByUser = errors.New("terminated by user request")
+
+	ErrIndexTooOld = errors.New("public index \"index.pidx\" too old")
 )

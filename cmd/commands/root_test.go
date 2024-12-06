@@ -42,6 +42,7 @@ type TestCase struct {
 	expectedStdout []string
 	expectedStderr []string
 	expectedErr    error
+	expErrUnwwrap  bool
 	setUpFunc      func(t *TestCase)
 	tearDownFunc   func()
 	validationFunc func(t *testing.T)
@@ -143,7 +144,7 @@ func runTests(t *testing.T, tests []TestCase) {
 
 			os.Setenv("CMSIS_PACK_ROOT", localTestingDir)
 			if test.createPackRoot {
-				assert.Nil(installer.SetPackRoot(localTestingDir, test.createPackRoot))
+				assert.Nil(installer.SetPackRoot(localTestingDir, test.createPackRoot, false))
 				installer.UnlockPackRoot()
 			}
 
@@ -200,7 +201,11 @@ func runTests(t *testing.T, tests []TestCase) {
 			outStr := string(outBytes)
 			errStr := string(errBytes)
 
-			assert.Equal(test.expectedErr, cmdErr)
+			if test.expErrUnwwrap {
+				assert.Equal(test.expectedErr, errors.Unwrap(cmdErr))
+			} else {
+				assert.Equal(test.expectedErr, cmdErr)
+			}
 			for _, expectedStr := range test.expectedStdout {
 				assert.Contains(outStr, expectedStr)
 			}

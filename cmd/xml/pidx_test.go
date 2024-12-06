@@ -211,6 +211,19 @@ func TestPidxXML(t *testing.T) {
 		assert.Equal(err.Error(), "XML syntax error on line 3: unexpected EOF")
 	})
 
+	t.Run("test check public index file for old timestamp", func(t *testing.T) {
+		pidx := xml.NewPidxXML("../../testdata/OldTimestamp.pidx")
+		err := pidx.CheckTime()
+		assert.NotNil(err)
+		assert.Equal(err, errs.ErrIndexTooOld)
+	})
+
+	t.Run("test check public index file for new timestamp", func(t *testing.T) {
+		pidx := xml.NewPidxXML("../../testdata/NewTimestamp.pidx")
+		err := pidx.CheckTime()
+		assert.Nil(err)
+	})
+
 	t.Run("test finding pdsc tag", func(t *testing.T) {
 		fileName := "test-finding-pdsc-tag.pidx"
 		defer os.Remove(fileName)

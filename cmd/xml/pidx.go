@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
@@ -25,6 +26,7 @@ type PidxXML struct {
 	SchemaVersion string   `xml:"schemaVersion,attr"`
 	Vendor        string   `xml:"vendor"`
 	URL           string   `xml:"url"`
+	TimeStamp     string   `xml:"timestamp"`
 
 	Pindex struct {
 		XMLName xml.Name  `xml:"pindex"`
@@ -173,6 +175,31 @@ func (p *PidxXML) FindPdscTags(pdsc PdscTag) []PdscTag {
 	return foundTags
 }
 
+// Check timestamp of public index
+func (p *PidxXML) CheckTime() error {
+	log.Debugf("Checking timestamp of pidx \"%s\"", p.fileName)
+
+	p.pdscList = make(map[string][]PdscTag)
+
+	if !utils.FileExists(p.fileName) {
+		return nil
+	}
+	if err := utils.ReadXML(p.fileName, p); err != nil {
+		return err
+	}
+	if len(p.TimeStamp) == 0 {
+		return errs.ErrIndexTooOld // if there is no timestamp it always is too old
+	}
+	if t, err := time.Parse(time.RFC3339Nano, p.TimeStamp); err != nil {
+		return err
+	} else {
+		if time.Since(t).Hours() > 24 { // index.pidx older than 1 day
+			return errs.ErrIndexTooOld
+		}
+	}
+	return nil
+}
+
 // Read reads FileName into this PidxXML struct and allocates memory for all PDSC tags.
 func (p *PidxXML) Read() error {
 	log.Debugf("Reading pidx from file \"%s\"", p.fileName)
@@ -189,10 +216,11 @@ func (p *PidxXML) Read() error {
 		} else {
 			vendorName = path.Base(p.fileName)
 		}
+		t := time.Now()
+		p.TimeStamp = t.Format(time.RFC3339Nano)
 		p.Vendor = strings.TrimSuffix(vendorName, filepath.Ext(vendorName))
 		return p.Write()
 	}
-
 	if err := utils.ReadXML(p.fileName, p); err != nil {
 		return err
 	}

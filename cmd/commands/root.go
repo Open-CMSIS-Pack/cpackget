@@ -36,9 +36,6 @@ var AllCommands = []*cobra.Command{
 // createPackRoot is a flag that determines if the pack root should be created or not
 var createPackRoot bool
 
-// defaultPublicIndex is the public index to use in "default mode"
-const defaultPublicIndex = "https://www.keil.com/pack/index.pidx"
-
 var viper *viperType.Viper
 
 func configureInstallerGlobalCmd(cmd *cobra.Command, args []string) error {
@@ -70,37 +67,38 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 	}
 
 	targetPackRoot := viper.GetString("pack-root")
-	checkConnection := viper.GetBool("check-connection")
+	checkConnection := viper.GetBool("check-connection") // TODO: never set
 
 	if targetPackRoot == installer.GetDefaultCmsisPackRoot() {
 		// If using the default pack root path and the public index is not found,
 		// initialize it
-		if !checkConnection && !utils.FileExists(filepath.Join(targetPackRoot, ".Web", "index.pidx")) {
-			err := installer.SetPackRoot(targetPackRoot, true)
+		if !checkConnection && !utils.FileExists(filepath.Join(targetPackRoot, ".Web", installer.PublicIndex)) {
+			err := installer.SetPackRoot(targetPackRoot, true, true)
 			if err != nil {
 				return err
 			}
 			// Exclude index updating commands to not double update
 			if cmd.Name() != "init" && cmd.Name() != "index" && cmd.Name() != "update-index" {
 				installer.UnlockPackRoot()
-				err = installer.UpdatePublicIndex(defaultPublicIndex, true, true, false, false, 0, 0)
+				err = installer.UpdatePublicIndex(installer.DefaultPublicIndex, true, true, false, false, 0, 0)
 				if err != nil {
 					return err
 				}
-				err = installer.SetPackRoot(targetPackRoot, false)
+				err = installer.SetPackRoot(targetPackRoot, false, true)
 				if err != nil {
 					return err
 				}
 				installer.LockPackRoot()
 			}
 		} else {
-			err := installer.SetPackRoot(targetPackRoot, createPackRoot)
+			err := installer.SetPackRoot(targetPackRoot, createPackRoot, true)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		err := installer.SetPackRoot(targetPackRoot, createPackRoot)
+		download := cmd.Name() != "init" && cmd.Name() != "connection"
+		err := installer.SetPackRoot(targetPackRoot, createPackRoot, download)
 		if err != nil {
 			return err
 		}

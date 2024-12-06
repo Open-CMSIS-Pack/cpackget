@@ -31,7 +31,7 @@ var checksumCreateCmdTests = []TestCase{
 	{
 		name:        "test using nonexisting hash function",
 		args:        []string{"checksum-create", "Vendor.Pack.1.2.3.pack", "-a", "sha1"},
-		expectedErr: errors.New("provided hash function is not supported"),
+		expectedErr: errs.ErrHashNotSupported,
 		setUpFunc: func(t *TestCase) {
 			f, _ := os.Create("Vendor.Pack.1.2.3.pack.sha256.checksum")
 			f.Close()
