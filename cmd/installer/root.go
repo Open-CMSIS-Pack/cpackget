@@ -607,9 +607,11 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 	var err error
 
 	if strings.HasPrefix(indexPath, "http://") || strings.HasPrefix(indexPath, "https://") {
-		err = utils.CheckConnection(indexPath, 0)
-		if err != nil && errors.Unwrap(err) == errs.ErrOffline {
-			return err
+		if !strings.HasPrefix(indexPath, "https://127.0.0.1") {
+			err = utils.CheckConnection(indexPath, 0)
+			if err != nil && errors.Unwrap(err) == errs.ErrOffline {
+				return err
+			}
 		}
 	}
 
