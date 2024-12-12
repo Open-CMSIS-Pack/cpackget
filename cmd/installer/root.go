@@ -604,9 +604,11 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 		indexPath = strings.TrimSuffix(Installation.PublicIndexXML.URL, "/") + "/" + PublicIndex
 	}
 
-	err := utils.CheckConnection(indexPath, 0)
-	if err != nil && errors.Unwrap(err) == errs.ErrOffline {
-		return err
+	if strings.HasPrefix(indexPath, "http://") || strings.HasPrefix(indexPath, "https://") {
+		err := utils.CheckConnection(indexPath, 0)
+		if err != nil && errors.Unwrap(err) == errs.ErrOffline {
+			return err
+		}
 	}
 
 	log.Infof("Updating public index")
