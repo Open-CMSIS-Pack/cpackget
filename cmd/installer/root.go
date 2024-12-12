@@ -319,6 +319,9 @@ func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) er
 	}
 
 	if !pack.IsPublic || pack.isInstalled {
+		if !pack.isInstalled {
+			log.Infof("Pack \"%s\" is not installed", packPath)
+		}
 		return nil
 	}
 
