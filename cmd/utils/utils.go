@@ -207,8 +207,7 @@ func CheckConnection(url string, timeOut int) error {
 	} else {
 		connStatus = "online"
 		if !GetEncodedProgress() {
-			text := fmt.Sprintf("Respond: %v:%v (%v)", resp.StatusCode, resp.Status, connStatus)
-			log.Info(text)
+			log.Debugf("Respond: %v (%v)", resp.Status, connStatus)
 		}
 	}
 
