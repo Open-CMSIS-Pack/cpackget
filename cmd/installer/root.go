@@ -319,6 +319,9 @@ func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) er
 	}
 
 	if !pack.IsPublic || pack.isInstalled {
+		if !pack.isInstalled {
+			log.Infof("Pack \"%s\" is not installed", packPath)
+		}
 		return nil
 	}
 
@@ -601,9 +604,19 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 		indexPath = strings.TrimSuffix(Installation.PublicIndexXML.URL, "/") + "/" + PublicIndex
 	}
 
-	log.Debugf("Updating public index with \"%v\"", indexPath)
-
 	var err error
+
+	if strings.HasPrefix(indexPath, "http://") || strings.HasPrefix(indexPath, "https://") {
+		if !strings.HasPrefix(indexPath, "https://127.0.0.1") {
+			err = utils.CheckConnection(indexPath, 0)
+			if err != nil && errors.Unwrap(err) == errs.ErrOffline {
+				return err
+			}
+		}
+	}
+
+	log.Infof("Updating public index")
+	log.Debugf("Updating public index with \"%v\"", indexPath)
 
 	if strings.HasPrefix(indexPath, "http://") || strings.HasPrefix(indexPath, "https://") {
 		if !strings.HasPrefix(indexPath, "https://") {

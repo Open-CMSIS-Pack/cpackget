@@ -69,6 +69,8 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 	targetPackRoot := viper.GetString("pack-root")
 	checkConnection := viper.GetBool("check-connection") // TODO: never set
 
+	download := cmd.Name() != "init" && cmd.Name() != "update-index" && cmd.Name() != "connection"
+
 	if targetPackRoot == installer.GetDefaultCmsisPackRoot() {
 		// If using the default pack root path and the public index is not found,
 		// initialize it
@@ -84,20 +86,19 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 				if err != nil {
 					return err
 				}
-				err = installer.SetPackRoot(targetPackRoot, false, true)
+				err = installer.SetPackRoot(targetPackRoot, false, false)
 				if err != nil {
 					return err
 				}
 				installer.LockPackRoot()
 			}
 		} else {
-			err := installer.SetPackRoot(targetPackRoot, createPackRoot, true)
+			err := installer.SetPackRoot(targetPackRoot, createPackRoot, download)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		download := cmd.Name() != "init" && cmd.Name() != "connection"
 		err := installer.SetPackRoot(targetPackRoot, createPackRoot, download)
 		if err != nil {
 			return err
