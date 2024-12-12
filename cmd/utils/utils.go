@@ -200,11 +200,7 @@ func CheckConnection(url string, timeOut int) error {
 	}
 	resp, err := client.Get(url)
 	connStatus := "offline"
-	if err != nil {
-		if !GetEncodedProgress() {
-			log.Info(err)
-		}
-	} else {
+	if err == nil {
 		connStatus = "online"
 		if !GetEncodedProgress() {
 			log.Debugf("Respond: %v (%v)", resp.Status, connStatus)

@@ -8,7 +8,6 @@ import (
 
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +33,6 @@ var UpdateIndexCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		utils.SetEncodedProgress(updateIndexCmdFlags.encodedProgress)
 		utils.SetSkipTouch(updateIndexCmdFlags.skipTouch)
-		log.Infof("Updating public index")
 		installer.UnlockPackRoot()
 		err := installer.UpdatePublicIndex("", true, updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
 		installer.LockPackRoot()
