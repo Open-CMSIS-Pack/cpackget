@@ -11,9 +11,6 @@ on:
     tags:
       - "v*"
 
-permissions:
-  contents: read
-
 jobs:
   test:
     uses: Open-CMSIS-Pack/cpackget/.github/workflows/test.yml@main
