@@ -19,9 +19,9 @@ jobs:
     uses: Open-CMSIS-Pack/cpackget/.github/workflows/test.yml@main
 
   goreleaser:
+    needs: test
     permissions:
       contents: write  # for goreleaser/goreleaser-action to create a GitHub release
-    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
