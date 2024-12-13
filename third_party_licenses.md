@@ -31,7 +31,7 @@
 | github.com/spf13/pflag | v1.0.5  | [BSD-3-Clause](https://github.com/spf13/pflag/blob/v1.0.5/LICENSE) |
 | github.com/spf13/viper | v1.19.0  | [MIT](https://github.com/spf13/viper/blob/v1.19.0/LICENSE) |
 | github.com/subosito/gotenv | v1.6.0  | [MIT](https://github.com/subosito/gotenv/blob/v1.6.0/LICENSE) |
-| golang.org/x/crypto | v0.30.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.30.0:LICENSE) |
+| golang.org/x/crypto | v0.31.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.31.0:LICENSE) |
 | golang.org/x/mod/semver | v0.22.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.22.0:LICENSE) |
 | golang.org/x/net/html | v0.32.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.32.0:LICENSE) |
 | golang.org/x/sync/semaphore | v0.10.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.10.0:LICENSE) |
