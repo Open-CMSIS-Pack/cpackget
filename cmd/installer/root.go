@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/ui"
@@ -1144,16 +1145,20 @@ func SetPackRoot(packRoot string, create, download bool) error {
 			return err
 		}
 		if errors.Unwrap(err) != errs.ErrOffline {
-			err = Installation.PublicIndexXML.CheckTime()
-			if err != nil && err != errs.ErrIndexTooOld {
-				return err
-			}
-			if err == errs.ErrIndexTooOld {
+			v := viper.New()
+			var updateConf updateCfg
+			err = Installation.checkUpdateCfg(v, &updateConf)
+			//			err = Installation.PublicIndexXML.CheckTime()
+			if err != nil {
 				UnlockPackRoot()
-				err := UpdatePublicIndex(DefaultPublicIndex, true, true, false, false, 0, 0)
-				if err != nil {
-					return err
+				err1 := UpdatePublicIndex(DefaultPublicIndex, true, true, false, false, 0, 0)
+				if err1 != nil {
+					return err1
 				}
+				_ = Installation.updateUpdateCfg(v, &updateConf)
+				// if err != errs.ErrIndexTooOld {
+				// 	return err
+				// }
 			}
 		}
 	}
@@ -1217,6 +1222,74 @@ type PacksInstallationType struct {
 	// PackIdx is the "pack.idx" file used by other tools to be notified that
 	// the pack installation had changed.
 	PackIdx string
+}
+
+type updateCfg struct {
+	Default struct {
+		Date string
+		Auto bool
+	}
+}
+
+func (p *PacksInstallationType) checkUpdateCfg(v *viper.Viper, conf *updateCfg) error {
+	v.SetConfigFile(filepath.Join(p.WebDir, "update.cfg"))
+	v.SetConfigType("ini")
+	if err := v.ReadInConfig(); err != nil {
+		return err
+	}
+	if err := v.Unmarshal(conf); err != nil {
+		return err
+	}
+	if t, err := time.Parse("2-1-2006", conf.Default.Date); err != nil {
+		return err
+	} else {
+		if time.Since(t).Hours() > 24 { // index.pidx older than 1 day
+			return errs.ErrIndexTooOld
+		}
+	}
+	return nil
+}
+
+func (p *PacksInstallationType) updateUpdateCfg(v *viper.Viper, conf *updateCfg) error {
+	_ = v
+	// v.SetConfigFile(filepath.Join(p.WebDir, "update.cfg"))
+	// v.SetConfigType("ini")
+	// if err := v.ReadInConfig(); err != nil {
+	// 	return err
+	// }
+	// if err := v.Unmarshal(&updateConf); err != nil {
+	// 	return err
+	// }
+	conf.Default.Date = time.Now().Local().Format("2-1-2006")
+	//	v.SetConfigFile(filepath.Join(p.WebDir, "update.cfg")) // have to force type with extension, this does not work
+	// if err := v.WriteConfig(); err != nil { // does not use changed conf
+	// 	return err
+	// }
+	// So, we do it by ourselves. Viper does not work as expected
+	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
+	f, err := os.OpenFile(filepath.Join(p.WebDir, "update.cfg"), flags, os.FileMode(0o644))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString("Date=" + conf.Default.Date + "\n"); err != nil {
+		return err
+	}
+	if _, err := f.WriteString("Auto="); err != nil {
+		return err
+	}
+	if conf.Default.Auto {
+		if _, err := f.WriteString("true\n"); err != nil {
+			return err
+		}
+	} else {
+		if _, err := f.WriteString("false\n"); err != nil {
+			return err
+		}
+	}
+
+	return f.Sync()
 }
 
 // touchPackIdx changes the timestamp of pack.idx.
@@ -1436,8 +1509,9 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 	defer os.Remove(localFileName)
 
 	if err != nil {
-		log.Errorf("Could not download \"%s\": %s", pdscFileURL, err)
-		return fmt.Errorf("\"%s\": %w", pdscFileURL, errs.ErrPackPdscCannotBeFound)
+		//		log.Errorf("Could not download \"%s\": %s", pdscFileURL, err)
+		//		return fmt.Errorf("\"%s\": %w", pdscFileURL, errs.ErrPackPdscCannotBeFound)
+		return err
 	}
 
 	utils.UnsetReadOnly(pdscFilePath)
@@ -1481,8 +1555,9 @@ func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) e
 	defer os.Remove(localFileName)
 
 	if err != nil {
-		log.Errorf("Could not download \"%s\": %s", pdscFileURL, err)
-		return fmt.Errorf("\"%s\": %w", pdscFileURL, errs.ErrPackPdscCannotBeFound)
+		//		log.Errorf("Could not download \"%s\": %s", pdscFileURL, err)
+		//		return fmt.Errorf("\"%s\": %w", pdscFileURL, errs.ErrPackPdscCannotBeFound)
+		return err
 	}
 
 	utils.UnsetReadOnly(pdscFilePath)
