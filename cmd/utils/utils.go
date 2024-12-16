@@ -152,6 +152,20 @@ func DownloadFile(URL string, timeout int) (string, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusForbidden {
+		cookie := resp.Header.Get("Set-Cookie")
+		if len(cookie) > 0 {
+			// add cookie and resend GET request
+			log.Debugf("Cookie: %s", cookie)
+			req.Header.Add("Cookie", cookie)
+			resp, err = client.Do(req)
+			if err != nil {
+				log.Error(err)
+				return "", fmt.Errorf("\"%s\": %w", URL, errs.ErrFailedDownloadingFile)
+			}
+		}
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		log.Debugf("bad status: %s", resp.Status)
 		return "", fmt.Errorf("\"%s\": %w", URL, errs.ErrBadRequest)
