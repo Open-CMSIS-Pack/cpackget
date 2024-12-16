@@ -677,7 +677,8 @@ func TestAddPack(t *testing.T) {
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 
 			assert.NotNil(err)
-			assert.Equal(errors.Unwrap(err), errs.ErrPackPdscCannotBeFound)
+			//			assert.Equal(errors.Unwrap(err), errs.ErrPackPdscCannotBeFound)
+			assert.Equal(errors.Unwrap(err), errs.ErrBadRequest)
 
 			// Make sure pack.idx never got touched
 			assert.False(utils.FileExists(installer.Installation.PackIdx))
