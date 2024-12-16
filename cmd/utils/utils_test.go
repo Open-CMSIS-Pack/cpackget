@@ -114,6 +114,35 @@ func TestDownloadFile(t *testing.T) {
 		assert.Equal(bytes, goodResponse)
 	})
 
+	t.Run("test download set cookie", func(t *testing.T) {
+		fileName := "file.txt"
+		defer os.Remove(fileName)
+		goodResponse := []byte("all good")
+		cookieContent := "cookie=test"
+		goodServer := httptest.NewServer(
+			http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					cookie := r.Header.Get("Cookie")
+					if len(cookie) > 0 {
+						if cookie == cookieContent {
+							fmt.Fprint(w, string(goodResponse))
+						}
+					} else {
+						w.Header().Add("Set-Cookie", cookieContent)
+						w.WriteHeader(http.StatusForbidden)
+					}
+				},
+			),
+		)
+		url := goodServer.URL + "/" + fileName
+		_, err1 := utils.DownloadFile(url, 0)
+		assert.Nil(err1)
+		assert.True(utils.FileExists(fileName))
+		bytes, err2 := os.ReadFile(fileName)
+		assert.Nil(err2)
+		assert.Equal(bytes, goodResponse)
+	})
+
 	t.Run("test download uses cache", func(t *testing.T) {
 		fileName := "file.txt"
 		defer os.Remove(fileName)
