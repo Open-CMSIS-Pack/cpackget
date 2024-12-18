@@ -114,6 +114,32 @@ func TestDownloadFile(t *testing.T) {
 		assert.Equal(bytes, goodResponse)
 	})
 
+	t.Run("test download user agent not allowed", func(t *testing.T) {
+		fileName := "file.txt"
+		defer os.Remove(fileName)
+		utils.SetUserAgent("cpackget")
+		goodResponse := []byte("all good")
+		goodServer := httptest.NewServer(
+			http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					userAgent := r.Header.Get("User-Agent")
+					if len(userAgent) > 0 && strings.Contains(userAgent, "cpackget") {
+						w.WriteHeader(http.StatusNotFound)
+					} else {
+						fmt.Fprint(w, string(goodResponse))
+					}
+				},
+			),
+		)
+		url := goodServer.URL + "/" + fileName
+		_, err1 := utils.DownloadFile(url, 0)
+		assert.Nil(err1)
+		assert.True(utils.FileExists(fileName))
+		bytes, err2 := os.ReadFile(fileName)
+		assert.Nil(err2)
+		assert.Equal(bytes, goodResponse)
+	})
+
 	t.Run("test download set cookie", func(t *testing.T) {
 		fileName := "file.txt"
 		defer os.Remove(fileName)
