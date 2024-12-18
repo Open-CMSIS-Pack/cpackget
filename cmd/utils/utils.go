@@ -152,6 +152,16 @@ func DownloadFile(URL string, timeout int) (string, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound {
+		// resend GET request without user agent header
+		req.Header.Del("User-Agent")
+		resp, err = client.Do(req)
+		if err != nil {
+			log.Error(err)
+			return "", fmt.Errorf("\"%s\": %w", URL, errs.ErrFailedDownloadingFile)
+		}
+	}
+
 	if resp.StatusCode == http.StatusForbidden {
 		cookie := resp.Header.Get("Set-Cookie")
 		if len(cookie) > 0 {
