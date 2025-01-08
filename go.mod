@@ -3,7 +3,7 @@ module github.com/open-cmsis-pack/cpackget
 go 1.22.5
 
 require (
-	github.com/ProtonMail/gopenpgp/v2 v2.8.1
+	github.com/ProtonMail/gopenpgp/v2 v2.8.2
 	github.com/jroimartin/gocui v0.5.0
 	github.com/lu4p/cat v0.1.5
 	github.com/schollz/progressbar/v3 v3.17.1
@@ -20,7 +20,7 @@ require (
 
 require (
 	github.com/EndFirstCorp/peekingReader v0.0.0-20171012052444-257fb6f1a1a6 // indirect
-	github.com/ProtonMail/go-crypto v1.1.3 // indirect
+	github.com/ProtonMail/go-crypto v1.1.4 // indirect
 	github.com/ProtonMail/go-mime v0.0.0-20230322103455-7d82a3887f2f // indirect
 	github.com/cloudflare/circl v1.3.9 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
