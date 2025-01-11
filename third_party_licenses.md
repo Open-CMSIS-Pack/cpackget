@@ -3,9 +3,9 @@
 | __Name__ | __Version__ | __Licence__ |
 |----------|-------------|-------------|
 | github.com/EndFirstCorp/peekingReader | v0.0.0-20171012052444-257fb6f1a1a6  | [MIT](https://github.com/EndFirstCorp/peekingReader/blob/257fb6f1a1a6/LICENSE) |
-| github.com/ProtonMail/go-crypto | v1.1.3  | [BSD-3-Clause](https://github.com/ProtonMail/go-crypto/blob/v1.1.3/LICENSE) |
+| github.com/ProtonMail/go-crypto | v1.1.4  | [BSD-3-Clause](https://github.com/ProtonMail/go-crypto/blob/v1.1.4/LICENSE) |
 | github.com/ProtonMail/go-mime | v0.0.0-20230322103455-7d82a3887f2f  | [MIT](https://github.com/ProtonMail/go-mime/blob/7d82a3887f2f/LICENSE) |
-| github.com/ProtonMail/gopenpgp/v2 | v2.8.1  | [MIT](https://github.com/ProtonMail/gopenpgp/blob/v2.8.1/LICENSE) |
+| github.com/ProtonMail/gopenpgp/v2 | v2.8.2  | [MIT](https://github.com/ProtonMail/gopenpgp/blob/v2.8.2/LICENSE) |
 | github.com/cloudflare/circl | v1.3.9  | [BSD-3-Clause](https://github.com/cloudflare/circl/blob/v1.3.9/LICENSE) |
 | github.com/fsnotify/fsnotify | v1.7.0  | [BSD-3-Clause](https://github.com/fsnotify/fsnotify/blob/v1.7.0/LICENSE) |
 | github.com/gabriel-vasile/mimetype | v1.4.4  | [MIT](https://github.com/gabriel-vasile/mimetype/blob/v1.4.4/LICENSE) |
@@ -23,7 +23,7 @@
 | github.com/pkg/errors | v0.9.1  | [BSD-2-Clause](https://github.com/pkg/errors/blob/v0.9.1/LICENSE) |
 | github.com/rivo/uniseg | v0.4.7  | [MIT](https://github.com/rivo/uniseg/blob/v0.4.7/LICENSE.txt) |
 | github.com/sagikazarmark/slog-shim | v0.1.0  | [BSD-3-Clause](https://github.com/sagikazarmark/slog-shim/blob/v0.1.0/LICENSE) |
-| github.com/schollz/progressbar/v3 | v3.17.1  | [MIT](https://github.com/schollz/progressbar/blob/v3.17.1/LICENSE) |
+| github.com/schollz/progressbar/v3 | v3.18.0  | [MIT](https://github.com/schollz/progressbar/blob/v3.18.0/LICENSE) |
 | github.com/sirupsen/logrus | v1.9.3  | [MIT](https://github.com/sirupsen/logrus/blob/v1.9.3/LICENSE) |
 | github.com/spf13/afero | v1.11.0  | [Apache-2.0](https://github.com/spf13/afero/blob/v1.11.0/LICENSE.txt) |
 | github.com/spf13/cast | v1.6.0  | [MIT](https://github.com/spf13/cast/blob/v1.6.0/LICENSE) |
