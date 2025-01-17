@@ -26,7 +26,7 @@ type PidxXML struct {
 	SchemaVersion string   `xml:"schemaVersion,attr"`
 	Vendor        string   `xml:"vendor"`
 	URL           string   `xml:"url"`
-	TimeStamp     string   `xml:"timestamp"`
+	TimeStamp     string   `xml:"timestamp,omitempty"`
 
 	Pindex struct {
 		XMLName xml.Name  `xml:"pindex"`
