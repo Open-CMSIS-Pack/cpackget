@@ -118,6 +118,7 @@ func DownloadFile(URL string, timeout int) (string, error) {
 	// For now, skip insecure HTTPS downloads verification only for localhost
 	var tls tls.Config
 	if strings.Contains(URL, "https://127.0.0.1") {
+		// #nosec G402
 		tls.InsecureSkipVerify = true //nolint:gosec
 	} else {
 		tls.InsecureSkipVerify = false
