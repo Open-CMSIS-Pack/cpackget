@@ -51,7 +51,7 @@ Flags:
                                     Specify "-q" for no messages
   -V, --version                     Prints the version number of cpackget and exit
 
-Use "cpackget [command] --help" for more information about a command.
+Use "cpackget [command] --help" for more information about a command and command-specific flags.
 ```
 
 For example, if one wanted help removing a pack, running `cpackget rm --help` would print out useful information on the subject.
