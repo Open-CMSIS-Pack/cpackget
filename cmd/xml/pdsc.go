@@ -160,8 +160,8 @@ func (p *PdscXML) Dependencies() [][]string {
 					pk.Version = pk.Version + ":_"
 				}
 			}
+			log.Debugf("found [%s %s %s] dependency", pk.Name, pk.Vendor, utils.FormatVersions(pk.Version))
 			dependency := []string{pk.Name, pk.Vendor, pk.Version}
-			log.Debugf("found %v dependency", dependency)
 			dependencies = append(dependencies, dependency)
 		}
 	}

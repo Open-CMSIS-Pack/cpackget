@@ -1007,6 +1007,9 @@ func FindPackURL(pack *PackType) (string, error) {
 		pack.resolveVersionModifier(packPdscXML)
 
 		releaseTag := packPdscXML.FindReleaseTagByVersion(pack.targetVersion)
+		if releaseTag == nil {
+			return "", errs.ErrPackVersionNotFoundInPdsc
+		}
 
 		// Can't satisfy minimum target version
 		if pack.versionModifier == utils.GreaterVersion || pack.versionModifier == utils.GreatestCompatibleVersion {
@@ -1024,10 +1027,19 @@ func FindPackURL(pack *PackType) (string, error) {
 				return "", errs.ErrPackVersionNotAvailable
 			}
 		}
-
-		if releaseTag == nil {
-			return "", errs.ErrPackVersionNotFoundInPdsc
+		if pack.versionModifier == utils.RangeVersion {
+			found := false
+			for _, version := range packPdscXML.AllReleases() {
+				if utils.SemverCompareRange(version, pack.Version) == 0 {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return "", errs.ErrPackVersionNotAvailable
+			}
 		}
+
 		if releaseTag.URL != "" {
 			return releaseTag.URL, nil
 		}
@@ -1151,7 +1163,7 @@ func SetPackRoot(packRoot string, create, download bool) error {
 			//			err = Installation.PublicIndexXML.CheckTime()
 			if err != nil {
 				UnlockPackRoot()
-				err1 := UpdatePublicIndex(DefaultPublicIndex, true, true, false, false, 0, 0)
+				err1 := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
 				if err1 != nil {
 					return err1
 				}
@@ -1165,7 +1177,7 @@ func SetPackRoot(packRoot string, create, download bool) error {
 	// if public index does not or not yet exist then download without check
 	if download && !utils.FileExists(Installation.PublicIndex) {
 		UnlockPackRoot()
-		err := UpdatePublicIndex(DefaultPublicIndex, true, true, false, false, 0, 0)
+		err := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
 		if err != nil {
 			return err
 		}
@@ -1395,7 +1407,7 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 	}
 
 	if pack.versionModifier == utils.RangeVersion {
-		log.Debugf("Checking for installed packs %s", pack.Version)
+		log.Debugf("Checking for installed packs %s", utils.FormatVersions(pack.Version))
 		for _, version := range installedVersions {
 			log.Debugf("- checking against: %s", version)
 			if utils.SemverCompareRange(version, pack.Version) == 0 {
