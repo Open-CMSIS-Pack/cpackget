@@ -583,6 +583,8 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 				return
 			}
 		}
+		log.Errorf("No compatible version available for pack version %s", utils.FormatVersions(p.Version))
+		return
 	}
 
 	log.Warn("Could not resolve version modifier")
