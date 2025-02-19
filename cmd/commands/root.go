@@ -120,7 +120,7 @@ func getLongHelpDescription() string {
 }
 
 func printVersionAndLicense(file io.Writer) {
-	file.Write([]byte(getLongHelpDescription()))
+	_, _ = file.Write([]byte(getLongHelpDescription()))
 }
 
 // UsageTemplate returns usage template for the command.
