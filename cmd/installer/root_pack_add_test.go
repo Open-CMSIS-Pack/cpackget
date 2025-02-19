@@ -129,6 +129,21 @@ func TestAddPack(t *testing.T) {
 		checkPackIsInstalled(t, packInfoToType(packToReinstall))
 	})
 
+	t.Run("test installing a pack with metadata", func(t *testing.T) {
+		localTestingDir := "test-add-pack-metadata"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+
+		packPath := publicLocalPack123meta
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, Timeout)
+		assert.Nil(err)
+
+		packToReinstall, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		checkPackIsInstalled(t, packInfoToType(packToReinstall))
+	})
+
 	t.Run("test force-reinstalling an installed pack using encoded progress", func(t *testing.T) {
 		localTestingDir := "test-add-pack-force-reinstall-already-installed-using-encoded-progress"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
@@ -891,6 +906,24 @@ func TestAddPack(t *testing.T) {
 		err = installer.AddPack(pack123ID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 		assert.Nil(err)
 		checkPackIsInstalled(t, pack123)
+	})
+
+	t.Run("test installing a pack via packID and build metadata", func(t *testing.T) {
+		localTestingDir := "test-add-packid-meta"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		installer.UnlockPackRoot()
+		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		defer removePackRoot(localTestingDir)
+
+		pack123ID := publicRemotePack123PackIDMeta
+
+		err := installer.AddPack(pack123ID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
+
+		assert.NotNil(err)
+		assert.Equal(err, errs.ErrBadPackVersion)
+
+		// Make sure pack.idx never got touched
+		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
 	t.Run("test installing a pack that got cancelled during download", func(t *testing.T) {
