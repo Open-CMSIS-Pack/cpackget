@@ -105,10 +105,10 @@ func NewServer() Server {
 var rootCmdTests = []TestCase{
 	{
 		name:           "test no parameter given",
-		expectedStdout: []string{"Please refer to the upstream repository for further information"},
+		expectedStdout: []string{"cpackget version"},
 	},
 	{
-		name:        "test no parameter given",
+		name:        "test help",
 		args:        []string{"help"},
 		expectedErr: nil,
 	},
