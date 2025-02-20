@@ -27,7 +27,7 @@
 | github.com/sirupsen/logrus | v1.9.3  | [MIT](https://github.com/sirupsen/logrus/blob/v1.9.3/LICENSE) |
 | github.com/spf13/afero | v1.11.0  | [Apache-2.0](https://github.com/spf13/afero/blob/v1.11.0/LICENSE.txt) |
 | github.com/spf13/cast | v1.6.0  | [MIT](https://github.com/spf13/cast/blob/v1.6.0/LICENSE) |
-| github.com/spf13/cobra | v1.8.1  | [Apache-2.0](https://github.com/spf13/cobra/blob/v1.8.1/LICENSE.txt) |
+| github.com/spf13/cobra | v1.9.1  | [Apache-2.0](https://github.com/spf13/cobra/blob/v1.9.1/LICENSE.txt) |
 | github.com/spf13/pflag | v1.0.6  | [BSD-3-Clause](https://github.com/spf13/pflag/blob/v1.0.6/LICENSE) |
 | github.com/spf13/viper | v1.19.0  | [MIT](https://github.com/spf13/viper/blob/v1.19.0/LICENSE) |
 | github.com/subosito/gotenv | v1.6.0  | [MIT](https://github.com/subosito/gotenv/blob/v1.6.0/LICENSE) |
