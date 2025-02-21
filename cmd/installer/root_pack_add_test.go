@@ -920,7 +920,7 @@ func TestAddPack(t *testing.T) {
 		err := installer.AddPack(pack123ID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
 
 		assert.NotNil(err)
-		assert.Equal(err, errs.ErrBadPackVersion)
+		assert.Equal(errors.Unwrap(err), errs.ErrBadPackVersion)
 
 		// Make sure pack.idx never got touched
 		assert.False(utils.FileExists(installer.Installation.PackIdx))

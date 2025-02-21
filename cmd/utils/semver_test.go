@@ -77,12 +77,16 @@ func TestSemverMajorMinor(t *testing.T) {
 	})
 }
 
+func S(v ...interface{}) []interface{} {
+	return v
+}
+
 func TestSemverHasMeta(t *testing.T) {
 	assert := assert.New(t)
 
 	t.Run("test has meta", func(t *testing.T) {
-		assert.Equal(false, utils.SemverHasMeta("1.2.3"))
-		assert.Equal(true, utils.SemverHasMeta("1.2.3+meta"))
+		assert.Equal(S("", false), S(utils.SemverHasMeta("1.2.3")))
+		assert.Equal(S("meta", true), S(utils.SemverHasMeta("1.2.3+meta")))
 	})
 }
 

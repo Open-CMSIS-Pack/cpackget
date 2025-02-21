@@ -121,8 +121,10 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 		return pack, err
 	}
 
-	if pack.isPackID && nometa && utils.SemverHasMeta(pack.Version) {
-		return pack, errs.ErrBadPackVersion
+	if pack.isPackID && nometa {
+		if meta, found := utils.SemverHasMeta(pack.Version); found {
+			return pack, fmt.Errorf("%w: \"%s\". Expected vendor.pack.version", errs.ErrBadPackVersion, meta)
+		}
 	}
 
 	pack.isInstalled = Installation.PackIsInstalled(pack, noLocal)
