@@ -62,6 +62,12 @@ func SemverMajorMinor(version string) string {
 	return strings.TrimLeft(version, "v")
 }
 
+// checks if `+meta` is contained in supplied version string
+func SemverHasMeta(version string) (string, bool) {
+	_, meta, found := strings.Cut(version, "+")
+	return meta, found
+}
+
 // strips `+meta` from the supplied version string
 func SemverStripMeta(version string) string {
 	before, _, found := strings.Cut(version, "+")
