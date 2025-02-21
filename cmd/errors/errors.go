@@ -27,8 +27,9 @@ func AlreadyLogged(err error) bool {
 
 var (
 	// Errors related to package file name
-	ErrBadPackName = errors.New("bad pack name: it must be either a PackID:  packVendor::Pack[@version|@~version|@^version|@>=version] or a local Pack file: <path>/Vendor.Pack.version.pack or a local Pack Description file: <path>/Vendor.Pack.pdsc")
-	ErrBadPackURL  = errors.New("bad pack url: the url provided for this pack is malformed")
+	ErrBadPackName    = errors.New("bad pack name: it must be either a PackID:  packVendor::Pack[@version|@~version|@^version|@>=version] or a local Pack file: <path>/Vendor.Pack.version.pack or a local Pack Description file: <path>/Vendor.Pack.pdsc")
+	ErrBadPackURL     = errors.New("bad pack url: the url provided for this pack is malformed")
+	ErrBadPackVersion = errors.New("bad pack version: cannot add a version with build metadata")
 
 	// Errors related to package content
 	ErrPdscFileNotFound      = errors.New("pdsc not found")

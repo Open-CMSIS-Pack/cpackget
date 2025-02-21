@@ -79,7 +79,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 		isDep = true
 		packPath = packPath[1:]
 	}
-	pack, err := preparePack(packPath, false, false, false, timeout)
+	pack, err := preparePack(packPath, false, false, false, true, timeout)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 
 	if !noRequirements {
 		log.Debug("installing package requirements")
-		err := pack.loadDependencies()
+		err := pack.loadDependencies(true)
 		if err != nil {
 			return err
 		}
@@ -183,7 +183,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 			for _, req := range pack.Requirements.packages {
 				// Recursively install dependencies
 				path := req.info[1] + "." + req.info[0] + "." + req.info[2]
-				pack, err := preparePack(path, false, false, false, timeout)
+				pack, err := preparePack(path, false, false, false, true, timeout)
 				if err != nil {
 					return err
 				}
@@ -214,7 +214,7 @@ func RemovePack(packPath string, purge bool, timeout int) error {
 	// TODO: by default, remove latest version first
 	// if no version is given
 
-	pack, err := preparePack(packPath, true, false, false, timeout)
+	pack, err := preparePack(packPath, true, false, false, true, timeout)
 	if err != nil {
 		return err
 	}
@@ -314,7 +314,7 @@ func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) er
 		}
 		return nil
 	}
-	pack, err := preparePack(packPath, false, true, true, timeout)
+	pack, err := preparePack(packPath, false, true, true, true, timeout)
 	if err != nil {
 		return err
 	}
@@ -353,7 +353,7 @@ func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) er
 
 	if !noRequirements {
 		log.Debug("installing package requirements")
-		err := pack.loadDependencies()
+		err := pack.loadDependencies(true)
 		if err != nil {
 			return err
 		}
@@ -371,7 +371,7 @@ func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) er
 			for _, req := range pack.Requirements.packages {
 				// Recursively install dependencies
 				path := req.info[1] + "." + req.info[0] + "." + req.info[2]
-				pack, err := preparePack(path, false, false, false, timeout)
+				pack, err := preparePack(path, false, false, false, true, timeout)
 				if err != nil {
 					return err
 				}
@@ -889,7 +889,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bo
 		for _, pack := range installedPacks {
 			logMessage := pack.YamlPackID()
 			// List installed packs and their dependencies
-			p, err := preparePack(pack.Key(), false, listUpdates, listUpdates, 0)
+			p, err := preparePack(pack.Key(), false, listUpdates, listUpdates, false, 0)
 			if err == nil {
 				if listUpdates && !p.IsPublic {
 					continue // ignore local packs
@@ -907,7 +907,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bo
 				if err := p.Pdsc.Read(); err != nil {
 					return err
 				}
-				if err := p.loadDependencies(); err != nil {
+				if err := p.loadDependencies(false); err != nil {
 					return err
 				}
 				if len(p.Requirements.packages) > 0 {
