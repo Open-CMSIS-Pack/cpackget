@@ -194,17 +194,7 @@ jobs:
 
       - name: Check out repository code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Install Go
-        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
-        with:
-          go-version: '1.22'
-          check-latest: true
-
-      - name: Install go-junit-report
-        if: always()
-        run: go install github.com/jstemmer/go-junit-report/v2@14d61e6e75e3f3c74551d757ad936e8e88014464 # v2.1.0
-  
+ 
       - name: Install linux deps
         run: |
           sudo apt-get update
@@ -219,6 +209,16 @@ jobs:
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \
             qemu-user-binfmt
+
+      - name: Install Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: '1.22'
+          check-latest: true
+
+      - name: Install go-junit-report
+        if: always()
+        run: go install github.com/jstemmer/go-junit-report/v2@14d61e6e75e3f3c74551d757ad936e8e88014464 # v2.1.0
 
       - name: Unit testing
         run: |
