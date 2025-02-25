@@ -223,7 +223,7 @@ jobs:
       - name: Unit testing
         run: |
           mkdir -p build
-          GOOS=linux GOARCH=amd64 go test -v ./... > build/cpackgettests-linux-arm64.txt
+          GOOS=linux GOARCH=arm64 go test -v ./...
 
       - name: Generate JUnit test report
         if: always()
