@@ -168,7 +168,7 @@ type PackInfo struct {
 //
 //	pack name, with "my" for vendor and "pack" for pack name.
 func ExtractPackInfo(packPath string) (PackInfo, error) {
-	log.Debugf("Extracting pack info from \"%s\"", packPath)
+	log.Debugf("Extracting pack info from \"%s\"", FormatVersions(packPath))
 
 	info := PackInfo{}
 	maxVersion := ""
@@ -264,7 +264,7 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 		info.Version = version
 	}
 
-	log.Debugf("\"%s\" is a packID with Vendor=\"%s\", Pack=\"%s\", Version=\"%s\", VersionModifier=\"%v\"", packPath, info.Vendor, info.Pack, info.Version, info.VersionModifier)
+	log.Debugf("\"%s\" is a packID with Vendor=\"%s\", Pack=\"%s\", Version=\"%s\", VersionModifier=\"%v\"", packPath, info.Vendor, info.Pack, FormatVersions(info.Version), info.VersionModifier)
 	return info, nil
 }
 
@@ -291,4 +291,12 @@ func FormatPackVersion(pack []string) string {
 			}
 		}
 	}
+}
+
+func FormatVersions(version string) string {
+	s := strings.Split(version, ":")
+	if len(s) > 1 && s[1] == "_" {
+		return ">=" + s[0]
+	}
+	return version
 }

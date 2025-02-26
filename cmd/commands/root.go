@@ -115,8 +115,12 @@ var flags struct {
 var Version string
 var Copyright string
 
+func getLongHelpDescription() string {
+	return fmt.Sprintf("cpackget version %v %s\n", strings.ReplaceAll(Version, "v", ""), Copyright)
+}
+
 func printVersionAndLicense(file io.Writer) {
-	fmt.Fprintf(file, "cpackget version %v %s\n", strings.ReplaceAll(Version, "v", ""), Copyright)
+	_, _ = file.Write([]byte(getLongHelpDescription()))
 }
 
 // UsageTemplate returns usage template for the command.
@@ -141,14 +145,14 @@ Global Flags:
 Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
   {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
 
-Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+Use "{{.CommandPath}} [command] --help" for more information about a command and command-specific flags.{{end}}
 `
 
 func NewCli() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           "cpackget [command] [flags]",
 		Short:         "This utility adds/removes CMSIS-Packs",
-		Long:          "Please refer to the upstream repository for further information: https://github.com/Open-CMSIS-Pack/cpackget.",
+		Long:          getLongHelpDescription(),
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {

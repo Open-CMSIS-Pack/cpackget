@@ -79,7 +79,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 		isDep = true
 		packPath = packPath[1:]
 	}
-	pack, err := preparePack(packPath, false, false, false, timeout)
+	pack, err := preparePack(packPath, false, false, false, true, timeout)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 
 	if !noRequirements {
 		log.Debug("installing package requirements")
-		err := pack.loadDependencies()
+		err := pack.loadDependencies(true)
 		if err != nil {
 			return err
 		}
@@ -183,7 +183,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 			for _, req := range pack.Requirements.packages {
 				// Recursively install dependencies
 				path := req.info[1] + "." + req.info[0] + "." + req.info[2]
-				pack, err := preparePack(path, false, false, false, timeout)
+				pack, err := preparePack(path, false, false, false, true, timeout)
 				if err != nil {
 					return err
 				}
@@ -214,7 +214,7 @@ func RemovePack(packPath string, purge bool, timeout int) error {
 	// TODO: by default, remove latest version first
 	// if no version is given
 
-	pack, err := preparePack(packPath, true, false, false, timeout)
+	pack, err := preparePack(packPath, true, false, false, true, timeout)
 	if err != nil {
 		return err
 	}
@@ -314,7 +314,7 @@ func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) er
 		}
 		return nil
 	}
-	pack, err := preparePack(packPath, false, true, true, timeout)
+	pack, err := preparePack(packPath, false, true, true, true, timeout)
 	if err != nil {
 		return err
 	}
@@ -353,7 +353,7 @@ func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) er
 
 	if !noRequirements {
 		log.Debug("installing package requirements")
-		err := pack.loadDependencies()
+		err := pack.loadDependencies(true)
 		if err != nil {
 			return err
 		}
@@ -371,7 +371,7 @@ func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) er
 			for _, req := range pack.Requirements.packages {
 				// Recursively install dependencies
 				path := req.info[1] + "." + req.info[0] + "." + req.info[2]
-				pack, err := preparePack(path, false, false, false, timeout)
+				pack, err := preparePack(path, false, false, false, true, timeout)
 				if err != nil {
 					return err
 				}
@@ -889,7 +889,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bo
 		for _, pack := range installedPacks {
 			logMessage := pack.YamlPackID()
 			// List installed packs and their dependencies
-			p, err := preparePack(pack.Key(), false, listUpdates, listUpdates, 0)
+			p, err := preparePack(pack.Key(), false, listUpdates, listUpdates, false, 0)
 			if err == nil {
 				if listUpdates && !p.IsPublic {
 					continue // ignore local packs
@@ -907,7 +907,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bo
 				if err := p.Pdsc.Read(); err != nil {
 					return err
 				}
-				if err := p.loadDependencies(); err != nil {
+				if err := p.loadDependencies(false); err != nil {
 					return err
 				}
 				if len(p.Requirements.packages) > 0 {
@@ -1007,6 +1007,9 @@ func FindPackURL(pack *PackType) (string, error) {
 		pack.resolveVersionModifier(packPdscXML)
 
 		releaseTag := packPdscXML.FindReleaseTagByVersion(pack.targetVersion)
+		if releaseTag == nil {
+			return "", errs.ErrPackVersionNotFoundInPdsc
+		}
 
 		// Can't satisfy minimum target version
 		if pack.versionModifier == utils.GreaterVersion || pack.versionModifier == utils.GreatestCompatibleVersion {
@@ -1024,10 +1027,19 @@ func FindPackURL(pack *PackType) (string, error) {
 				return "", errs.ErrPackVersionNotAvailable
 			}
 		}
-
-		if releaseTag == nil {
-			return "", errs.ErrPackVersionNotFoundInPdsc
+		if pack.versionModifier == utils.RangeVersion {
+			found := false
+			for _, version := range packPdscXML.AllReleases() {
+				if utils.SemverCompareRange(version, pack.Version) == 0 {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return "", errs.ErrPackVersionNotAvailable
+			}
 		}
+
 		if releaseTag.URL != "" {
 			return releaseTag.URL, nil
 		}
@@ -1151,7 +1163,7 @@ func SetPackRoot(packRoot string, create, download bool) error {
 			//			err = Installation.PublicIndexXML.CheckTime()
 			if err != nil {
 				UnlockPackRoot()
-				err1 := UpdatePublicIndex(DefaultPublicIndex, true, true, false, false, 0, 0)
+				err1 := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
 				if err1 != nil {
 					return err1
 				}
@@ -1165,7 +1177,7 @@ func SetPackRoot(packRoot string, create, download bool) error {
 	// if public index does not or not yet exist then download without check
 	if download && !utils.FileExists(Installation.PublicIndex) {
 		UnlockPackRoot()
-		err := UpdatePublicIndex(DefaultPublicIndex, true, true, false, false, 0, 0)
+		err := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
 		if err != nil {
 			return err
 		}
@@ -1395,7 +1407,7 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 	}
 
 	if pack.versionModifier == utils.RangeVersion {
-		log.Debugf("Checking for installed packs %s", pack.Version)
+		log.Debugf("Checking for installed packs %s", utils.FormatVersions(pack.Version))
 		for _, version := range installedVersions {
 			log.Debugf("- checking against: %s", version)
 			if utils.SemverCompareRange(version, pack.Version) == 0 {
