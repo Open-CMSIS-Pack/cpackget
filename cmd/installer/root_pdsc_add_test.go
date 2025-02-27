@@ -22,7 +22,8 @@ func TestAddPdsc(t *testing.T) {
 	// Sanity tests
 	t.Run("test add pdsc with bad name", func(t *testing.T) {
 		localTestingDir := "test-add-pdsc-with-bad-name"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
 		defer removePackRoot(localTestingDir)
 
@@ -34,7 +35,8 @@ func TestAddPdsc(t *testing.T) {
 
 	t.Run("test add pdsc with bad local_repository.pidx", func(t *testing.T) {
 		localTestingDir := "test-add-pdsc-with-bad-local-repository"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
 		installer.Installation.LocalPidx = xml.NewPidxXML(badLocalRepositoryPidx)
 		defer removePackRoot(localTestingDir)
@@ -46,7 +48,8 @@ func TestAddPdsc(t *testing.T) {
 
 	t.Run("test add a pdsc", func(t *testing.T) {
 		localTestingDir := "test-add-a-pdsc"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
 		defer removePackRoot(localTestingDir)
 
@@ -58,7 +61,8 @@ func TestAddPdsc(t *testing.T) {
 
 	t.Run("test add a pdsc already installed", func(t *testing.T) {
 		localTestingDir := "test-add-a-pdsc-already-installed"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
 		defer removePackRoot(localTestingDir)
 
@@ -71,7 +75,8 @@ func TestAddPdsc(t *testing.T) {
 
 	t.Run("test add new pdsc version", func(t *testing.T) {
 		localTestingDir := "test-add-new-pdsc-version"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
 		defer removePackRoot(localTestingDir)
 
@@ -84,7 +89,8 @@ func TestAddPdsc(t *testing.T) {
 
 	t.Run("test add new pdsc version with same path", func(t *testing.T) {
 		localTestingDir := "test-add-new-pdsc-version-same-path"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
 		defer removePackRoot(localTestingDir)
 

@@ -114,15 +114,16 @@ Add a pack using the following "<pack>" specification or using packs provided by
 			return errs.ErrIncorrectCmdArgs
 		}
 
-		log.Debugf("Specified packs %v", args)
 		var lastErr error
+
+		log.Debugf("Specified packs %v", args)
 		installer.UnlockPackRoot()
 		for _, packPath := range args {
 			var err error
 			if filepath.Ext(packPath) == ".pdsc" {
 				err = installer.AddPdsc(packPath)
 			} else {
-				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, addCmdFlags.noRequirements, viper.GetInt("timeout"))
+				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, addCmdFlags.noRequirements, false, viper.GetInt("timeout"))
 			}
 			if err != nil {
 				lastErr = err

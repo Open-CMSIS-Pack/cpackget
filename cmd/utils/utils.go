@@ -593,6 +593,6 @@ func UnsetReadOnlyR(path string) {
 }
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	// rand.Seed(time.Now().UnixNano())	// rand.Seed deprecated, not necessary anymore
 	HTTPClient = &http.Client{}
 }

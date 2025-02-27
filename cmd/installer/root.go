@@ -71,7 +71,20 @@ func GetDefaultCmsisPackRoot() string {
 }
 
 // AddPack adds a pack to the pack installation directory structure
-func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirements bool, timeout int) error {
+// AddPack installs a pack from the given packPath. It handles various scenarios such as
+// checking and extracting EULA, force reinstalling, and handling dependencies.
+//
+// Parameters:
+// - packPath: The path to the pack to be installed.
+// - checkEula: If true, the EULA will be checked before installation.
+// - extractEula: If true, the EULA will be extracted.
+// - forceReinstall: If true, the pack will be reinstalled even if it is already installed.
+// - noRequirements: If true, the requirements check and installation will be skipped.
+// - timeout: The timeout duration for fetching the pack.
+//
+// Returns:
+// - error: An error if the installation fails, otherwise nil.
+func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirements, testing bool, timeout int) error {
 
 	isDep := false
 	// tag dependency packs with $ for correct logging output
@@ -85,6 +98,16 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 	}
 
 	if !isDep {
+		if !testing {
+			if pack.isPackID || !pack.IsLocallySourced {
+				if err := UpdatePublicIndexIfOnline(); err != nil {
+					return err
+				}
+			}
+			if err := ReadIndexFiles(); err != nil {
+				return err
+			}
+		}
 		log.Infof("Adding pack \"%s\"", packPath)
 	}
 
@@ -189,7 +212,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 				}
 				if !pack.isInstalled {
 					log.Debug("pack has dependencies, installing")
-					err := AddPack("$"+path, checkEula, extractEula, forceReinstall, false, timeout)
+					err := AddPack("$"+path, checkEula, extractEula, forceReinstall, false, false, timeout)
 					if err != nil {
 						return err
 					}
@@ -207,7 +230,17 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 	return Installation.touchPackIdx()
 }
 
-// RemovePack removes a pack given a pack path
+// RemovePack removes a specified pack from the installation.
+// If the pack is installed, it will be uninstalled. If the purge option is enabled,
+// the pack will be completely removed from the system.
+//
+// Parameters:
+//   - packPath: The path to the pack to be removed.
+//   - purge: A boolean indicating whether to completely remove the pack.
+//   - timeout: An integer specifying the timeout duration for the operation.
+//
+// Returns:
+//   - error: An error if the removal process fails, or nil if successful.
 func RemovePack(packPath string, purge bool, timeout int) error {
 	log.Debugf("Removing pack \"%v\"", packPath)
 
@@ -243,9 +276,22 @@ func RemovePack(packPath string, purge bool, timeout int) error {
 	return errs.ErrPackNotInstalled
 }
 
-// AddPdsc adds a pack via PDSC file
+// AddPdsc adds a PDSC (Pack Description) file to the installation.
+// It prepares the PDSC file and installs it. If the PDSC entry already exists,
+// it logs the information and returns nil. After installation, it writes the
+// local PIDX (Pack Index) and updates the pack index.
+//
+// Parameters:
+//   - pdscPath: The file path to the PDSC file.
+//
+// Returns:
+//   - error: An error if any step fails, otherwise nil.
 func AddPdsc(pdscPath string) error {
 	log.Infof("Adding pdsc \"%v\"", pdscPath)
+
+	if err := ReadIndexFiles(); err != nil {
+		return err
+	}
 
 	pdsc, err := preparePdsc(pdscPath)
 	if err != nil {
@@ -267,7 +313,21 @@ func AddPdsc(pdscPath string) error {
 	return Installation.touchPackIdx()
 }
 
-// RemovePdsc removes a pack given a pdsc path
+// RemovePdsc removes a PDSC (Pack Description) file from the installation.
+//
+// Parameters:
+//   - pdscPath: The file path to the PDSC file to be removed.
+//
+// Returns:
+//   - error: An error if the removal process fails, otherwise nil.
+//
+// The function performs the following steps:
+//  1. Logs the removal action.
+//  2. Prepares the PDSC file for removal by calling preparePdsc.
+//  3. Clears the URL field of the PDSC file as it is not needed for removal.
+//  4. Uninstalls the PDSC file from the installation.
+//  5. Writes the updated local Pidx (Pack Index) to disk.
+//  6. Touches the Pack Index to update its timestamp.
 func RemovePdsc(pdscPath string) error {
 	log.Debugf("Removing pdsc \"%v\"", pdscPath)
 
@@ -291,14 +351,36 @@ func RemovePdsc(pdscPath string) error {
 	return Installation.touchPackIdx()
 }
 
-// Workaround wrapper function to still log errors
+// massDownloadPdscFiles downloads PDSC files based on the provided PDSC tag.
+// It calls downloadPdscFile for each PDSC file in the tag and logs errors if they occur.
+// If skipInstalledPdscFiles is true, already installed PDSC files will be skipped.
+// The timeout parameter specifies the maximum duration (in seconds) for the download operation.
+//
+// Parameters:
+//   - pdscTag: The PDSC tag containing information about the files to be downloaded.
+//   - skipInstalledPdscFiles: A boolean flag indicating whether to skip already installed PDSC files.
+//   - timeout: An integer specifying the timeout duration in seconds.
+//
+// Example:
+//
+//	massDownloadPdscFiles(pdscTag, true, 30)
 func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, timeout int) {
 	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, timeout); err != nil {
 		log.Error(err)
 	}
 }
 
-// UpdatePack updates an installed pack to the latest version
+// UpdatePack updates the specified pack or all installed packs if packPath is empty.
+// It checks for EULA acceptance and installs any required dependencies unless noRequirements is true.
+//
+// Parameters:
+//   - packPath: The path or identifier of the pack to update. If empty, all installed packs are updated.
+//   - checkEula: A boolean indicating whether to check for EULA acceptance.
+//   - noRequirements: A boolean indicating whether to skip checking and installing dependencies.
+//   - timeout: An integer specifying the timeout duration for operations.
+//
+// Returns:
+//   - error: An error if the update process fails, otherwise nil.
 func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) error {
 
 	if packPath == "" {
@@ -377,7 +459,7 @@ func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) er
 				}
 				if !pack.isInstalled {
 					log.Debug("pack has dependencies, installing")
-					err := AddPack("$"+path, checkEula, false, false, false, timeout)
+					err := AddPack("$"+path, checkEula, false, false, false, false, timeout)
 					if err != nil {
 						return err
 					}
@@ -395,6 +477,20 @@ func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) er
 	return Installation.touchPackIdx()
 }
 
+// CheckConcurrency adjusts the given concurrency level based on the maximum
+// number of CPU cores available. If the provided concurrency is greater than
+// 1, it ensures that it does not exceed the maximum number of CPU cores. If
+// the provided concurrency is less than or equal to 1, it sets the concurrency
+// to 0.
+//
+// Parameters:
+//
+//	concurrency - The desired level of concurrency.
+//
+// Returns:
+//
+//	The adjusted level of concurrency, which will be between 0 and the maximum
+//	number of CPU cores.
 func CheckConcurrency(concurrency int) int {
 	maxWorkers := runtime.GOMAXPROCS(0)
 
@@ -409,6 +505,24 @@ func CheckConcurrency(concurrency int) int {
 	return concurrency
 }
 
+// DownloadPDSCFiles downloads all PDSC files available on the public index.
+// It reads the public index XML and lists all PDSC tags. If there are no packs
+// in the public index, it logs this information and returns nil.
+//
+// If progress encoding is enabled, it logs the number of PDSC files and the
+// public index.
+//
+// The function supports concurrent downloads, controlled by the `concurrency`
+// parameter. If `concurrency` is 0, downloads are performed sequentially.
+// Otherwise, a semaphore is used to limit the number of concurrent downloads.
+//
+// Parameters:
+// - skipInstalledPdscFiles: If true, skips downloading PDSC files that are already installed.
+// - concurrency: The number of concurrent downloads to allow. If 0, downloads are sequential.
+// - timeout: The timeout for each download operation.
+//
+// Returns:
+// - An error if there is an issue reading the public index XML or acquiring the semaphore.
 func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int) error {
 	log.Info("Downloading all PDSC files available on the public index")
 	if err := Installation.PublicIndexXML.Read(); err != nil {
@@ -454,6 +568,23 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 	return nil
 }
 
+// UpdateInstalledPDSCFiles updates the PDSC files of installed packs referenced in the public index.
+// It checks if the PDSC files need updating and downloads the latest versions if necessary.
+//
+// Parameters:
+// - pidxXML: A pointer to the PidxXML structure containing the public index data.
+// - concurrency: The number of concurrent downloads allowed. If set to 0, downloads are performed sequentially.
+// - timeout: The timeout duration for downloading PDSC files.
+//
+// Returns:
+// - error: An error if any issue occurs during the update process.
+//
+// The function performs the following steps:
+// 1. Lists all PDSC files in the installation web directory.
+// 2. For each PDSC file, it reads the file and checks if the pack is still present in the public index.
+// 3. If the pack is no longer present, it deletes the PDSC file.
+// 4. If the pack is present but has a newer version in the public index, it downloads the latest version.
+// 5. Lists all PDSC files in the local directory and repeats the update process for these files.
 func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int) error {
 	log.Info("Updating PDSC files of installed packs referenced in " + PublicIndex)
 	pdscFiles, err := utils.ListDir(Installation.WebDir, ".pdsc$")
@@ -573,6 +704,17 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 	return nil
 }
 
+// GetIndexPath returns the index path based on the provided indexPath argument.
+// If indexPath is empty, it defaults to the public index XML URL from the Installation configuration.
+// Logs the index path if encoded progress is not enabled.
+// Warns if the index path uses a non-HTTPS URL.
+//
+// Parameters:
+//   - indexPath: The initial index path to be processed.
+//
+// Returns:
+//   - string: The final index path.
+//   - error: An error if any occurred during processing.
 func GetIndexPath(indexPath string) (string, error) {
 	if indexPath == "" {
 		indexPath = strings.TrimSuffix(Installation.PublicIndexXML.URL, "/")
@@ -593,7 +735,54 @@ func GetIndexPath(indexPath string) (string, error) {
 	return indexPath, err
 }
 
-// UpdatePublicIndex receives a index path and place it under .Web/index.pidx.
+func UpdatePublicIndexIfOnline() error {
+	// If public index already exists then first check if online, then its timestamp
+	// if we are online and it is too old then download a current version
+	if utils.FileExists(Installation.PublicIndex) {
+		err := utils.CheckConnection(DefaultPublicIndex, 0)
+		if err != nil && errors.Unwrap(err) != errs.ErrOffline {
+			return err
+		}
+		if errors.Unwrap(err) != errs.ErrOffline {
+			v := viper.New()
+			var updateConf updateCfg
+			err = Installation.checkUpdateCfg(v, &updateConf)
+			if err != nil {
+				UnlockPackRoot()
+				err1 := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
+				if err1 != nil {
+					return err1
+				}
+				_ = Installation.updateUpdateCfg(v, &updateConf)
+			}
+		} else {
+			log.Debug("Offline mode: Skipping public index update")
+		}
+	}
+	// if public index does not or not yet exist then download without check
+	if !utils.FileExists(Installation.PublicIndex) {
+		UnlockPackRoot()
+		err := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// UpdatePublicIndex updates the public index file from a given path or URL.
+//
+// Parameters:
+//   - indexPath: The path or URL to the public index file. If empty, the default public index URL is used.
+//   - overwrite: A boolean flag to indicate whether to overwrite the existing public index. This will be removed in future versions.
+//   - sparse: A boolean flag to indicate whether to perform a sparse update.
+//   - downloadPdsc: A boolean flag to indicate whether to download PDSC files.
+//   - downloadRemainingPdscFiles: A boolean flag to indicate whether to download remaining PDSC files.
+//   - concurrency: The number of concurrent operations allowed.
+//   - timeout: The timeout duration for network operations.
+//
+// Returns:
+//   - error: An error if the update fails, otherwise nil.
 func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPdsc bool, downloadRemainingPdscFiles bool, concurrency int, timeout int) error {
 	// TODO: Remove overwrite when cpackget v1 gets released
 	if !overwrite {
@@ -679,6 +868,9 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 	return Installation.touchPackIdx()
 }
 
+// installedPack represents a package that has been installed.
+// It embeds xml.PdscTag and includes additional fields to track
+// the PDSC file path, installation status, and any errors encountered.
 type installedPack struct {
 	xml.PdscTag
 	pdscPath        string
@@ -686,6 +878,17 @@ type installedPack struct {
 	err             error
 }
 
+// findInstalledPacks retrieves a list of installed packs based on the provided options.
+// It searches for installed packs in the specified directory and optionally includes
+// local packs and removes duplicates.
+//
+// Parameters:
+//   - addLocalPacks: If true, includes packs listed in the local repository index.
+//   - removeDuplicates: If true, removes duplicate packs from the list.
+//
+// Returns:
+//   - A slice of installedPack containing the details of the installed packs.
+//   - An error if any issues occur during the retrieval process.
 func findInstalledPacks(addLocalPacks, removeDuplicates bool) ([]installedPack, error) {
 	installedPacks := []installedPack{}
 
@@ -771,7 +974,19 @@ func findInstalledPacks(addLocalPacks, removeDuplicates bool) ([]installedPack, 
 	return installedPacks, nil
 }
 
-// ListInstalledPacks generates a list of all packs present in the pack root folder
+// ListInstalledPacks lists the installed packs based on the provided filters.
+// It can list packs from the public index, cached packs, installed packs with updates,
+// and installed packs with dependencies.
+//
+// Parameters:
+//   - listCached: If true, lists the cached packs.
+//   - listPublic: If true, lists the packs from the public index.
+//   - listUpdates: If true, lists the installed packs with available updates.
+//   - listRequirements: If true, lists the installed packs with dependencies.
+//   - listFilter: A string to filter the packs by.
+//
+// Returns:
+//   - error: An error if any occurs during the listing process.
 func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bool, listFilter string) error {
 	log.Debugf("Listing packs")
 	if listPublic {
@@ -993,6 +1208,17 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bo
 // 1.2.3. if releaseTag == nil then raise ErrPackVersionNotFoundInPdsc
 // 1.2.4. if releaseTag.URL != "", return releaseTag.URL
 // 1.2.5. return pdscTag.URL + pack.Vendor + "." + pack.Name + "." + pack.Version + ".pack"
+//
+// The function resolves the version modifier to determine the correct version of the pack to fetch.
+// It then checks the release tag for the specified version and returns the URL if found.
+// If the URL is not found or the version is not available, it returns an appropriate error.
+//
+// Parameters:
+//   - pack: A pointer to the PackType struct representing the pack to find the URL for.
+//
+// Returns:
+//   - string: The URL of the pack if found.
+//   - error: An error if the URL cannot be found or if there are issues with the pack's version.
 func FindPackURL(pack *PackType) (string, error) {
 	log.Debugf("Finding URL for \"%v\"", pack.path)
 
@@ -1094,9 +1320,15 @@ func FindPackURL(pack *PackType) (string, error) {
 // to PacksInstallationType
 var Installation *PacksInstallationType
 
-// SetPackRoot sets the working directory of the packs installation
-// if create == true, cpackget will try to create needed resources
-func SetPackRoot(packRoot string, create, download bool) error {
+// SetPackRoot sets the root directory for pack installation, ensuring necessary directories exist
+//
+// Parameters:
+//   - packRoot: The root directory for pack installation.
+//   - create: If true, missing directories will be created.
+//
+// Returns:
+//   - error: An error if the pack root is invalid, directories cannot be created.
+func SetPackRoot(packRoot string, create bool) error {
 	if len(packRoot) == 0 {
 		return errs.ErrPackRootNotFound
 	}
@@ -1149,40 +1381,12 @@ func SetPackRoot(packRoot string, create, download bool) error {
 	// Make sure utils.DownloadFile always downloads files to .Download/
 	utils.CacheDir = Installation.DownloadDir
 
-	// If public index already exists then first check if online, then its timestamp
-	// if we are online and it is too old then download a current version
-	if download && utils.FileExists(Installation.PublicIndex) {
-		err := utils.CheckConnection(DefaultPublicIndex, 0)
-		if err != nil && errors.Unwrap(err) != errs.ErrOffline {
-			return err
-		}
-		if errors.Unwrap(err) != errs.ErrOffline {
-			v := viper.New()
-			var updateConf updateCfg
-			err = Installation.checkUpdateCfg(v, &updateConf)
-			//			err = Installation.PublicIndexXML.CheckTime()
-			if err != nil {
-				UnlockPackRoot()
-				err1 := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
-				if err1 != nil {
-					return err1
-				}
-				_ = Installation.updateUpdateCfg(v, &updateConf)
-				// if err != errs.ErrIndexTooOld {
-				// 	return err
-				// }
-			}
-		}
-	}
-	// if public index does not or not yet exist then download without check
-	if download && !utils.FileExists(Installation.PublicIndex) {
-		UnlockPackRoot()
-		err := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
-		if err != nil {
-			return err
-		}
-	}
+	LockPackRoot()
+	return nil
+}
 
+func ReadIndexFiles() error {
+	UnlockPackRoot()
 	err := Installation.PublicIndexXML.Read()
 	if err != nil {
 		return err
@@ -1192,7 +1396,6 @@ func SetPackRoot(packRoot string, create, download bool) error {
 	if err != nil {
 		return err
 	}
-
 	LockPackRoot()
 
 	return nil
@@ -1236,6 +1439,9 @@ type PacksInstallationType struct {
 	PackIdx string
 }
 
+// updateCfg represents the content of "update.cfg" file.
+// - Date: a string representing the date of the last update.
+// - Auto: a boolean indicating whether automatic updates are enabled.
 type updateCfg struct {
 	Default struct {
 		Date string
@@ -1243,6 +1449,14 @@ type updateCfg struct {
 	}
 }
 
+// checkUpdateCfg reads the update configuration file, and checks if the index.pidx file is older than one day.
+//
+// Parameters:
+//   - v: A pointer to a viper.Viper instance used to read the configuration file.
+//   - conf: A pointer to an updateCfg struct where the configuration will be unmarshaled.
+//
+// Returns:
+//   - error: An error if there is an issue reading the configuration file, unmarshaling it, or if the index.pidx file is older than one day.
 func (p *PacksInstallationType) checkUpdateCfg(v *viper.Viper, conf *updateCfg) error {
 	v.SetConfigFile(filepath.Join(p.WebDir, "update.cfg"))
 	v.SetConfigType("ini")
@@ -1262,6 +1476,17 @@ func (p *PacksInstallationType) checkUpdateCfg(v *viper.Viper, conf *updateCfg) 
 	return nil
 }
 
+// updateUpdateCfg updates the update configuration file with the current date and auto-update settings.
+// It uses the provided viper instance and updateCfg struct to set the configuration values.
+// The function writes the configuration directly to the file, bypassing viper's WriteConfig method
+// due to issues with viper's handling of the configuration file type.
+//
+// Parameters:
+//   - v: A pointer to a viper.Viper instance for configuration management (unused in this function).
+//   - conf: A pointer to an updateCfg struct containing the configuration values to be written.
+//
+// Returns:
+//   - error: An error if any occurs during the file operations, otherwise nil.
 func (p *PacksInstallationType) updateUpdateCfg(v *viper.Viper, conf *updateCfg) error {
 	_ = v
 	// v.SetConfigFile(filepath.Join(p.WebDir, "update.cfg"))
@@ -1304,7 +1529,12 @@ func (p *PacksInstallationType) updateUpdateCfg(v *viper.Viper, conf *updateCfg)
 	return f.Sync()
 }
 
-// touchPackIdx changes the timestamp of pack.idx.
+// touchPackIdx updates the timestamp of the PackIdx file to the current time.
+// If the skip touch flag is set, the function returns immediately without making any changes.
+// The function temporarily removes the read-only attribute from the PackIdx file,
+// updates its timestamp, and then restores the read-only attribute.
+//
+// Returns an error if there is an issue updating the timestamp of the PackIdx file.
 func (p *PacksInstallationType) touchPackIdx() error {
 	if utils.GetSkipTouch() {
 		return nil
@@ -1316,7 +1546,29 @@ func (p *PacksInstallationType) touchPackIdx() error {
 	return err
 }
 
-// PackIsInstalled checks whether a given pack is already installed or not
+// PackIsInstalled checks if a specific pack is installed based on the provided
+// pack information and version constraints.
+//
+// Parameters:
+// - pack: A pointer to the PackType struct containing information about the pack to check.
+// - noLocal: A boolean flag indicating whether to skip checking local repository index.
+//
+// Returns:
+// - bool: True if the pack is installed and meets the version constraints, otherwise false.
+//
+// The function performs the following checks:
+// 1. Verifies if there's at least one version of the pack installed in the installation directory.
+// 2. If the pack version is empty, it returns true indicating any version is acceptable.
+// 3. If the version modifier is ExactVersion, it checks for an exact version match.
+// 4. If noLocal is false, it gathers all versions from the local repository index.
+// 5. Lists all installed versions in the installation directory.
+// 6. Depending on the version modifier, it checks for:
+//   - GreaterVersion: Any installed version greater than or equal to the specified version.
+//   - GreatestCompatibleVersion: Any installed version with the same major number and greater than or equal to the specified version.
+//   - PatchVersion: Any installed version with the same major and minor numbers and greater than or equal to the specified version.
+//   - RangeVersion: Any installed version within the specified version range.
+//
+// 7. If the version modifier is LatestVersion, it retrieves the latest available version from the PDSC file and checks if it's installed.
 func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bool {
 	log.Debugf("Checking if %s is installed", pack.PackIDWithVersion())
 
@@ -1338,7 +1590,16 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 		return utils.DirExists(packDir)
 	}
 	installedVersions := []string{}
-	if !noLocal {
+	if noLocal {
+		if pack.isPackID || !pack.IsLocallySourced {
+			if err := UpdatePublicIndexIfOnline(); err != nil {
+				return false
+			}
+		}
+		if err := ReadIndexFiles(); err != nil {
+			return false
+		}
+	} else {
 		// Gather all versions in local_repository.idx for local .psdc installed packs
 		if err := p.LocalPidx.Read(); err != nil {
 			log.Warn("Could not read local index")
@@ -1446,6 +1707,17 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 
 // packIsPublic checks whether the pack is public or not.
 // Being public means a PDSC file is present in ".Web/" folder
+// It first checks the local cache of PDSC files in the ".Web/" directory.
+// If the pack is not found locally, it searches for the pack's PDSC file in the public index.
+// If the pack is marked for removal or is locally sourced, it is considered public without further checks.
+//
+// Parameters:
+//   - pack: The pack to check for public availability.
+//   - timeout: The timeout duration for downloading the PDSC file if needed.
+//
+// Returns:
+//   - bool: True if the pack is public, false otherwise.
+//   - error: An error if there was an issue downloading the PDSC file.
 func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool, error) {
 	// lazyly lists all pdsc files in the ".Web/" folder only once
 	if p.packs == nil {
@@ -1485,8 +1757,17 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool,
 	return true, p.downloadPdscFile(pdscTag, false, timeout)
 }
 
-// downloadPdscFile takes in a xml.PdscTag containing URL, Vendor and Name of the pack
-// so it can be downloaded into .Web/
+// downloadPdscFile downloads a PDSC file based on the provided pdscTag and saves it to the specified location.
+// If skipInstalledPdscFiles is true and the file already exists, the function will skip the download.
+// The function also handles switching to a cache URL if necessary and ensures the file is moved to the correct location.
+//
+// Parameters:
+//   - pdscTag: An xml.PdscTag containing the vendor, name, and URL of the PDSC file.
+//   - skipInstalledPdscFiles: A boolean indicating whether to skip downloading if the file already exists.
+//   - timeout: An integer specifying the timeout duration for the download.
+//
+// Returns:
+//   - error: An error if any issues occur during the download or file operations.
 func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, timeout int) error {
 	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
 	pdscFilePath := filepath.Join(p.WebDir, basePdscFile)
@@ -1534,6 +1815,22 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 	return err
 }
 
+// loadPdscFile loads a PDSC (Pack Description) file from a specified URL or local file path.
+// It handles both remote and local file sources, copying or downloading the file as needed.
+//
+// Parameters:
+//   - pdscTag: An xml.PdscTag struct containing the vendor, name, and URL of the PDSC file.
+//   - timeout: An integer specifying the timeout duration for downloading the file.
+//
+// Returns:
+//   - error: An error if the file could not be loaded, parsed, copied, or downloaded successfully.
+//
+// The function performs the following steps:
+//  1. Constructs the base PDSC file name and its local file path.
+//  2. Parses the provided URL to determine if it is a local file or a remote URL.
+//  3. If the URL scheme is "file", it copies the file from the local source to the destination.
+//  4. If the URL scheme is not "file", it downloads the file from the remote URL.
+//  5. Sets the file to read-only after copying or downloading it.
 func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) error {
 	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
 	pdscFilePath := filepath.Join(p.LocalDir, basePdscFile)
@@ -1580,7 +1877,8 @@ func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) e
 	return err
 }
 
-// LockPackRoot enable the read-only flag for the pack-root directory
+// LockPackRoot sets the directories related to the installation as read-only,
+// except for the "pack.idx" file which is set to be writable.
 func LockPackRoot() {
 	utils.SetReadOnly(Installation.WebDir)
 	utils.SetReadOnly(Installation.LocalDir)
@@ -1590,7 +1888,9 @@ func LockPackRoot() {
 	utils.UnsetReadOnly(Installation.PackIdx)
 }
 
-// UnlockPackRoot disable the read-only flag for the pack-root directory
+// UnlockPackRoot removes the read-only attribute from several directories
+// related to the installation process. It ensures that the PackRoot, WebDir,
+// LocalDir, and DownloadDir directories are writable.
 func UnlockPackRoot() {
 	utils.UnsetReadOnly(Installation.PackRoot)
 	utils.UnsetReadOnly(Installation.WebDir)

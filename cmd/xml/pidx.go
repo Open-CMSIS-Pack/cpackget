@@ -46,7 +46,14 @@ type PdscTag struct {
 	Version string   `xml:"version,attr"`
 }
 
-// NewPidxXML creates a new instance of the PidxXML struct.
+// NewPidxXML initializes a new PidxXML object with the given file name.
+// It logs the initialization process and returns a pointer to the created PidxXML object.
+//
+// Parameters:
+//   - fileName: The name of the file to be associated with the PidxXML object.
+//
+// Returns:
+//   - *PidxXML: A pointer to the newly created PidxXML object.
 func NewPidxXML(fileName string) *PidxXML {
 	log.Debugf("Initializing PidxXML object for \"%s\"", fileName)
 	p := new(PidxXML)
@@ -54,7 +61,18 @@ func NewPidxXML(fileName string) *PidxXML {
 	return p
 }
 
-// AddPdsc takes in a PdscTag and add it to the <pindex> tag.
+// AddPdsc adds a PdscTag to the PidxXML's pdscList if it does not already exist.
+// It logs the addition attempt and checks if the PdscTag is already present.
+// If the PdscTag is found, it returns an error indicating that the entry exists.
+// Otherwise, it adds the PdscTag to the pdscList.
+//
+// Parameters:
+//
+//	pdsc (PdscTag): The PdscTag to be added.
+//
+// Returns:
+//
+//	error: An error if the PdscTag already exists, otherwise nil.
 func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 	log.Debugf("Adding pdsc tag \"%s\" to \"%s\"", pdsc, p.fileName)
 	if p.HasPdsc(pdsc) != PdscIndexNotFound {
@@ -125,8 +143,16 @@ func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 	return nil
 }
 
-// HasPdsc tells whether of not pdsc is already present in this pidx file.
-// It returns the index of the matching pdsc tag, or -1 if not found
+// HasPdsc checks if the PidxXML contains the specified PdscTag.
+// It returns the index of the PdscTag if found, otherwise it returns PdscIndexNotFound.
+//
+// Parameters:
+//
+//	pdsc (PdscTag): The PdscTag to search for in the PidxXML.
+//
+// Returns:
+//
+//	int: The index of the PdscTag if found, otherwise PdscIndexNotFound.
 func (p *PidxXML) HasPdsc(pdsc PdscTag) int {
 	index := PdscIndexNotFound
 	if tags, found := p.pdscList[pdsc.Key()]; found {
@@ -142,7 +168,9 @@ func (p *PidxXML) HasPdsc(pdsc PdscTag) int {
 	return index
 }
 
-// ListPdscTags returns a map of PdscTags in the pidx document
+// ListPdscTags returns a slice of PdscTag containing all the PDSC tags
+// from the pdscList field of the PidxXML struct. It iterates over each
+// element in the pdscList and appends the tags to the resulting slice.
 func (p *PidxXML) ListPdscTags() []PdscTag {
 	tags := []PdscTag{}
 	for _, pdscTags := range p.pdscList {
@@ -151,7 +179,15 @@ func (p *PidxXML) ListPdscTags() []PdscTag {
 	return tags
 }
 
-// FindPdscTags takes in a sample pdscTag and returns the actual PDSC tag inside this PidxXML.
+// FindPdscTags searches for PDSC tags in the PidxXML structure.
+// If the provided PdscTag has a version, it returns the tags that match the exact key.
+// If the version is empty, it searches for tags that start with the "Vendor.Pack" key.
+//
+// Parameters:
+//   - pdsc: The PdscTag to search for.
+//
+// Returns:
+//   - A slice of PdscTag containing the found tags.
 func (p *PidxXML) FindPdscTags(pdsc PdscTag) []PdscTag {
 	log.Debugf("Searching for pdsc \"%s\"", pdsc.Key())
 	if pdsc.Version != "" {
@@ -175,7 +211,15 @@ func (p *PidxXML) FindPdscTags(pdsc PdscTag) []PdscTag {
 	return foundTags
 }
 
-// Check timestamp of public index
+// CheckTime verifies the timestamp of the PidxXML file.
+// It performs the following steps:
+// 1. Logs the action of checking the timestamp.
+// 2. Initializes the pdscList map.
+// 3. Checks if the file exists; if not, it returns nil.
+// 4. Reads the XML content of the file into the PidxXML struct.
+// 5. Checks if the timestamp is present; if not, returns an error indicating the index is too old.
+// 6. Parses the timestamp and checks if it is older than 24 hours; if so, returns an error indicating the index is too old.
+// Returns an error if any of the steps fail, otherwise returns nil.
 func (p *PidxXML) CheckTime() error {
 	log.Debugf("Checking timestamp of pidx \"%s\"", p.fileName)
 
@@ -200,7 +244,12 @@ func (p *PidxXML) CheckTime() error {
 	return nil
 }
 
-// Read reads FileName into this PidxXML struct and allocates memory for all PDSC tags.
+// Read reads the PidxXML from the file specified by p.fileName.
+// If the file does not exist, it creates a new PidxXML with default values and writes it to the file.
+// It initializes the pdscList map and populates it with PdscTag entries from the Pindex.Pdscs slice.
+// After processing, it truncates the Pindex.Pdscs slice to release memory.
+//
+// Returns an error if reading the XML file fails or if writing a new file fails.
 func (p *PidxXML) Read() error {
 	log.Debugf("Reading pidx from file \"%s\"", p.fileName)
 
@@ -237,7 +286,10 @@ func (p *PidxXML) Read() error {
 	return nil
 }
 
-// Save saves this PidxXML struct into its fileName.
+// Write writes the PidxXML data to the file specified by p.fileName.
+// It appends the pdsc tags from p.pdscList to p.Pindex.Pdscs before writing,
+// and truncates p.Pindex.Pdscs after writing to prepare for potential future writes.
+// Returns an error if the writing process fails.
 func (p *PidxXML) Write() error {
 	log.Debugf("Writing pidx file to \"%s\"", p.fileName)
 
@@ -254,18 +306,22 @@ func (p *PidxXML) Write() error {
 	return err
 }
 
-// Key returns this pdscTag unique key.
+// Key generates a unique key for the PdscTag by concatenating the Vendor, Name, and Version fields
+// with periods ('.') as separators. The resulting key is in the format "Vendor.Name.Version".
 func (p *PdscTag) Key() string {
 	return p.Vendor + "." + p.Name + "." + p.Version
 }
 
-// YamlPackId formats the packId as specified in
+// YamlPackID generates a string that uniquely identifies a pack in the format "Vendor::Name@Version".
+// It concatenates the Vendor, Name, and Version fields of the PdscTag struct with "::" and "@" as separators
+// as it is specified in
 // https://github.com/Open-CMSIS-Pack/devtools/blob/tools/toolbox/0.10.0/tools/projmgr/docs/Manual/YML-Format.md#pack-name-conventions
 func (p *PdscTag) YamlPackID() string {
 	return p.Vendor + "::" + p.Name + "@" + p.Version
 }
 
-// PackURL constructs a URL of a pack using the tag's attributes.
+// PackURL constructs and returns the full URL of the pack file
+// by concatenating the base URL with the key and the ".pack" extension.
 func (p *PdscTag) PackURL() string {
 	return p.URL + p.Key() + ".pack"
 }
