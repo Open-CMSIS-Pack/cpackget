@@ -31,6 +31,7 @@ var (
 func ExampleListInstalledPacks() {
 	localTestingDir := "test-list-empty-pack-root"
 	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	installer.UnlockPackRoot()
 	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
@@ -46,6 +47,7 @@ func ExampleListInstalledPacks() {
 func ExampleListInstalledPacks_emptyCache() {
 	localTestingDir := "test-list-empty-cache"
 	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	installer.UnlockPackRoot()
 	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
@@ -61,6 +63,7 @@ func ExampleListInstalledPacks_emptyCache() {
 func ExampleListInstalledPacks_emptyPublicIndex() {
 	localTestingDir := "test-list-empty-index"
 	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	installer.UnlockPackRoot()
 	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
@@ -80,8 +83,8 @@ func ExampleListInstalledPacks_emptyPublicIndex() {
 func ExampleListInstalledPacks_list() {
 	localTestingDir := "test-list-packs"
 	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
-	_ = installer.ReadIndexFiles()
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -118,8 +121,8 @@ func ExampleListInstalledPacks_list() {
 func ExampleListInstalledPacks_listCached() {
 	localTestingDir := "test-list-cached-packs"
 	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
-	_ = installer.ReadIndexFiles()
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -158,8 +161,8 @@ func TestListInstalledPacks(t *testing.T) {
 	t.Run("test listing all installed packs", func(t *testing.T) {
 		localTestingDir := "test-list-installed-packs"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -203,8 +206,8 @@ func TestListInstalledPacks(t *testing.T) {
 	t.Run("test listing local packs with updated version", func(t *testing.T) {
 		localTestingDir := "test-list-installed-local-packs-with-updated-version"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// This test checks that cpackget lists whatever the latest version is in the actual PDSC file
@@ -244,8 +247,8 @@ func TestListInstalledPacks(t *testing.T) {
 func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 	localTestingDir := "test-list-malformed-installed-packs"
 	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
-	_ = installer.ReadIndexFiles()
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -283,8 +286,8 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 func ExampleListInstalledPacks_filter() {
 	localTestingDir := "test-list-packs-filter"
 	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
-	_ = installer.ReadIndexFiles()
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -319,8 +322,8 @@ func ExampleListInstalledPacks_filter() {
 func ExampleListInstalledPacks_filterErrorPackages() {
 	localTestingDir := "test-list-filter-error-message"
 	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
-	_ = installer.ReadIndexFiles()
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -357,8 +360,8 @@ func ExampleListInstalledPacks_filterErrorPackages() {
 func ExampleListInstalledPacks_filterInvalidChars() {
 	localTestingDir := "test-list-filter-invalid-chars"
 	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
-	_ = installer.ReadIndexFiles()
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -392,8 +395,8 @@ func ExampleListInstalledPacks_filterInvalidChars() {
 func ExampleListInstalledPacks_filteradditionalMessages() {
 	localTestingDir := "test-list-filter-additional-messages"
 	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
-	_ = installer.ReadIndexFiles()
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)

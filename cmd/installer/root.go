@@ -1385,8 +1385,15 @@ func SetPackRoot(packRoot string, create bool) error {
 	return nil
 }
 
+// ReadIndexFiles reads the public and local index files.
+// If the installation is in read-only mode, it temporarily unlocks the pack root
+// to allow reading the files, and then locks it again.
+// It returns an error if reading either of the index files fails.
 func ReadIndexFiles() error {
-	UnlockPackRoot()
+	if Installation.ReadOnly {
+		UnlockPackRoot()
+		defer LockPackRoot()
+	}
 	err := Installation.PublicIndexXML.Read()
 	if err != nil {
 		return err
@@ -1396,7 +1403,6 @@ func ReadIndexFiles() error {
 	if err != nil {
 		return err
 	}
-	LockPackRoot()
 
 	return nil
 }
@@ -1437,6 +1443,8 @@ type PacksInstallationType struct {
 	// PackIdx is the "pack.idx" file used by other tools to be notified that
 	// the pack installation had changed.
 	PackIdx string
+
+	ReadOnly bool
 }
 
 // updateCfg represents the content of "update.cfg" file.
@@ -1880,10 +1888,13 @@ func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) e
 // LockPackRoot sets the directories related to the installation as read-only,
 // except for the "pack.idx" file which is set to be writable.
 func LockPackRoot() {
-	utils.SetReadOnly(Installation.WebDir)
-	utils.SetReadOnly(Installation.LocalDir)
-	utils.SetReadOnly(Installation.DownloadDir)
-	utils.SetReadOnly(Installation.PackRoot)
+	if Installation.ReadOnly {
+		utils.SetReadOnly(Installation.WebDir)
+		utils.SetReadOnly(Installation.LocalDir)
+		utils.SetReadOnly(Installation.DownloadDir)
+		utils.SetReadOnly(Installation.PackRoot)
+	}
+	Installation.ReadOnly = true
 	// "pack.idx" does not need to be read only
 	utils.UnsetReadOnly(Installation.PackIdx)
 }
@@ -1892,8 +1903,11 @@ func LockPackRoot() {
 // related to the installation process. It ensures that the PackRoot, WebDir,
 // LocalDir, and DownloadDir directories are writable.
 func UnlockPackRoot() {
-	utils.UnsetReadOnly(Installation.PackRoot)
-	utils.UnsetReadOnly(Installation.WebDir)
-	utils.UnsetReadOnly(Installation.LocalDir)
-	utils.UnsetReadOnly(Installation.DownloadDir)
+	if Installation.ReadOnly {
+		utils.UnsetReadOnly(Installation.PackRoot)
+		utils.UnsetReadOnly(Installation.WebDir)
+		utils.UnsetReadOnly(Installation.LocalDir)
+		utils.UnsetReadOnly(Installation.DownloadDir)
+	}
+	Installation.ReadOnly = false
 }

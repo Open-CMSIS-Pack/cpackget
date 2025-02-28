@@ -556,7 +556,7 @@ func SetReadOnlyR(path string) {
 }
 
 // UnsetReadOnly takes in a file or directory and set it
-// to read-only mode. Should work on both Windows and Linux.
+// to read-write mode. Should work on both Windows and Linux.
 func UnsetReadOnly(path string) {
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {

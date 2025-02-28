@@ -396,8 +396,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 	// t.Run("test add http server "+installer.PublicIndex, func(t *testing.T) {
 	// 	localTestingDir := "test-add-http-server-index"
 	// 	assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-	//	assert.Nil(installer.ReadIndexFiles())
 	//  installer.UnlockPackRoot()
+	//	assert.Nil(installer.ReadIndexFiles())
 	// 	defer os.RemoveAll(localTestingDir)
 
 	// 	httpServer := httptest.NewServer(
@@ -418,8 +418,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test add not found remote "+installer.PublicIndex, func(t *testing.T) {
 		localTestingDir := "test-add-not-found-remote-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer os.RemoveAll(localTestingDir)
 
 		server := NewServer()
@@ -435,8 +435,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test add malformed "+installer.PublicIndex, func(t *testing.T) {
 		localTestingDir := "test-add-malformed-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer os.RemoveAll(localTestingDir)
 
 		indexContent, err := os.ReadFile(malformedPublicIndex)
@@ -455,8 +455,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test add remote "+installer.PublicIndex, func(t *testing.T) {
 		localTestingDir := "test-add-remote-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer os.RemoveAll(localTestingDir)
 
 		indexContent, err := os.ReadFile(samplePublicIndex)
@@ -480,8 +480,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test add remaining PDSC from "+installer.PublicIndex, func(t *testing.T) {
 		localTestingDir := "test-add-remaining-PDSC-from-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer os.RemoveAll(localTestingDir)
 
 		indexContent, err := os.ReadFile(samplePublicIndexLocalhostPdsc)
@@ -505,8 +505,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test update-index delete pdsc when not in "+installer.PublicIndex, func(t *testing.T) {
 		localTestingDir := "test-update-index-delete-pdsc-when-not-in-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer os.RemoveAll(localTestingDir)
 
 		indexContent, err := os.ReadFile(samplePublicIndex)
@@ -538,8 +538,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test add local file "+installer.PublicIndex, func(t *testing.T) {
 		localTestingDir := "test-add-local-file-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer os.RemoveAll(localTestingDir)
 
 		indexContent, err := os.ReadFile(samplePublicIndex)
@@ -558,8 +558,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test do not overwrite "+installer.PublicIndex, func(t *testing.T) {
 		localTestingDir := "test-do-not-overwrite-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer os.RemoveAll(localTestingDir)
 
 		_ = utils.TouchFile(installer.Installation.PublicIndex)
@@ -579,8 +579,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test overwrite "+installer.PublicIndex, func(t *testing.T) {
 		localTestingDir := "test-overwrite-index"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer os.RemoveAll(localTestingDir)
 
 		_ = utils.TouchFile(installer.Installation.PublicIndex)
@@ -611,8 +611,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test add remote "+installer.PublicIndex+" and dowload pdsc files", func(t *testing.T) {
 		localTestingDir := "test-add-remote-index-download-pdsc"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer os.RemoveAll(localTestingDir)
 
 		indexContent, err := os.ReadFile(samplePublicIndexLocalhostPdsc)
@@ -642,8 +642,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test add remote "+installer.PublicIndex+" and concurrent dowload pdsc files", func(t *testing.T) {
 		localTestingDir := "test-add-remote-index-concurrent-download-pdsc"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer os.RemoveAll(localTestingDir)
 
 		indexContent, err := os.ReadFile(samplePublicIndexConcurrentLocalhostPdsc)
@@ -681,8 +681,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test full update when sparse is false", func(t *testing.T) {
 		localTestingDir := "test-sparse-update"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer os.RemoveAll(localTestingDir)
 
 		// A non-sparse/full update should detect all
@@ -751,8 +751,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 	t.Run("test full concurrent update when sparse is false", func(t *testing.T) {
 		localTestingDir := "test-concurrent-sparse-update"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer os.RemoveAll(localTestingDir)
 
 		indexServer := NewServer()

@@ -39,8 +39,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with bad name", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-bad-name"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		for i := 0; i < len(malformedPackNames); i++ {
@@ -57,8 +57,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack previously installed", func(t *testing.T) {
 		localTestingDir := "test-add-pack-already-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -96,8 +96,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test force-reinstalling an installed pack", func(t *testing.T) {
 		localTestingDir := "test-add-pack-force-reinstall-already-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packToReinstall
@@ -114,8 +114,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing downloaded pack", func(t *testing.T) {
 		localTestingDir := "test-add-downloaded-pack"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packToReinstall
@@ -137,8 +137,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with metadata", func(t *testing.T) {
 		localTestingDir := "test-add-pack-metadata"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := publicLocalPack123meta
@@ -153,8 +153,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test force-reinstalling an installed pack using encoded progress", func(t *testing.T) {
 		localTestingDir := "test-add-pack-force-reinstall-already-installed-using-encoded-progress"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 		utils.SetEncodedProgress(true)
 
@@ -172,8 +172,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test force-reinstalling a pack with a user interruption", func(t *testing.T) {
 		localTestingDir := "test-add-pack-force-reinstall-user-interruption"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packToReinstall
@@ -199,8 +199,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing local pack that does not exist", func(t *testing.T) {
 		localTestingDir := "test-add-local-pack-that-does-not-exist"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packThatDoesNotExist
@@ -218,8 +218,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing remote pack that does not exist", func(t *testing.T) {
 		localTestingDir := "test-add-remote-pack-that-does-not-exist"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		notFoundServer := NewServer()
@@ -239,8 +239,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with corrupt zip file", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-corrupt-zip"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithCorruptZip
@@ -258,8 +258,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with bad URL format", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-malformed-url"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithMalformedURL
@@ -277,8 +277,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with no PDSC file inside", func(t *testing.T) {
 		localTestingDir := "test-add-pack-without-pdsc-file"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithoutPdscFileInside
@@ -301,8 +301,8 @@ func TestAddPack(t *testing.T) {
 	   		t.Run("test installing a pack that has problems with its directory", func(t *testing.T) {
 	   			localTestingDir := "test-add-pack-with-unaccessible-directory"
 	   			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+				installer.UnlockPackRoot()
 				assert.Nil(installer.ReadIndexFiles())
-	   			installer.UnlockPackRoot()
 	   			installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 	   			defer removePackRoot(localTestingDir)
 
@@ -324,8 +324,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with tainted compressed files", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-tainted-compressed-files"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -344,8 +344,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with .. in pdsc name", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-dot-dot-name"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -364,8 +364,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with version not present in the pdsc file", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-version-not-present-in-the-pdsc-file"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := pack123MissingVersion
@@ -383,8 +383,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with version not the latest in the pdsc file", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-version-not-the-latest-in-the-pdsc-file"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := pack123VersionNotLatest
@@ -403,8 +403,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing public pack via local file", func(t *testing.T) {
 		localTestingDir := "test-add-public-local-pack"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -417,8 +417,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing public pack via remote file", func(t *testing.T) {
 		localTestingDir := "test-add-public-remote-pack"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -439,8 +439,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing non-public pack via local file", func(t *testing.T) {
 		localTestingDir := "test-add-non-public-local-pack"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -453,8 +453,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing non-public pack via remote file", func(t *testing.T) {
 		localTestingDir := "test-add-non-public-remote-pack"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -468,8 +468,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing public pack retrieving pdsc file", func(t *testing.T) {
 		localTestingDir := "test-add-public-pack-retrieving-pdsc-file"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := publicLocalPack123
@@ -503,8 +503,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing pack without license", func(t *testing.T) {
 		localTestingDir := "test-add-pack-without-license"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -517,8 +517,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing pack with license disagreed", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-license-disagreed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithLicense
@@ -542,8 +542,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing pack with license agreed", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-license-agreed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithLicense
@@ -556,8 +556,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing pack with rtf license agreed", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-rtf-license-agreed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithRTFLicense
@@ -570,8 +570,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing pack with license agreement skipped", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-license-skipped"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithLicense
@@ -583,8 +583,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing pack with license extracted", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-license-extracted"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithLicense
@@ -604,8 +604,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing pack with license extracted but prev license exist", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-license-extracted-but-prev-license-exist"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithLicense
@@ -633,8 +633,8 @@ func TestAddPack(t *testing.T) {
 		// file is not there
 		localTestingDir := "test-add-pack-with-missing-license"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithMissingLicense
@@ -658,8 +658,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing pack with missing license extracted", func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-license-extracted"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithMissingLicense
@@ -679,8 +679,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing pack within subfolder", func(t *testing.T) {
 		localTestingDir := "test-add-pack-within-subfolder"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithSubFolder
@@ -690,8 +690,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing pack within too many subfolders", func(t *testing.T) {
 		localTestingDir := "test-add-pack-within-too-many-subfolder"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithSubSubFolder
@@ -709,9 +709,9 @@ func TestAddPack(t *testing.T) {
 		t.Run("test installing pack with pack id pdsc file not found "+packPath, func(t *testing.T) {
 			localTestingDir := "test-add-pack-with-pack-id-pdsc-file-not-found-" + safePackPath
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-			assert.Nil(installer.ReadIndexFiles())
 			installer.UnlockPackRoot()
-			defer removePackRoot(localTestingDir)
+			assert.Nil(installer.ReadIndexFiles())
+				defer removePackRoot(localTestingDir)
 
 			// Fake public index server
 			publicIndexServer := NewServer()
@@ -739,9 +739,9 @@ func TestAddPack(t *testing.T) {
 		t.Run("test installing pack with pack id version not found "+packPath, func(t *testing.T) {
 			localTestingDir := "test-add-pack-with-pack-id-version-not-found-" + safePackPath
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-			assert.Nil(installer.ReadIndexFiles())
 			installer.UnlockPackRoot()
-			defer removePackRoot(localTestingDir)
+			assert.Nil(installer.ReadIndexFiles())
+				defer removePackRoot(localTestingDir)
 
 			packInfo, err := utils.ExtractPackInfo(packPath)
 			assert.Nil(err)
@@ -762,9 +762,9 @@ func TestAddPack(t *testing.T) {
 		t.Run("test installing pack with pack id using release url"+packPath, func(t *testing.T) {
 			localTestingDir := "test-add-pack-with-pack-id-using-release-url" + safePackPath
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-			assert.Nil(installer.ReadIndexFiles())
 			installer.UnlockPackRoot()
-			defer removePackRoot(localTestingDir)
+			assert.Nil(installer.ReadIndexFiles())
+				defer removePackRoot(localTestingDir)
 
 			// Prep pack info
 			packInfo, err := utils.ExtractPackInfo(packPath)
@@ -806,9 +806,9 @@ func TestAddPack(t *testing.T) {
 		t.Run("test installing pack with pack id using pdsc url "+packPath, func(t *testing.T) {
 			localTestingDir := "test-add-pack-with-pack-id-using-pdsc-url-" + safePackPath
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-			assert.Nil(installer.ReadIndexFiles())
 			installer.UnlockPackRoot()
-			defer removePackRoot(localTestingDir)
+			assert.Nil(installer.ReadIndexFiles())
+				defer removePackRoot(localTestingDir)
 
 			// Prep pack info
 			packInfo, err := utils.ExtractPackInfo(packPath)
@@ -849,8 +849,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing pack with pack id using pdsc url when version is not the latest in "+installer.PublicIndex, func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-pack-id-using-pdsc-url-version-not-the-latest"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Prep pack info
@@ -897,8 +897,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing non-public pack via packID", func(t *testing.T) {
 		localTestingDir := "test-add-non-public-local-packid"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -951,8 +951,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack via packID and build metadata", func(t *testing.T) {
 		localTestingDir := "test-add-packid-meta"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -970,8 +970,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack that got cancelled during download", func(t *testing.T) {
 		localTestingDir := "test-add-pack-cancelled-during-download"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -1007,8 +1007,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack that got cancelled during extraction", func(t *testing.T) {
 		localTestingDir := "test-add-cancelled-during-extraction"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -1061,8 +1061,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-minimum-version-new-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1096,8 +1096,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-minimum-version-none-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1139,8 +1139,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-minimum-version-older-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1189,8 +1189,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-minimum-version-higher-latest"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1209,8 +1209,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-minimum-compatible-version-new-major-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1258,8 +1258,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-minimum-compatible-none-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1301,8 +1301,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-minimum-compatible-version-older-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1350,8 +1350,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-minimum-compatible-version-same-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1406,8 +1406,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-patch-version-new-major-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1455,8 +1455,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-patch-none-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1498,8 +1498,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-patch-version-older-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1547,8 +1547,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-patch-version-same-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1583,8 +1583,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-patch-version-higher-latest"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1603,8 +1603,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-at-latest-version-none-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1646,8 +1646,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-at-latest-version-none-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1695,8 +1695,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-pack-with-at-latest-version-latest-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Inject pdsc into .Web folder
@@ -1732,8 +1732,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-local-pack-with-minimum-version-new-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Install 1.2.2
@@ -1779,8 +1779,8 @@ func TestAddPack(t *testing.T) {
 
 		localTestingDir := "test-installing-local-pack-with-at-latest-version-matching-pre-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Install 1.2.4
@@ -1803,8 +1803,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with dependencies", func(t *testing.T) {
 		localTestingDir := "test-installing-pack-with-dependencies"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -1821,8 +1821,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack with dependencies, alpha version string", func(t *testing.T) {
 		localTestingDir := "test-installing-pack-with-dependencies-alpha"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 
@@ -1839,8 +1839,8 @@ func TestAddPack(t *testing.T) {
 	t.Run("test installing a pack and skipping dependencies", func(t *testing.T) {
 		localTestingDir := "test-installing-pack-with-dependencies-skip"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		assert.Nil(installer.ReadIndexFiles())
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
 		defer removePackRoot(localTestingDir)
 

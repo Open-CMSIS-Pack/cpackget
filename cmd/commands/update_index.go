@@ -38,13 +38,13 @@ var UpdateIndexCmd = &cobra.Command{
 			return err
 		}
 
+		installer.UnlockPackRoot()
+		defer installer.LockPackRoot()
 		if err := installer.ReadIndexFiles(); err != nil {
 			return err
 		}
 
-		installer.UnlockPackRoot()
 		err = installer.UpdatePublicIndex("", true, updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
-		installer.LockPackRoot()
 		return err
 	},
 }
