@@ -711,7 +711,7 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			installer.UnlockPackRoot()
 			assert.Nil(installer.ReadIndexFiles())
-				defer removePackRoot(localTestingDir)
+			defer removePackRoot(localTestingDir)
 
 			// Fake public index server
 			publicIndexServer := NewServer()
@@ -741,7 +741,7 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			installer.UnlockPackRoot()
 			assert.Nil(installer.ReadIndexFiles())
-				defer removePackRoot(localTestingDir)
+			defer removePackRoot(localTestingDir)
 
 			packInfo, err := utils.ExtractPackInfo(packPath)
 			assert.Nil(err)
@@ -764,7 +764,7 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			installer.UnlockPackRoot()
 			assert.Nil(installer.ReadIndexFiles())
-				defer removePackRoot(localTestingDir)
+			defer removePackRoot(localTestingDir)
 
 			// Prep pack info
 			packInfo, err := utils.ExtractPackInfo(packPath)
@@ -808,7 +808,7 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			installer.UnlockPackRoot()
 			assert.Nil(installer.ReadIndexFiles())
-				defer removePackRoot(localTestingDir)
+			defer removePackRoot(localTestingDir)
 
 			// Prep pack info
 			packInfo, err := utils.ExtractPackInfo(packPath)
