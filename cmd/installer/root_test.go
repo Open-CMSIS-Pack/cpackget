@@ -178,7 +178,7 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 
 	purgeOnly := !isInstalled && purge
 
-	err = installer.RemovePack(shortPackPath, purge, Timeout)
+	err = installer.RemovePack(shortPackPath, purge, true, Timeout)
 	assert.Nil(err)
 
 	removeAll := false

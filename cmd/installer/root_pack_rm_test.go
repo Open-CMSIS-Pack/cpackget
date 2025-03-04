@@ -27,7 +27,7 @@ func TestRemovePack(t *testing.T) {
 		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
-		err := installer.RemovePack("TheVendor.PackName.no-a-valid-version", false, Timeout)
+		err := installer.RemovePack("TheVendor.PackName.no-a-valid-version", false, true, Timeout)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -41,7 +41,7 @@ func TestRemovePack(t *testing.T) {
 		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
-		err := installer.RemovePack("TheVendor.PackName.1.2.3", false, Timeout)
+		err := installer.RemovePack("TheVendor.PackName.1.2.3", false, true, Timeout)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -144,7 +144,7 @@ func TestRemovePack(t *testing.T) {
 		removePack(t, packPath, true, NotPublic, true) // withVersion=true, purge=true
 
 		// Make sure pack is not purgeable
-		err := installer.RemovePack(shortenPackPath(packPath, false), true, Timeout) // withVersion=false, purge=true
+		err := installer.RemovePack(shortenPackPath(packPath, false), true, true, Timeout) // withVersion=false, purge=true
 		assert.Equal(errs.ErrPackNotPurgeable, err)
 	})
 
@@ -175,7 +175,7 @@ func TestRemovePack(t *testing.T) {
 		removePack(t, packPath, true, NotPublic, true) // withVersion=true, purge=true
 
 		// Make sure pack is not purgeable
-		err := installer.RemovePack(shortPackPath, true, Timeout) // purge=true
+		err := installer.RemovePack(shortPackPath, true, true, Timeout) // purge=true
 		assert.Equal(errs.ErrPackNotPurgeable, err)
 
 		assert.False(utils.FileExists(licenseFilePath))

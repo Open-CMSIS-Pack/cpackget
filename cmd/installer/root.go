@@ -104,7 +104,13 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 					return err
 				}
 			}
+
 			if err := ReadIndexFiles(); err != nil {
+				return err
+			}
+			// prepare again after update public files
+			pack, err = preparePack(packPath, false, false, false, true, timeout)
+			if err != nil {
 				return err
 			}
 		}
@@ -241,8 +247,12 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 //
 // Returns:
 //   - error: An error if the removal process fails, or nil if successful.
-func RemovePack(packPath string, purge bool, timeout int) error {
+func RemovePack(packPath string, purge, testing bool, timeout int) error {
 	log.Debugf("Removing pack \"%v\"", packPath)
+
+	if !testing {
+		ReadIndexFiles()
+	}
 
 	// TODO: by default, remove latest version first
 	// if no version is given
@@ -762,10 +772,14 @@ func UpdatePublicIndexIfOnline() error {
 	// if public index does not or not yet exist then download without check
 	if !utils.FileExists(Installation.PublicIndex) {
 		UnlockPackRoot()
-		err := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
-		if err != nil {
-			return err
+		err1 := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
+		if err1 != nil {
+			return err1
 		}
+		v := viper.New()
+		var updateConf updateCfg
+		updateConf.Default.Auto = true
+		_ = Installation.updateUpdateCfg(v, &updateConf) // create the update config file
 	}
 	return nil
 }
@@ -987,8 +1001,12 @@ func findInstalledPacks(addLocalPacks, removeDuplicates bool) ([]installedPack, 
 //
 // Returns:
 //   - error: An error if any occurs during the listing process.
-func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements bool, listFilter string) error {
+func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, testing bool, listFilter string) error {
 	log.Debugf("Listing packs")
+
+	if !testing {
+		ReadIndexFiles()
+	}
 	if listPublic {
 		if listFilter != "" {
 			log.Infof("Listing packs from the public index, filtering by \"%s\"", listFilter)
