@@ -251,7 +251,9 @@ func RemovePack(packPath string, purge, testing bool, timeout int) error {
 	log.Debugf("Removing pack \"%v\"", packPath)
 
 	if !testing {
-		ReadIndexFiles()
+		if err := ReadIndexFiles(); err != nil {
+			return err
+		}
 	}
 
 	// TODO: by default, remove latest version first
@@ -1005,7 +1007,9 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, t
 	log.Debugf("Listing packs")
 
 	if !testing {
-		ReadIndexFiles()
+		if err := ReadIndexFiles(); err != nil {
+			return err
+		}
 	}
 	if listPublic {
 		if listFilter != "" {
