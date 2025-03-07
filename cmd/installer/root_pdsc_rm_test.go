@@ -18,8 +18,9 @@ func TestRemovePdsc(t *testing.T) {
 
 	t.Run("test remove pdsc with bad name", func(t *testing.T) {
 		localTestingDir := "test-remove-pdsc-with-bad-name"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		for i := 0; i < len(malformedPackNames); i++ {
@@ -31,8 +32,9 @@ func TestRemovePdsc(t *testing.T) {
 
 	t.Run("test remove a pdsc", func(t *testing.T) {
 		localTestingDir := "test-remove-pdsc"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Add it first
@@ -53,8 +55,9 @@ func TestRemovePdsc(t *testing.T) {
 
 	t.Run("test remove multiple pdscs using basename PDSC file name", func(t *testing.T) {
 		localTestingDir := "test-remove-multiple-pdscs-using-basename-pdsc-file-name"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Add it first
@@ -79,8 +82,9 @@ func TestRemovePdsc(t *testing.T) {
 
 	t.Run("test remove a pdsc using full path", func(t *testing.T) {
 		localTestingDir := "test-remove-pdsc-using-full-path"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Add it first
@@ -102,8 +106,9 @@ func TestRemovePdsc(t *testing.T) {
 
 	t.Run("test remove one pdsc using full path and leave others untouched", func(t *testing.T) {
 		localTestingDir := "test-remove-one-pdsc-using-full-path-and-leave-others-untouched"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Add it first
@@ -126,8 +131,9 @@ func TestRemovePdsc(t *testing.T) {
 
 	t.Run("test remove a pdsc that does not exist", func(t *testing.T) {
 		localTestingDir := "test-remove-pdsc-that-does-not-exist"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		err := installer.RemovePdsc(shortenPackPath(pdscPack123, true))

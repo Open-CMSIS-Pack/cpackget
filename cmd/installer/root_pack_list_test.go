@@ -30,13 +30,15 @@ var (
 // Listing on empty
 func ExampleListInstalledPacks() {
 	localTestingDir := "test-list-empty-pack-root"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
 
-	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter)
+	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter)
 	// Output:
 	// I: Listing installed packs
 	// I: (no packs installed)
@@ -44,13 +46,15 @@ func ExampleListInstalledPacks() {
 
 func ExampleListInstalledPacks_emptyCache() {
 	localTestingDir := "test-list-empty-cache"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
 
-	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter)
 	// Output:
 	// I: Listing cached packs
 	// I: (no packs cached)
@@ -58,13 +62,15 @@ func ExampleListInstalledPacks_emptyCache() {
 
 func ExampleListInstalledPacks_emptyPublicIndex() {
 	localTestingDir := "test-list-empty-index"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
+	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
 
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, true, ListFilter)
 	// Output:
 	// I: Listing packs from the public index
 	// I: (no packs in public index)
@@ -76,8 +82,9 @@ func ExampleListInstalledPacks_emptyPublicIndex() {
 // * 1 is neither installer or cached, it's just available in the public index
 func ExampleListInstalledPacks_list() {
 	localTestingDir := "test-list-packs"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -97,13 +104,13 @@ func ExampleListInstalledPacks_list() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
-	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
-	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, true, ListFilter)
 	// Output:
 	// I: Listing packs from the public index
 	// I: TheVendor::PublicLocalPack@1.2.3 (cached)
@@ -113,8 +120,9 @@ func ExampleListInstalledPacks_list() {
 
 func ExampleListInstalledPacks_listCached() {
 	localTestingDir := "test-list-cached-packs"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -134,13 +142,13 @@ func ExampleListInstalledPacks_listCached() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
-	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
-	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter)
 	// Output:
 	// I: Listing cached packs
 	// I: TheVendor::PublicLocalPack@1.2.3
@@ -152,8 +160,9 @@ func TestListInstalledPacks(t *testing.T) {
 
 	t.Run("test listing all installed packs", func(t *testing.T) {
 		localTestingDir := "test-list-installed-packs"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -173,9 +182,9 @@ func TestListInstalledPacks(t *testing.T) {
 			Name:    "PublicLocalPack",
 			Version: "1.2.5",
 		}))
-		assert.Nil(installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout))
-		assert.Nil(installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout))
-		assert.Nil(installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout))
+		assert.Nil(installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout))
+		assert.Nil(installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout))
+		assert.Nil(installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout))
 
 		// Install a pack via PDSC file
 		assert.Nil(installer.AddPdsc(pdscPack123))
@@ -187,7 +196,7 @@ func TestListInstalledPacks(t *testing.T) {
 		var buf bytes.Buffer
 		log.SetOutput(&buf)
 		defer log.SetOutput(io.Discard)
-		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter))
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter))
 		stdout := buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
 		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.3 (installed via %s)", expectedPdscAbsPath))
@@ -196,8 +205,9 @@ func TestListInstalledPacks(t *testing.T) {
 
 	t.Run("test listing local packs with updated version", func(t *testing.T) {
 		localTestingDir := "test-list-installed-local-packs-with-updated-version"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot, false))
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// This test checks that cpackget lists whatever the latest version is in the actual PDSC file
@@ -217,7 +227,7 @@ func TestListInstalledPacks(t *testing.T) {
 		var buf bytes.Buffer
 		log.SetOutput(&buf)
 		defer log.SetOutput(io.Discard)
-		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter))
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter))
 		stdout := buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
 		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.3 (installed via %s)", expectedPdscAbsPath))
@@ -227,7 +237,7 @@ func TestListInstalledPacks(t *testing.T) {
 		assert.Nil(pdscXML.Read())
 		pdscXML.ReleasesTag.Releases[0].Version = "1.2.4"
 		assert.Nil(utils.WriteXML(pdscPath, pdscXML))
-		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter))
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter))
 		stdout = buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
 		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.4 (installed via %s)", expectedPdscAbsPath))
@@ -236,8 +246,9 @@ func TestListInstalledPacks(t *testing.T) {
 
 func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 	localTestingDir := "test-list-malformed-installed-packs"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -247,7 +258,7 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.3",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 
 	// Temper with the installation folder
 	currVendorFolder := filepath.Join(localTestingDir, "TheVendor")
@@ -265,7 +276,7 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, ListFilter)
+	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter)
 	// Output:
 	// I: Listing installed packs
 	// E: _TheVendor::_PublicLocalPack@1.2.3.4 - error: pack version incorrect format
@@ -274,8 +285,9 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 
 func ExampleListInstalledPacks_filter() {
 	localTestingDir := "test-list-packs-filter"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -295,13 +307,13 @@ func ExampleListInstalledPacks_filter() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
-	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
-	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, "1.2.4")
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, true, "1.2.4")
 	// Output:
 	// I: Listing packs from the public index, filtering by "1.2.4"
 	// I: TheVendor::PublicLocalPack@1.2.4 (installed)
@@ -309,8 +321,9 @@ func ExampleListInstalledPacks_filter() {
 
 func ExampleListInstalledPacks_filterErrorPackages() {
 	localTestingDir := "test-list-filter-error-message"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -320,7 +333,7 @@ func ExampleListInstalledPacks_filterErrorPackages() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.3",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 
 	// Temper with the installation folder
 	currVendorFolder := filepath.Join(localTestingDir, "TheVendor")
@@ -338,7 +351,7 @@ func ExampleListInstalledPacks_filterErrorPackages() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, "TheVendor")
+	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, "TheVendor")
 	// Output:
 	// I: Listing installed packs, filtering by "TheVendor"
 	// E: _TheVendor::_PublicLocalPack@1.2.3.4 - error: pack version incorrect format
@@ -346,8 +359,9 @@ func ExampleListInstalledPacks_filterErrorPackages() {
 
 func ExampleListInstalledPacks_filterInvalidChars() {
 	localTestingDir := "test-list-filter-invalid-chars"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -367,21 +381,22 @@ func ExampleListInstalledPacks_filterInvalidChars() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
-	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
-	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, "@ :")
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, true, "@ :")
 	// Output:
 	// I: Listing packs from the public index, filtering by "@ :"
 }
 
 func ExampleListInstalledPacks_filteradditionalMessages() {
 	localTestingDir := "test-list-filter-additional-messages"
-	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot, false)
+	_ = installer.SetPackRoot(localTestingDir, CreatePackRoot)
 	installer.UnlockPackRoot()
+	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
 	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
@@ -401,13 +416,13 @@ func ExampleListInstalledPacks_filteradditionalMessages() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
-	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
-	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, Timeout)
-	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, Timeout)
+	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListRequirements, "(installed)")
+	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, "(installed)")
 	// Output:
 	// I: Listing cached packs, filtering by "(installed)"
 }

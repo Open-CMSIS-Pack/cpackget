@@ -25,17 +25,26 @@ var updateIndexCmdFlags struct {
 }
 
 var UpdateIndexCmd = &cobra.Command{
-	Use:               "update-index",
-	Short:             "Update the public index",
-	Long:              getLongUpdateDescription(),
-	PersistentPreRunE: configureInstaller,
-	Args:              cobra.ExactArgs(0),
+	Use:   "update-index",
+	Short: "Update the public index",
+	Long:  getLongUpdateDescription(),
+	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		utils.SetEncodedProgress(updateIndexCmdFlags.encodedProgress)
 		utils.SetSkipTouch(updateIndexCmdFlags.skipTouch)
+
+		err := configureInstaller(cmd, args)
+		if err != nil {
+			return err
+		}
+
 		installer.UnlockPackRoot()
-		err := installer.UpdatePublicIndex("", true, updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
-		installer.LockPackRoot()
+		defer installer.LockPackRoot()
+		if err := installer.ReadIndexFiles(); err != nil {
+			return err
+		}
+
+		err = installer.UpdatePublicIndex("", true, updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
 		return err
 	},
 }

@@ -27,10 +27,10 @@ var connectionCmdTests = []TestCase{
 		expectedErr: nil,
 	},
 	{
-		name:          "test checking invalid url",
-		args:          []string{"connection", wrongURLPath},
-		expectedErr:   errs.ErrOffline,
-		expErrUnwwrap: true,
+		name:         "test checking invalid url",
+		args:         []string{"connection", wrongURLPath},
+		expectedErr:  errs.ErrOffline,
+		expErrUnwrap: true,
 	},
 
 	{ // set up environment for next test

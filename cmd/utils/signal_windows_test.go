@@ -14,6 +14,9 @@ import (
 )
 
 func sendCtrlC(t *testing.T, pid int) {
+	_ = t   // unused
+	_ = pid // unused
+
 	// FIXME: For some reason the code below causes a weird behavior running on Github Actions:
 	//
 	// ?   	github.com/open-cmsis-pack/cpackget/cmd	[no test files]

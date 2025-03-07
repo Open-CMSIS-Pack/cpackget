@@ -45,6 +45,9 @@ The url is optional. Ex "cpackget connection https://www.keil.com/pack"`,
 			if err != nil {
 				return err
 			}
+			if err := installer.ReadIndexFiles(); err != nil {
+				return err
+			}
 		}
 
 		indexPath, err = installer.GetIndexPath(indexPath)
