@@ -49,12 +49,17 @@ Update a pack using the following "<pack>" specification or using packs provided
   The pack can be local file or hosted somewhere else on the Internet.
   If it's hosted somewhere, cpackget will first download it then extract all pack files into "CMSIS_PACK_ROOT/<vendor>/<packName>/<x.y.z>/"
   If "-f" is used, cpackget will call "cpackget update pack" on each URL specified in the <packs list> file.`,
-	Args:              cobra.MinimumNArgs(0),
-	PersistentPreRunE: configureInstaller,
+	Args: cobra.MinimumNArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		utils.SetEncodedProgress(updateCmdFlags.encodedProgress)
 		utils.SetSkipTouch(updateCmdFlags.skipTouch)
+
+		createPackRoot = true
+		err := configureInstaller(cmd, args)
+		if err != nil {
+			return err
+		}
 
 		if updateCmdFlags.packsListFileName != "" {
 			log.Infof("Parsing packs urls via file %v", updateCmdFlags.packsListFileName)

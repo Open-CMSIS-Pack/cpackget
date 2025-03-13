@@ -30,7 +30,7 @@ var ListCmd = &cobra.Command{
 	Args:              cobra.MaximumNArgs(0),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic, listCmdFlags.listUpdates, false, listCmdFlags.listFilter)
+		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic, listCmdFlags.listUpdates, false, false, listCmdFlags.listFilter)
 	},
 }
 
@@ -41,7 +41,7 @@ var listRequiredCmd = &cobra.Command{
 	Args:              cobra.MaximumNArgs(0),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic, listCmdFlags.listUpdates, true, listCmdFlags.listFilter)
+		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic, listCmdFlags.listUpdates, true, false, listCmdFlags.listFilter)
 	},
 }
 

@@ -69,37 +69,34 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 	targetPackRoot := viper.GetString("pack-root")
 	checkConnection := viper.GetBool("check-connection") // TODO: never set
 
-	download := cmd.Name() != "init" && cmd.Name() != "update-index" && cmd.Name() != "rm" && cmd.Name() != "list" && cmd.Name() != "connection"
-
 	if targetPackRoot == installer.GetDefaultCmsisPackRoot() {
-		// If using the default pack root path and the public index is not found,
-		// initialize it
+		// If using the default pack root path and the public index is not found, initialize it
 		if !checkConnection && !utils.FileExists(filepath.Join(targetPackRoot, ".Web", installer.PublicIndex)) {
-			err := installer.SetPackRoot(targetPackRoot, true, true)
+			err := installer.SetPackRoot(targetPackRoot, true)
 			if err != nil {
 				return err
 			}
 			// Exclude index updating commands to not double update
-			if cmd.Name() != "init" && cmd.Name() != "index" && cmd.Name() != "update-index" && cmd.Name() != "rm" && cmd.Name() != "list" {
+			if cmd.Name() != "init" && cmd.Name() != "index" && cmd.Name() != "update-index" && cmd.Name() != "list" {
 				installer.UnlockPackRoot()
 				err = installer.UpdatePublicIndex(installer.DefaultPublicIndex, true, true, false, false, 0, 0)
 				if err != nil {
 					return err
 				}
-				err = installer.SetPackRoot(targetPackRoot, false, false)
+				err = installer.SetPackRoot(targetPackRoot, false)
 				if err != nil {
 					return err
 				}
 				installer.LockPackRoot()
 			}
 		} else {
-			err := installer.SetPackRoot(targetPackRoot, createPackRoot, download)
+			err := installer.SetPackRoot(targetPackRoot, createPackRoot)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		err := installer.SetPackRoot(targetPackRoot, createPackRoot, download)
+		err := installer.SetPackRoot(targetPackRoot, createPackRoot)
 		if err != nil {
 			return err
 		}

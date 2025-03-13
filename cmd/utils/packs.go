@@ -167,6 +167,22 @@ type PackInfo struct {
 // NOTE: a malformed packPath e.g. "my.pack" DOES look like a valid
 //
 //	pack name, with "my" for vendor and "pack" for pack name.
+//
+// The pack path can be in various formats, such as:
+// - Vendor.Pack.a.b.c:x.y.z
+// - Vendor.Pack.latest
+// - Vendor.Pack.x.y.z.pack
+// - Vendor.Pack
+//
+// It returns a PackInfo struct containing the extracted information and an error if any.
+// The function handles both local file paths and URLs.
+//
+// Parameters:
+// - packPath: The path to the pack, which can be a file path or a URL.
+//
+// Returns:
+// - PackInfo: A struct containing the extracted pack information.
+// - error: An error if the pack path is invalid or if there is an issue during extraction.
 func ExtractPackInfo(packPath string) (PackInfo, error) {
 	log.Debugf("Extracting pack info from \"%s\"", FormatVersions(packPath))
 

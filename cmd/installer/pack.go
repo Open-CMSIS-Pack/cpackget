@@ -73,8 +73,20 @@ type PackType struct {
 	}
 }
 
-// preparePack does some sanity validation regarding pack name
+// preparePack prepares a PackType object based on the provided parameters,
+// it does some sanity validation regarding pack name
 // and check if it's public and if it's installed or not
+//
+// Parameters:
+//   - packPath: The path or URL to the pack.
+//   - toBeRemoved: A boolean indicating if the pack is to be removed.
+//   - forceLatest: A boolean indicating if the latest version of the pack should be used.
+//   - noLocal: A boolean indicating if local installations should be ignored.
+//   - timeout: An integer specifying the timeout duration for network operations.
+//
+// Returns:
+//   - *PackType: A pointer to the prepared PackType object.
+//   - error: An error if any issues occur during preparation.
 func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool, timeout int) (*PackType, error) {
 	pack := &PackType{
 		path:        packPath,
@@ -132,9 +144,18 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 	return pack, nil
 }
 
-// fetch will download the pack file if it's on the Internet, or
-// will use the one in .Download/ if previously downloaded.
 // If the path is not a URL, it will make sure the file exists in the local file system
+// fetch downloads the pack file if the path is a URL or verifies its existence locally.
+// If the path starts with "http", it attempts to download the file using the provided timeout.
+// If the download is aborted by the user, it logs the event and removes the partially downloaded file.
+// If the path is not a URL, it checks if the file exists locally.
+// Returns an error if the file does not exist or if there is an issue during download.
+//
+// Parameters:
+//   - timeout: an integer specifying the timeout duration for the download operation.
+//
+// Returns:
+//   - error: an error object if the file does not exist or if there is an issue during download.
 func (p *PackType) fetch(timeout int) error {
 	log.Debugf("Fetching pack file \"%s\" (or just making sure it exists locally)", p.path)
 	var err error

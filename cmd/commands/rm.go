@@ -66,7 +66,7 @@ please use "--purge".`,
 					err = errs.ErrPackNotInstalled
 				}
 			} else {
-				err = installer.RemovePack(packPath, rmCmdFlags.purge, viper.GetInt("timeout"))
+				err = installer.RemovePack(packPath, rmCmdFlags.purge, false, viper.GetInt("timeout"))
 			}
 			if err != nil {
 				if err != errs.ErrAlreadyLogged {
