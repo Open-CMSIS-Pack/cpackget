@@ -99,15 +99,16 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 
 	if !isDep {
 		if !testing {
+			if err := ReadIndexFiles(); err != nil {
+				return err
+			}
+
 			if pack.isPackID || !pack.IsLocallySourced {
 				if err := UpdatePublicIndexIfOnline(); err != nil {
 					return err
 				}
 			}
 
-			if err := ReadIndexFiles(); err != nil {
-				return err
-			}
 			// prepare again after update public files
 			pack, err = preparePack(packPath, false, false, false, true, timeout)
 			if err != nil {
@@ -598,7 +599,7 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 // 4. If the pack is present but has a newer version in the public index, it downloads the latest version.
 // 5. Lists all PDSC files in the local directory and repeats the update process for these files.
 func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int) error {
-	log.Info("Updating PDSC files of installed packs referenced in " + PublicIndex)
+	log.Info("Updating PDSC files of public packs")
 	pdscFiles, err := utils.ListDir(Installation.WebDir, ".pdsc$")
 	if err != nil {
 		return err
@@ -641,7 +642,7 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		versionInIndex := tags[0].Version
 		latestVersion := pdscXML.LatestVersion()
 		if versionInIndex != latestVersion {
-			log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
+			log.Infof("%s::%s was updated from latest version \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
 
 			if concurrency == 0 {
 				massDownloadPdscFiles(tags[0], false, timeout)
@@ -821,8 +822,11 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 		}
 	}
 
-	log.Infof("Updating public index")
-	log.Debugf("Updating public index with \"%v\"", indexPath)
+	if log.IsLevelEnabled(log.DebugLevel) {
+		log.Debugf("Updating public index with \"%v\"", indexPath)
+	} else {
+		log.Infof("Updating public index")
+	}
 
 	if strings.HasPrefix(indexPath, "http://") || strings.HasPrefix(indexPath, "https://") {
 		if !strings.HasPrefix(indexPath, "https://") {
@@ -1763,6 +1767,10 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool,
 	if ok {
 		log.Debugf("Found \"%s\" in \"%s\"", pack.PdscFileName(), p.WebDir)
 		return true, nil
+	}
+
+	if p.PublicIndexXML.Empty() {
+		return false, nil
 	}
 
 	log.Debugf("Not found \"%s\" in \"%s\"", pack.PdscFileName(), p.WebDir)

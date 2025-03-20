@@ -33,8 +33,9 @@ type PidxXML struct {
 		Pdscs   []PdscTag `xml:"pdsc"`
 	} `xml:"pindex"`
 
-	pdscList map[string][]PdscTag
-	fileName string
+	pdscList     map[string][]PdscTag // map of PdscTag.Key() to PdscTag
+	pdscListName map[string]string    // map of Vendor.Pack to PdscTag.Key()
+	fileName     string
 }
 
 // PdscTag maps a <pdsc> tag that goes in PIDX files.
@@ -80,8 +81,14 @@ func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 	}
 
 	key := pdsc.Key()
+	name := pdsc.Vendor + "." + pdsc.Name
 	p.pdscList[key] = append(p.pdscList[key], pdsc)
+	p.pdscListName[name] = key
 	return nil
+}
+
+func (p *PidxXML) Empty() bool {
+	return p.pdscList == nil
 }
 
 // RemovePdsc takes in a PdscTag and remove it from the <pindex> tag.
@@ -98,6 +105,7 @@ func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 
 	toRemove := []removeInfo{}
 
+	name := pdsc.Vendor + "." + pdsc.Name
 	if pdsc.Version != "" {
 		if index := p.HasPdsc(pdsc); index != PdscIndexNotFound {
 			toRemove = append(toRemove, removeInfo{
@@ -107,23 +115,21 @@ func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 		}
 	} else {
 		// Version is omitted, search all versions
-		targetKey := pdsc.Key()
-		for key := range p.pdscList {
-			if strings.Contains(key, targetKey) {
-				tags := p.pdscList[key]
-				index := PdscIndexNotFound
-				for i, tag := range tags {
-					if tag.URL == pdsc.URL {
-						index = i
-						break
-					}
+		key, ok := p.pdscListName[name]
+		if ok {
+			tags := p.pdscList[key]
+			index := PdscIndexNotFound
+			for i, tag := range tags {
+				if tag.URL == pdsc.URL {
+					index = i
+					break
 				}
-				if index != PdscIndexNotFound {
-					toRemove = append(toRemove, removeInfo{
-						key:   key,
-						index: index,
-					})
-				}
+			}
+			if index != PdscIndexNotFound {
+				toRemove = append(toRemove, removeInfo{
+					key:   key,
+					index: index,
+				})
 			}
 		}
 	}
@@ -137,6 +143,7 @@ func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 		p.pdscList[info.key] = append(p.pdscList[info.key][:info.index], p.pdscList[info.key][info.index+1:]...)
 		if len(p.pdscList[info.key]) == 0 {
 			delete(p.pdscList, info.key)
+			delete(p.pdscListName, name)
 		}
 	}
 
@@ -196,18 +203,14 @@ func (p *PidxXML) FindPdscTags(pdsc PdscTag) []PdscTag {
 		return foundTags
 	}
 
-	// No version, means "Vendor.Pack", so we need
-	// to find matching tags that start with "Vendor.Pack",
-	// and there might be many
-	targetKey := pdsc.Key()
+	// No version, means "Vendor.Pack"
+	name := pdsc.Vendor + "." + pdsc.Name
+	foundKey, ok := p.pdscListName[name]
 	foundTags := []PdscTag{}
-	for key := range p.pdscList {
-		if strings.Contains(key, targetKey) {
-			foundTags = append(foundTags, p.pdscList[key]...)
-		}
+	if ok {
+		foundTags = p.pdscList[foundKey]
 	}
-
-	log.Debugf("\"%s\" contains %d pdsc tag(s) for \"%s\"", p.fileName, len(foundTags), pdsc.Key())
+	log.Debugf("\"%s\" contains %d pdsc tag(s) for \"%s\"", p.fileName, len(foundTags), foundKey)
 	return foundTags
 }
 
@@ -254,6 +257,7 @@ func (p *PidxXML) Read() error {
 	log.Debugf("Reading pidx from file \"%s\"", p.fileName)
 
 	p.pdscList = make(map[string][]PdscTag)
+	p.pdscListName = make(map[string]string)
 
 	// Create a new empty l
 	if !utils.FileExists(p.fileName) {
@@ -276,8 +280,10 @@ func (p *PidxXML) Read() error {
 
 	for _, pdsc := range p.Pindex.Pdscs {
 		key := pdsc.Key()
+		name := pdsc.Vendor + "." + pdsc.Name
 		log.Debugf("Registring \"%s\"", key)
 		p.pdscList[key] = append(p.pdscList[key], pdsc)
+		p.pdscListName[name] = key
 	}
 
 	// truncate Pindex.Pdscs
