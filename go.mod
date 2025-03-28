@@ -1,7 +1,6 @@
 module github.com/open-cmsis-pack/cpackget
 
 go 1.24.0
-
 require (
 	github.com/ProtonMail/gopenpgp/v2 v2.8.3
 	github.com/jroimartin/gocui v0.5.0
@@ -13,7 +12,7 @@ require (
 	github.com/spf13/viper v1.20.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/mod v0.24.0
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	golang.org/x/sync v0.12.0
 	golang.org/x/term v0.30.0
 )
