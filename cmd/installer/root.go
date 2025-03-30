@@ -645,7 +645,7 @@ func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, concurrency int,
 		for _, tag := range errTags.slice {
 			tags := oldPidxXML.FindPdscNameTags(tag)
 			if len(tags) != 0 {
-				pidxXML.ReplacePdscVersion(tags[0])
+				_ = pidxXML.ReplacePdscVersion(tags[0])
 			}
 		}
 	}
