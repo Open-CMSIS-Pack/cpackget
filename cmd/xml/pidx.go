@@ -22,13 +22,11 @@ var (
 // PidxXML maps the PIDX file format.
 // Ref: https://github.com/ARM-software/CMSIS_5/blob/develop/CMSIS/Utilities/PackIndex.xsd
 type PidxXML struct {
-	XMLName                   xml.Name `xml:"index"`
-	SchemaVersion             string   `xml:"schemaVersion,attr"`
-	NoNamespaceSchemaLocation string   `xml:"xs:noNamespaceSchemaLocation,attr"`
-	XMLNS                     string   `xml:"xmlns:xs,attr"`
-	Vendor                    string   `xml:"vendor"`
-	URL                       string   `xml:"url"`
-	TimeStamp                 string   `xml:"timestamp,omitempty"`
+	XMLName       xml.Name `xml:"index"`
+	SchemaVersion string   `xml:"schemaVersion,attr"`
+	Vendor        string   `xml:"vendor"`
+	URL           string   `xml:"url"`
+	TimeStamp     string   `xml:"timestamp,omitempty"`
 
 	Pindex struct {
 		XMLName xml.Name  `xml:"pindex"`

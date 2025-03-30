@@ -955,7 +955,7 @@ func findInstalledPacks(addLocalPacks, removeDuplicates bool) ([]installedPack, 
 
 				parsedURL, err := url.ParseRequestURI(pdsc.URL)
 				pack.err = err
-				if pack.err != nil {
+				if err != nil {
 					installedPacks = append(installedPacks, pack)
 					continue
 				}
