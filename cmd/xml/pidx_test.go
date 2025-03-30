@@ -119,6 +119,7 @@ func TestPidxXML(t *testing.T) {
 		assert.Equal(pidx.RemovePdsc(pdscTag1), errs.ErrPdscEntryNotFound)
 	})
 
+	// TODO: this test does not work because multiple versions of the same pack are not supported in index.pidx
 	t.Run("test removing a PDSC tag without version from a PIDX file", func(t *testing.T) {
 		fileName := utils.RandStringBytes(10) + ".pidx"
 		defer os.Remove(fileName)

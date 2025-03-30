@@ -104,6 +104,7 @@ func TestRemovePdsc(t *testing.T) {
 		assert.Equal(0, len(tags))
 	})
 
+	// TODO: this test does not work because multiple versions of the same pack are not supported in index.pidx
 	t.Run("test remove one pdsc using full path and leave others untouched", func(t *testing.T) {
 		localTestingDir := "test-remove-one-pdsc-using-full-path-and-leave-others-untouched"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))

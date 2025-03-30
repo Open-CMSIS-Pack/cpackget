@@ -22,11 +22,13 @@ var (
 // PidxXML maps the PIDX file format.
 // Ref: https://github.com/ARM-software/CMSIS_5/blob/develop/CMSIS/Utilities/PackIndex.xsd
 type PidxXML struct {
-	XMLName       xml.Name `xml:"index"`
-	SchemaVersion string   `xml:"schemaVersion,attr"`
-	Vendor        string   `xml:"vendor"`
-	URL           string   `xml:"url"`
-	TimeStamp     string   `xml:"timestamp,omitempty"`
+	XMLName                   xml.Name `xml:"index"`
+	SchemaVersion             string   `xml:"schemaVersion,attr"`
+	NoNamespaceSchemaLocation string   `xml:"xs:noNamespaceSchemaLocation,attr"`
+	XMLNS                     string   `xml:"xmlns:xs,attr"`
+	Vendor                    string   `xml:"vendor"`
+	URL                       string   `xml:"url"`
+	TimeStamp                 string   `xml:"timestamp,omitempty"`
 
 	Pindex struct {
 		XMLName xml.Name  `xml:"pindex"`
@@ -40,11 +42,13 @@ type PidxXML struct {
 
 // PdscTag maps a <pdsc> tag that goes in PIDX files.
 type PdscTag struct {
-	XMLName xml.Name `xml:"pdsc"`
-	Vendor  string   `xml:"vendor,attr"`
-	URL     string   `xml:"url,attr"`
-	Name    string   `xml:"name,attr"`
-	Version string   `xml:"version,attr"`
+	XMLName     xml.Name `xml:"pdsc"`
+	URL         string   `xml:"url,attr"`
+	Vendor      string   `xml:"vendor,attr"`
+	Name        string   `xml:"name,attr"`
+	Version     string   `xml:"version,attr"`
+	Deprecated  string   `xml:"deprecated,attr,omitempty"`
+	Replacement string   `xml:"replacement,attr,omitempty"`
 }
 
 // NewPidxXML initializes a new PidxXML object with the given file name.
@@ -60,6 +64,11 @@ func NewPidxXML(fileName string) *PidxXML {
 	p := new(PidxXML)
 	p.fileName = fileName
 	return p
+}
+
+// GetFileName returns the file name associated with the PidxXML instance.
+func (p *PidxXML) GetFileName() string {
+	return p.fileName
 }
 
 // AddPdsc adds a PdscTag to the PidxXML's pdscList if it does not already exist.
@@ -81,17 +90,58 @@ func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 	}
 
 	key := pdsc.Key()
-	name := pdsc.Vendor + "." + pdsc.Name
+	name := pdsc.VName()
 	p.pdscList[key] = append(p.pdscList[key], pdsc)
 	p.pdscListName[name] = key
 	return nil
 }
 
-func (p *PidxXML) Empty() bool {
-	return p.pdscList == nil
+// ReplacePdscVersion replaces the version of an existing PDSC tag in the PidxXML structure.
+// It updates the version of the PDSC tag identified by the given PdscTag.
+// If the PDSC tag is not found, it returns an error.
+//
+// Parameters:
+//
+//	pdsc - The PdscTag containing the new version information.
+//
+// Returns:
+//
+//	error - An error if the PDSC tag is not found, otherwise nil.
+func (p *PidxXML) ReplacePdscVersion(pdsc PdscTag) error {
+	log.Debugf("Replacing version of pdsc tag \"%s\"", pdsc)
+	name := pdsc.VName()
+	key, ok := p.pdscListName[name]
+	if !ok {
+		return errs.ErrPdscEntryNotFound
+	}
+
+	oldPdsc := p.pdscList[key]
+	oldPdsc[0].Version = pdsc.Version
+	delete(p.pdscList, key) // neuen Eintrag entfernen
+	key = pdsc.Key()        // und wieder durch den alten ersetzen
+	p.pdscList[key] = append(p.pdscList[key], oldPdsc[0])
+	p.pdscListName[name] = key
+	return nil
 }
 
-// RemovePdsc takes in a PdscTag and remove it from the <pindex> tag.
+// Empty checks if the PidxXML instance has an uninitialized or nil pdscList.
+// It returns true if pdscList is nil, indicating that the PidxXML is empty.
+func (p *PidxXML) Empty() bool {
+	return len(p.pdscList) == 0
+}
+
+// RemovePdsc removes a PdscTag from the PidxXML structure.
+// It first identifies which pdsc tags need to be removed based on the provided PdscTag.
+// If the PdscTag includes a version, it checks if the tag exists and marks it for removal.
+// If the version is omitted, it searches all versions and marks the matching tags for removal.
+// If no matching tags are found, it returns an error indicating that the Pdsc entry was not found.
+// Otherwise, it removes the identified tags from the pdscList and updates the pdscListName accordingly.
+//
+// Parameters:
+//   - pdsc: The PdscTag to be removed.
+//
+// Returns:
+//   - error: An error if the Pdsc entry was not found, otherwise nil.
 func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 	log.Debugf("Removing pdsc tag \"%s\" from \"%s\"", pdsc, p.fileName)
 
@@ -105,7 +155,7 @@ func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 
 	toRemove := []removeInfo{}
 
-	name := pdsc.Vendor + "." + pdsc.Name
+	name := pdsc.VName()
 	if pdsc.Version != "" {
 		if index := p.HasPdsc(pdsc); index != PdscIndexNotFound {
 			toRemove = append(toRemove, removeInfo{
@@ -204,7 +254,19 @@ func (p *PidxXML) FindPdscTags(pdsc PdscTag) []PdscTag {
 	}
 
 	// No version, means "Vendor.Pack"
-	name := pdsc.Vendor + "." + pdsc.Name
+	name := pdsc.VName()
+	foundKey, ok := p.pdscListName[name]
+	foundTags := []PdscTag{}
+	if ok {
+		foundTags = p.pdscList[foundKey]
+	}
+	log.Debugf("\"%s\" contains %d pdsc tag(s) for \"%s\"", p.fileName, len(foundTags), foundKey)
+	return foundTags
+}
+
+func (p *PidxXML) FindPdscNameTags(pdsc PdscTag) []PdscTag {
+	log.Debugf("Searching for pdsc \"%s\"", pdsc.VName())
+	name := pdsc.VName()
 	foundKey, ok := p.pdscListName[name]
 	foundTags := []PdscTag{}
 	if ok {
@@ -280,7 +342,7 @@ func (p *PidxXML) Read() error {
 
 	for _, pdsc := range p.Pindex.Pdscs {
 		key := pdsc.Key()
-		name := pdsc.Vendor + "." + pdsc.Name
+		name := pdsc.VName()
 		log.Debugf("Registring \"%s\"", key)
 		p.pdscList[key] = append(p.pdscList[key], pdsc)
 		p.pdscListName[name] = key
@@ -316,6 +378,12 @@ func (p *PidxXML) Write() error {
 // with periods ('.') as separators. The resulting key is in the format "Vendor.Name.Version".
 func (p *PdscTag) Key() string {
 	return p.Vendor + "." + p.Name + "." + p.Version
+}
+
+// VName returns a string that concatenates the Vendor and Name fields
+// of the PdscTag struct, separated by a dot.
+func (p *PdscTag) VName() string {
+	return p.Vendor + "." + p.Name
 }
 
 // YamlPackID generates a string that uniquely identifies a pack in the format "Vendor::Name@Version".
