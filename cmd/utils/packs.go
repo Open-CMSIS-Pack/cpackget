@@ -222,6 +222,7 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 		// location can be either a URL or a path to the local
 		// file system. If it's the latter, make sure to fill in
 		// in case the file is coming from the current directory
+		//nolint:staticcheck // intentional logic for clarity
 		if !(strings.HasPrefix(location, "http://") || strings.HasPrefix(location, "https://") || strings.HasPrefix(location, "file://")) {
 			if !filepath.IsAbs(location) {
 				if len(filepath.VolumeName(location)) == 0 && len(location) > 0 && (location[0] == '/' || location[0] == '\\') {
