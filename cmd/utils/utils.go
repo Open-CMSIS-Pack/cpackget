@@ -218,13 +218,18 @@ func DownloadFile(URL string, timeout int) (string, error) {
 	return filePath, err
 }
 
+var connStatus string
+
 func CheckConnection(url string, timeOut int) error {
+	if connStatus == "online" { // already checked
+		return nil
+	}
 	timeout := time.Duration(timeOut) * time.Second
 	client := http.Client{
 		Timeout: timeout,
 	}
 	resp, err := client.Get(url)
-	connStatus := "offline"
+	connStatus = "offline"
 	if err == nil {
 		connStatus = "online"
 		if !GetEncodedProgress() {

@@ -4,6 +4,7 @@
 package installer
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -625,7 +626,7 @@ func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, concurrency int,
 			}
 			oldTags := oldPidxXML.FindPdscNameTags(pdscTag)
 			if len(oldTags) != 0 {
-				log.Infof("%s::%s was updated from latest version \"%s\" to \"%s\"", pdscTag.Vendor, pdscTag.Name, oldTags[0].Version, pdscTag.Version)
+				log.Infof("%s::%s has a new version \"%s\", previous was \"%s\"", pdscTag.Vendor, pdscTag.Name, pdscTag.Version, oldTags[0].Version)
 
 				if concurrency == 0 {
 					massDownloadPdscFiles(pdscTag, false, timeout, &errTags)
@@ -748,6 +749,15 @@ func GetIndexPath(indexPath string) (string, error) {
 	return indexPath, err
 }
 
+// UpdatePublicIndexIfOnline checks if the public index file exists and updates it if necessary.
+// If the public index file exists, it first checks for an active internet connection and the
+// timestamp of the file. If the system is online and the file is outdated, it downloads the
+// latest version of the public index. If the system is offline, it skips the update process.
+//
+// If the public index file does not exist, it downloads the public index without performing
+// any checks and creates an update configuration file.
+//
+// Returns an error if any step in the update process fails.
 func UpdatePublicIndexIfOnline() error {
 	// If public index already exists then first check if online, then its timestamp
 	// if we are online and it is too old then download a current version
@@ -757,16 +767,15 @@ func UpdatePublicIndexIfOnline() error {
 			return err
 		}
 		if errors.Unwrap(err) != errs.ErrOffline {
-			v := viper.New()
 			var updateConf updateCfg
-			err = Installation.checkUpdateCfg(v, &updateConf)
+			err = Installation.checkUpdateCfg(&updateConf)
 			if err != nil {
 				UnlockPackRoot()
 				err1 := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
 				if err1 != nil {
 					return err1
 				}
-				_ = Installation.updateUpdateCfg(v, &updateConf)
+				_ = Installation.updateUpdateCfg(&updateConf)
 			}
 		} else {
 			log.Debug("Offline mode: Skipping public index update")
@@ -779,10 +788,9 @@ func UpdatePublicIndexIfOnline() error {
 		if err1 != nil {
 			return err1
 		}
-		v := viper.New()
 		var updateConf updateCfg
-		updateConf.Default.Auto = true
-		_ = Installation.updateUpdateCfg(v, &updateConf) // create the update config file
+		updateConf.Auto = true
+		_ = Installation.updateUpdateCfg(&updateConf) // create the update config file
 	}
 	return nil
 }
@@ -1485,30 +1493,44 @@ type PacksInstallationType struct {
 // - Date: a string representing the date of the last update.
 // - Auto: a boolean indicating whether automatic updates are enabled.
 type updateCfg struct {
-	Default struct {
-		Date string
-		Auto bool
-	}
+	// Default struct {
+	Date string
+	Auto bool
+	// }
 }
 
-// checkUpdateCfg reads the update configuration file, and checks if the index.pidx file is older than one day.
+// checkUpdateCfg reads and parses the "update.cfg" file located in the WebDir directory
+// to populate the provided updateCfg structure with configuration values. It checks
+// the "Date" and "Auto" fields in the file and validates whether the "Date" field
+// indicates a timestamp older than 24 hours.
 //
 // Parameters:
-//   - v: A pointer to a viper.Viper instance used to read the configuration file.
-//   - conf: A pointer to an updateCfg struct where the configuration will be unmarshaled.
+//   - conf (*updateCfg): A pointer to the updateCfg structure that will be populated
+//     with the parsed configuration values.
 //
 // Returns:
-//   - error: An error if there is an issue reading the configuration file, unmarshaling it, or if the index.pidx file is older than one day.
-func (p *PacksInstallationType) checkUpdateCfg(v *viper.Viper, conf *updateCfg) error {
-	v.SetConfigFile(filepath.Join(p.WebDir, "update.cfg"))
-	v.SetConfigType("ini")
-	if err := v.ReadInConfig(); err != nil {
+//   - error: An error is returned if the "update.cfg" file cannot be opened, if the
+//     "Date" field cannot be parsed, or if the timestamp in the "Date" field is older
+//     than 24 hours. If no errors occur, nil is returned.
+func (p *PacksInstallationType) checkUpdateCfg(conf *updateCfg) error {
+	f, err := os.Open(filepath.Join(p.WebDir, "update.cfg"))
+	if err != nil {
 		return err
 	}
-	if err := v.Unmarshal(conf); err != nil {
-		return err
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f) // Read the file line by line
+	scanner.Split(bufio.ScanLines)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "Date=") {
+			conf.Date = strings.TrimPrefix(line, "Date=")
+		} else if strings.HasPrefix(line, "Auto=") {
+			conf.Auto = strings.TrimPrefix(line, "Auto=") == "true"
+		}
 	}
-	if t, err := time.Parse("2-1-2006", conf.Default.Date); err != nil {
+	if t, err := time.Parse("2-1-2006", conf.Date); err != nil {
 		return err
 	} else {
 		if time.Since(t).Hours() > 24 { // index.pidx older than 1 day
@@ -1518,33 +1540,16 @@ func (p *PacksInstallationType) checkUpdateCfg(v *viper.Viper, conf *updateCfg) 
 	return nil
 }
 
-// updateUpdateCfg updates the update configuration file with the current date and auto-update settings.
-// It uses the provided viper instance and updateCfg struct to set the configuration values.
-// The function writes the configuration directly to the file, bypassing viper's WriteConfig method
-// due to issues with viper's handling of the configuration file type.
+// updateUpdateCfg updates the "update.cfg" configuration file with the provided settings.
+// It writes the current date and the auto-update flag to the file.
 //
 // Parameters:
-//   - v: A pointer to a viper.Viper instance for configuration management (unused in this function).
-//   - conf: A pointer to an updateCfg struct containing the configuration values to be written.
+//   - conf: A pointer to an updateCfg struct containing the configuration to be written.
 //
 // Returns:
-//   - error: An error if any occurs during the file operations, otherwise nil.
-func (p *PacksInstallationType) updateUpdateCfg(v *viper.Viper, conf *updateCfg) error {
-	_ = v
-	// v.SetConfigFile(filepath.Join(p.WebDir, "update.cfg"))
-	// v.SetConfigType("ini")
-	// if err := v.ReadInConfig(); err != nil {
-	// 	return err
-	// }
-	// if err := v.Unmarshal(&updateConf); err != nil {
-	// 	return err
-	// }
-	conf.Default.Date = time.Now().Local().Format("2-1-2006")
-	//	v.SetConfigFile(filepath.Join(p.WebDir, "update.cfg")) // have to force type with extension, this does not work
-	// if err := v.WriteConfig(); err != nil { // does not use changed conf
-	// 	return err
-	// }
-	// So, we do it by ourselves. Viper does not work as expected
+//   - An error if there is an issue opening, writing to, or syncing the file; otherwise, nil.
+func (p *PacksInstallationType) updateUpdateCfg(conf *updateCfg) error {
+	conf.Date = time.Now().Local().Format("2-1-2006")
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	f, err := os.OpenFile(filepath.Join(p.WebDir, "update.cfg"), flags, os.FileMode(0o644))
 	if err != nil {
@@ -1552,13 +1557,13 @@ func (p *PacksInstallationType) updateUpdateCfg(v *viper.Viper, conf *updateCfg)
 	}
 	defer f.Close()
 
-	if _, err := f.WriteString("Date=" + conf.Default.Date + "\n"); err != nil {
+	if _, err := f.WriteString("Date=" + conf.Date + "\n"); err != nil {
 		return err
 	}
 	if _, err := f.WriteString("Auto="); err != nil {
 		return err
 	}
-	if conf.Default.Auto {
+	if conf.Auto {
 		if _, err := f.WriteString("true\n"); err != nil {
 			return err
 		}
