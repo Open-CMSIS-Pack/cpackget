@@ -174,7 +174,7 @@ func removePack(t *testing.T, packPath string, withVersion, isPublic, purge bool
 
 	// Check in installer internals
 	pack := packInfoToType(info)
-	isInstalled := installer.Installation.PackIsInstalled(pack, false)
+	isInstalled, _ := installer.Installation.PackIsInstalled(pack, false)
 
 	purgeOnly := !isInstalled && purge
 

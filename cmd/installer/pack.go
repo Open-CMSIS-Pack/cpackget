@@ -32,9 +32,6 @@ type PackType struct {
 	// IsPublic tells whether the pack exists in the public index or not
 	IsPublic bool
 
-	// isInstalled tells whether the pack is already installed
-	isInstalled bool
-
 	// isDownloaded tells whether the file needed to be downloaded from a server
 	isDownloaded bool
 
@@ -50,6 +47,12 @@ type PackType struct {
 
 	// targetVersion is the most recent version of a pack in case exactVersion==true
 	targetVersion string
+
+	// isInstalled tells whether the pack is already installed
+	isInstalled bool
+
+	// list of all the packs that are installed
+	installedVersions []string
 
 	// path points to a file in the local system, whether or not it's local
 	path string
@@ -139,7 +142,7 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 		}
 	}
 
-	pack.isInstalled = Installation.PackIsInstalled(pack, noLocal)
+	pack.isInstalled, pack.installedVersions = Installation.PackIsInstalled(pack, noLocal)
 
 	return pack, nil
 }
@@ -650,7 +653,7 @@ func (p *PackType) loadDependencies(nometa bool) error {
 		} else {
 			pack.versionModifier = utils.LatestVersion
 		}
-		if Installation.PackIsInstalled(pack, false) {
+		if ok, _ := Installation.PackIsInstalled(pack, false); ok {
 			p.Requirements.packages = append(p.Requirements.packages, struct {
 				info      []string
 				installed bool

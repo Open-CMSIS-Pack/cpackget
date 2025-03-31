@@ -144,7 +144,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 			log.Debugf("Moved pack to temporary path \"%s\"", backupPackPath)
 			dropPreInstalled = true
 		} else {
-			log.Errorf("Pack \"%s\" is already installed here: \"%s\", use the --force-reinstall (-F) flag to force installation", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta()))
+			log.Errorf("Pack \"%s\" is already installed here: \"%s\" version(s) %v, use the --force-reinstall (-F) flag to force installation", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta()), pack.installedVersions)
 			return nil
 		}
 	}
@@ -1053,7 +1053,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, t
 			logMessage := pdscTag.YamlPackID()
 			packFilePath := filepath.Join(Installation.DownloadDir, pdscTag.Key()) + ".pack"
 
-			if Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}, false) {
+			if ok, _ := Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}, false); ok {
 				logMessage += " (installed)"
 			} else if utils.FileExists(packFilePath) {
 				logMessage += " (cached)"
@@ -1099,7 +1099,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, t
 			}
 
 			logMessage := pdscTag.YamlPackID()
-			if Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}, false) {
+			if ok, _ := Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}, false); ok {
 				logMessage += " (installed)"
 			}
 
@@ -1616,41 +1616,44 @@ func (p *PacksInstallationType) touchPackIdx() error {
 //   - RangeVersion: Any installed version within the specified version range.
 //
 // 7. If the version modifier is LatestVersion, it retrieves the latest available version from the PDSC file and checks if it's installed.
-func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bool {
+func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) (found bool, installedVersions []string) {
 	log.Debugf("Checking if %s is installed", pack.PackIDWithVersion())
+
+	found = false
+	installedVersions = []string{}
 
 	// First make sure there's at least one version of the pack installed
 	installationDir := filepath.Join(p.PackRoot, pack.Vendor, pack.Name)
 	if !utils.DirExists(installationDir) {
-		return false
-	}
-
-	// Empty version means any version (pack.VersionModifier == utils.AnyVersion)
-	if pack.Version == "" {
-		return true
+		return
 	}
 
 	// Exact version is easy, just find a matching installation folder
 	if pack.versionModifier == utils.ExactVersion {
-		packDir := filepath.Join(installationDir, pack.GetVersionNoMeta())
+		version := pack.GetVersionNoMeta()
+		packDir := filepath.Join(installationDir, version)
 		log.Debugf("Checking if \"%s\" exists", packDir)
-		return utils.DirExists(packDir)
+		found = utils.DirExists(packDir)
+		if found {
+			installedVersions = append(installedVersions, version)
+		}
+		return
 	}
-	installedVersions := []string{}
+
 	if noLocal {
 		if pack.isPackID || !pack.IsLocallySourced {
 			if err := UpdatePublicIndexIfOnline(); err != nil {
-				return false
+				return
 			}
 		}
 		if err := ReadIndexFiles(); err != nil {
-			return false
+			return
 		}
 	} else {
 		// Gather all versions in local_repository.idx for local .psdc installed packs
 		if err := p.LocalPidx.Read(); err != nil {
 			log.Warn("Could not read local index")
-			return false
+			return
 		}
 		for _, pdsc := range p.LocalPidx.ListPdscTags() {
 			if pack.Vendor == pdsc.Vendor && pack.Name == pdsc.Name {
@@ -1663,12 +1666,18 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 	installedDirs, err := utils.ListDir(installationDir, "")
 	if err != nil {
 		log.Warnf("Could not list installed packs in \"%s\": %v", installationDir, err)
-		return false
+		return
 	}
 
 	for _, path := range installedDirs {
 		base := filepath.Base(path)
 		installedVersions = append(installedVersions, base)
+	}
+
+	// Empty version also means any version
+	if pack.Version == "" || pack.versionModifier == utils.AnyVersion {
+		found = true
+		return
 	}
 
 	// Check if greater version is specified
@@ -1679,11 +1688,12 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 			if utils.SemverCompare(version, pack.Version) >= 0 {
 				log.Debugf("- found newer version %s", version)
 				pack.targetVersion = version
-				return true
+				found = true
+				return
 			}
 		}
 		log.Debugf("- no version matched")
-		return false
+		return
 	}
 
 	// Check if there is a greater version with same Major number
@@ -1694,10 +1704,11 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 			sameMajor := semver.Major("v"+version) == semver.Major("v"+pack.Version)
 			if sameMajor && utils.SemverCompare(version, pack.Version) >= 0 {
 				pack.targetVersion = version
-				return true
+				found = true
+				return
 			}
 		}
-		return false
+		return
 	}
 
 	// Check if there is a greater version with same Major and Minor number
@@ -1708,10 +1719,11 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 			sameMajorMinor := semver.MajorMinor("v"+version) == semver.MajorMinor("v"+pack.Version)
 			if sameMajorMinor && utils.SemverCompare(version, pack.Version) >= 0 {
 				pack.targetVersion = version
-				return true
+				found = true
+				return
 			}
 		}
-		return false
+		return
 	}
 
 	if pack.versionModifier == utils.RangeVersion {
@@ -1719,37 +1731,38 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 		for _, version := range installedVersions {
 			log.Debugf("- checking against: %s", version)
 			if utils.SemverCompareRange(version, pack.Version) == 0 {
-				return true
+				found = true
+				return
 			}
 		}
-		return false
+		return
 	}
 
-	log.Debug("Checking if the latest version is installed")
+	if pack.versionModifier == utils.LatestVersion {
+		// so cpackget needs to know first the latest available
+		// version for that pack to then check if it's installed
+		var pdscFilePath string
+		var pdscLookupDir string
+		if pack.IsPublic {
+			pdscLookupDir = Installation.WebDir
+		} else {
+			pdscLookupDir = Installation.LocalDir
+		}
 
-	// Specified versionModifier == LatestVersion
-	// so cpackget needs to know first the latest available
-	// version for that pack to then check if it's installed
-	var pdscFilePath string
-	var pdscLookupDir string
-	if pack.IsPublic {
-		pdscLookupDir = Installation.WebDir
-	} else {
-		pdscLookupDir = Installation.LocalDir
+		pdscFilePath = filepath.Join(pdscLookupDir, pack.PdscFileName())
+		pdscXML := xml.NewPdscXML(pdscFilePath)
+		if err := pdscXML.Read(); err != nil {
+			log.Debugf("Could not retrieve pack's PDSC file from \"%s\"", pdscFilePath)
+			return
+		}
+
+		latestVersion := pdscXML.LatestVersion()
+		packDir := filepath.Join(installationDir, latestVersion)
+		pack.targetVersion = latestVersion
+		found = utils.DirExists(packDir)
 	}
 
-	pdscFilePath = filepath.Join(pdscLookupDir, pack.PdscFileName())
-	pdscXML := xml.NewPdscXML(pdscFilePath)
-	if err := pdscXML.Read(); err != nil {
-		log.Debugf("Could not retrieve pack's PDSC file from \"%s\"", pdscFilePath)
-		return false
-	}
-
-	latestVersion := pdscXML.LatestVersion()
-	packDir := filepath.Join(installationDir, latestVersion)
-	found := utils.DirExists(packDir)
-	pack.targetVersion = latestVersion
-	return found
+	return
 }
 
 // packIsPublic checks whether the pack is public or not.
