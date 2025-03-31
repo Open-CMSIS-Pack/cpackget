@@ -125,6 +125,13 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 		log.Infof("Adding pack \"%s\"", packPath)
 	}
 
+	if pack.isPackID {
+		pack.path, err = FindPackURL(pack)
+		if err != nil {
+			return err
+		}
+	}
+
 	dropPreInstalled := false
 	fullPackPath := ""
 	backupPackPath := ""
@@ -144,15 +151,9 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 			log.Debugf("Moved pack to temporary path \"%s\"", backupPackPath)
 			dropPreInstalled = true
 		} else {
-			log.Errorf("Pack \"%s\" is already installed here: \"%s\" version(s) %v, use the --force-reinstall (-F) flag to force installation", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta()), pack.installedVersions)
+			log.Errorf("Pack \"%s@%s\" is already installed here: \"%s\", use the --force-reinstall (-F) flag to force installation",
+				packPath, pack.targetVersion, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta()))
 			return nil
-		}
-	}
-
-	if pack.isPackID {
-		pack.path, err = FindPackURL(pack)
-		if err != nil {
-			return err
 		}
 	}
 
