@@ -28,11 +28,11 @@
 | github.com/spf13/cast | v1.7.1  | [MIT](https://github.com/spf13/cast/blob/v1.7.1/LICENSE) |
 | github.com/spf13/cobra | v1.9.1  | [Apache-2.0](https://github.com/spf13/cobra/blob/v1.9.1/LICENSE.txt) |
 | github.com/spf13/pflag | v1.0.6  | [BSD-3-Clause](https://github.com/spf13/pflag/blob/v1.0.6/LICENSE) |
-| github.com/spf13/viper | v1.20.0  | [MIT](https://github.com/spf13/viper/blob/v1.20.0/LICENSE) |
+| github.com/spf13/viper | v1.20.1  | [MIT](https://github.com/spf13/viper/blob/v1.20.1/LICENSE) |
 | github.com/subosito/gotenv | v1.6.0  | [MIT](https://github.com/subosito/gotenv/blob/v1.6.0/LICENSE) |
 | golang.org/x/crypto | v0.36.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.36.0:LICENSE) |
 | golang.org/x/mod/semver | v0.24.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.24.0:LICENSE) |
-| golang.org/x/net/html | v0.37.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.37.0:LICENSE) |
+| golang.org/x/net/html | v0.38.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.38.0:LICENSE) |
 | golang.org/x/sync/semaphore | v0.12.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.12.0:LICENSE) |
 | golang.org/x/sys | v0.31.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.31.0:LICENSE) |
 | golang.org/x/term | v0.30.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/term/+/v0.30.0:LICENSE) |
