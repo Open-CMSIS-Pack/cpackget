@@ -30,7 +30,7 @@ import (
 
 const PublicIndex = "index.pidx"
 const KeilDefaultPackRoot = "https://www.keil.com/pack/"
-const ConnectionTryURL = "https://www.keil.com/pack/index.vidx"
+const ConnectionTryURL = "https://www.keil.com/pack/keil.vidx"
 
 // DefaultPublicIndex is the public index to use in "default mode"
 const DefaultPublicIndex = KeilDefaultPackRoot + PublicIndex
