@@ -30,6 +30,7 @@ import (
 
 const PublicIndex = "index.pidx"
 const KeilDefaultPackRoot = "https://www.keil.com/pack/"
+const ConnectionTryURL = "https://www.keil.com/pack/index.vidx"
 
 // DefaultPublicIndex is the public index to use in "default mode"
 const DefaultPublicIndex = KeilDefaultPackRoot + PublicIndex
@@ -763,7 +764,7 @@ func UpdatePublicIndexIfOnline() error {
 	// If public index already exists then first check if online, then its timestamp
 	// if we are online and it is too old then download a current version
 	if utils.FileExists(Installation.PublicIndex) {
-		err := utils.CheckConnection(DefaultPublicIndex, 0)
+		err := utils.CheckConnection(ConnectionTryURL, 0)
 		if err != nil && errors.Unwrap(err) != errs.ErrOffline {
 			return err
 		}
@@ -824,7 +825,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 
 	if strings.HasPrefix(indexPath, "http://") || strings.HasPrefix(indexPath, "https://") {
 		if !strings.HasPrefix(indexPath, "https://127.0.0.1") {
-			err = utils.CheckConnection(indexPath, 0)
+			err = utils.CheckConnection(ConnectionTryURL, 0)
 			if err != nil && errors.Unwrap(err) == errs.ErrOffline {
 				return err
 			}
