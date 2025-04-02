@@ -1,29 +1,29 @@
+version: "2"
 run:
-  timeout: 10m
-
-  # Run linters over integration tests
   build-tags:
     - integration
-
 linters:
-  disable-all: true # Disable defaults, then enable the ones we want
+  default: none
   enable:
     - errcheck
-    - gosimple
+    - gosec
     - govet
     - ineffassign
     - staticcheck
-    # - structcheck https://github.com/golangci/golangci-lint/issues/2649
-    - typecheck
     - unused
-    # - bodyclose Disabled so concurrent GETs can happen
-    - stylecheck
-    - gosec
+  settings:
+    staticcheck:
+      checks:
+        - -SA1019
+        - all
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+formatters:
+  enable:
+    - gofmt
     - goimports
-    - gci
-
-linters-settings:
-  staticcheck:
-    checks:
-      - all
-      - "-SA1019" # Disable "rand.Seed has been deprecated"

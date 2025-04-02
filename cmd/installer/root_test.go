@@ -488,7 +488,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err)
 		indexServer := NewServer()
 		// The psd URL needs to be updated as it's not known beforehand
-		updatedIndex := []byte(strings.Replace(string(indexContent), "https://127.0.0.1", indexServer.URL(), -1))
+		updatedIndex := []byte(strings.ReplaceAll(string(indexContent), "https://127.0.0.1", indexServer.URL()))
 		indexServer.AddRoute(installer.PublicIndex, updatedIndex)
 		indexPath := indexServer.URL() + installer.PublicIndex
 
@@ -619,7 +619,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err)
 		indexServer := NewServer()
 		// The psd URL needs to be updated as it's not known beforehand
-		updatedIndex := []byte(strings.Replace(string(indexContent), "https://127.0.0.1", indexServer.URL(), -1))
+		updatedIndex := []byte(strings.ReplaceAll(string(indexContent), "https://127.0.0.1", indexServer.URL()))
 		indexServer.AddRoute(installer.PublicIndex, updatedIndex)
 		indexPath := indexServer.URL() + installer.PublicIndex
 
@@ -650,7 +650,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err)
 		indexServer := NewServer()
 		// The psd URL needs to be updated as it's not known beforehand
-		updatedIndex := []byte(strings.Replace(string(indexContent), "https://127.0.0.1", indexServer.URL(), -1))
+		updatedIndex := []byte(strings.ReplaceAll(string(indexContent), "https://127.0.0.1", indexServer.URL()))
 		indexServer.AddRoute(installer.PublicIndex, updatedIndex)
 		indexPath := indexServer.URL() + installer.PublicIndex
 

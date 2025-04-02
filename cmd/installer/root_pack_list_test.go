@@ -87,7 +87,7 @@ func ExampleListInstalledPacks_list() {
 	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
-	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
+	pdscFilePath := strings.ReplaceAll(publicLocalPack123, ".1.2.3.pack", ".pdsc")
 	_ = utils.CopyFile(pdscFilePath, filepath.Join(installer.Installation.WebDir, "TheVendor.PublicLocalPack.pdsc"))
 	_ = installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
 		Vendor:  "TheVendor",
@@ -125,7 +125,7 @@ func ExampleListInstalledPacks_listCached() {
 	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
-	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
+	pdscFilePath := strings.ReplaceAll(publicLocalPack123, ".1.2.3.pack", ".pdsc")
 	_ = utils.CopyFile(pdscFilePath, filepath.Join(installer.Installation.WebDir, "TheVendor.PublicLocalPack.pdsc"))
 	_ = installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
 		Vendor:  "TheVendor",
@@ -165,7 +165,7 @@ func TestListInstalledPacks(t *testing.T) {
 		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
-		pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
+		pdscFilePath := strings.ReplaceAll(publicLocalPack123, ".1.2.3.pack", ".pdsc")
 		assert.Nil(utils.CopyFile(pdscFilePath, filepath.Join(installer.Installation.WebDir, "TheVendor.PublicLocalPack.pdsc")))
 		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
 			Vendor:  "TheVendor",
@@ -251,7 +251,7 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
-	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
+	pdscFilePath := strings.ReplaceAll(publicLocalPack123, ".1.2.3.pack", ".pdsc")
 	_ = utils.CopyFile(pdscFilePath, filepath.Join(installer.Installation.WebDir, "TheVendor.PublicLocalPack.pdsc"))
 	_ = installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
 		Vendor:  "TheVendor",
@@ -290,7 +290,7 @@ func ExampleListInstalledPacks_filter() {
 	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
-	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
+	pdscFilePath := strings.ReplaceAll(publicLocalPack123, ".1.2.3.pack", ".pdsc")
 	_ = utils.CopyFile(pdscFilePath, filepath.Join(installer.Installation.WebDir, "TheVendor.PublicLocalPack.pdsc"))
 	_ = installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
 		Vendor:  "TheVendor",
@@ -326,7 +326,7 @@ func ExampleListInstalledPacks_filterErrorPackages() {
 	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
-	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
+	pdscFilePath := strings.ReplaceAll(publicLocalPack123, ".1.2.3.pack", ".pdsc")
 	_ = utils.CopyFile(pdscFilePath, filepath.Join(installer.Installation.WebDir, "TheVendor.PublicLocalPack.pdsc"))
 	_ = installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
 		Vendor:  "TheVendor",
@@ -364,7 +364,7 @@ func ExampleListInstalledPacks_filterInvalidChars() {
 	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
-	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
+	pdscFilePath := strings.ReplaceAll(publicLocalPack123, ".1.2.3.pack", ".pdsc")
 	_ = utils.CopyFile(pdscFilePath, filepath.Join(installer.Installation.WebDir, "TheVendor.PublicLocalPack.pdsc"))
 	_ = installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
 		Vendor:  "TheVendor",
@@ -399,7 +399,7 @@ func ExampleListInstalledPacks_filteradditionalMessages() {
 	_ = installer.ReadIndexFiles()
 	defer removePackRoot(localTestingDir)
 
-	pdscFilePath := strings.Replace(publicLocalPack123, ".1.2.3.pack", ".pdsc", -1)
+	pdscFilePath := strings.ReplaceAll(publicLocalPack123, ".1.2.3.pack", ".pdsc")
 	_ = utils.CopyFile(pdscFilePath, filepath.Join(installer.Installation.WebDir, "TheVendor.PublicLocalPack.pdsc"))
 	_ = installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
 		Vendor:  "TheVendor",
