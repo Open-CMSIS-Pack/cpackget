@@ -121,7 +121,7 @@ func NewLicenseWindow(licenseTitle, licenseContents, promptText string) *License
 			}
 			v.Wrap = true
 			v.Title = licenseTitle
-			fmt.Fprint(v, strings.Replace(licenseContents, "\r", "", -1))
+			fmt.Fprint(v, strings.ReplaceAll(licenseContents, "\r", ""))
 		}
 
 		// Prompt window dimensions

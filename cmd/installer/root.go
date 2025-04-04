@@ -930,12 +930,12 @@ func findInstalledPacks(addLocalPacks, removeDuplicates bool) ([]installedPack, 
 		return nil, err
 	}
 	for _, match := range matches {
-		pdscPath := strings.Replace(match, Installation.PackRoot, "", -1)
+		pdscPath := strings.ReplaceAll(match, Installation.PackRoot, "")
 		packName, _ := filepath.Split(pdscPath)
-		packName = strings.Replace(packName, "/", " ", -1)
-		packName = strings.Replace(packName, "\\", " ", -1)
+		packName = strings.ReplaceAll(packName, "/", " ")
+		packName = strings.ReplaceAll(packName, "\\", " ")
 		packName = strings.Trim(packName, " ")
-		packName = strings.Replace(packName, " ", ".", -1)
+		packName = strings.ReplaceAll(packName, " ", ".")
 
 		packNameBits := strings.SplitN(packName, ".", 3)
 
@@ -993,6 +993,7 @@ func findInstalledPacks(addLocalPacks, removeDuplicates bool) ([]installedPack, 
 			noDupInstalledPacks = append(noDupInstalledPacks, installedPacks[0])
 			for i, installedPack := range installedPacks {
 				if i > 0 {
+					//nolint:staticcheck // intentional logic for clarity
 					if !(installedPacks[last].Vendor == installedPack.Vendor && installedPacks[last].Name == installedPack.Name) {
 						noDupInstalledPacks = append(noDupInstalledPacks, installedPack)
 						last = i

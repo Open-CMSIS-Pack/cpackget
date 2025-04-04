@@ -87,6 +87,7 @@ func (t *TimeoutTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 
 	select {
 	case <-timeout:
+		//nolint:staticcheck
 		t.Transport.CancelRequest(req)
 		return nil, errs.ErrHTTPtimeout
 	case r := <-resp:
