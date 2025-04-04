@@ -219,25 +219,34 @@ func DownloadFile(URL string, timeout int) (string, error) {
 	return filePath, err
 }
 
+var onlineInfo struct {
+	url        string
+	connStatus string
+}
+
 func CheckConnection(url string, timeOut int) error {
+	if onlineInfo.url == url && onlineInfo.connStatus == "online" { // already checked
+		return nil
+	}
+	onlineInfo.url = url
 	timeout := time.Duration(timeOut) * time.Second
 	client := http.Client{
 		Timeout: timeout,
 	}
 	resp, err := client.Get(url)
-	connStatus := "offline"
+	onlineInfo.connStatus = "offline"
 	if err == nil {
-		connStatus = "online"
+		onlineInfo.connStatus = "online"
 		if !GetEncodedProgress() {
-			log.Debugf("Respond: %v (%v)", resp.Status, connStatus)
+			log.Debugf("Respond: %v (%v)", resp.Status, onlineInfo.connStatus)
 		}
 	}
 
 	if GetEncodedProgress() {
-		log.Infof("[O:%v]", connStatus)
+		log.Infof("[O:%v]", onlineInfo.connStatus)
 	}
 
-	if connStatus == "offline" {
+	if onlineInfo.connStatus == "offline" {
 		return fmt.Errorf("\"%s\": %w", url, errs.ErrOffline)
 	}
 

@@ -58,11 +58,22 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-add-pack-already-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := publicLocalPack123
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 		addPack(t, packPath, ConfigType{
 			IsPublic: true,
 		})
@@ -302,8 +313,8 @@ func TestAddPack(t *testing.T) {
 	   			localTestingDir := "test-add-pack-with-unaccessible-directory"
 	   			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 				installer.UnlockPackRoot()
-				assert.Nil(installer.ReadIndexFiles())
 	   			installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+				assert.Nil(installer.ReadIndexFiles())
 	   			defer removePackRoot(localTestingDir)
 
 	   			packPath := publicLocalPack123
@@ -325,8 +336,8 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-add-pack-with-tainted-compressed-files"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithTaintedCompressedFiles
@@ -345,8 +356,8 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-add-pack-with-dot-dot-name"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithParentDirectoryFiles
@@ -404,11 +415,22 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-add-public-local-pack"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := publicLocalPack123
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 		addPack(t, packPath, ConfigType{
 			IsPublic: true,
 		})
@@ -418,8 +440,8 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-add-public-remote-pack"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		zipContent, err := os.ReadFile(publicRemotePack123)
@@ -430,6 +452,16 @@ func TestAddPack(t *testing.T) {
 		_, packBasePath := filepath.Split(publicRemotePack123)
 
 		packPath := packServer.URL() + packBasePath
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		addPack(t, packPath, ConfigType{
 			IsPublic: true,
@@ -440,8 +472,8 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-add-non-public-local-pack"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := nonPublicLocalPack123
@@ -454,8 +486,8 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-add-non-public-remote-pack"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := nonPublicRemotePack123
@@ -504,8 +536,8 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-add-pack-without-license"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		packPath := nonPublicLocalPack123
@@ -795,6 +827,17 @@ func TestAddPack(t *testing.T) {
 			pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, releaseTag)
 			assert.Nil(utils.WriteXML(pdscXML.FileName, pdscXML))
 
+			packInfo, err = utils.ExtractPackInfo(publicRemotePack123)
+			assert.Nil(err)
+			pack = packInfoToType(packInfo)
+			packPdscTag := xml.PdscTag{
+				Vendor:  pack.Vendor,
+				Name:    pack.Name,
+				Version: pack.Version,
+			}
+			assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+			assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 			assert.Nil(err)
 
@@ -838,6 +881,17 @@ func TestAddPack(t *testing.T) {
 			pdscXML.URL = server.URL()
 			assert.Nil(utils.WriteXML(pdscXML.FileName, pdscXML))
 
+			packInfo, err = utils.ExtractPackInfo(publicRemotePack123)
+			assert.Nil(err)
+			pack = packInfoToType(packInfo)
+			packPdscTag := xml.PdscTag{
+				Vendor:  pack.Vendor,
+				Name:    pack.Name,
+				Version: pack.Version,
+			}
+			assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+			assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 			assert.Nil(err)
 
@@ -846,7 +900,7 @@ func TestAddPack(t *testing.T) {
 		})
 	}
 
-	t.Run("test installing pack with pack id using pdsc url when version is not the latest in "+installer.PublicIndex, func(t *testing.T) {
+	t.Run("test installing pack with pack id using pdsc url when version is not the latest in "+installer.PublicIndexName, func(t *testing.T) {
 		localTestingDir := "test-add-pack-with-pack-id-using-pdsc-url-version-not-the-latest"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
@@ -898,8 +952,8 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-add-non-public-local-packid"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		pack123Path := nonPublicLocalPack123
@@ -952,8 +1006,8 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-add-packid-meta"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		pack123ID := publicRemotePack123PackIDMeta
@@ -971,8 +1025,8 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-add-pack-cancelled-during-download"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Fake a user termination request
@@ -1008,8 +1062,8 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-add-cancelled-during-extraction"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		// Fake a user termination request
@@ -1029,6 +1083,13 @@ func TestAddPack(t *testing.T) {
 		packInfo, err := utils.ExtractPackInfo(packPath)
 		assert.Nil(err)
 		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.NotNil(err)
@@ -1068,6 +1129,16 @@ func TestAddPack(t *testing.T) {
 		// Inject pdsc into .Web folder
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack124)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install 1.2.4
 		addPack(t, publicLocalPack124, ConfigType{
@@ -1123,6 +1194,17 @@ func TestAddPack(t *testing.T) {
 		pdscXML.URL = server.URL()
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack124)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 		// Install >=1.2.3
 		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.Nil(err)
@@ -1146,6 +1228,17 @@ func TestAddPack(t *testing.T) {
 		// Inject pdsc into .Web folder
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack122)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Pre-install 1.2.2
 		addPack(t, publicLocalPack122, ConfigType{
@@ -1172,6 +1265,17 @@ func TestAddPack(t *testing.T) {
 		pdscXML.URL = server.URL()
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
+		packInfo, err = utils.ExtractPackInfo(publicLocalPack124)
+		assert.Nil(err)
+		pack = packInfoToType(packInfo)
+		packPdscTag = xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 		// Install >=1.2.3
 		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.Nil(err)
@@ -1197,7 +1301,18 @@ func TestAddPack(t *testing.T) {
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
 
-		err := installer.AddPack(publicLocalPack125WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack125WithMinimumVersionLegacyPackID)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
+		err = installer.AddPack(publicLocalPack125WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.Equal(err, errs.ErrPackVersionNotAvailable)
 	})
 
@@ -1216,6 +1331,17 @@ func TestAddPack(t *testing.T) {
 		// Inject pdsc into .Web folder
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack124)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install 1.2.4
 		addPack(t, publicLocalPack124, ConfigType{
@@ -1241,6 +1367,17 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(pdscXML.Read())
 		pdscXML.URL = server.URL()
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
+
+		packInfo, err = utils.ExtractPackInfo(publicLocalPack011)
+		assert.Nil(err)
+		pack = packInfoToType(packInfo)
+		packPdscTag = xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install @^0.1.0
 		err = installer.AddPack(publicLocalPack010WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
@@ -1285,6 +1422,17 @@ func TestAddPack(t *testing.T) {
 		pdscXML.URL = server.URL()
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack011)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 		// Install @^0.1.0
 		err = installer.AddPack(publicLocalPack010WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.Nil(err)
@@ -1308,6 +1456,17 @@ func TestAddPack(t *testing.T) {
 		// Inject pdsc into .Web folder
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack010)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install 0.1.0
 		addPack(t, publicLocalPack010, ConfigType{
@@ -1334,6 +1493,17 @@ func TestAddPack(t *testing.T) {
 		pdscXML.URL = server.URL()
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
+		packInfo, err = utils.ExtractPackInfo(publicLocalPack011)
+		assert.Nil(err)
+		pack = packInfoToType(packInfo)
+		packPdscTag = xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 		// Install @^0.1.0
 		err = installer.AddPack(publicLocalPack011WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.Nil(err)
@@ -1357,6 +1527,17 @@ func TestAddPack(t *testing.T) {
 		// Inject pdsc into .Web folder
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack011)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install 0.1.1
 		addPack(t, publicLocalPack011, ConfigType{
@@ -1394,7 +1575,18 @@ func TestAddPack(t *testing.T) {
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
 
-		err := installer.AddPack(publicLocalPack211WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack124)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
+		err = installer.AddPack(publicLocalPack211WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.Equal(err, errs.ErrPackVersionNotAvailable)
 	})
 
@@ -1413,6 +1605,17 @@ func TestAddPack(t *testing.T) {
 		// Inject pdsc into .Web folder
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack124)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install 1.2.4
 		addPack(t, publicLocalPack124, ConfigType{
@@ -1482,6 +1685,17 @@ func TestAddPack(t *testing.T) {
 		pdscXML.URL = server.URL()
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack011)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 		// Install @~0.1.0
 		err = installer.AddPack(publicLocalPack010WithPatchVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.Nil(err)
@@ -1505,6 +1719,17 @@ func TestAddPack(t *testing.T) {
 		// Inject pdsc into .Web folder
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack010)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install 0.1.0
 		addPack(t, publicLocalPack010, ConfigType{
@@ -1555,6 +1780,17 @@ func TestAddPack(t *testing.T) {
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
 
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack011)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 		// Install 0.1.1
 		addPack(t, publicLocalPack011, ConfigType{
 			IsPublic: true,
@@ -1591,7 +1827,18 @@ func TestAddPack(t *testing.T) {
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
 
-		err := installer.AddPack(publicLocalPack211WithPatchVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack124)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
+		err = installer.AddPack(publicLocalPack211WithPatchVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.Equal(err, errs.ErrPackVersionNotAvailable)
 	})
 
@@ -1630,6 +1877,17 @@ func TestAddPack(t *testing.T) {
 		pdscXML.URL = server.URL()
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack124)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 		// Install @latest
 		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.Nil(err)
@@ -1653,6 +1911,17 @@ func TestAddPack(t *testing.T) {
 		// Inject pdsc into .Web folder
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack123)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Pre-install 1.2.3
 		addPack(t, publicLocalPack123, ConfigType{
@@ -1702,6 +1971,17 @@ func TestAddPack(t *testing.T) {
 		// Inject pdsc into .Web folder
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+
+		packInfo, err := utils.ExtractPackInfo(publicLocalPack124)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install 1.2.4
 		addPack(t, publicLocalPack124, ConfigType{
@@ -1804,16 +2084,27 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-installing-pack-with-dependencies"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
+
+		packInfo, err := utils.ExtractPackInfo(publicRemotePack123)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		addPack(t, publicRemotePack123, ConfigType{IsPublic: true})
 
-		err := installer.AddPack(packWithSingleDependency, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packWithSingleDependency, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.Nil(err)
 
-		packInfo, err := utils.ExtractPackInfo(packWithSingleDependency)
+		packInfo, err = utils.ExtractPackInfo(packWithSingleDependency)
 		assert.Nil(err)
 		checkPackIsInstalled(t, packInfoToType(packInfo))
 	})
@@ -1822,16 +2113,27 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-installing-pack-with-dependencies-alpha"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
+
+		packInfo, err := utils.ExtractPackInfo(publicRemotePack123alpha)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		addPack(t, publicRemotePack123alpha, ConfigType{IsPublic: true})
 
-		err := installer.AddPack(packWithSingleDependencyAlpha, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packWithSingleDependencyAlpha, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.Nil(err)
 
-		packInfo, err := utils.ExtractPackInfo(packWithSingleDependencyAlpha)
+		packInfo, err = utils.ExtractPackInfo(packWithSingleDependencyAlpha)
 		assert.Nil(err)
 		checkPackIsInstalled(t, packInfoToType(packInfo))
 	})
@@ -1840,8 +2142,8 @@ func TestAddPack(t *testing.T) {
 		localTestingDir := "test-installing-pack-with-dependencies-skip"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
 		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
 		err := installer.AddPack(packWithSingleDependency, !CheckEula, !ExtractEula, !ForceReinstall, NoRequirements, true, Timeout)

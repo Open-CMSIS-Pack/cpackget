@@ -41,18 +41,7 @@ The url is optional. Ex "cpackget connection https://www.keil.com/pack"`,
 		var err error
 
 		if indexPath == "" { // try to fetch from environment
-			err = configureInstaller(cmd, args)
-			if err != nil {
-				return err
-			}
-			if err := installer.ReadIndexFiles(); err != nil {
-				return err
-			}
-		}
-
-		indexPath, err = installer.GetIndexPath(indexPath)
-		if err != nil {
-			return err
+			indexPath = installer.ConnectionTryURL
 		}
 
 		err = utils.CheckConnection(indexPath, viper.GetInt("timeout"))

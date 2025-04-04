@@ -104,6 +104,16 @@ func ExampleListInstalledPacks_list() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
+	packInfo, _ := utils.ExtractPackInfo(publicLocalPack123)
+	pack := packInfoToType(packInfo)
+	packPdscTag := xml.PdscTag{
+		Vendor:  pack.Vendor,
+		Name:    pack.Name,
+		Version: pack.Version,
+	}
+	_ = installer.Installation.PublicIndexXML.AddPdsc(packPdscTag)
+	_ = installer.Installation.PublicIndexXML.Write()
+
 	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout)
@@ -307,6 +317,16 @@ func ExampleListInstalledPacks_filter() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
+	packInfo, _ := utils.ExtractPackInfo(publicLocalPack123)
+	pack := packInfoToType(packInfo)
+	packPdscTag := xml.PdscTag{
+		Vendor:  pack.Vendor,
+		Name:    pack.Name,
+		Version: pack.Version,
+	}
+	_ = installer.Installation.PublicIndexXML.AddPdsc(packPdscTag)
+	_ = installer.Installation.PublicIndexXML.Write()
+
 	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout)
@@ -381,6 +401,16 @@ func ExampleListInstalledPacks_filterInvalidChars() {
 		Name:    "PublicLocalPack",
 		Version: "1.2.5",
 	})
+	packInfo, _ := utils.ExtractPackInfo(publicLocalPack123)
+	pack := packInfoToType(packInfo)
+	packPdscTag := xml.PdscTag{
+		Vendor:  pack.Vendor,
+		Name:    pack.Name,
+		Version: pack.Version,
+	}
+	_ = installer.Installation.PublicIndexXML.AddPdsc(packPdscTag)
+	_ = installer.Installation.PublicIndexXML.Write()
+
 	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout)

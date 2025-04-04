@@ -4,6 +4,7 @@
 package installer
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -26,11 +28,17 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-const PublicIndex = "index.pidx"
+const PublicIndexName = "index.pidx"
 const KeilDefaultPackRoot = "https://www.keil.com/pack/"
+const ConnectionTryURL = "https://www.keil.com/pack/keil.vidx"
 
 // DefaultPublicIndex is the public index to use in "default mode"
-const DefaultPublicIndex = KeilDefaultPackRoot + PublicIndex
+const DefaultPublicIndex = KeilDefaultPackRoot + PublicIndexName
+
+type lockedSlice struct {
+	lock  sync.Mutex
+	slice []xml.PdscTag
+}
 
 // GetDefaultCmsisPackRoot provides a default location
 // for the pack root if not provided. This is to enable
@@ -92,29 +100,30 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 		isDep = true
 		packPath = packPath[1:]
 	}
-	pack, err := preparePack(packPath, false, false, false, true, timeout)
-	if err != nil {
-		return err
-	}
 
 	if !isDep {
 		if !testing {
-			if pack.isPackID || !pack.IsLocallySourced {
+			global, err := isGlobal(packPath)
+			if err != nil {
+				return err
+			}
+			if global {
 				if err := UpdatePublicIndexIfOnline(); err != nil {
 					return err
 				}
 			}
-
-			if err := ReadIndexFiles(); err != nil {
-				return err
-			}
-			// prepare again after update public files
-			pack, err = preparePack(packPath, false, false, false, true, timeout)
-			if err != nil {
-				return err
-			}
 		}
 		log.Infof("Adding pack \"%s\"", packPath)
+	}
+
+	pack, err := preparePack(packPath, false, false, false, true, timeout)
+	if err != nil {
+		return err
+	}
+	if pack.isPackID {
+		if pack.path, err = FindPackURL(pack); err != nil {
+			return err
+		}
 	}
 
 	dropPreInstalled := false
@@ -136,15 +145,9 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 			log.Debugf("Moved pack to temporary path \"%s\"", backupPackPath)
 			dropPreInstalled = true
 		} else {
-			log.Errorf("Pack \"%s\" is already installed here: \"%s\", use the --force-reinstall (-F) flag to force installation", packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta()))
+			log.Errorf("Pack \"%s@%s\" is already installed here: \"%s\", use the --force-reinstall (-F) flag to force installation",
+				packPath, pack.targetVersion, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta()))
 			return nil
-		}
-	}
-
-	if pack.isPackID {
-		pack.path, err = FindPackURL(pack)
-		if err != nil {
-			return err
 		}
 	}
 
@@ -155,7 +158,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 	// Since we only get the target version here, can only
 	// print the message now for dependencies
 	if isDep {
-		log.Infof("Adding pack %s", pack.Vendor+"."+pack.Name+"."+pack.targetVersion)
+		log.Infof("Adding pack %s", pack.VName()+"."+pack.targetVersion)
 	}
 	// Tells the UI to return right away with the [E]xtract option selected
 	ui.Extract = extractEula
@@ -250,11 +253,11 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 func RemovePack(packPath string, purge, testing bool, timeout int) error {
 	log.Debugf("Removing pack \"%v\"", packPath)
 
-	if !testing {
-		if err := ReadIndexFiles(); err != nil {
-			return err
-		}
+	//	if !testing {
+	if err := ReadIndexFiles(); err != nil {
+		return err
 	}
+	//	}
 
 	// TODO: by default, remove latest version first
 	// if no version is given
@@ -376,8 +379,11 @@ func RemovePdsc(pdscPath string) error {
 // Example:
 //
 //	massDownloadPdscFiles(pdscTag, true, 30)
-func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, timeout int) {
+func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, timeout int, errTags *lockedSlice) {
 	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, timeout); err != nil {
+		errTags.lock.Lock()
+		errTags.slice = append(errTags.slice, pdscTag)
+		errTags.lock.Unlock()
 		log.Error(err)
 	}
 }
@@ -401,7 +407,7 @@ func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) er
 			return err
 		}
 		for _, installedPack := range installedPacks {
-			err = UpdatePack(installedPack.Vendor+"."+installedPack.Name, checkEula, noRequirements, timeout)
+			err = UpdatePack(installedPack.VName(), checkEula, noRequirements, timeout)
 			if err != nil {
 				log.Error(err)
 			}
@@ -556,19 +562,21 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 	concurrency = CheckConcurrency(concurrency)
 	sem := semaphore.NewWeighted(int64(concurrency))
 
+	var errTags lockedSlice
+
 	for _, pdscTag := range pdscTags {
 		if concurrency == 0 {
-			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, timeout)
+			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, timeout, &errTags)
 		} else {
 			if err := sem.Acquire(ctx, 1); err != nil {
 				log.Errorf("Failed to acquire semaphore: %v", err)
 				break
 			}
 
-			go func(pdscTag xml.PdscTag) {
+			go func(pdscTag xml.PdscTag, errTags *lockedSlice) {
 				defer sem.Release(1)
-				massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, timeout)
-			}(pdscTag)
+				massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, timeout, errTags)
+			}(pdscTag, &errTags)
 		}
 	}
 	if concurrency > 1 {
@@ -597,65 +605,43 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 // 3. If the pack is no longer present, it deletes the PDSC file.
 // 4. If the pack is present but has a newer version in the public index, it downloads the latest version.
 // 5. Lists all PDSC files in the local directory and repeats the update process for these files.
-func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int) error {
-	log.Info("Updating PDSC files of installed packs referenced in " + PublicIndex)
-	pdscFiles, err := utils.ListDir(Installation.WebDir, ".pdsc$")
-	if err != nil {
-		return err
-	}
-
-	numPdsc := len(pdscFiles)
-	if utils.GetEncodedProgress() {
-		log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.PublicIndex)
-	}
+func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, concurrency int, timeout int) error {
+	log.Info("Updating PDSC files of public packs")
 
 	ctx := context.TODO()
 	concurrency = CheckConcurrency(concurrency)
 	sem := semaphore.NewWeighted(int64(concurrency))
 
-	for _, pdscFile := range pdscFiles {
-		log.Debugf("Checking if \"%s\" needs updating", pdscFile)
-		pdscXML := xml.NewPdscXML(pdscFile)
-		err := pdscXML.Read()
-		if err != nil {
-			log.Errorf("%s: %v", pdscFile, err)
-			utils.UnsetReadOnly(pdscFile)
-			os.Remove(pdscFile)
-			continue
-		}
+	var errTags lockedSlice
 
-		searchTag := xml.PdscTag{
-			Vendor: pdscXML.Vendor,
-			Name:   pdscXML.Name,
-		}
+	if oldPidxXML != nil && !oldPidxXML.Empty() {
+		for _, pdscTag := range pidxXML.ListPdscTags() {
+			if oldPidxXML.HasPdsc(pdscTag) != xml.PdscIndexNotFound {
+				continue // found in old pidx and same URL
+			}
+			oldTags := oldPidxXML.FindPdscNameTags(pdscTag)
+			if len(oldTags) != 0 {
+				log.Infof("%s::%s has a new version \"%s\", previous was \"%s\"", pdscTag.Vendor, pdscTag.Name, pdscTag.Version, oldTags[0].Version)
 
-		// Warn the user if the pack is no longer present in index.pidx
-		tags := pidxXML.FindPdscTags(searchTag)
-		if len(tags) == 0 {
-			log.Warnf("The pack %s::%s is no longer present in the updated \"%s\", deleting PDSC file \"%v\"", pdscXML.Vendor, pdscXML.Name, PublicIndex, pdscFile)
-			utils.UnsetReadOnly(pdscFile)
-			os.Remove(pdscFile)
-			continue
-		}
+				if concurrency == 0 {
+					massDownloadPdscFiles(pdscTag, false, timeout, &errTags)
+				} else {
+					if err := sem.Acquire(ctx, 1); err != nil {
+						log.Errorf("Failed to acquire semaphore: %v", err)
+						break
+					}
 
-		versionInIndex := tags[0].Version
-		latestVersion := pdscXML.LatestVersion()
-		if versionInIndex != latestVersion {
-			log.Infof("%s::%s can be upgraded from \"%s\" to \"%s\"", pdscXML.Vendor, pdscXML.Name, latestVersion, versionInIndex)
-
-			if concurrency == 0 {
-				massDownloadPdscFiles(tags[0], false, timeout)
-			} else {
-				if err := sem.Acquire(ctx, 1); err != nil {
-					log.Errorf("Failed to acquire semaphore: %v", err)
-					break
+					go func(pdscTag xml.PdscTag, errTags *lockedSlice) {
+						defer sem.Release(1)
+						massDownloadPdscFiles(pdscTag, false, timeout, errTags)
+					}(pdscTag, &errTags)
 				}
-
-				pdscTag := tags[0]
-				go func(pdscTag xml.PdscTag) {
-					defer sem.Release(1)
-					massDownloadPdscFiles(pdscTag, false, timeout)
-				}(pdscTag)
+			}
+		}
+		for _, tag := range errTags.slice {
+			tags := oldPidxXML.FindPdscNameTags(tag)
+			if len(tags) != 0 {
+				_ = pidxXML.ReplacePdscVersion(tags[0])
 			}
 		}
 	}
@@ -666,12 +652,23 @@ func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, concurrency int, timeout int
 		}
 	}
 
-	pdscFiles, err = utils.ListDir(Installation.LocalDir, ".pdsc$")
+	if errTags.slice != nil {
+		if err := pidxXML.Write(); err != nil {
+			return err
+		}
+		utils.UnsetReadOnly(Installation.PublicIndex)
+		if err := utils.MoveFile(pidxXML.GetFileName(), Installation.PublicIndex); err != nil {
+			return err
+		}
+		utils.SetReadOnly(Installation.PublicIndex)
+	}
+
+	pdscFiles, err := utils.ListDir(Installation.LocalDir, ".pdsc$")
 	if err != nil {
 		return err
 	}
 
-	numPdsc = len(pdscFiles)
+	numPdsc := len(pdscFiles)
 	if utils.GetEncodedProgress() {
 		log.Infof("[J%d:F\"%s\"]", numPdsc, Installation.LocalDir)
 	}
@@ -747,25 +744,33 @@ func GetIndexPath(indexPath string) (string, error) {
 	return indexPath, err
 }
 
+// UpdatePublicIndexIfOnline checks if the public index file exists and updates it if necessary.
+// If the public index file exists, it first checks for an active internet connection and the
+// timestamp of the file. If the system is online and the file is outdated, it downloads the
+// latest version of the public index. If the system is offline, it skips the update process.
+//
+// If the public index file does not exist, it downloads the public index without performing
+// any checks and creates an update configuration file.
+//
+// Returns an error if any step in the update process fails.
 func UpdatePublicIndexIfOnline() error {
 	// If public index already exists then first check if online, then its timestamp
 	// if we are online and it is too old then download a current version
 	if utils.FileExists(Installation.PublicIndex) {
-		err := utils.CheckConnection(DefaultPublicIndex, 0)
+		err := utils.CheckConnection(ConnectionTryURL, 0)
 		if err != nil && errors.Unwrap(err) != errs.ErrOffline {
 			return err
 		}
 		if errors.Unwrap(err) != errs.ErrOffline {
-			v := viper.New()
 			var updateConf updateCfg
-			err = Installation.checkUpdateCfg(v, &updateConf)
+			err = Installation.checkUpdateCfg(&updateConf)
 			if err != nil {
 				UnlockPackRoot()
 				err1 := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
 				if err1 != nil {
 					return err1
 				}
-				_ = Installation.updateUpdateCfg(v, &updateConf)
+				_ = Installation.updateUpdateCfg(&updateConf)
 			}
 		} else {
 			log.Debug("Offline mode: Skipping public index update")
@@ -778,10 +783,9 @@ func UpdatePublicIndexIfOnline() error {
 		if err1 != nil {
 			return err1
 		}
-		v := viper.New()
 		var updateConf updateCfg
-		updateConf.Default.Auto = true
-		_ = Installation.updateUpdateCfg(v, &updateConf) // create the update config file
+		updateConf.Auto = true
+		_ = Installation.updateUpdateCfg(&updateConf) // create the update config file
 	}
 	return nil
 }
@@ -807,22 +811,25 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 
 	// For backwards compatibility, allow indexPath to be a file, but ideally it should be empty
 	if indexPath == "" {
-		indexPath = strings.TrimSuffix(Installation.PublicIndexXML.URL, "/") + "/" + PublicIndex
+		indexPath = strings.TrimSuffix(Installation.PublicIndexXML.URL, "/") + "/" + PublicIndexName
 	}
 
 	var err error
 
 	if strings.HasPrefix(indexPath, "http://") || strings.HasPrefix(indexPath, "https://") {
 		if !strings.HasPrefix(indexPath, "https://127.0.0.1") {
-			err = utils.CheckConnection(indexPath, 0)
+			err = utils.CheckConnection(ConnectionTryURL, 0)
 			if err != nil && errors.Unwrap(err) == errs.ErrOffline {
 				return err
 			}
 		}
 	}
 
-	log.Infof("Updating public index")
-	log.Debugf("Updating public index with \"%v\"", indexPath)
+	if log.IsLevelEnabled(log.DebugLevel) {
+		log.Debugf("Updating public index with \"%v\"", indexPath)
+	} else {
+		log.Infof("Updating public index")
+	}
 
 	if strings.HasPrefix(indexPath, "http://") || strings.HasPrefix(indexPath, "https://") {
 		if !strings.HasPrefix(indexPath, "https://") {
@@ -850,8 +857,16 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 	}
 
 	pidxXML := xml.NewPidxXML(indexPath)
-	if err := pidxXML.Read(); err != nil {
+	if err := pidxXML.Read(); err != nil { // new public index XML
 		return err
+	}
+
+	var oldPidxXML *xml.PidxXML
+	if !sparse {
+		oldPidxXML = xml.NewPidxXML(Installation.PublicIndex)
+		if err := oldPidxXML.Read(); err != nil { // old public index XML
+			return err
+		}
 	}
 
 	utils.UnsetReadOnly(Installation.PublicIndex)
@@ -868,7 +883,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 	}
 
 	if !sparse {
-		err = UpdateInstalledPDSCFiles(pidxXML, concurrency, timeout)
+		err = UpdateInstalledPDSCFiles(pidxXML, oldPidxXML, concurrency, timeout)
 		if err != nil {
 			return err
 		}
@@ -943,12 +958,12 @@ func findInstalledPacks(addLocalPacks, removeDuplicates bool) ([]installedPack, 
 
 				parsedURL, err := url.ParseRequestURI(pdsc.URL)
 				pack.err = err
-				if pack.err != nil {
+				if err != nil {
 					installedPacks = append(installedPacks, pack)
 					continue
 				}
 
-				pack.pdscPath = filepath.Join(utils.CleanPath(parsedURL.Path), pack.Vendor+"."+pack.Name+".pdsc")
+				pack.pdscPath = filepath.Join(utils.CleanPath(parsedURL.Path), pack.VName()+".pdsc")
 				pdscXML := xml.NewPdscXML(pack.pdscPath)
 				pack.err = pdscXML.Read()
 				if pack.err == nil {
@@ -1034,7 +1049,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, t
 			logMessage := pdscTag.YamlPackID()
 			packFilePath := filepath.Join(Installation.DownloadDir, pdscTag.Key()) + ".pack"
 
-			if Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}, false) {
+			if ok, _ := Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}, false); ok {
 				logMessage += " (installed)"
 			} else if utils.FileExists(packFilePath) {
 				logMessage += " (cached)"
@@ -1080,7 +1095,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, t
 			}
 
 			logMessage := pdscTag.YamlPackID()
-			if Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}, false) {
+			if ok, _ := Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}, false); ok {
 				logMessage += " (installed)"
 			}
 
@@ -1378,7 +1393,7 @@ func SetPackRoot(packRoot string, create bool) error {
 	}
 	Installation.LocalPidx = xml.NewPidxXML(filepath.Join(Installation.LocalDir, "local_repository.pidx"))
 	Installation.PackIdx = filepath.Join(packRoot, "pack.idx")
-	Installation.PublicIndex = filepath.Join(Installation.WebDir, PublicIndex)
+	Installation.PublicIndex = filepath.Join(Installation.WebDir, PublicIndexName)
 	Installation.PublicIndexXML = xml.NewPidxXML(Installation.PublicIndex)
 
 	missingDirs := []string{}
@@ -1436,7 +1451,7 @@ type PacksInstallationType struct {
 	PackRoot string
 
 	// packs installed
-	packs map[string]bool
+	//	packs map[string]bool
 
 	// DownloadDir stores copies of all packs that were installed via pack files
 	// from external servers.
@@ -1474,30 +1489,44 @@ type PacksInstallationType struct {
 // - Date: a string representing the date of the last update.
 // - Auto: a boolean indicating whether automatic updates are enabled.
 type updateCfg struct {
-	Default struct {
-		Date string
-		Auto bool
-	}
+	// Default struct {
+	Date string
+	Auto bool
+	// }
 }
 
-// checkUpdateCfg reads the update configuration file, and checks if the index.pidx file is older than one day.
+// checkUpdateCfg reads and parses the "update.cfg" file located in the WebDir directory
+// to populate the provided updateCfg structure with configuration values. It checks
+// the "Date" and "Auto" fields in the file and validates whether the "Date" field
+// indicates a timestamp older than 24 hours.
 //
 // Parameters:
-//   - v: A pointer to a viper.Viper instance used to read the configuration file.
-//   - conf: A pointer to an updateCfg struct where the configuration will be unmarshaled.
+//   - conf (*updateCfg): A pointer to the updateCfg structure that will be populated
+//     with the parsed configuration values.
 //
 // Returns:
-//   - error: An error if there is an issue reading the configuration file, unmarshaling it, or if the index.pidx file is older than one day.
-func (p *PacksInstallationType) checkUpdateCfg(v *viper.Viper, conf *updateCfg) error {
-	v.SetConfigFile(filepath.Join(p.WebDir, "update.cfg"))
-	v.SetConfigType("ini")
-	if err := v.ReadInConfig(); err != nil {
+//   - error: An error is returned if the "update.cfg" file cannot be opened, if the
+//     "Date" field cannot be parsed, or if the timestamp in the "Date" field is older
+//     than 24 hours. If no errors occur, nil is returned.
+func (p *PacksInstallationType) checkUpdateCfg(conf *updateCfg) error {
+	f, err := os.Open(filepath.Join(p.WebDir, "update.cfg"))
+	if err != nil {
 		return err
 	}
-	if err := v.Unmarshal(conf); err != nil {
-		return err
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f) // Read the file line by line
+	scanner.Split(bufio.ScanLines)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "Date=") {
+			conf.Date = strings.TrimPrefix(line, "Date=")
+		} else if strings.HasPrefix(line, "Auto=") {
+			conf.Auto = strings.TrimPrefix(line, "Auto=") == "true"
+		}
 	}
-	if t, err := time.Parse("2-1-2006", conf.Default.Date); err != nil {
+	if t, err := time.Parse("2-1-2006", conf.Date); err != nil {
 		return err
 	} else {
 		if time.Since(t).Hours() > 24 { // index.pidx older than 1 day
@@ -1507,33 +1536,16 @@ func (p *PacksInstallationType) checkUpdateCfg(v *viper.Viper, conf *updateCfg) 
 	return nil
 }
 
-// updateUpdateCfg updates the update configuration file with the current date and auto-update settings.
-// It uses the provided viper instance and updateCfg struct to set the configuration values.
-// The function writes the configuration directly to the file, bypassing viper's WriteConfig method
-// due to issues with viper's handling of the configuration file type.
+// updateUpdateCfg updates the "update.cfg" configuration file with the provided settings.
+// It writes the current date and the auto-update flag to the file.
 //
 // Parameters:
-//   - v: A pointer to a viper.Viper instance for configuration management (unused in this function).
-//   - conf: A pointer to an updateCfg struct containing the configuration values to be written.
+//   - conf: A pointer to an updateCfg struct containing the configuration to be written.
 //
 // Returns:
-//   - error: An error if any occurs during the file operations, otherwise nil.
-func (p *PacksInstallationType) updateUpdateCfg(v *viper.Viper, conf *updateCfg) error {
-	_ = v
-	// v.SetConfigFile(filepath.Join(p.WebDir, "update.cfg"))
-	// v.SetConfigType("ini")
-	// if err := v.ReadInConfig(); err != nil {
-	// 	return err
-	// }
-	// if err := v.Unmarshal(&updateConf); err != nil {
-	// 	return err
-	// }
-	conf.Default.Date = time.Now().Local().Format("2-1-2006")
-	//	v.SetConfigFile(filepath.Join(p.WebDir, "update.cfg")) // have to force type with extension, this does not work
-	// if err := v.WriteConfig(); err != nil { // does not use changed conf
-	// 	return err
-	// }
-	// So, we do it by ourselves. Viper does not work as expected
+//   - An error if there is an issue opening, writing to, or syncing the file; otherwise, nil.
+func (p *PacksInstallationType) updateUpdateCfg(conf *updateCfg) error {
+	conf.Date = time.Now().Local().Format("2-1-2006")
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	f, err := os.OpenFile(filepath.Join(p.WebDir, "update.cfg"), flags, os.FileMode(0o644))
 	if err != nil {
@@ -1541,13 +1553,13 @@ func (p *PacksInstallationType) updateUpdateCfg(v *viper.Viper, conf *updateCfg)
 	}
 	defer f.Close()
 
-	if _, err := f.WriteString("Date=" + conf.Default.Date + "\n"); err != nil {
+	if _, err := f.WriteString("Date=" + conf.Date + "\n"); err != nil {
 		return err
 	}
 	if _, err := f.WriteString("Auto="); err != nil {
 		return err
 	}
-	if conf.Default.Auto {
+	if conf.Auto {
 		if _, err := f.WriteString("true\n"); err != nil {
 			return err
 		}
@@ -1600,41 +1612,44 @@ func (p *PacksInstallationType) touchPackIdx() error {
 //   - RangeVersion: Any installed version within the specified version range.
 //
 // 7. If the version modifier is LatestVersion, it retrieves the latest available version from the PDSC file and checks if it's installed.
-func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bool {
+func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) (found bool, installedVersions []string) {
 	log.Debugf("Checking if %s is installed", pack.PackIDWithVersion())
+
+	found = false
+	installedVersions = []string{}
 
 	// First make sure there's at least one version of the pack installed
 	installationDir := filepath.Join(p.PackRoot, pack.Vendor, pack.Name)
 	if !utils.DirExists(installationDir) {
-		return false
-	}
-
-	// Empty version means any version (pack.VersionModifier == utils.AnyVersion)
-	if pack.Version == "" {
-		return true
+		return
 	}
 
 	// Exact version is easy, just find a matching installation folder
 	if pack.versionModifier == utils.ExactVersion {
-		packDir := filepath.Join(installationDir, pack.GetVersionNoMeta())
+		version := pack.GetVersionNoMeta()
+		packDir := filepath.Join(installationDir, version)
 		log.Debugf("Checking if \"%s\" exists", packDir)
-		return utils.DirExists(packDir)
+		found = utils.DirExists(packDir)
+		if found {
+			installedVersions = append(installedVersions, version)
+		}
+		return
 	}
-	installedVersions := []string{}
+
 	if noLocal {
 		if pack.isPackID || !pack.IsLocallySourced {
 			if err := UpdatePublicIndexIfOnline(); err != nil {
-				return false
+				return
 			}
 		}
 		if err := ReadIndexFiles(); err != nil {
-			return false
+			return
 		}
 	} else {
 		// Gather all versions in local_repository.idx for local .psdc installed packs
 		if err := p.LocalPidx.Read(); err != nil {
 			log.Warn("Could not read local index")
-			return false
+			return
 		}
 		for _, pdsc := range p.LocalPidx.ListPdscTags() {
 			if pack.Vendor == pdsc.Vendor && pack.Name == pdsc.Name {
@@ -1647,12 +1662,18 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 	installedDirs, err := utils.ListDir(installationDir, "")
 	if err != nil {
 		log.Warnf("Could not list installed packs in \"%s\": %v", installationDir, err)
-		return false
+		return
 	}
 
 	for _, path := range installedDirs {
 		base := filepath.Base(path)
 		installedVersions = append(installedVersions, base)
+	}
+
+	// Empty version also means any version
+	if pack.Version == "" || pack.versionModifier == utils.AnyVersion {
+		found = true
+		return
 	}
 
 	// Check if greater version is specified
@@ -1663,11 +1684,12 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 			if utils.SemverCompare(version, pack.Version) >= 0 {
 				log.Debugf("- found newer version %s", version)
 				pack.targetVersion = version
-				return true
+				found = true
+				return
 			}
 		}
 		log.Debugf("- no version matched")
-		return false
+		return
 	}
 
 	// Check if there is a greater version with same Major number
@@ -1678,10 +1700,11 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 			sameMajor := semver.Major("v"+version) == semver.Major("v"+pack.Version)
 			if sameMajor && utils.SemverCompare(version, pack.Version) >= 0 {
 				pack.targetVersion = version
-				return true
+				found = true
+				return
 			}
 		}
-		return false
+		return
 	}
 
 	// Check if there is a greater version with same Major and Minor number
@@ -1692,10 +1715,11 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 			sameMajorMinor := semver.MajorMinor("v"+version) == semver.MajorMinor("v"+pack.Version)
 			if sameMajorMinor && utils.SemverCompare(version, pack.Version) >= 0 {
 				pack.targetVersion = version
-				return true
+				found = true
+				return
 			}
 		}
-		return false
+		return
 	}
 
 	if pack.versionModifier == utils.RangeVersion {
@@ -1703,37 +1727,38 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 		for _, version := range installedVersions {
 			log.Debugf("- checking against: %s", version)
 			if utils.SemverCompareRange(version, pack.Version) == 0 {
-				return true
+				found = true
+				return
 			}
 		}
-		return false
+		return
 	}
 
-	log.Debug("Checking if the latest version is installed")
+	if pack.versionModifier == utils.LatestVersion {
+		// so cpackget needs to know first the latest available
+		// version for that pack to then check if it's installed
+		var pdscFilePath string
+		var pdscLookupDir string
+		if pack.IsPublic {
+			pdscLookupDir = Installation.WebDir
+		} else {
+			pdscLookupDir = Installation.LocalDir
+		}
 
-	// Specified versionModifier == LatestVersion
-	// so cpackget needs to know first the latest available
-	// version for that pack to then check if it's installed
-	var pdscFilePath string
-	var pdscLookupDir string
-	if pack.IsPublic {
-		pdscLookupDir = Installation.WebDir
-	} else {
-		pdscLookupDir = Installation.LocalDir
+		pdscFilePath = filepath.Join(pdscLookupDir, pack.PdscFileName())
+		pdscXML := xml.NewPdscXML(pdscFilePath)
+		if err := pdscXML.Read(); err != nil {
+			log.Debugf("Could not retrieve pack's PDSC file from \"%s\"", pdscFilePath)
+			return
+		}
+
+		latestVersion := pdscXML.LatestVersion()
+		packDir := filepath.Join(installationDir, latestVersion)
+		pack.targetVersion = latestVersion
+		found = utils.DirExists(packDir)
 	}
 
-	pdscFilePath = filepath.Join(pdscLookupDir, pack.PdscFileName())
-	pdscXML := xml.NewPdscXML(pdscFilePath)
-	if err := pdscXML.Read(); err != nil {
-		log.Debugf("Could not retrieve pack's PDSC file from \"%s\"", pdscFilePath)
-		return false
-	}
-
-	latestVersion := pdscXML.LatestVersion()
-	packDir := filepath.Join(installationDir, latestVersion)
-	found := utils.DirExists(packDir)
-	pack.targetVersion = latestVersion
-	return found
+	return
 }
 
 // packIsPublic checks whether the pack is public or not.
@@ -1744,29 +1769,15 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) bo
 //
 // Parameters:
 //   - pack: The pack to check for public availability.
-//   - timeout: The timeout duration for downloading the PDSC file if needed.
 //
 // Returns:
 //   - bool: True if the pack is public, false otherwise.
-//   - error: An error if there was an issue downloading the PDSC file.
-func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool, error) {
-	// lazyly lists all pdsc files in the ".Web/" folder only once
-	if p.packs == nil {
-		p.packs = make(map[string]bool)
-		files, _ := utils.ListDir(p.WebDir, `^.*\.pdsc$`)
-		for _, file := range files {
-			_, baseFileName := filepath.Split(file)
-			p.packs[baseFileName] = true
+func (p *PacksInstallationType) packIsPublic(pack *PackType, pdscTag *xml.PdscTag) (bool, error) {
+	if p.PublicIndexXML.Empty() {
+		if err := ReadIndexFiles(); err != nil {
+			return false, err
 		}
 	}
-
-	_, ok := p.packs[pack.PdscFileName()]
-	if ok {
-		log.Debugf("Found \"%s\" in \"%s\"", pack.PdscFileName(), p.WebDir)
-		return true, nil
-	}
-
-	log.Debugf("Not found \"%s\" in \"%s\"", pack.PdscFileName(), p.WebDir)
 
 	// Try to retrieve the packs's PDSC file out of the index.pidx
 	searchPdscTag := xml.PdscTag{Vendor: pack.Vendor, Name: pack.Name}
@@ -1776,16 +1787,17 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool,
 		return false, nil
 	}
 
+	// Sometimes a pidx file might have multiple pdsc tags for same key
+	// which is not the case here, so we'll take only the first one
+	*pdscTag = pdscTags[0]
+
 	// If the pack is being removed, there's no need to get its PDSC file under .Web
 	// Same applies to locally sourced packs
 	if pack.toBeRemoved || pack.IsLocallySourced {
 		return true, nil
 	}
 
-	// Sometimes a pidx file might have multiple pdsc tags for same key
-	// which is not the case here, so we'll take only the first one
-	pdscTag := pdscTags[0]
-	return true, p.downloadPdscFile(pdscTag, false, timeout)
+	return true, nil
 }
 
 // downloadPdscFile downloads a PDSC file based on the provided pdscTag and saves it to the specified location.
@@ -1800,7 +1812,7 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool,
 // Returns:
 //   - error: An error if any issues occur during the download or file operations.
 func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, timeout int) error {
-	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
+	basePdscFile := fmt.Sprintf("%s.pdsc", pdscTag.VName())
 	pdscFilePath := filepath.Join(p.WebDir, basePdscFile)
 
 	if skipInstalledPdscFiles {
@@ -1863,7 +1875,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 //  4. If the URL scheme is not "file", it downloads the file from the remote URL.
 //  5. Sets the file to read-only after copying or downloading it.
 func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) error {
-	basePdscFile := fmt.Sprintf("%s.%s.pdsc", pdscTag.Vendor, pdscTag.Name)
+	basePdscFile := fmt.Sprintf("%s.pdsc", pdscTag.VName())
 	pdscFilePath := filepath.Join(p.LocalDir, basePdscFile)
 
 	pdscURL := pdscTag.URL

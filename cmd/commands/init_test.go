@@ -18,7 +18,7 @@ import (
 
 var (
 	pidxFilePath         = filepath.Join(testingDir, "SamplePublicIndex.pidx")
-	notFoundPidxFilePath = filepath.Join("path", "to", installer.PublicIndex)
+	notFoundPidxFilePath = filepath.Join("path", "to", installer.PublicIndexName)
 )
 
 var initCmdTests = []TestCase{
@@ -33,12 +33,12 @@ var initCmdTests = []TestCase{
 		expectedErr: nil,
 	},
 	{
-		name: "test create using an " + installer.PublicIndex,
+		name: "test create using an " + installer.PublicIndexName,
 		args: []string{"init"},
 		setUpFunc: func(t *TestCase) {
 			server := NewServer()
-			t.args = append(t.args, server.URL()+installer.PublicIndex)
-			server.AddRoute(installer.PublicIndex, []byte(`<?xml version="1.0" encoding="UTF-8" ?>
+			t.args = append(t.args, server.URL()+installer.PublicIndexName)
+			server.AddRoute(installer.PublicIndexName, []byte(`<?xml version="1.0" encoding="UTF-8" ?>
 <index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="https://www.w3.org/2001/XMLSchema-instance">
 <vendor>TheVendor</vendor>
 <url>https://the.vendor/</url>
@@ -50,12 +50,12 @@ var initCmdTests = []TestCase{
 		},
 	},
 	{
-		name:           "test create using local " + installer.PublicIndex,
+		name:           "test create using local " + installer.PublicIndexName,
 		args:           []string{"init", pidxFilePath},
 		createPackRoot: true,
 	},
 	{
-		name:           "test create using local " + installer.PublicIndex + " that does not exist",
+		name:           "test create using local " + installer.PublicIndexName + " that does not exist",
 		args:           []string{"init", notFoundPidxFilePath},
 		createPackRoot: true,
 		expectedErr:    errs.ErrFileNotFoundUseInit,

@@ -12,6 +12,7 @@ import (
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
+	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,6 +61,17 @@ func TestRemovePack(t *testing.T) {
 		config := ConfigType{
 			IsPublic: true,
 		}
+
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Test all possible combinations, with or without version, with or without purging
 		addPack(t, packPath, config)
@@ -116,6 +128,18 @@ func TestRemovePack(t *testing.T) {
 		config := ConfigType{
 			IsPublic: true,
 		}
+
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 		addPack(t, packPath, config)
 		addPack(t, updatedPackPath, config)
 
@@ -133,6 +157,18 @@ func TestRemovePack(t *testing.T) {
 
 		// Add a pack, add an updated version of the pack, then remove the first one
 		packPath := publicLocalPack123
+
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 		addPack(t, packPath, ConfigType{
 			IsPublic: true,
 		})
@@ -144,7 +180,7 @@ func TestRemovePack(t *testing.T) {
 		removePack(t, packPath, true, NotPublic, true) // withVersion=true, purge=true
 
 		// Make sure pack is not purgeable
-		err := installer.RemovePack(shortenPackPath(packPath, false), true, true, Timeout) // withVersion=false, purge=true
+		err = installer.RemovePack(shortenPackPath(packPath, false), true, true, Timeout) // withVersion=false, purge=true
 		assert.Equal(errs.ErrPackNotPurgeable, err)
 	})
 
@@ -195,6 +231,18 @@ func TestRemovePack(t *testing.T) {
 		config := ConfigType{
 			IsPublic: true,
 		}
+
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 		addPack(t, packPath, config)
 		addPack(t, updatedPackPath, config)
 
@@ -212,6 +260,14 @@ func TestRemovePack(t *testing.T) {
 		packPath := publicLocalPack123
 		packInfo, err := utils.ExtractPackInfo(packPath)
 		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Make sure there's a pdsc in .Web
 		pdscFilePath := filepath.Join(installer.Installation.WebDir, fmt.Sprintf("%s.%s.pdsc", packInfo.Vendor, packInfo.Pack))
@@ -220,6 +276,7 @@ func TestRemovePack(t *testing.T) {
 		config := ConfigType{
 			IsPublic: true,
 		}
+
 		addPack(t, packPath, config)
 
 		// Make sure there is no PDSC file in .Web/

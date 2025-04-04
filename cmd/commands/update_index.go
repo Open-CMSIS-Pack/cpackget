@@ -50,7 +50,7 @@ var UpdateIndexCmd = &cobra.Command{
 }
 
 func getLongUpdateDescription() string {
-	return `Updates the public index in ` + os.Getenv("CMSIS_PACK_ROOT") + "/.Web/" + installer.PublicIndex + " using the URL in <url> tag inside " + installer.PublicIndex + `.
+	return `Updates the public index in ` + os.Getenv("CMSIS_PACK_ROOT") + "/.Web/" + installer.PublicIndexName + " using the URL in <url> tag inside " + installer.PublicIndexName + `.
 By default it will also check if all PDSC files under .Web/ need update as well. This can be disabled via the "--sparse" flag.`
 }
 

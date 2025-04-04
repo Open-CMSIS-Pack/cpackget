@@ -32,9 +32,6 @@ type PackType struct {
 	// IsPublic tells whether the pack exists in the public index or not
 	IsPublic bool
 
-	// isInstalled tells whether the pack is already installed
-	isInstalled bool
-
 	// isDownloaded tells whether the file needed to be downloaded from a server
 	isDownloaded bool
 
@@ -50,6 +47,12 @@ type PackType struct {
 
 	// targetVersion is the most recent version of a pack in case exactVersion==true
 	targetVersion string
+
+	// isInstalled tells whether the pack is already installed
+	isInstalled bool
+
+	// list of all the packs that are installed
+	installedVersions []string
 
 	// path points to a file in the local system, whether or not it's local
 	path string
@@ -71,6 +74,20 @@ type PackType struct {
 		}
 		satisfied bool // true if all dependencies are installed
 	}
+}
+
+func isGlobal(packPath string) (bool, error) {
+	info, err := utils.ExtractPackInfo(packPath)
+	if err != nil {
+		return false, err
+	}
+	if info.IsPackID {
+		return true, nil
+	}
+	if !strings.HasPrefix(info.Location, "http://") && !strings.HasPrefix(info.Location, "https://") && strings.HasPrefix(info.Location, "file://") {
+		return true, nil
+	}
+	return false, nil
 }
 
 // preparePack prepares a PackType object based on the provided parameters,
@@ -119,8 +136,8 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 		info.VersionModifier = utils.LatestVersion
 	}
 	pack.URL = info.Location
-	pack.Name = info.Pack
 	pack.Vendor = info.Vendor
+	pack.Name = info.Pack
 	pack.Version = info.Version
 	pack.versionModifier = info.VersionModifier
 	pack.isPackID = info.IsPackID
@@ -129,7 +146,8 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 		pack.IsLocallySourced = true
 	}
 
-	if pack.IsPublic, err = Installation.packIsPublic(pack, timeout); err != nil {
+	var pdscTag xml.PdscTag
+	if pack.IsPublic, err = Installation.packIsPublic(pack, &pdscTag); err != nil {
 		return pack, err
 	}
 
@@ -139,7 +157,23 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 		}
 	}
 
-	pack.isInstalled = Installation.PackIsInstalled(pack, noLocal)
+	if pdscTag.URL != "" {
+		err = Installation.downloadPdscFile(pdscTag, false, timeout)
+		if err != nil {
+			return pack, err
+		}
+	}
+
+	pack.isInstalled, pack.installedVersions = Installation.PackIsInstalled(pack, noLocal)
+
+	if pdscTag.Vendor != "" {
+		pack.Vendor = pdscTag.Vendor
+	}
+	if pdscTag.Name != "" {
+		pack.Name = pdscTag.Name
+	}
+	// pack.Version = pdscTag.Version
+	// pack.URL = pdscTag.URL
 
 	return pack, nil
 }
@@ -343,8 +377,11 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 		return err
 	}
 
-	log.Debugf("Extracting files from \"%s\" to \"%s\"", p.path, packHomeDir)
-	log.Infof("Extracting files to %s...", packHomeDir)
+	if log.IsLevelEnabled(log.DebugLevel) {
+		log.Debugf("Extracting files from \"%s\" to \"%s\"", p.path, packHomeDir)
+	} else {
+		log.Infof("Extracting files to %s...", packHomeDir)
+	}
 	// Avoid repeated calls to IsTerminalInteractive
 	// as it cleans the stdout buffer
 	interactiveTerminal := utils.IsTerminalInteractive()
@@ -650,7 +687,7 @@ func (p *PackType) loadDependencies(nometa bool) error {
 		} else {
 			pack.versionModifier = utils.LatestVersion
 		}
-		if Installation.PackIsInstalled(pack, false) {
+		if ok, _ := Installation.PackIsInstalled(pack, false); ok {
 			p.Requirements.packages = append(p.Requirements.packages, struct {
 				info      []string
 				installed bool
