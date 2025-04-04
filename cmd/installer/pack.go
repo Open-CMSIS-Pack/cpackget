@@ -76,6 +76,20 @@ type PackType struct {
 	}
 }
 
+func isGlobal(packPath string) (bool, error) {
+	info, err := utils.ExtractPackInfo(packPath)
+	if err != nil {
+		return false, err
+	}
+	if info.IsPackID {
+		return true, nil
+	}
+	if !strings.HasPrefix(info.Location, "http://") && !strings.HasPrefix(info.Location, "https://") && strings.HasPrefix(info.Location, "file://") {
+		return true, nil
+	}
+	return false, nil
+}
+
 // preparePack prepares a PackType object based on the provided parameters,
 // it does some sanity validation regarding pack name
 // and check if it's public and if it's installed or not
@@ -122,8 +136,8 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 		info.VersionModifier = utils.LatestVersion
 	}
 	pack.URL = info.Location
-	pack.Name = info.Pack
 	pack.Vendor = info.Vendor
+	pack.Name = info.Pack
 	pack.Version = info.Version
 	pack.versionModifier = info.VersionModifier
 	pack.isPackID = info.IsPackID
@@ -132,7 +146,8 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 		pack.IsLocallySourced = true
 	}
 
-	if pack.IsPublic, err = Installation.packIsPublic(pack, timeout); err != nil {
+	var pdscTag xml.PdscTag
+	if pack.IsPublic, err = Installation.packIsPublic(pack, &pdscTag); err != nil {
 		return pack, err
 	}
 
@@ -142,7 +157,23 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 		}
 	}
 
+	if pdscTag.URL != "" {
+		err = Installation.downloadPdscFile(pdscTag, false, timeout)
+		if err != nil {
+			return pack, err
+		}
+	}
+
 	pack.isInstalled, pack.installedVersions = Installation.PackIsInstalled(pack, noLocal)
+
+	if pdscTag.Vendor != "" {
+		pack.Vendor = pdscTag.Vendor
+	}
+	if pdscTag.Name != "" {
+		pack.Name = pdscTag.Name
+	}
+	// pack.Version = pdscTag.Version
+	// pack.URL = pdscTag.URL
 
 	return pack, nil
 }
@@ -346,8 +377,11 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 		return err
 	}
 
-	log.Debugf("Extracting files from \"%s\" to \"%s\"", p.path, packHomeDir)
-	log.Infof("Extracting files to %s...", packHomeDir)
+	if log.IsLevelEnabled(log.DebugLevel) {
+		log.Debugf("Extracting files from \"%s\" to \"%s\"", p.path, packHomeDir)
+	} else {
+		log.Infof("Extracting files to %s...", packHomeDir)
+	}
 	// Avoid repeated calls to IsTerminalInteractive
 	// as it cleans the stdout buffer
 	interactiveTerminal := utils.IsTerminalInteractive()

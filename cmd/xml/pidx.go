@@ -34,7 +34,7 @@ type PidxXML struct {
 	} `xml:"pindex"`
 
 	pdscList     map[string][]PdscTag // map of PdscTag.Key() to PdscTag
-	pdscListName map[string]string    // map of Vendor.Pack to PdscTag.Key()
+	pdscListName map[string]string    // map of lowercase Vendor.Pack to PdscTag.Key()
 	fileName     string
 }
 
@@ -88,7 +88,7 @@ func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 	}
 
 	key := pdsc.Key()
-	name := pdsc.VName()
+	name := strings.ToLower(pdsc.VName())
 	p.pdscList[key] = append(p.pdscList[key], pdsc)
 	p.pdscListName[name] = key
 	return nil
@@ -107,7 +107,7 @@ func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 //	error - An error if the PDSC tag is not found, otherwise nil.
 func (p *PidxXML) ReplacePdscVersion(pdsc PdscTag) error {
 	log.Debugf("Replacing version of pdsc tag \"%s\"", pdsc)
-	name := pdsc.VName()
+	name := strings.ToLower(pdsc.VName())
 	key, ok := p.pdscListName[name]
 	if !ok {
 		return errs.ErrPdscEntryNotFound
@@ -153,7 +153,7 @@ func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 
 	toRemove := []removeInfo{}
 
-	name := pdsc.VName()
+	name := strings.ToLower(pdsc.VName())
 	if pdsc.Version != "" {
 		if index := p.HasPdsc(pdsc); index != PdscIndexNotFound {
 			toRemove = append(toRemove, removeInfo{
@@ -252,7 +252,7 @@ func (p *PidxXML) FindPdscTags(pdsc PdscTag) []PdscTag {
 	}
 
 	// No version, means "Vendor.Pack"
-	name := pdsc.VName()
+	name := strings.ToLower(pdsc.VName())
 	foundKey, ok := p.pdscListName[name]
 	foundTags := []PdscTag{}
 	if ok {
@@ -264,7 +264,7 @@ func (p *PidxXML) FindPdscTags(pdsc PdscTag) []PdscTag {
 
 func (p *PidxXML) FindPdscNameTags(pdsc PdscTag) []PdscTag {
 	log.Debugf("Searching for pdsc \"%s\"", pdsc.VName())
-	name := pdsc.VName()
+	name := strings.ToLower(pdsc.VName())
 	foundKey, ok := p.pdscListName[name]
 	foundTags := []PdscTag{}
 	if ok {
@@ -340,7 +340,7 @@ func (p *PidxXML) Read() error {
 
 	for _, pdsc := range p.Pindex.Pdscs {
 		key := pdsc.Key()
-		name := pdsc.VName()
+		name := strings.ToLower(pdsc.VName())
 		log.Debugf("Registring \"%s\"", key)
 		p.pdscList[key] = append(p.pdscList[key], pdsc)
 		p.pdscListName[name] = key

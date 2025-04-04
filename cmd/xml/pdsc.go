@@ -116,7 +116,7 @@ func (p *PdscXML) Tag() PdscTag {
 // Read reads the PDSC file specified in p.FileName into the PdscXML struct
 func (p *PdscXML) Read() error {
 	log.Debugf("Reading pdsc from file \"%s\"", p.FileName)
-	return utils.ReadXML(p.FileName, p)
+	return utils.ReadXML(p.FileName, p) // TODO: read should ignore case of filename
 }
 
 // PackURL returns a url for the Pack described in this PDSC file

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?> 
+<index schemaVersion="1.1.0" xs:noNamespaceSchemaLocation="PackIndex.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance">
+<vendor>Keil</vendor>
+<url></url>
+<timestamp>2025-04-02T04:06:22.6006733+00:00</timestamp>
+<pindex>
+  <pdsc vendor="TheVendor" name="PublicLocalPack" version="1.2.4" />
+  <pdsc vendor="TheVendor" name="PublicRemotePack" version="1.2.4" />
+</pindex>
+</index>

@@ -28,12 +28,12 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-const PublicIndex = "index.pidx"
+const PublicIndexName = "index.pidx"
 const KeilDefaultPackRoot = "https://www.keil.com/pack/"
 const ConnectionTryURL = "https://www.keil.com/pack/keil.vidx"
 
 // DefaultPublicIndex is the public index to use in "default mode"
-const DefaultPublicIndex = KeilDefaultPackRoot + PublicIndex
+const DefaultPublicIndex = KeilDefaultPackRoot + PublicIndexName
 
 type lockedSlice struct {
 	lock  sync.Mutex
@@ -100,35 +100,28 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 		isDep = true
 		packPath = packPath[1:]
 	}
-	pack, err := preparePack(packPath, false, false, false, true, timeout)
-	if err != nil {
-		return err
-	}
 
 	if !isDep {
 		if !testing {
-			if err := ReadIndexFiles(); err != nil {
+			global, err := isGlobal(packPath)
+			if err != nil {
 				return err
 			}
-
-			if pack.isPackID || !pack.IsLocallySourced {
+			if global {
 				if err := UpdatePublicIndexIfOnline(); err != nil {
 					return err
 				}
-			}
-
-			// prepare again after update public files
-			pack, err = preparePack(packPath, false, false, false, true, timeout)
-			if err != nil {
-				return err
 			}
 		}
 		log.Infof("Adding pack \"%s\"", packPath)
 	}
 
+	pack, err := preparePack(packPath, false, false, false, true, timeout)
+	if err != nil {
+		return err
+	}
 	if pack.isPackID {
-		pack.path, err = FindPackURL(pack)
-		if err != nil {
+		if pack.path, err = FindPackURL(pack); err != nil {
 			return err
 		}
 	}
@@ -260,11 +253,11 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 func RemovePack(packPath string, purge, testing bool, timeout int) error {
 	log.Debugf("Removing pack \"%v\"", packPath)
 
-	if !testing {
-		if err := ReadIndexFiles(); err != nil {
-			return err
-		}
+	//	if !testing {
+	if err := ReadIndexFiles(); err != nil {
+		return err
 	}
+	//	}
 
 	// TODO: by default, remove latest version first
 	// if no version is given
@@ -818,7 +811,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 
 	// For backwards compatibility, allow indexPath to be a file, but ideally it should be empty
 	if indexPath == "" {
-		indexPath = strings.TrimSuffix(Installation.PublicIndexXML.URL, "/") + "/" + PublicIndex
+		indexPath = strings.TrimSuffix(Installation.PublicIndexXML.URL, "/") + "/" + PublicIndexName
 	}
 
 	var err error
@@ -1399,7 +1392,7 @@ func SetPackRoot(packRoot string, create bool) error {
 	}
 	Installation.LocalPidx = xml.NewPidxXML(filepath.Join(Installation.LocalDir, "local_repository.pidx"))
 	Installation.PackIdx = filepath.Join(packRoot, "pack.idx")
-	Installation.PublicIndex = filepath.Join(Installation.WebDir, PublicIndex)
+	Installation.PublicIndex = filepath.Join(Installation.WebDir, PublicIndexName)
 	Installation.PublicIndexXML = xml.NewPidxXML(Installation.PublicIndex)
 
 	missingDirs := []string{}
@@ -1457,7 +1450,7 @@ type PacksInstallationType struct {
 	PackRoot string
 
 	// packs installed
-	packs map[string]bool
+	//	packs map[string]bool
 
 	// DownloadDir stores copies of all packs that were installed via pack files
 	// from external servers.
@@ -1775,33 +1768,15 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) (f
 //
 // Parameters:
 //   - pack: The pack to check for public availability.
-//   - timeout: The timeout duration for downloading the PDSC file if needed.
 //
 // Returns:
 //   - bool: True if the pack is public, false otherwise.
-//   - error: An error if there was an issue downloading the PDSC file.
-func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool, error) {
-	// lazyly lists all pdsc files in the ".Web/" folder only once
-	if p.packs == nil {
-		p.packs = make(map[string]bool)
-		files, _ := utils.ListDir(p.WebDir, `^.*\.pdsc$`)
-		for _, file := range files {
-			_, baseFileName := filepath.Split(file)
-			p.packs[baseFileName] = true
+func (p *PacksInstallationType) packIsPublic(pack *PackType, pdscTag *xml.PdscTag) (bool, error) {
+	if p.PublicIndexXML.Empty() {
+		if err := ReadIndexFiles(); err != nil {
+			return false, err
 		}
 	}
-
-	_, ok := p.packs[pack.PdscFileName()]
-	if ok {
-		log.Debugf("Found \"%s\" in \"%s\"", pack.PdscFileName(), p.WebDir)
-		return true, nil
-	}
-
-	if p.PublicIndexXML.Empty() {
-		return false, nil
-	}
-
-	log.Debugf("Not found \"%s\" in \"%s\"", pack.PdscFileName(), p.WebDir)
 
 	// Try to retrieve the packs's PDSC file out of the index.pidx
 	searchPdscTag := xml.PdscTag{Vendor: pack.Vendor, Name: pack.Name}
@@ -1811,16 +1786,17 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, timeout int) (bool,
 		return false, nil
 	}
 
+	// Sometimes a pidx file might have multiple pdsc tags for same key
+	// which is not the case here, so we'll take only the first one
+	*pdscTag = pdscTags[0]
+
 	// If the pack is being removed, there's no need to get its PDSC file under .Web
 	// Same applies to locally sourced packs
 	if pack.toBeRemoved || pack.IsLocallySourced {
 		return true, nil
 	}
 
-	// Sometimes a pidx file might have multiple pdsc tags for same key
-	// which is not the case here, so we'll take only the first one
-	pdscTag := pdscTags[0]
-	return true, p.downloadPdscFile(pdscTag, false, timeout)
+	return true, nil
 }
 
 // downloadPdscFile downloads a PDSC file based on the provided pdscTag and saves it to the specified location.
