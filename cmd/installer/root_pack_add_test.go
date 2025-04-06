@@ -1948,6 +1948,17 @@ func TestAddPack(t *testing.T) {
 		pdscXML.URL = server.URL()
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
+		packInfo, err = utils.ExtractPackInfo(publicLocalPack124)
+		assert.Nil(err)
+		pack = packInfoToType(packInfo)
+		packPdscTag = xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
 		// Install @latest
 		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.Nil(err)
