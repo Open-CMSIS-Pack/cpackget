@@ -91,7 +91,7 @@ Update a pack using the following "<pack>" specification or using packs provided
 				return nil // nothing to do
 			}
 			installer.UnlockPackRoot()
-			err := installer.UpdatePack("", !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, viper.GetInt("timeout"))
+			err := installer.UpdatePack("", !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, viper.GetInt("timeout"))
 			if err != nil {
 				lastErr = err
 				if !errs.AlreadyLogged(err) {
@@ -105,7 +105,7 @@ Update a pack using the following "<pack>" specification or using packs provided
 		log.Debugf("Specified packs %v", args)
 		installer.UnlockPackRoot()
 		for _, packPath := range args {
-			err := installer.UpdatePack(packPath, !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, viper.GetInt("timeout"))
+			err := installer.UpdatePack(packPath, !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, viper.GetInt("timeout"))
 			if err != nil {
 				lastErr = err
 				if !errs.AlreadyLogged(err) {

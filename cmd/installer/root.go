@@ -78,20 +78,27 @@ func GetDefaultCmsisPackRoot() string {
 	return filepath.Clean(root)
 }
 
-// AddPack adds a pack to the pack installation directory structure
-// AddPack installs a pack from the given packPath. It handles various scenarios such as
-// checking and extracting EULA, force reinstalling, and handling dependencies.
+// AddPack installs a pack from the given packPath, handling dependencies, EULA agreements,
+// and reinstallation logic.
 //
 // Parameters:
-// - packPath: The path to the pack to be installed.
-// - checkEula: If true, the EULA will be checked before installation.
-// - extractEula: If true, the EULA will be extracted.
-// - forceReinstall: If true, the pack will be reinstalled even if it is already installed.
-// - noRequirements: If true, the requirements check and installation will be skipped.
-// - timeout: The timeout duration for fetching the pack.
+//   - packPath: The path or identifier of the pack to be installed.
+//   - checkEula: If true, checks for EULA acceptance before installation.
+//   - extractEula: If true, extracts the EULA for the pack without installing it.
+//   - forceReinstall: If true, forces reinstallation of the pack even if it is already installed.
+//   - noRequirements: If true, skips checking and installing dependencies for the pack.
+//   - testing: If true, skips certain operations for testing purposes.
+//   - timeout: The timeout duration (in seconds) for network operations.
 //
 // Returns:
-// - error: An error if the installation fails, otherwise nil.
+//   - error: An error if the installation fails, or nil if successful.
+//
+// Behavior:
+//   - Handles global pack updates by checking and updating the public index if necessary.
+//   - Supports reinstallation by temporarily backing up and restoring existing installations.
+//   - Fetches the pack from its source and installs it, ensuring dependencies are satisfied unless skipped.
+//   - Provides detailed logging for each step of the installation process.
+//   - Ensures proper cleanup and rollback in case of errors during installation.
 func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirements, testing bool, timeout int) error {
 
 	isDep := false
@@ -399,15 +406,26 @@ func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, tim
 //
 // Returns:
 //   - error: An error if the update process fails, otherwise nil.
-func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) error {
+func UpdatePack(packPath string, checkEula, noRequirements, subCall bool, timeout int) error {
 
+	if !subCall {
+		global, err := isGlobal(packPath)
+		if err != nil {
+			return err
+		}
+		if global {
+			if err := UpdatePublicIndexIfOnline(); err != nil {
+				return err
+			}
+		}
+	}
 	if packPath == "" {
 		installedPacks, err := findInstalledPacks(false, true)
 		if err != nil {
 			return err
 		}
 		for _, installedPack := range installedPacks {
-			err = UpdatePack(installedPack.VName(), checkEula, noRequirements, timeout)
+			err = UpdatePack(installedPack.VName(), checkEula, noRequirements, true, timeout)
 			if err != nil {
 				log.Error(err)
 			}
@@ -419,10 +437,12 @@ func UpdatePack(packPath string, checkEula, noRequirements bool, timeout int) er
 		return err
 	}
 
-	if !pack.IsPublic || pack.isInstalled {
-		if !pack.isInstalled {
-			log.Infof("Pack \"%s\" is not installed", packPath)
-		}
+	if pack.isInstalled {
+		return nil
+	}
+
+	if !pack.IsPublic {
+		log.Infof("Pack \"%s\" is not installed", packPath)
 		return nil
 	}
 
@@ -638,10 +658,12 @@ func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, concurrency int,
 				}
 			}
 		}
-		for _, tag := range errTags.slice {
-			tags := oldPidxXML.FindPdscNameTags(tag)
-			if len(tags) != 0 {
-				_ = pidxXML.ReplacePdscVersion(tags[0])
+		if len(errTags.slice) > 0 {
+			for _, tag := range errTags.slice {
+				tags := oldPidxXML.FindPdscNameTags(tag)
+				if len(tags) != 0 {
+					_ = pidxXML.ReplacePdscVersion(tags[0])
+				}
 			}
 		}
 	}
@@ -652,7 +674,7 @@ func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, concurrency int,
 		}
 	}
 
-	if errTags.slice != nil {
+	if len(errTags.slice) > 0 {
 		if err := pidxXML.Write(); err != nil {
 			return err
 		}
@@ -1737,25 +1759,28 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) (f
 	if pack.versionModifier == utils.LatestVersion {
 		// so cpackget needs to know first the latest available
 		// version for that pack to then check if it's installed
-		var pdscFilePath string
-		var pdscLookupDir string
+		var latestVersion string
 		if pack.IsPublic {
-			pdscLookupDir = Installation.WebDir
+			tags := Installation.PublicIndexXML.FindPdscTags(xml.PdscTag{Vendor: pack.Vendor, Name: pack.Name})
+			if len(tags) > 0 {
+				latestVersion = tags[0].Version
+			}
 		} else {
-			pdscLookupDir = Installation.LocalDir
+			pdscFilePath := filepath.Join(Installation.LocalDir, pack.PdscFileName())
+			pdscXML := xml.NewPdscXML(pdscFilePath)
+			if err := pdscXML.Read(); err != nil {
+				log.Debugf("Could not retrieve pack's PDSC file from \"%s\"", pdscFilePath)
+				return
+			}
+			latestVersion = pdscXML.LatestVersion()
 		}
-
-		pdscFilePath = filepath.Join(pdscLookupDir, pack.PdscFileName())
-		pdscXML := xml.NewPdscXML(pdscFilePath)
-		if err := pdscXML.Read(); err != nil {
-			log.Debugf("Could not retrieve pack's PDSC file from \"%s\"", pdscFilePath)
-			return
+		if latestVersion == "" {
+			log.Debugf("Could not find latest version for \"%s\"", pack.PackIDWithVersion())
+		} else {
+			packDir := filepath.Join(installationDir, latestVersion)
+			found = utils.DirExists(packDir)
+			pack.targetVersion = latestVersion
 		}
-
-		latestVersion := pdscXML.LatestVersion()
-		packDir := filepath.Join(installationDir, latestVersion)
-		pack.targetVersion = latestVersion
-		found = utils.DirExists(packDir)
 	}
 
 	return
