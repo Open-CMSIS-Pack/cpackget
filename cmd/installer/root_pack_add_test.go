@@ -751,16 +751,22 @@ func TestAddPack(t *testing.T) {
 			// Tweak the URL for the pack's pdsc
 			packInfo, err := utils.ExtractPackInfo(packPath)
 			assert.Nil(err)
-			packPdscTag := xml.PdscTag{Vendor: packInfo.Vendor, Name: packInfo.Pack, Version: packInfo.Version}
-			packPdscTag.URL = publicIndexServer.URL()
-			err = installer.Installation.PublicIndexXML.AddPdsc(packPdscTag)
-			assert.Nil(err)
+
+			packPdscTag := xml.PdscTag{
+				URL:     publicIndexServer.URL(),
+				Vendor:  packInfo.Vendor,
+				Name:    packInfo.Pack,
+				Version: packInfo.Version,
+			}
+			assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+			assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 			err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 
 			assert.NotNil(err)
-			//			assert.Equal(errors.Unwrap(err), errs.ErrPackPdscCannotBeFound)
-			assert.Equal(errors.Unwrap(err), errs.ErrBadRequest)
+			if !errors.Is(err, errs.ErrBadRequest) {
+				assert.Equal(errs.ErrFailedDownloadingFile, errors.Unwrap(err))
+			}
 
 			// Make sure pack.idx never got touched
 			assert.False(utils.FileExists(installer.Installation.PackIdx))

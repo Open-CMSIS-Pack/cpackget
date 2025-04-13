@@ -99,12 +99,11 @@ func isGlobal(packPath string) (bool, error) {
 //   - toBeRemoved: A boolean indicating if the pack is to be removed.
 //   - forceLatest: A boolean indicating if the latest version of the pack should be used.
 //   - noLocal: A boolean indicating if local installations should be ignored.
-//   - timeout: An integer specifying the timeout duration for network operations.
 //
 // Returns:
 //   - *PackType: A pointer to the prepared PackType object.
 //   - error: An error if any issues occur during preparation.
-func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool, timeout int) (*PackType, error) {
+func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool) (*PackType, error) {
 	pack := &PackType{
 		path:        packPath,
 		toBeRemoved: toBeRemoved,
@@ -158,10 +157,7 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 	}
 
 	if pdscTag.URL != "" {
-		err = Installation.downloadPdscFile(pdscTag, false, timeout)
-		if err != nil {
-			return pack, err
-		}
+		pack.URL = pdscTag.URL
 	}
 
 	pack.isInstalled, pack.installedVersions = Installation.PackIsInstalled(pack, noLocal)
@@ -172,8 +168,6 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 	if pdscTag.Name != "" {
 		pack.Name = pdscTag.Name
 	}
-	// pack.Version = pdscTag.Version
-	// pack.URL = pdscTag.URL
 
 	return pack, nil
 }
@@ -666,12 +660,12 @@ func (p *PackType) loadDependencies(nometa bool) error {
 		var pack *PackType
 		var err error
 		if version == "" {
-			pack, err = preparePack(deps[i][1]+"."+deps[i][0], false, false, false, nometa, 0)
+			pack, err = preparePack(deps[i][1]+"."+deps[i][0], false, false, false, nometa)
 			if err != nil {
 				return err
 			}
 		} else {
-			pack, err = preparePack(deps[i][1]+"."+deps[i][0]+"."+deps[i][2], false, false, false, nometa, 0)
+			pack, err = preparePack(deps[i][1]+"."+deps[i][0]+"."+deps[i][2], false, false, false, nometa)
 			if err != nil {
 				return err
 			}
