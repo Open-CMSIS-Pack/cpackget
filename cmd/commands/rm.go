@@ -66,7 +66,7 @@ please use "--purge".`,
 					err = errs.ErrPackNotInstalled
 				}
 			} else {
-				err = installer.RemovePack(packPath, rmCmdFlags.purge, false)
+				_, err = installer.RemovePack(packPath, rmCmdFlags.purge, false)
 			}
 			if err != nil {
 				if err != errs.ErrAlreadyLogged {

@@ -258,11 +258,11 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 //
 // Returns:
 //   - error: An error if the removal process fails, or nil if successful.
-func RemovePack(packPath string, purge, testing bool) error {
+func RemovePack(packPath string, purge, testing bool) (bool, error) {
 	log.Debugf("Removing pack \"%v\"", packPath)
 
 	if err := ReadIndexFiles(); err != nil {
-		return err
+		return false, err
 	}
 
 	// TODO: by default, remove latest version first
@@ -270,7 +270,7 @@ func RemovePack(packPath string, purge, testing bool) error {
 
 	pack, err := preparePack(packPath, true, false, false, true)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if pack.isInstalled {
@@ -278,23 +278,28 @@ func RemovePack(packPath string, purge, testing bool) error {
 		// pack.Version = ""
 		pack.Unlock()
 		if err = pack.uninstall(Installation); err != nil {
-			return err
+			return false, err
 		}
 
 		if purge {
-			if err = pack.purge(); err != nil {
-				return err
+			ok := false
+			if ok, err = pack.purge(); err != nil {
+				return ok, err
+			}
+			if ok { // if there was no error, but no files to remove
+				return ok, nil
 			}
 		}
 
-		return Installation.touchPackIdx()
+		return false, Installation.touchPackIdx()
 	} else if purge {
 		pack.Unlock()
-		return pack.purge()
+		ok, err := pack.purge()
+		return ok, err
 	}
 
 	log.Errorf("Pack \"%v\" is not installed", packPath)
-	return errs.ErrPackNotInstalled
+	return false, errs.ErrPackNotInstalled
 }
 
 // AddPdsc adds a PDSC (Pack Description) file to the installation.
@@ -443,7 +448,7 @@ func UpdatePack(packPath string, checkEula, noRequirements, subCall bool, timeou
 	}
 
 	if pack.isInstalled {
-		log.Infof("Pack \"%s\" is already installed", packPath)
+		log.Infof("Pack \"%s@%s\" is the latest pack version and is already installed", packPath, pack.targetVersion)
 		return nil
 	}
 

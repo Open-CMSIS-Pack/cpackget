@@ -34,7 +34,6 @@ var (
 	// Errors related to package content
 	ErrPdscFileNotFound      = errors.New("pdsc not found")
 	ErrPackNotInstalled      = errors.New("pack not installed")
-	ErrPackNotPurgeable      = errors.New("pack not purgeable")
 	ErrPdscEntryExists       = errors.New("pdsc already in index")
 	ErrPdscEntryNotFound     = errors.New("pdsc not found in index")
 	ErrEula                  = errors.New("user does not agree with the pack's license")

@@ -270,11 +270,19 @@ func (p *PackType) validate() error {
 	return errs.ErrPdscFileNotFound
 }
 
-// purge Removes cached files when
-// - It
-//   - Removes "CMSIS_PACK_ROOT/.Download/p.Vendor.p.Name.p.Version.pdsc"
-//   - Removes "CMSIS_PACK_ROOT/.Download/p.Vendor.p.Name.p.Version.pack" (or zip)
-func (p *PackType) purge() error {
+// purge removes all cached files matching the pattern derived from the PackType's
+// Vendor, Name, and Version fields from the download directory. The pattern
+// matches files with extensions `.pack`, `.zip`, or `.pdsc`.
+//
+// It logs the purging process, including the files to be removed. If no files
+// match the pattern, it logs that the pack version is already removed and
+// returns true with no error.
+//
+// Returns:
+//   - A boolean indicating whether the pack version was already removed (true)
+//     or not (false).
+//   - An error if any issue occurs during the file listing or removal process.
+func (p *PackType) purge() (bool, error) {
 	log.Debugf("Purging \"%v\"", p.path)
 
 	fileNamePattern := p.Vendor + "\\." + p.Name
@@ -287,21 +295,22 @@ func (p *PackType) purge() error {
 
 	files, err := utils.ListDir(Installation.DownloadDir, fileNamePattern)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	log.Debugf("Files to be purged \"%v\"", files)
 	if len(files) == 0 {
-		return errs.ErrPackNotPurgeable
+		log.Infof("pack %s.%s already removed from %s", p.path, p.Version, Installation.DownloadDir)
+		return true, nil
 	}
 
 	for _, file := range files {
 		if err := os.Remove(file); err != nil {
-			return err
+			return false, err
 		}
 	}
 
-	return nil
+	return false, nil
 }
 
 // install installs pack files to installation's directories
