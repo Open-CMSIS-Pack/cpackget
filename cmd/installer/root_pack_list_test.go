@@ -116,7 +116,7 @@ func ExampleListInstalledPacks_list() {
 
 	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
-	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout)
+	_, _ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
@@ -154,7 +154,7 @@ func ExampleListInstalledPacks_listCached() {
 	})
 	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
-	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout)
+	_, _ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
@@ -194,7 +194,8 @@ func TestListInstalledPacks(t *testing.T) {
 		}))
 		assert.Nil(installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout))
 		assert.Nil(installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout))
-		assert.Nil(installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout))
+		_, err := installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true)
+		assert.Nil(err)
 
 		// Install a pack via PDSC file
 		assert.Nil(installer.AddPdsc(pdscPack123))
@@ -329,7 +330,7 @@ func ExampleListInstalledPacks_filter() {
 
 	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
-	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout)
+	_, _ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
@@ -413,7 +414,7 @@ func ExampleListInstalledPacks_filterInvalidChars() {
 
 	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
-	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout)
+	_, _ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
@@ -448,7 +449,7 @@ func ExampleListInstalledPacks_filteradditionalMessages() {
 	})
 	_ = installer.AddPack(publicLocalPack123, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 	_ = installer.AddPack(publicLocalPack124, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
-	_ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true, Timeout)
+	_, _ = installer.RemovePack("TheVendor.PublicLocalPack.1.2.3", false /*no purge*/, true)
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)

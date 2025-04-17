@@ -108,7 +108,7 @@ func (p *PdscType) install(installation *PacksInstallationType) error {
 		}
 	}
 
-	return Installation.LocalPidx.AddPdsc(tag)
+	return installation.LocalPidx.AddPdsc(tag)
 }
 
 // uninstall uninstalls a pack via PDSC
