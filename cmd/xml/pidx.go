@@ -341,7 +341,7 @@ func (p *PidxXML) Read() error {
 	for _, pdsc := range p.Pindex.Pdscs {
 		key := pdsc.Key()
 		name := strings.ToLower(pdsc.VName())
-		log.Debugf("Registring \"%s\"", key)
+		//		log.Debugf("Registring \"%s\"", key)
 		p.pdscList[key] = append(p.pdscList[key], pdsc)
 		p.pdscListName[name] = key
 	}
@@ -395,5 +395,5 @@ func (p *PdscTag) YamlPackID() string {
 // PackURL constructs and returns the full URL of the pack file
 // by concatenating the base URL with the key and the ".pack" extension.
 func (p *PdscTag) PackURL() string {
-	return p.URL + p.Key() + ".pack"
+	return p.URL + p.VName() + utils.SemverStripMeta(p.Version) + ".pack"
 }
