@@ -6,6 +6,7 @@ package commands_test
 import (
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -108,6 +109,14 @@ var addCmdTests = []TestCase{
 		tearDownFunc: func() {
 			os.Remove(fileWithNoPacksListed)
 		},
+	},
+	{
+		name:           "test adding packs listed in missing file",
+		args:           []string{"add", "-f", fileWithPacksListed},
+		createPackRoot: true,
+		expErrUnwrap:   true,
+		expectedErr:    syscall.ERROR_FILE_NOT_FOUND,
+		expectedStdout: []string{"Parsing packs urls via file " + fileWithPacksListed},
 	},
 }
 

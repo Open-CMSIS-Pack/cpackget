@@ -225,6 +225,7 @@ var (
 	IsPublic       = true
 	NotPublic      = false
 	NoRequirements = true
+	SubCall        = false
 	Timeout        = 0
 
 	CreatePackRoot = true
@@ -241,6 +242,8 @@ var (
 	packWithoutPdscFileInside      = filepath.Join(testDir, "PackWithout.PdscFileInside.1.2.3.pack")
 	packWithTaintedCompressedFiles = filepath.Join(testDir, "PackWith.TaintedFiles.1.2.3.pack")
 	packWithParentDirectoryFiles   = filepath.Join(testDir, "PackWith.ParentDirectoryFiles.1.2.3.pack")
+	packToUpdateFileName           = "TheVendor.PackToUpdate.1.2.3.pack"
+	packToUpdate                   = filepath.Join(testDir, packToUpdateFileName)
 
 	// Packs with packid names only
 	publicRemotePackPackID         = "TheVendor.PublicRemotePack"

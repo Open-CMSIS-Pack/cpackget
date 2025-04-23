@@ -797,8 +797,8 @@ func TestAddPack(t *testing.T) {
 			//			assert.False(utils.FileExists(installer.Installation.PackIdx))
 		})
 
-		t.Run("test installing pack with pack id using release url"+packPath, func(t *testing.T) {
-			localTestingDir := "test-add-pack-with-pack-id-using-release-url" + safePackPath
+		t.Run("test installing pack with pack id using release url "+packPath, func(t *testing.T) {
+			localTestingDir := "test-add-pack-with-pack-id-using-release-url-" + safePackPath
 			assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 			installer.UnlockPackRoot()
 			assert.Nil(installer.ReadIndexFiles())
