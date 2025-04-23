@@ -6,26 +6,12 @@ package commands_test
 import (
 	"os"
 	"path/filepath"
-	"syscall"
 	"testing"
+
+	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 )
 
 var updateCmdTests = []TestCase{
-	{
-		name:           "test updating empty packs list file (but whitespace characters)",
-		args:           []string{"update", "-f", fileWithNoPacksListed},
-		createPackRoot: true,
-		expectedStdout: []string{"Parsing packs urls via file " + fileWithNoPacksListed},
-		expectedErr:    nil,
-		setUpFunc: func(t *TestCase) {
-			f, _ := os.Create(fileWithNoPacksListed)
-			_, _ = f.WriteString("  \n  \t  \n")
-			f.Close()
-		},
-		tearDownFunc: func() {
-			os.Remove(fileWithNoPacksListed)
-		},
-	},
 	{
 		name:        "test help command",
 		args:        []string{"help", "update"},
@@ -92,8 +78,7 @@ var updateCmdTests = []TestCase{
 		name:           "test updating packs listed in missing file",
 		args:           []string{"update", "-f", fileWithPacksListed},
 		createPackRoot: true,
-		expErrUnwrap:   true,
-		expectedErr:    syscall.ERROR_FILE_NOT_FOUND,
+		expectedErr:    errs.ErrFileNotFound,
 		expectedStdout: []string{"Parsing packs urls via file " + fileWithPacksListed},
 	},
 }

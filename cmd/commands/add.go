@@ -86,6 +86,9 @@ Add a pack using the following "<pack>" specification or using packs provided by
 
 			file, err := os.Open(addCmdFlags.packsListFileName)
 			if err != nil {
+				if os.IsNotExist(err) {
+					return errs.ErrFileNotFound
+				}
 				return err
 			}
 			defer file.Close()
