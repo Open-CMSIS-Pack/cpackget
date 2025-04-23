@@ -13,19 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Tests should cover all possible scenarios for updating packs. Here are all possible ones:
 // cpackget pack update Vendor.PackName                            # packID without version
-// cpackget pack add Vendor.PackName.x.y.z                         # packID with version
-// cpackget pack add Vendor::PackName                              # packID using legacy syntax
-// cpackget pack add Vendor::PackName@x.y.z                        # packID using legacy syntax specifying an exact version
-// cpackget pack add Vendor::PackName@^x.y.z                       # packID using legacy syntax specifying a minimum compatible version
-// cpackget pack add Vendor::PackName@~x.y.z                       # packID using legacy syntax specifying a patch version
-// cpackget pack add Vendor::PackName>=x.y.z                       # packID using legacy syntax specifying a minimum version
-// cpackget pack add Vendor.PackName.x.y.z.pack                    # pack file name
-// cpackget pack add https://vendor.com/Vendor.PackName.x.y.z.pack # pack URL
-//
-// So it doesn't really matter how the pack is specified, cpackget should
-// handle is as normal.
 func TestUpdatePack(t *testing.T) {
 
 	assert := assert.New(t)

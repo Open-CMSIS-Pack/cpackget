@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -138,6 +139,12 @@ func runTests(t *testing.T, tests []TestCase) {
 		test.assert = assert
 		t.Run(test.name, func(t *testing.T) {
 			localTestingDir := strings.ReplaceAll(test.name, " ", "_")
+
+			// Save the original environment variables to restore them after the test
+			originalEnv := make(map[string]string)
+			originalEnv["CPACKGET_DEFAULT_MODE_PATH"] = os.Getenv("CPACKGET_DEFAULT_MODE_PATH")
+			originalEnv["CMSIS_PACK_ROOT"] = os.Getenv("CMSIS_PACK_ROOT")
+
 			if test.defaultMode {
 				os.Setenv("CPACKGET_DEFAULT_MODE_PATH", localTestingDir)
 			}
@@ -194,6 +201,12 @@ func runTests(t *testing.T, tests []TestCase) {
 				})
 			}
 
+			// Reset the environment variables to their original values
+			// after the command execution
+			for key, value := range originalEnv {
+				os.Setenv(key, value)
+			}
+
 			outBytes, err1 := io.ReadAll(stdout)
 			errBytes, err2 := io.ReadAll(stderr)
 			assert.Nil(err1)
@@ -224,6 +237,89 @@ func runTests(t *testing.T, tests []TestCase) {
 
 func TestRootCmd(t *testing.T) {
 	runTests(t, rootCmdTests)
+}
+
+func TestGetDefaultCmsisPackRoot(t *testing.T) {
+	tests := []struct {
+		name           string
+		goos           string
+		envVars        map[string]string
+		expectedResult string
+	}{
+		{
+			name: "default mode path set",
+			envVars: map[string]string{
+				"CPACKGET_DEFAULT_MODE_PATH": "/custom/default/path",
+			},
+			expectedResult: filepath.Clean("/custom/default/path"),
+		},
+		{
+			name: "windows LOCALAPPDATA set",
+			goos: "windows",
+			envVars: map[string]string{
+				"LOCALAPPDATA": "C:\\Users\\TestUser\\AppData\\Local",
+			},
+			expectedResult: filepath.Clean("C:\\Users\\TestUser\\AppData\\Local\\Arm\\Packs"),
+		},
+		{
+			name: "windows USERPROFILE set",
+			goos: "windows",
+			envVars: map[string]string{
+				"LOCALAPPDATA": "",
+				"USERPROFILE":  "C:\\Users\\TestUser",
+			},
+			expectedResult: filepath.Clean("C:\\Users\\TestUser\\AppData\\Local\\Arm\\Packs"),
+		},
+		{
+			name: "linux XDG_CACHE_HOME set",
+			goos: "linux",
+			envVars: map[string]string{
+				"XDG_CACHE_HOME": "/home/testuser/.cache",
+			},
+			expectedResult: filepath.Clean("/home/testuser/.cache/arm/packs"),
+		},
+		{
+			name: "linux HOME set",
+			goos: "linux",
+			envVars: map[string]string{
+				"XDG_CACHE_HOME": "",
+				"HOME":           "/home/testuser",
+			},
+			expectedResult: filepath.Clean("/home/testuser/.cache/arm/packs"),
+		},
+		{
+			name: "no environment variables set",
+			envVars: map[string]string{
+				"CPACKGET_DEFAULT_MODE_PATH": "",
+				"LOCALAPPDATA":               "",
+				"USERPROFILE":                "",
+				"XDG_CACHE_HOME":             "",
+				"HOME":                       "",
+			},
+			expectedResult: ".",
+		},
+	}
+
+	for _, test := range tests {
+		if test.goos == "" || test.goos == runtime.GOOS {
+			t.Run(test.name, func(t *testing.T) {
+				// Backup and restore environment variables
+				originalEnv := make(map[string]string)
+				for key := range test.envVars {
+					originalEnv[key] = os.Getenv(key)
+					os.Setenv(key, test.envVars[key])
+				}
+				defer func() {
+					for key, value := range originalEnv {
+						os.Setenv(key, value)
+					}
+				}()
+				// Call the function and validate the result
+				result := installer.GetDefaultCmsisPackRoot()
+				assert.Equal(t, test.expectedResult, result)
+			})
+		}
+	}
 }
 
 func init() {

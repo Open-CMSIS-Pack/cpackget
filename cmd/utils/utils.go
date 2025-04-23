@@ -608,17 +608,18 @@ func init() {
 	HTTPClient = &http.Client{}
 }
 
-func GetListFiles(fileName string) ([]string, error) {
-	args := []string{}
+func GetListFiles(fileName string) (args []string, err error) {
+	args = []string{}
 	if fileName != "" {
 		log.Infof("Parsing packs urls via file %v", fileName)
 
-		file, err := os.Open(fileName)
+		var file *os.File
+		file, err = os.Open(fileName)
 		if err != nil {
 			if os.IsNotExist(err) {
-				return nil, errs.ErrFileNotFound
+				err = errs.ErrFileNotFound
 			}
-			return nil, err
+			return
 		}
 		defer file.Close()
 
@@ -631,9 +632,7 @@ func GetListFiles(fileName string) ([]string, error) {
 			args = append(args, tmpEntry)
 		}
 
-		if err := scanner.Err(); err != nil {
-			return nil, err
-		}
+		err = scanner.Err()
 	}
-	return args, nil
+	return
 }
