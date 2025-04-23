@@ -13,6 +13,21 @@ import (
 
 var updateCmdTests = []TestCase{
 	{
+		name:           "test updating packs listed in file",
+		args:           []string{"update", "-f", fileWithPacksListed},
+		createPackRoot: true,
+		expectedStdout: []string{"Parsing packs urls via file " + fileWithPacksListed,
+			"is not installed", filepath.Base("DoesNotExist.Pack")},
+		setUpFunc: func(t *TestCase) {
+			f, _ := os.Create(fileWithPacksListed)
+			_, _ = f.WriteString("DoesNotExist.Pack")
+			f.Close()
+		},
+		tearDownFunc: func() {
+			os.Remove(fileWithPacksListed)
+		},
+	},
+	{
 		name:        "test help command",
 		args:        []string{"help", "update"},
 		expectedErr: nil,

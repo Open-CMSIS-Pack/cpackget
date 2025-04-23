@@ -4,10 +4,6 @@
 package commands
 
 import (
-	"bufio"
-	"os"
-	"strings"
-
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
@@ -61,31 +57,11 @@ Update a pack using the following "<pack>" specification or using packs provided
 			return err
 		}
 
-		if updateCmdFlags.packsListFileName != "" {
-			log.Infof("Parsing packs urls via file %v", updateCmdFlags.packsListFileName)
-
-			file, err := os.Open(updateCmdFlags.packsListFileName)
-			if err != nil {
-				if os.IsNotExist(err) {
-					return errs.ErrFileNotFound
-				}
-				return err
-			}
-			defer file.Close()
-
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				tmpEntry := strings.TrimSpace(scanner.Text())
-				if len(tmpEntry) == 0 {
-					continue
-				}
-				args = append(args, tmpEntry)
-			}
-
-			if err := scanner.Err(); err != nil {
-				return err
-			}
+		files, err := utils.GetListFiles(updateCmdFlags.packsListFileName)
+		if err != nil {
+			return err
 		}
+		args = append(args, files...)
 
 		var lastErr error
 
