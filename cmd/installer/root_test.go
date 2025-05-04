@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -383,6 +384,89 @@ func NewServer() Server {
 
 	utils.HTTPClient = server.httpsServer.Client()
 	return server
+}
+
+func TestGetDefaultCmsisPackRoot(t *testing.T) {
+	tests := []struct {
+		name           string
+		goos           string
+		envVars        map[string]string
+		expectedResult string
+	}{
+		{
+			name: "default mode path set",
+			envVars: map[string]string{
+				"CPACKGET_DEFAULT_MODE_PATH": "/custom/default/path",
+			},
+			expectedResult: filepath.Clean("/custom/default/path"),
+		},
+		{
+			name: "windows LOCALAPPDATA set",
+			goos: "windows",
+			envVars: map[string]string{
+				"LOCALAPPDATA": "C:\\Users\\TestUser\\AppData\\Local",
+			},
+			expectedResult: filepath.Clean("C:\\Users\\TestUser\\AppData\\Local\\Arm\\Packs"),
+		},
+		{
+			name: "windows USERPROFILE set",
+			goos: "windows",
+			envVars: map[string]string{
+				"LOCALAPPDATA": "",
+				"USERPROFILE":  "C:\\Users\\TestUser",
+			},
+			expectedResult: filepath.Clean("C:\\Users\\TestUser\\AppData\\Local\\Arm\\Packs"),
+		},
+		{
+			name: "linux XDG_CACHE_HOME set",
+			goos: "linux",
+			envVars: map[string]string{
+				"XDG_CACHE_HOME": "/home/testuser/.cache",
+			},
+			expectedResult: filepath.Clean("/home/testuser/.cache/arm/packs"),
+		},
+		{
+			name: "linux HOME set",
+			goos: "linux",
+			envVars: map[string]string{
+				"XDG_CACHE_HOME": "",
+				"HOME":           "/home/testuser",
+			},
+			expectedResult: filepath.Clean("/home/testuser/.cache/arm/packs"),
+		},
+		{
+			name: "no environment variables set",
+			envVars: map[string]string{
+				"CPACKGET_DEFAULT_MODE_PATH": "",
+				"LOCALAPPDATA":               "",
+				"USERPROFILE":                "",
+				"XDG_CACHE_HOME":             "",
+				"HOME":                       "",
+			},
+			expectedResult: ".",
+		},
+	}
+
+	for _, test := range tests {
+		if test.goos == "" || test.goos == runtime.GOOS {
+			t.Run(test.name, func(t *testing.T) {
+				// Backup and restore environment variables
+				originalEnv := make(map[string]string)
+				for key := range test.envVars {
+					originalEnv[key] = os.Getenv(key)
+					os.Setenv(key, test.envVars[key])
+				}
+				defer func() {
+					for key, value := range originalEnv {
+						os.Setenv(key, value)
+					}
+				}()
+				// Call the function and validate the result
+				result := installer.GetDefaultCmsisPackRoot()
+				assert.Equal(t, test.expectedResult, result)
+			})
+		}
+	}
 }
 
 func TestUpdatePublicIndex(t *testing.T) {
