@@ -410,19 +410,21 @@ func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, tim
 //
 // Returns:
 //   - error: An error if the update process fails, otherwise nil.
-func UpdatePack(packPath string, checkEula, noRequirements, subCall bool, timeout int) error {
+func UpdatePack(packPath string, checkEula, noRequirements, subCall, testing bool, timeout int) error {
 
 	if !subCall {
 		if packPath == "" {
-			if err := UpdatePublicIndexIfOnline(); err != nil {
-				return err
+			if !testing {
+				if err := UpdatePublicIndexIfOnline(); err != nil {
+					return err
+				}
 			}
 		} else {
 			global, err := isGlobal(packPath)
 			if err != nil {
 				return err
 			}
-			if global {
+			if global && !testing {
 				if err := UpdatePublicIndexIfOnline(); err != nil {
 					return err
 				}
@@ -435,7 +437,7 @@ func UpdatePack(packPath string, checkEula, noRequirements, subCall bool, timeou
 			return err
 		}
 		for _, installedPack := range installedPacks {
-			err = UpdatePack(installedPack.VName(), checkEula, noRequirements, true, timeout)
+			err = UpdatePack(installedPack.VName(), checkEula, noRequirements, true, testing, timeout)
 			if err != nil {
 				log.Error(err)
 			}

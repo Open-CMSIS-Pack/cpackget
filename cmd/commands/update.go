@@ -4,10 +4,6 @@
 package commands
 
 import (
-	"bufio"
-	"os"
-	"strings"
-
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
@@ -61,28 +57,11 @@ Update a pack using the following "<pack>" specification or using packs provided
 			return err
 		}
 
-		if updateCmdFlags.packsListFileName != "" {
-			log.Infof("Parsing packs urls via file %v", updateCmdFlags.packsListFileName)
-
-			file, err := os.Open(updateCmdFlags.packsListFileName)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				tmpEntry := strings.TrimSpace(scanner.Text())
-				if len(tmpEntry) == 0 {
-					continue
-				}
-				args = append(args, tmpEntry)
-			}
-
-			if err := scanner.Err(); err != nil {
-				return err
-			}
+		files, err := utils.GetListFiles(updateCmdFlags.packsListFileName)
+		if err != nil {
+			return err
 		}
+		args = append(args, files...)
 
 		var lastErr error
 
@@ -91,7 +70,7 @@ Update a pack using the following "<pack>" specification or using packs provided
 				return nil // nothing to do
 			}
 			installer.UnlockPackRoot()
-			err := installer.UpdatePack("", !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, viper.GetInt("timeout"))
+			err := installer.UpdatePack("", !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, false, viper.GetInt("timeout"))
 			if err != nil {
 				lastErr = err
 				if !errs.AlreadyLogged(err) {
@@ -105,7 +84,7 @@ Update a pack using the following "<pack>" specification or using packs provided
 		log.Debugf("Specified packs %v", args)
 		installer.UnlockPackRoot()
 		for _, packPath := range args {
-			err := installer.UpdatePack(packPath, !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, viper.GetInt("timeout"))
+			err := installer.UpdatePack(packPath, !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, false, viper.GetInt("timeout"))
 			if err != nil {
 				lastErr = err
 				if !errs.AlreadyLogged(err) {

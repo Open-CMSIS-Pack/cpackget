@@ -109,6 +109,13 @@ var addCmdTests = []TestCase{
 			os.Remove(fileWithNoPacksListed)
 		},
 	},
+	{
+		name:           "test adding packs listed in missing file",
+		args:           []string{"add", "-f", fileWithPacksListed},
+		createPackRoot: true,
+		expectedErr:    errs.ErrFileNotFound,
+		expectedStdout: []string{"Parsing packs urls via file " + fileWithPacksListed},
+	},
 }
 
 func TestAddCmd(t *testing.T) {

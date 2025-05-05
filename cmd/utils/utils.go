@@ -4,6 +4,7 @@
 package utils
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/tls"
 	"encoding/base64"
@@ -605,4 +606,33 @@ func UnsetReadOnlyR(path string) {
 func init() {
 	// rand.Seed(time.Now().UnixNano())	// rand.Seed deprecated, not necessary anymore
 	HTTPClient = &http.Client{}
+}
+
+func GetListFiles(fileName string) (args []string, err error) {
+	args = []string{}
+	if fileName != "" {
+		log.Infof("Parsing packs urls via file %v", fileName)
+
+		var file *os.File
+		file, err = os.Open(fileName)
+		if err != nil {
+			if os.IsNotExist(err) {
+				err = errs.ErrFileNotFound
+			}
+			return
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			tmpEntry := strings.TrimSpace(scanner.Text())
+			if len(tmpEntry) == 0 {
+				continue
+			}
+			args = append(args, tmpEntry)
+		}
+
+		err = scanner.Err()
+	}
+	return
 }

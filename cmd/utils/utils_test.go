@@ -700,6 +700,25 @@ func TestTinyFunctions(t *testing.T) {
 	assert.True(utils.GetSkipTouch())
 }
 
+func TestGetListFiles(t *testing.T) {
+	assert := assert.New(t)
+
+	t.Run("test get list files", func(t *testing.T) {
+		testfile := filepath.Join("..", "..", "testdata", "utils", "test-listfile")
+		files, err := utils.GetListFiles(testfile)
+		assert.Nil(err)
+		assert.Equal([]string{"pack1", "pack2"}, files)
+	})
+
+	t.Run("test get list files with empty dir", func(t *testing.T) {
+		testDir := filepath.Join("..", "..", "testdata", "utils", "nix")
+		files, err := utils.GetListFiles(testDir)
+		assert.NotNil(err)
+		assert.Equal(errs.ErrFileNotFound, err)
+		assert.Equal([]string{}, files)
+	})
+}
+
 func init() {
 	logLevel := log.InfoLevel
 	if os.Getenv("LOG_LEVEL") == "debug" {
