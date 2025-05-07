@@ -391,7 +391,7 @@ func RemovePdsc(pdscPath string) error {
 //
 //	massDownloadPdscFiles(pdscTag, true, 30)
 func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, timeout int, errTags *lockedSlice) {
-	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, timeout); err != nil {
+	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, true, timeout); err != nil {
 		errTags.lock.Lock()
 		errTags.slice = append(errTags.slice, pdscTag)
 		errTags.lock.Unlock()
@@ -832,7 +832,7 @@ func UpdatePublicIndexIfOnline() error {
 //   - overwrite: A boolean flag to indicate whether to overwrite the existing public index. This will be removed in future versions.
 //   - sparse: A boolean flag to indicate whether to perform a sparse update.
 //   - downloadPdsc: A boolean flag to indicate whether to download PDSC files.
-//   - downloadRemainingPdscFiles: A boolean flag to indicate whether to download remaining PDSC files.
+//   - downloadRemainingPdscFiles: A boolean flag to indicate whether to download all remaining PDSC files.
 //   - concurrency: The number of concurrent operations allowed.
 //   - timeout: The timeout duration for network operations.
 //
@@ -871,7 +871,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 			log.Warnf("Non-HTTPS url: \"%s\"", indexPath)
 		}
 
-		indexPath, err = utils.DownloadFile(indexPath, timeout)
+		indexPath, err = utils.DownloadFile(indexPath, false, timeout)
 		if err != nil {
 			return err
 		}
@@ -1306,14 +1306,14 @@ func FindPackURL(pack *PackType) (string, error) {
 			})
 			if len(tags) != 0 {
 				tags[0].Version = ""
-				if err := Installation.downloadPdscFile(tags[0], true, 0); err != nil {
+				if err := Installation.downloadPdscFile(tags[0], true, false, 0); err != nil {
 					return "", err
 				}
 			} else {
 				return "", errs.ErrPdscEntryNotFound
 			}
 		} else {
-			if err := Installation.downloadPdscFile(xml.PdscTag{URL: pack.URL, Vendor: pack.Vendor, Name: pack.Name}, true, 0); err != nil {
+			if err := Installation.downloadPdscFile(xml.PdscTag{URL: pack.URL, Vendor: pack.Vendor, Name: pack.Name}, true, false, 0); err != nil {
 				return "", err
 			}
 		}
@@ -1861,18 +1861,25 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, pdscTag *xml.PdscTa
 	return true, nil
 }
 
-// downloadPdscFile downloads a PDSC file based on the provided pdscTag and saves it to the specified location.
-// If skipInstalledPdscFiles is true and the file already exists, the function will skip the download.
-// The function also handles switching to a cache URL if necessary and ensures the file is moved to the correct location.
+// downloadPdscFile downloads a PDSC (Pack Description) file from a specified URL and saves it to the local file system.
+// It handles scenarios such as skipping already installed files, switching to a cache URL, and managing file permissions.
 //
 // Parameters:
-//   - pdscTag: An xml.PdscTag containing the vendor, name, and URL of the PDSC file.
-//   - skipInstalledPdscFiles: A boolean indicating whether to skip downloading if the file already exists.
-//   - timeout: An integer specifying the timeout duration for the download.
+//   - pdscTag: An xml.PdscTag object containing metadata about the PDSC file to be downloaded.
+//   - skipInstalledPdscFiles: A boolean flag indicating whether to skip downloading if the PDSC file already exists locally.
+//   - noProgressBar: A boolean flag indicating whether to suppress the progress bar during the download.
+//   - timeout: An integer specifying the timeout duration (in seconds) for the download operation.
 //
 // Returns:
-//   - error: An error if any issues occur during the download or file operations.
-func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, timeout int) error {
+//   - error: An error object if any issues occur during the download or file operations, or nil if the operation succeeds.
+//
+// Behavior:
+//   - If skipInstalledPdscFiles is true and the file already exists locally, the function returns without downloading.
+//   - If the PDSC file's URL is not the default Keil pack root and the public index XML URL matches the default root,
+//     the function switches to the cache URL for downloading.
+//   - The function downloads the PDSC file, temporarily saves it, and then moves it to the target location,
+//     ensuring proper file permissions are set before and after the operation.
+func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstalledPdscFiles, noProgressBar bool, timeout int) error {
 	basePdscFile := fmt.Sprintf("%s.pdsc", pdscTag.VName())
 	pdscFilePath := filepath.Join(p.WebDir, basePdscFile)
 
@@ -1902,7 +1909,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 
 	pdscFileURL.Path = path.Join(pdscFileURL.Path, basePdscFile)
 
-	localFileName, err := utils.DownloadFile(pdscFileURL.String(), timeout)
+	localFileName, err := utils.DownloadFile(pdscFileURL.String(), noProgressBar, timeout)
 	defer os.Remove(localFileName)
 
 	if err != nil {
@@ -1964,7 +1971,7 @@ func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) e
 		return nil
 	}
 
-	localFileName, err := utils.DownloadFile(pdscFileURL.String(), timeout)
+	localFileName, err := utils.DownloadFile(pdscFileURL.String(), false, timeout)
 	defer os.Remove(localFileName)
 
 	if err != nil {
