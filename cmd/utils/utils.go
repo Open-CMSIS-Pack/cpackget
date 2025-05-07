@@ -106,8 +106,25 @@ var (
 	DirModeRW = fs.FileMode(0777)
 )
 
-// DownloadFile downloads a file from an URL and saves it locally under destionationFilePath
-func DownloadFile(URL string, timeout int) (string, error) {
+// DownloadFile downloads a file from the specified URL and saves it to the cache directory.
+// If the file already exists in the cache, it skips the download and returns the cached file path.
+//
+// Parameters:
+//   - URL: The URL of the file to download.
+//   - noProgressBar: A boolean flag to disable the progress bar during the download.
+//   - timeout: The timeout in seconds for the HTTP request. If set to 0, no timeout is applied.
+//
+// Returns:
+//   - string: The file path of the downloaded (or cached) file.
+//   - error: An error if the download or file creation fails.
+//
+// Behavior:
+//   - If the file exists in the cache, it is reused without downloading.
+//   - For HTTPS requests to "https://127.0.0.1", TLS verification is skipped.
+//   - Handles HTTP redirects, cookies, and retries for specific HTTP status codes (e.g., 404, 403).
+//   - Displays a progress bar unless disabled via the noProgressBar parameter or if the terminal is non-interactive.
+//   - Ensures secure file writing and cleans up partially downloaded files in case of errors.
+func DownloadFile(URL string, noProgressBar bool, timeout int) (string, error) {
 	parsedURL, _ := url.Parse(URL)
 	fileBase := path.Base(parsedURL.Path)
 	filePath := filepath.Join(CacheDir, fileBase)
@@ -200,7 +217,7 @@ func DownloadFile(URL string, timeout int) (string, error) {
 			writers = append(writers, progressWriter)
 			instCnt++
 		} else {
-			if IsTerminalInteractive() {
+			if !noProgressBar && IsTerminalInteractive() {
 				progressWriter := progressbar.DefaultBytes(length, "I:")
 				writers = append(writers, progressWriter)
 			}
