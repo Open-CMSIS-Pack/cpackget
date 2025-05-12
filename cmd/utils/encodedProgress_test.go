@@ -39,9 +39,7 @@ func (tl logCapturer) Release() {
 // CaptureLog redirects logrus output to testing.Log
 func CaptureLog(t *testing.T) LogCapturer {
 	lc := logCapturer{T: t, origOut: logrus.StandardLogger().Out}
-	if !testing.Verbose() {
-		logrus.SetOutput(lc)
-	}
+	logrus.SetOutput(lc)
 	gText = ""
 	return &lc
 }

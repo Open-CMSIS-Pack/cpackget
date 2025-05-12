@@ -45,7 +45,7 @@ func TestDownloadFile(t *testing.T) {
 				},
 			),
 		)
-		_, err := utils.DownloadFile(goodServer.URL+"/file.txt", 0)
+		_, err := utils.DownloadFile(goodServer.URL+"/file.txt", false, 0)
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrFailedCreatingFile))
 		utils.CacheDir = oldCache
@@ -55,7 +55,7 @@ func TestDownloadFile(t *testing.T) {
 		fileName := "file.txt"
 		defer os.Remove(fileName)
 
-		_, err := utils.DownloadFile(fileName, 0)
+		_, err := utils.DownloadFile(fileName, false, 0)
 		assert.NotNil(err)
 		assert.Equal(errors.Unwrap(err), errs.ErrFailedDownloadingFile)
 	})
@@ -71,7 +71,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 
-		_, err := utils.DownloadFile(notFoundServer.URL+"/"+fileName, 0)
+		_, err := utils.DownloadFile(notFoundServer.URL+"/"+fileName, false, 0)
 		assert.NotNil(err)
 		assert.Equal(errors.Unwrap(err), errs.ErrBadRequest)
 		assert.False(utils.FileExists(fileName))
@@ -89,7 +89,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 
-		_, err := utils.DownloadFile(bodyErrorServer.URL+"/"+fileName, 0)
+		_, err := utils.DownloadFile(bodyErrorServer.URL+"/"+fileName, false, 0)
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrFailedWrittingToLocalFile))
 	})
@@ -106,7 +106,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 		url := goodServer.URL + "/" + fileName
-		_, err1 := utils.DownloadFile(url, 0)
+		_, err1 := utils.DownloadFile(url, false, 0)
 		assert.Nil(err1)
 		assert.True(utils.FileExists(fileName))
 		bytes, err2 := os.ReadFile(fileName)
@@ -132,7 +132,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 		url := goodServer.URL + "/" + fileName
-		_, err1 := utils.DownloadFile(url, 0)
+		_, err1 := utils.DownloadFile(url, false, 0)
 		assert.Nil(err1)
 		assert.True(utils.FileExists(fileName))
 		bytes, err2 := os.ReadFile(fileName)
@@ -161,7 +161,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 		url := goodServer.URL + "/" + fileName
-		_, err1 := utils.DownloadFile(url, 0)
+		_, err1 := utils.DownloadFile(url, false, 0)
 		assert.Nil(err1)
 		assert.True(utils.FileExists(fileName))
 		bytes, err2 := os.ReadFile(fileName)
@@ -183,7 +183,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 		url := goodServer.URL + "/" + fileName
-		_, err1 := utils.DownloadFile(url, 0)
+		_, err1 := utils.DownloadFile(url, false, 0)
 		assert.Nil(err1)
 		assert.True(utils.FileExists(fileName))
 		bytes, err2 := os.ReadFile(fileName)
@@ -192,7 +192,7 @@ func TestDownloadFile(t *testing.T) {
 		assert.Equal(1, requestCount)
 
 		// Download it again, this time it shouldn't trigger any HTTP request
-		_, err1 = utils.DownloadFile(url, 0)
+		_, err1 = utils.DownloadFile(url, false, 0)
 		assert.Nil(err1)
 		assert.Equal(1, requestCount)
 	})
@@ -698,6 +698,25 @@ func TestTinyFunctions(t *testing.T) {
 
 	utils.SetSkipTouch(true)
 	assert.True(utils.GetSkipTouch())
+}
+
+func TestGetListFiles(t *testing.T) {
+	assert := assert.New(t)
+
+	t.Run("test get list files", func(t *testing.T) {
+		testfile := filepath.Join("..", "..", "testdata", "utils", "test-listfile")
+		files, err := utils.GetListFiles(testfile)
+		assert.Nil(err)
+		assert.Equal([]string{"pack1", "pack2"}, files)
+	})
+
+	t.Run("test get list files with empty dir", func(t *testing.T) {
+		testDir := filepath.Join("..", "..", "testdata", "utils", "nix")
+		files, err := utils.GetListFiles(testDir)
+		assert.NotNil(err)
+		assert.Equal(errs.ErrFileNotFound, err)
+		assert.Equal([]string{}, files)
+	})
 }
 
 func init() {

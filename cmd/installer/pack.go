@@ -84,6 +84,8 @@ func isGlobal(packPath string) (bool, error) {
 	if info.IsPackID {
 		return true, nil
 	}
+	// If the pack path is a URL, it is not global in the sense of this function
+	// TODO: shouldn't this check only compare "file://" and not http(s)?
 	if !strings.HasPrefix(info.Location, "http://") && !strings.HasPrefix(info.Location, "https://") && strings.HasPrefix(info.Location, "file://") {
 		return true, nil
 	}
@@ -141,6 +143,7 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 	pack.versionModifier = info.VersionModifier
 	pack.isPackID = info.IsPackID
 
+	// TODO: shouldn't this check only compare "file://" and not http(s)?
 	if !strings.HasPrefix(pack.URL, "http://") && !strings.HasPrefix(pack.URL, "https://") && strings.HasPrefix(pack.URL, "file://") {
 		pack.IsLocallySourced = true
 	}
@@ -188,7 +191,7 @@ func (p *PackType) fetch(timeout int) error {
 	log.Debugf("Fetching pack file \"%s\" (or just making sure it exists locally)", p.path)
 	var err error
 	if strings.HasPrefix(p.path, "http") {
-		p.path, err = utils.DownloadFile(p.path, timeout)
+		p.path, err = utils.DownloadFile(p.path, false, timeout)
 		if err == errs.ErrTerminatedByUser {
 			log.Infof("Aborting pack download. Removing \"%s\"", p.path)
 		}

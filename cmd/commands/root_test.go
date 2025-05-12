@@ -138,6 +138,12 @@ func runTests(t *testing.T, tests []TestCase) {
 		test.assert = assert
 		t.Run(test.name, func(t *testing.T) {
 			localTestingDir := strings.ReplaceAll(test.name, " ", "_")
+
+			// Save the original environment variables to restore them after the test
+			originalEnv := make(map[string]string)
+			originalEnv["CPACKGET_DEFAULT_MODE_PATH"] = os.Getenv("CPACKGET_DEFAULT_MODE_PATH")
+			originalEnv["CMSIS_PACK_ROOT"] = os.Getenv("CMSIS_PACK_ROOT")
+
 			if test.defaultMode {
 				os.Setenv("CPACKGET_DEFAULT_MODE_PATH", localTestingDir)
 			}
@@ -192,6 +198,12 @@ func runTests(t *testing.T, tests []TestCase) {
 						f.Changed = false
 					}
 				})
+			}
+
+			// Reset the environment variables to their original values
+			// after the command execution
+			for key, value := range originalEnv {
+				os.Setenv(key, value)
 			}
 
 			outBytes, err1 := io.ReadAll(stdout)
