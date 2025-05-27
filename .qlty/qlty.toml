@@ -1,0 +1,74 @@
+# Configuration version for compatibility with the tool
+config_version = "0"
+
+# Glob patterns to exclude from analysis (e.g., build artifacts and dependencies)
+exclude_patterns = [
+    "scripts/**",
+    ".github/**",
+    "testdata/**",
+    "**/*_test.go"
+]
+
+# Glob patterns to identify test files
+test_patterns = [
+    "**/*_test.go"         # Match go test files
+]
+
+# === Smells Configuration ===
+# Controls how detected code smells are reported
+[smells]
+mode = "comment"          # Adds comments in code or PRs to report smells
+
+# === Source Configuration ===
+# Defines a code source for analysis
+[[source]]
+name = "default"          # Name of the source
+default = true            # Marks this as the default source to scan
+
+# === Individual Code Smell Toggles ===
+# Enables or disables detection of specific code smells
+
+[smells.similar_code]
+enabled = true            # Detects similar (but not identical) code blocks
+
+[smells.duplication]
+enabled = true            # Detects duplication of code blocks
+
+[smells.identical_code]
+enabled = true            # Detects exact duplicate code blocks
+
+[smells.function_parameters]
+enabled = false           # Flags functions with too many parameters
+
+[smells.nested_control_flow]
+enabled = false           # Would flag deeply nested control flow (e.g., many if/else)
+
+[smells.file_complexity]
+enabled = false           # Would flag files with high overall complexity
+
+[smells.function_complexity]
+enabled = false           # Would flag individual functions that are too complex
+
+[smells.return_statements]
+enabled = false           # Would flag functions with multiple return paths
+
+[smells.boolean_logic]
+enabled = false           # Detects overly complex or nested boolean logic
+
+# === Plugins Section ===
+# Each plugin performs a specific type of analysis or linting
+
+[[plugin]]
+name = "actionlint"       # Validates GitHub Actions workflows
+
+[[plugin]]
+name = "osv-scanner"      # Scans for known vulnerabilities using OSV database
+
+[[plugin]]
+name = "ripgrep"          # Fast searching for pattern matching in codebase
+
+[[plugin]]
+name = "trivy"            # Scans for vulnerabilities in containers and dependencies
+
+[[plugin]]
+name = "trufflehog"       # Detects secrets and sensitive data in code
