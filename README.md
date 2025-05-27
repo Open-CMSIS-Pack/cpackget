@@ -4,8 +4,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/open-cmsis-pack/cpackget)](https://goreportcard.com/report/github.com/open-cmsis-pack/cpackget)
 [![GoDoc](https://godoc.org/github.com/open-cmsis-pack/cpackget?status.svg)](https://godoc.org/github.com/open-cmsis-pack/cpackget)
 
-[![Maintainability](https://api.codeclimate.com/v1/badges/eea6cb90a9a1e39bcff7/maintainability)](https://codeclimate.com/github/Open-CMSIS-Pack/cpackget/maintainability)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/eea6cb90a9a1e39bcff7/test_coverage)](https://codeclimate.com/github/Open-CMSIS-Pack/cpackget/test_coverage)
+[![Maintainability](https://qlty.sh/badges/f4b0ccfb-f90d-4410-985d-3363e144102a/maintainability.svg)](https://qlty.sh/gh/Open-CMSIS-Pack/projects/cpackget)
+[![Test Coverage](https://qlty.sh/badges/f4b0ccfb-f90d-4410-985d-3363e144102a/test_coverage.svg)](https://qlty.sh/gh/Open-CMSIS-Pack/projects/cpackget)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Open-CMSIS-Pack/cpackget/badge)](https://securityscorecards.dev/viewer/?uri=github.com/Open-CMSIS-Pack/cpackget)
 
 # cpackget: Open-CMSIS-Pack Package Installer
