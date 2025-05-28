@@ -165,16 +165,14 @@ jobs:
         if: always()
         run: |
           go-junit-report -set-exit-code -in build/cpackgettests-${{ matrix.goos }}-amd64.txt -iocopy -out build/cpackget-testreport-${{ matrix.goos }}-amd64.xml
-
-      - name: Publish coverage report to Code Climate
+ 
+      - name: Publish coverage report to QLTY
         if: ${{ startsWith(matrix.runs-on, 'ubuntu') && (github.workflow != 'Release') }}
-        uses: paambaati/codeclimate-action@f429536ee076d758a24705203199548125a28ca7 # v9.0.0
-        env:
-          CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
+        uses: qltysh/qlty-action/coverage@f13b3559771beedd11e68b03d49512f3c21a75ba # v1
         with:
-          debug: true
-          coverageLocations: ./cover.out:gocov
-          prefix: github.com/open-cmsis-pack/cpackget
+          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+          files: ./cover.out
+          strip-prefix: github.com/open-cmsis-pack/cpackget
 
       - name: Archive unit test results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
