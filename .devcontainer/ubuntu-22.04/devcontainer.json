@@ -1,7 +1,7 @@
 {
     "name": "Ubuntu-23.04",
     "build": { "dockerfile": "Dockerfile" },
-  
+
     "customizations": {
       "vscode": {
         "extensions": [

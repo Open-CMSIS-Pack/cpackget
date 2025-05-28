@@ -1,5 +1,5 @@
 #!/bin/bash
-	
+
 echo "Attempting to install all publicly available packs found in www.keil.com/pack/keil.vidx"
 echo "Warning: this should only be used from time to time (possibly before releases) because it'll download dozens of GB of files"
 
