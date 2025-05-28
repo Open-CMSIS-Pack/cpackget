@@ -1,0 +1,19 @@
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.5.0
+  hooks:
+    - id: end-of-file-fixer
+      name: Fix end of files
+      description: Ensures files end with a newline
+    - id: trailing-whitespace
+      name: Check for trailing whitespace
+      description: Fails and fix files with trailing whitespace
+
+- repo: local
+  hooks:
+    - id: check-copyright-notice
+      name: Check for copyright notice
+      description: Ensures source files include a copyright notice
+      entry: python3 scripts/check_copyright_notice.py
+      language: system
+      types: [go]

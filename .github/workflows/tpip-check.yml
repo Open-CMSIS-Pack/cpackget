@@ -46,7 +46,7 @@ jobs:
         run:  |
           go-licenses report . --ignore github.com/Open-CMSIS-Pack/cpackget --template ../scripts/template/tpip-license.template > ../${{ env.report_name }}
         working-directory: ./cmd
-        
+
       - name: Archive tpip report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -97,4 +97,3 @@ jobs:
           delete-branch: true
           labels: TPIP
           reviewers: soumeh01
-      
