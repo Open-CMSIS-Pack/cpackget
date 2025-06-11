@@ -791,17 +791,25 @@ func GetIndexPath(indexPath string) (string, error) {
 func UpdatePublicIndexIfOnline() error {
 	// If public index already exists then first check if online, then its timestamp
 	// if we are online and it is too old then download a current version
+	publicIndex := DefaultPublicIndex
 	if utils.FileExists(Installation.PublicIndex) {
 		err := utils.CheckConnection(ConnectionTryURL, 0)
 		if err != nil && errors.Unwrap(err) != errs.ErrOffline {
 			return err
 		}
 		if errors.Unwrap(err) != errs.ErrOffline {
+			pidxXML := xml.NewPidxXML(Installation.PublicIndex)
+			if err := pidxXML.Read(); err != nil { // new public index XML
+				pidxXML.URL = "" // set URL to empty to avoid using it
+			}
 			var updateConf updateCfg
 			err = Installation.checkUpdateCfg(&updateConf)
 			if err != nil {
+				if pidxXML.URL != "" {
+					publicIndex = pidxXML.URL + PublicIndexName
+				}
 				UnlockPackRoot()
-				err1 := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
+				err1 := UpdatePublicIndex(publicIndex, true, false, false, false, 0, 0)
 				if err1 != nil {
 					return err1
 				}
@@ -814,7 +822,7 @@ func UpdatePublicIndexIfOnline() error {
 	// if public index does not or not yet exist then download without check
 	if !utils.FileExists(Installation.PublicIndex) {
 		UnlockPackRoot()
-		err1 := UpdatePublicIndex(DefaultPublicIndex, true, false, false, false, 0, 0)
+		err1 := UpdatePublicIndex(publicIndex, true, false, false, false, 0, 0)
 		if err1 != nil {
 			return err1
 		}
