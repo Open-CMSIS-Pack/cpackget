@@ -165,7 +165,7 @@ jobs:
         if: always()
         run: |
           go-junit-report -set-exit-code -in build/cpackgettests-${{ matrix.goos }}-amd64.txt -iocopy -out build/cpackget-testreport-${{ matrix.goos }}-amd64.xml
- 
+
       - name: Publish coverage report to QLTY
         if: ${{ startsWith(matrix.runs-on, 'ubuntu') && (github.workflow != 'Release') }}
         uses: qltysh/qlty-action/coverage@f13b3559771beedd11e68b03d49512f3c21a75ba # v1
