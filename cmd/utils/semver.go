@@ -81,15 +81,13 @@ func SemverStripMeta(version string) string {
 // from each version using SemverStripMeta, and returns a single comma-separated string
 // of the processed versions. Empty strings in the input slice are ignored.
 // If the input slice is empty, it returns an empty string.
-func VersionList(versions []string) (versionList string) {
+func VersionList(versions []string) string {
+	var processedVersions []string
 	for _, version := range versions {
 		ver := SemverStripMeta(version)
 		if ver != "" {
-			if versionList != "" {
-				versionList += ", "
-			}
-			versionList += ver
+			processedVersions = append(processedVersions, ver)
 		}
 	}
-	return
+	return strings.Join(processedVersions, ", ")
 }
