@@ -76,3 +76,18 @@ func SemverStripMeta(version string) string {
 	}
 	return version
 }
+
+// VersionList takes a slice of version strings, strips any semantic version metadata
+// from each version using SemverStripMeta, and returns a single comma-separated string
+// of the processed versions. Empty strings in the input slice are ignored.
+// If the input slice is empty, it returns an empty string.
+func VersionList(versions []string) string {
+	var processedVersions []string
+	for _, version := range versions {
+		ver := SemverStripMeta(version)
+		if ver != "" {
+			processedVersions = append(processedVersions, ver)
+		}
+	}
+	return strings.Join(processedVersions, ", ")
+}
