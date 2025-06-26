@@ -472,8 +472,7 @@ func UpdatePack(packPath string, checkEula, noRequirements, subCall, testing boo
 	log.Infof("Updating pack \"%s\"", packPath)
 
 	if pack.isPackID {
-		pack.path, err = FindPackURL(pack)
-		if err != nil {
+		if pack.path, err = FindPackURL(pack); err != nil {
 			return err
 		}
 	}
@@ -889,7 +888,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 			log.Warnf("Non-HTTPS url: \"%s\"", indexPath)
 		}
 
-		indexPath, err = utils.DownloadFile(indexPath, false, timeout)
+		indexPath, err = utils.DownloadFile(indexPath, false, false, timeout)
 		if err != nil {
 			return err
 		}
@@ -1335,6 +1334,10 @@ func FindPackURL(pack *PackType) (string, error) {
 				return "", err
 			}
 		}
+		pidxXML := xml.NewPidxXML(Installation.PublicIndex)
+		if err := pidxXML.Read(); err != nil {
+			pidxXML.URL = "" // set URL to empty to avoid using it
+		}
 		packPdscXML := xml.NewPdscXML(packPdscFileName)
 		if err := packPdscXML.Read(); err != nil {
 			if errors.Unwrap(err) == syscall.ENOENT {
@@ -1343,6 +1346,52 @@ func FindPackURL(pack *PackType) (string, error) {
 			return "", err
 		}
 
+		// check if the latest version of the pack exists in the public index
+		// if not, download the pack PDSC file from the URL
+		xmlTag := xml.PdscTag{Vendor: pack.Vendor, Name: pack.Name, Version: packPdscXML.LatestVersion()}
+		if xmlTag.Version != "" {
+			pidxVersions := pidxXML.FindPdscTags(xmlTag)
+			if pidxVersions == nil || len(pidxVersions) == 0 {
+				infoInsteadWarn := false
+				if err := Installation.downloadPdscFile(xml.PdscTag{URL: pack.URL, Vendor: pack.Vendor, Name: pack.Name}, false, false, 0); err != nil {
+					log.Warnf("Latest pdsc \"%s\" does not exist in public index", xmlTag.Key())
+					return "", err
+				}
+				packPdscXML := xml.NewPdscXML(packPdscFileName)
+				if err := packPdscXML.Read(); err != nil {
+					log.Warnf("Latest pdsc \"%s\" does not exist in public index", xmlTag.Key())
+					if errors.Unwrap(err) == syscall.ENOENT {
+						err = fmt.Errorf("\"%s\": %w", packPdscFileName, errs.ErrPackPdscCannotBeFound)
+					}
+					return "", err
+				}
+				// Re-check the latest version after downloading the PDSC file
+				xmlTag.Version = packPdscXML.LatestVersion()
+				if xmlTag.Version != "" {
+					pidxVersions = pidxXML.FindPdscTags(xmlTag)
+					if pidxVersions == nil || len(pidxVersions) == 0 {
+						pidxXML.SetFileName(filepath.Join(Installation.DownloadDir, PublicIndexName)) // use cache as temporary store
+						_ = pidxXML.ReplacePdscVersion(xmlTag)
+						if err := pidxXML.Write(); err != nil {
+							log.Warnf("Latest version of pdsc \"%s\" does not exist in public index", xmlTag.Key())
+							return "", err
+						}
+						utils.UnsetReadOnly(Installation.PublicIndex)
+						if err := utils.MoveFile(pidxXML.GetFileName(), Installation.PublicIndex); err != nil {
+							log.Warnf("Latest version of pdsc \"%s\" does not exist in public index", xmlTag.Key())
+							return "", err
+						}
+						utils.SetReadOnly(Installation.PublicIndex)
+						infoInsteadWarn = true // if we downloaded the PDSC file and it has the same version as in the public index, we can log it as info
+					}
+				}
+				if infoInsteadWarn {
+					log.Infof("Latest version of pdsc \"%s\" does not exist in public index, but downloaded from URL", xmlTag.Key())
+				} else {
+					log.Warnf("Latest version of pdsc \"%s\" does not exist in public index", xmlTag.Key())
+				}
+			}
+		}
 		// Figures out which pack release to fetch and assign that to pack.targetVersion
 		pack.resolveVersionModifier(packPdscXML)
 
@@ -1927,7 +1976,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 
 	pdscFileURL.Path = path.Join(pdscFileURL.Path, basePdscFile)
 
-	localFileName, err := utils.DownloadFile(pdscFileURL.String(), noProgressBar, timeout)
+	localFileName, err := utils.DownloadFile(pdscFileURL.String(), true, noProgressBar, timeout)
 	defer os.Remove(localFileName)
 
 	if err != nil {
@@ -1989,7 +2038,7 @@ func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) e
 		return nil
 	}
 
-	localFileName, err := utils.DownloadFile(pdscFileURL.String(), false, timeout)
+	localFileName, err := utils.DownloadFile(pdscFileURL.String(), true, false, timeout)
 	defer os.Remove(localFileName)
 
 	if err != nil {
