@@ -106,30 +106,28 @@ var (
 	DirModeRW = fs.FileMode(0777)
 )
 
-// DownloadFile downloads a file from the specified URL and saves it to the cache directory.
-// If the file already exists in the cache, it skips the download and returns the cached file path.
+// DownloadFile downloads a file from the specified URL and saves it to a local cache directory.
+// It supports optional caching, progress bar display, and configurable timeout.
 //
 // Parameters:
 //   - URL: The URL of the file to download.
-//   - noProgressBar: A boolean flag to disable the progress bar during the download.
-//   - timeout: The timeout in seconds for the HTTP request. If set to 0, no timeout is applied.
+//   - useCache: If true, uses the cached file if it exists instead of downloading again.
+//   - noProgressBar: If true, disables the progress bar during download.
+//   - timeout: The download timeout in seconds. If 0, no timeout is set.
 //
 // Returns:
-//   - string: The file path of the downloaded (or cached) file.
-//   - error: An error if the download or file creation fails.
+//   - The local file path where the downloaded file is saved.
+//   - An error if the download fails or the file cannot be saved.
 //
-// Behavior:
-//   - If the file exists in the cache, it is reused without downloading.
-//   - For HTTPS requests to "https://127.0.0.1", TLS verification is skipped.
-//   - Handles HTTP redirects, cookies, and retries for specific HTTP status codes (e.g., 404, 403).
-//   - Displays a progress bar unless disabled via the noProgressBar parameter or if the terminal is non-interactive.
-//   - Ensures secure file writing and cleans up partially downloaded files in case of errors.
-func DownloadFile(URL string, noProgressBar bool, timeout int) (string, error) {
+// The function handles special cases for localhost HTTPS downloads by skipping TLS verification,
+// retries the request without a user agent if a 404 is received, and handles cookies if a 403 is returned.
+// It also supports progress reporting and secure file writing.
+func DownloadFile(URL string, useCache, noProgressBar bool, timeout int) (string, error) {
 	parsedURL, _ := url.Parse(URL)
 	fileBase := path.Base(parsedURL.Path)
 	filePath := filepath.Join(CacheDir, fileBase)
 	log.Debugf("Downloading %s to %s", URL, filePath)
-	if FileExists(filePath) {
+	if useCache && FileExists(filePath) {
 		log.Debugf("Download not required, using the one from cache")
 		return filePath, nil
 	}

@@ -69,6 +69,10 @@ func (p *PidxXML) GetFileName() string {
 	return p.fileName
 }
 
+func (p *PidxXML) SetFileName(fileName string) {
+	p.fileName = fileName
+}
+
 // AddPdsc adds a PdscTag to the PidxXML's pdscList if it does not already exist.
 // It logs the addition attempt and checks if the PdscTag is already present.
 // If the PdscTag is found, it returns an error indicating that the entry exists.
