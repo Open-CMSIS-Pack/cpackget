@@ -9,7 +9,7 @@
 | github.com/cloudflare/circl | v1.6.1  | [BSD-3-Clause](https://github.com/cloudflare/circl/blob/v1.6.1/LICENSE) |
 | github.com/fsnotify/fsnotify | v1.8.0  | [BSD-3-Clause](https://github.com/fsnotify/fsnotify/blob/v1.8.0/LICENSE) |
 | github.com/gabriel-vasile/mimetype | v1.4.4  | [MIT](https://github.com/gabriel-vasile/mimetype/blob/v1.4.4/LICENSE) |
-| github.com/go-viper/mapstructure/v2 | v2.2.1  | [MIT](https://github.com/go-viper/mapstructure/blob/v2.2.1/LICENSE) |
+| github.com/go-viper/mapstructure/v2 | v2.3.0  | [MIT](https://github.com/go-viper/mapstructure/blob/v2.3.0/LICENSE) |
 | github.com/jroimartin/gocui | v0.5.0  | [BSD-3-Clause](https://github.com/jroimartin/gocui/blob/v0.5.0/LICENSE) |
 | github.com/lu4p/cat | v0.1.5  | [Unlicense](https://github.com/lu4p/cat/blob/v0.1.5/LICENSE) |
 | github.com/lu4p/cat/rtftxt | v0.1.5  | [MIT](https://github.com/lu4p/cat/blob/v0.1.5/rtftxt/LICENSE) |
