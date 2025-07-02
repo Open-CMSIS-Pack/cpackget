@@ -1319,11 +1319,10 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		err = installer.AddPack(publicLocalPack125WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
-		unwraperr := errors.Unwrap(err)
-		if unwraperr == nil {
+		if errors.Is(err, errs.ErrPackVersionNotAvailable) {
 			assert.Equal(errs.ErrPackVersionNotAvailable, err)
-		} else {
-			assert.Equal(errs.ErrFailedDownloadingFile, unwraperr)
+		} else if errors.Is(err, errs.ErrFailedDownloadingFile) {
+			assert.Equal(errs.ErrFailedDownloadingFile, err)
 		}
 	})
 

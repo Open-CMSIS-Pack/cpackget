@@ -119,9 +119,9 @@ func (p *PidxXML) ReplacePdscVersion(pdsc PdscTag) error {
 
 	oldPdsc := p.pdscList[key]
 	oldPdsc[0].Version = pdsc.Version
-	delete(p.pdscList, key)   // alten Eintrag entfernen
-	key = pdsc.Key()          // und durch den neuen ersetzen
-	p.pdscList[key] = oldPdsc // append(p.pdscList[key], oldPdsc[0])
+	delete(p.pdscList, key) // remove the old key
+	key = pdsc.Key()        // and replyce by new one
+	p.pdscList[key] = oldPdsc
 	p.pdscListName[name] = key
 	return nil
 }
