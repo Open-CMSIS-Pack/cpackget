@@ -106,8 +106,8 @@ func (p *PdscXML) FindReleaseTagByVersion(version string) *ReleaseTag {
 // Tag returns a PdscTag representation of a PDSC file.
 func (p *PdscXML) Tag() PdscTag {
 	return PdscTag{
-		Vendor:  p.Vendor,
 		URL:     p.URL,
+		Vendor:  p.Vendor,
 		Name:    p.Name,
 		Version: p.LatestVersion(),
 	}

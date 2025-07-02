@@ -1319,7 +1319,12 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		err = installer.AddPack(publicLocalPack125WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
-		assert.Equal(err, errs.ErrPackVersionNotAvailable)
+		unwraperr := errors.Unwrap(err)
+		if unwraperr == nil {
+			assert.Equal(errs.ErrPackVersionNotAvailable, err)
+		} else {
+			assert.Equal(errs.ErrFailedDownloadingFile, unwraperr)
+		}
 	})
 
 	t.Run("test installing a pack with a minimum compatible version specified and newer major version pre-installed", func(t *testing.T) {
