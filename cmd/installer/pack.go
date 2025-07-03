@@ -212,10 +212,13 @@ func (p *PackType) fetch(timeout int) error {
 // to be installed.
 func (p *PackType) validate() error {
 	log.Debug("Validating pack")
-	pdscFileName := p.PdscFileName()
+	//	pdscFileName := p.PdscFileName()
+	myPdscFileName := p.PdscFileName()
 	for _, file := range p.zipReader.File {
-		if filepath.Base(file.Name) == pdscFileName {
-
+		ext := strings.ToLower(filepath.Ext(file.Name))
+		if ext == ".pdsc" {
+			myPdscFileName = filepath.Base(file.Name)
+			//		if filepath.Base(file.Name) == pdscFileName {
 			// Check if pack was compressed in a subfolder
 			subfoldersCount := strings.Count(file.Name, "/") + strings.Count(file.Name, "\\")
 			if subfoldersCount > 1 {
@@ -229,6 +232,8 @@ func (p *PackType) validate() error {
 				log.Errorf("File \"%s\" invalid file path", file.Name)
 				return errs.ErrInvalidFilePath
 			}
+
+			myPdscFileName = p.PackID() + filepath.Ext(file.Name)
 
 			// Read pack's pdsc
 			tmpPdscFileName := filepath.Join(os.TempDir(), utils.RandStringBytes(10))
@@ -247,16 +252,16 @@ func (p *PackType) validate() error {
 			version := p.GetVersion()
 			latestVersion := p.Pdsc.LatestVersion()
 
-			log.Debugf("Making sure %s is the latest release in %s", p.targetVersion, pdscFileName)
+			log.Debugf("Making sure %s is the latest release in %s", p.targetVersion, myPdscFileName)
 
 			if utils.SemverCompare(version, latestVersion) != 0 {
 				releaseTag := p.Pdsc.FindReleaseTagByVersion(version)
 				if releaseTag == nil {
-					log.Errorf("The pack's pdsc (%s) has no release tag matching version \"%s\"", pdscFileName, version)
+					log.Errorf("The pack's pdsc (%s) has no release tag matching version \"%s\"", myPdscFileName, version)
 					return errs.ErrPackVersionNotFoundInPdsc
 				}
 
-				log.Errorf("The latest release (%s) in pack's pdsc (%s) does not match pack version \"%s\"", latestVersion, pdscFileName, version)
+				log.Errorf("The latest release (%s) in pack's pdsc (%s) does not match pack version \"%s\"", latestVersion, myPdscFileName, version)
 				return errs.ErrPackVersionNotLatestReleasePdsc
 			}
 
@@ -269,7 +274,7 @@ func (p *PackType) validate() error {
 		}
 	}
 
-	log.Errorf("\"%s\" not found in \"%s\"", pdscFileName, p.path)
+	log.Errorf("\"%s\" not found in \"%s\"", myPdscFileName, p.path)
 	return errs.ErrPdscFileNotFound
 }
 
