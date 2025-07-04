@@ -166,7 +166,7 @@ func DownloadFile(URL string, useCache, noProgressBar bool, timeout int) (string
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Error(err)
-		return "", fmt.Errorf("\"%s\": %w", URL, errs.ErrFailedDownloadingFile)
+		return "", fmt.Errorf("%q: %w", URL, errs.ErrFailedDownloadingFile)
 	}
 	defer resp.Body.Close()
 
@@ -176,7 +176,7 @@ func DownloadFile(URL string, useCache, noProgressBar bool, timeout int) (string
 		resp, err = client.Do(req)
 		if err != nil {
 			log.Error(err)
-			return "", fmt.Errorf("\"%s\": %w", URL, errs.ErrFailedDownloadingFile)
+			return "", fmt.Errorf("%q: %w", URL, errs.ErrFailedDownloadingFile)
 		}
 	}
 
@@ -189,14 +189,14 @@ func DownloadFile(URL string, useCache, noProgressBar bool, timeout int) (string
 			resp, err = client.Do(req)
 			if err != nil {
 				log.Error(err)
-				return "", fmt.Errorf("\"%s\": %w", URL, errs.ErrFailedDownloadingFile)
+				return "", fmt.Errorf("%q: %w", URL, errs.ErrFailedDownloadingFile)
 			}
 		}
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		log.Debugf("bad status: %s", resp.Status)
-		return "", fmt.Errorf("\"%s\": %w", URL, errs.ErrBadRequest)
+		return "", fmt.Errorf("%q: %w", URL, errs.ErrBadRequest)
 	}
 
 	out, err := os.Create(filePath)
@@ -263,7 +263,7 @@ func CheckConnection(url string, timeOut int) error {
 	}
 
 	if onlineInfo.connStatus == "offline" {
-		return fmt.Errorf("\"%s\": %w", url, errs.ErrOffline)
+		return fmt.Errorf("%q: %w", url, errs.ErrOffline)
 	}
 
 	return nil
@@ -289,7 +289,7 @@ func DirExists(dirPath string) bool {
 
 // EnsureDir recursevily creates a directory tree if it doesn't exist already
 func EnsureDir(dirName string) error {
-	log.Debugf("Ensuring \"%s\" directory exists", dirName)
+	log.Debugf("Ensuring %q directory exists", dirName)
 	err := os.MkdirAll(dirName, 0755)
 	if err != nil && !os.IsExist(err) {
 		log.Error(err)
@@ -315,7 +315,7 @@ func SameFile(source, destination string) bool {
 
 // CopyFile copies the contents of source into a new file in destination
 func CopyFile(source, destination string) error {
-	log.Debugf("Copying file from \"%s\" to \"%s\"", source, destination)
+	log.Debugf("Copying file from %q to %q", source, destination)
 
 	if SameFile(source, destination) {
 		return nil
@@ -339,7 +339,7 @@ func CopyFile(source, destination string) error {
 
 // MoveFile moves a file from one source to destination
 func MoveFile(source, destination string) error {
-	log.Debugf("Moving file from \"%s\" to \"%s\"", source, destination)
+	log.Debugf("Moving file from %q to %q", source, destination)
 
 	if SameFile(source, destination) {
 		return nil
@@ -349,7 +349,7 @@ func MoveFile(source, destination string) error {
 
 	err := os.Rename(source, destination)
 	if err != nil {
-		log.Errorf("Can't move file \"%s\" to \"%s\": %s", source, destination, err)
+		log.Errorf("Can't move file %q to %q: %s", source, destination, err)
 		return err
 	}
 
@@ -488,7 +488,7 @@ func CountLines(content string) int {
 // FilterPackId returns the original string if any of the
 // received filter words are present - designed specifically to filter pack IDs
 func FilterPackID(content string, filter string) string {
-	log.Debugf("Filtering by words \"%s\"", filter)
+	log.Debugf("Filtering by words %q", filter)
 
 	// Don't accept the separator or version char
 	if filter == "" || strings.ContainsAny(filter, ":") || strings.ContainsAny(filter, "@") {

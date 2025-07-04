@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
+	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
 )
@@ -51,7 +52,7 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 		return errs.ErrHashNotSupported
 	}
 	if !utils.FileExists(sourcePack) {
-		log.Errorf("\"%s\" does not exist", sourcePack)
+		log.Errorf("%q does not exist", sourcePack)
 		return errs.ErrFileNotFound
 	}
 
@@ -63,11 +64,11 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 		if !utils.DirExists(destinationDir) {
 			return errs.ErrDirectoryNotFound
 		}
-		base = filepath.Clean(destinationDir) + string(filepath.Separator) + strings.TrimSuffix(string(filepath.Base(sourcePack)), ".pack")
+		base = filepath.Clean(destinationDir) + string(filepath.Separator) + strings.TrimSuffix(string(filepath.Base(sourcePack)), installer.PackExtension)
 	}
 	checksumFilename := base + "." + strings.ReplaceAll(hashFunction, "-", "") + ".checksum"
 	if utils.FileExists(checksumFilename) {
-		log.Errorf("\"%s\" already exists, choose a diferent path", checksumFilename)
+		log.Errorf("%q already exists, choose a diferent path", checksumFilename)
 		return errs.ErrPathAlreadyExists
 	}
 
@@ -86,7 +87,7 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 // according to a provided .checksum file.
 func VerifyChecksum(packPath, checksumPath string) error {
 	if !utils.FileExists(packPath) {
-		log.Errorf("\"%s\" does not exist", packPath)
+		log.Errorf("%q does not exist", packPath)
 		return errs.ErrFileNotFound
 	}
 
@@ -95,7 +96,7 @@ func VerifyChecksum(packPath, checksumPath string) error {
 	// exist .checksums with different algos in the same dir
 	if checksumPath == "" {
 		for _, hash := range Hashes {
-			checksumPath = strings.ReplaceAll(packPath, ".pack", "."+hash+".checksum")
+			checksumPath = strings.ReplaceAll(packPath, installer.PackExtension, "."+hash+".checksum")
 			if utils.FileExists(checksumPath) {
 				break
 			}
@@ -103,7 +104,7 @@ func VerifyChecksum(packPath, checksumPath string) error {
 	}
 
 	if !utils.FileExists(checksumPath) {
-		log.Errorf("\"%s\" does not exist", checksumPath)
+		log.Errorf("%q does not exist", checksumPath)
 		return errs.ErrFileNotFound
 	}
 	hashFunction := filepath.Ext(strings.Split(checksumPath, ".checksum")[0])[1:]
@@ -137,7 +138,7 @@ func VerifyChecksum(packPath, checksumPath string) error {
 
 		if digests[targetFile] != targetDigest {
 			if digests[targetFile] == "" {
-				log.Errorf("\"%s\" does not exist in the provided pack but is listed in the checksum file", targetFile)
+				log.Errorf("%q does not exist in the provided pack but is listed in the checksum file", targetFile)
 				return errs.ErrIntegrityCheckFailed
 			}
 			log.Debugf("%s != %s", digests[targetFile], targetDigest)

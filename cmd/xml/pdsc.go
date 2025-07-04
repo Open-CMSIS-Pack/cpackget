@@ -57,7 +57,7 @@ type PackageTag struct {
 
 // NewPdscXML receives a PDSC file name to be later read into the PdscXML struct
 func NewPdscXML(fileName string) *PdscXML {
-	log.Debugf("Initializing PdscXML object for \"%s\"", fileName)
+	log.Debugf("Initializing PdscXML object for %q", fileName)
 	p := new(PdscXML)
 	p.FileName = fileName
 	return p
@@ -113,10 +113,19 @@ func (p *PdscXML) Tag() PdscTag {
 	}
 }
 
-// Read reads the PDSC file specified in p.FileName into the PdscXML struct
+// Read loads and parses the PDSC XML file specified by the FileName field into the PdscXML struct.
+// It logs the operation at debug level and returns an error if the file cannot be read or parsed.
+// Note: The filename matching is currently case-sensitive.
 func (p *PdscXML) Read() error {
-	log.Debugf("Reading pdsc from file \"%s\"", p.FileName)
+	log.Debugf("Reading pdsc from file %q", p.FileName)
 	return utils.ReadXML(p.FileName, p) // TODO: read should ignore case of filename
+}
+
+// Write saves the PdscXML struct to the file specified by FileName in XML format.
+// It logs the operation at debug level and returns an error if the write fails.
+func (p *PdscXML) Write() error {
+	log.Debugf("Writing pdsc to file %q", p.FileName)
+	return utils.WriteXML(p.FileName, p)
 }
 
 // PackURL returns a url for the Pack described in this PDSC file

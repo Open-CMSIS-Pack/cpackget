@@ -75,7 +75,7 @@ func (p *PdscType) toPdscTag() (xml.PdscTag, error) {
 //   - Adds it to the "CMSIS_PACK_ROOT/.Local/local_repository.pidx"
 //     using version from the PDSC file
 func (p *PdscType) install(installation *PacksInstallationType) error {
-	log.Debugf("Installing \"%s\"", p.path)
+	log.Debugf("Installing %q", p.path)
 	tag, err := p.toPdscTag()
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func (p *PdscType) install(installation *PacksInstallationType) error {
 //   - Removes it to the "CMSIS_PACK_ROOT/.Local/local_repository.pidx"
 //     If version is ommited, remove all pdsc tags belonging to this pack
 func (p *PdscType) uninstall(installation *PacksInstallationType) error {
-	log.Debugf("Unistalling \"%s\"", p.path)
+	log.Debugf("Unistalling %q", p.path)
 
 	tags := installation.LocalPidx.FindPdscTags(xml.PdscTag{
 		Vendor: p.Vendor,

@@ -155,7 +155,7 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 
 	if pack.isPackID && nometa {
 		if meta, found := utils.SemverHasMeta(pack.Version); found {
-			return pack, fmt.Errorf("%w: \"%s\". Expected vendor.pack.version", errs.ErrBadPackVersion, meta)
+			return pack, fmt.Errorf("%w: %q. Expected vendor.pack.version", errs.ErrBadPackVersion, meta)
 		}
 	}
 
@@ -188,12 +188,12 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 // Returns:
 //   - error: an error object if the file does not exist or if there is an issue during download.
 func (p *PackType) fetch(timeout int) error {
-	log.Debugf("Fetching pack file \"%s\" (or just making sure it exists locally)", p.path)
+	log.Debugf("Fetching pack file %q (or just making sure it exists locally)", p.path)
 	var err error
 	if strings.HasPrefix(p.path, "http") {
 		p.path, err = utils.DownloadFile(p.path, true, false, timeout)
 		if err == errs.ErrTerminatedByUser {
-			log.Infof("Aborting pack download. Removing \"%s\"", p.path)
+			log.Infof("Aborting pack download. Removing %q", p.path)
 		}
 
 		p.isDownloaded = true
@@ -201,7 +201,7 @@ func (p *PackType) fetch(timeout int) error {
 	}
 
 	if !utils.FileExists(p.path) {
-		log.Errorf("File \"%s\" doesn't exist", p.path)
+		log.Errorf("File %q doesn't exist", p.path)
 		return errs.ErrFileNotFound
 	}
 
@@ -212,13 +212,10 @@ func (p *PackType) fetch(timeout int) error {
 // to be installed.
 func (p *PackType) validate() error {
 	log.Debug("Validating pack")
-	//	pdscFileName := p.PdscFileName()
 	myPdscFileName := p.PdscFileName()
 	for _, file := range p.zipReader.File {
 		ext := strings.ToLower(filepath.Ext(file.Name))
-		if ext == ".pdsc" {
-			myPdscFileName = filepath.Base(file.Name)
-			//		if filepath.Base(file.Name) == pdscFileName {
+		if ext == PdscExtension {
 			// Check if pack was compressed in a subfolder
 			subfoldersCount := strings.Count(file.Name, "/") + strings.Count(file.Name, "\\")
 			if subfoldersCount > 1 {
@@ -229,7 +226,7 @@ func (p *PackType) validate() error {
 
 			// Ensure the file path does not contain ".."
 			if strings.Contains(file.Name, "..") {
-				log.Errorf("File \"%s\" invalid file path", file.Name)
+				log.Errorf("File %q invalid file path", file.Name)
 				return errs.ErrInvalidFilePath
 			}
 
@@ -243,7 +240,7 @@ func (p *PackType) validate() error {
 				return err
 			}
 
-			p.Pdsc = xml.NewPdscXML(filepath.Join(tmpPdscFileName, file.Name)) // #nosec
+			p.Pdsc = xml.NewPdscXML(filepath.Join(tmpPdscFileName, file.Name))
 			if err := p.Pdsc.Read(); err != nil {
 				return err
 			}
@@ -252,20 +249,31 @@ func (p *PackType) validate() error {
 			version := p.GetVersion()
 			latestVersion := p.Pdsc.LatestVersion()
 
-			log.Debugf("Making sure %s is the latest release in %s", p.targetVersion, myPdscFileName)
+			log.Debugf("Making sure %s is the latest release in %s", version, myPdscFileName)
 
 			if utils.SemverCompare(version, latestVersion) != 0 {
 				releaseTag := p.Pdsc.FindReleaseTagByVersion(version)
 				if releaseTag == nil {
-					log.Errorf("The pack's pdsc (%s) has no release tag matching version \"%s\"", myPdscFileName, version)
+					log.Errorf("The pack's pdsc (%s) has no release tag matching version %q", myPdscFileName, version)
 					return errs.ErrPackVersionNotFoundInPdsc
 				}
 
-				log.Errorf("The latest release (%s) in pack's pdsc (%s) does not match pack version \"%s\"", latestVersion, myPdscFileName, version)
+				log.Errorf("The latest release (%s) in pack's pdsc (%s) does not match pack version %q", latestVersion, myPdscFileName, version)
 				return errs.ErrPackVersionNotLatestReleasePdsc
 			}
 
-			p.Pdsc.FileName = file.Name
+			p.Pdsc.FileName = file.Name // TODO: wozu ist das gut?
+
+			pdscFileName := p.PdscFileName() // destination file name in .Download directory
+			pdscFilePath := filepath.Join(tmpPdscFileName, file.Name)
+			newPdscFileName := p.PdscFileNameWithVersion()
+
+			if !p.IsPublic {
+				_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.LocalDir, pdscFileName))
+			}
+
+			_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.DownloadDir, newPdscFileName))
+
 			return nil
 		} else {
 			if strings.Contains(file.Name, "..") {
@@ -274,7 +282,7 @@ func (p *PackType) validate() error {
 		}
 	}
 
-	log.Errorf("\"%s\" not found in \"%s\"", myPdscFileName, p.path)
+	log.Errorf("%q not found in %q", myPdscFileName, p.path)
 	return errs.ErrPdscFileNotFound
 }
 
@@ -334,12 +342,12 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	p.path = filepath.FromSlash(p.path)
 	p.path = filepath.Clean(p.path)
 
-	log.Debugf("Installing \"%s\"", p.path)
+	log.Debugf("Installing %q", p.path)
 
 	var err error
 	p.zipReader, err = zip.OpenReader(p.path)
 	if err != nil {
-		log.Errorf("Can't decompress \"%s\": %s", p.path, err)
+		log.Errorf("Can't decompress %q: %s", p.path, err)
 		return errs.ErrFailedDecompressingFile
 	}
 
@@ -384,12 +392,12 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 	// Inflate all files
 	err = utils.EnsureDir(packHomeDir)
 	if err != nil {
-		log.Errorf("Can't access pack directory \"%s\": %s", packHomeDir, err)
+		log.Errorf("Can't access pack directory %q: %s", packHomeDir, err)
 		return err
 	}
 
 	if log.IsLevelEnabled(log.DebugLevel) {
-		log.Debugf("Extracting files from \"%s\" to \"%s\"", p.path, packHomeDir)
+		log.Debugf("Extracting files from %q to %q", p.path, packHomeDir)
 	} else {
 		log.Infof("Extracting files to %s...", packHomeDir)
 	}
@@ -416,7 +424,7 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 			defer p.zipReader.Close()
 
 			if err == errs.ErrTerminatedByUser {
-				log.Infof("Aborting pack extraction. Removing \"%s\"", packHomeDir)
+				log.Infof("Aborting pack extraction. Removing %q", packHomeDir)
 				if newErr := p.uninstall(installation); newErr != nil {
 					log.Error(err)
 				}
@@ -427,16 +435,6 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 
 	// Close zip file so Windows can't complain if we rename it
 	p.zipReader.Close()
-
-	pdscFileName := p.PdscFileName()
-	pdscFilePath := filepath.Join(packHomeDir, pdscFileName)
-	newPdscFileName := p.PdscFileNameWithVersion()
-
-	if !p.IsPublic {
-		_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.LocalDir, pdscFileName))
-	}
-
-	_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.DownloadDir, newPdscFileName))
 
 	if !p.isDownloaded {
 		return utils.CopyFile(p.path, packBackupPath)
@@ -557,7 +555,7 @@ func (p *PackType) extractEula(packPath string) error {
 	eulaFileName := packPath + "." + filepath.Base(p.Pdsc.License)
 
 	if utils.GetEncodedProgress() {
-		log.Infof("[L:F\"%s\"]", eulaFileName)
+		log.Infof("[L:F%q]", eulaFileName)
 	} else {
 		log.Infof("Extracting embedded license to %v", eulaFileName)
 	}
@@ -567,7 +565,7 @@ func (p *PackType) extractEula(packPath string) error {
 		os.Remove(eulaFileName)
 	}
 	if utils.FileExists(eulaFileName) {
-		log.Errorf("Cannot remove previous copy of license file: \"%s\"", eulaFileName)
+		log.Errorf("Cannot remove previous copy of license file: %q", eulaFileName)
 		return errs.ErrFailedCreatingFile
 	}
 
@@ -577,7 +575,7 @@ func (p *PackType) extractEula(packPath string) error {
 // resolveVersionModifier takes into account eventual versionModifiers (@, @^, @~ and @>=) to determine
 // which version of a pack should be targeted for installation
 func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
-	log.Debugf("Resolving version modifier for \"%s\" using PDSC \"%s\"", p.path, pdscXML.FileName)
+	log.Debugf("Resolving version modifier for %q using PDSC %q", p.path, pdscXML.FileName)
 
 	if p.versionModifier == utils.ExactVersion {
 		p.targetVersion = p.Version
@@ -733,17 +731,17 @@ func (p *PackType) PackIDWithVersion() string {
 
 // PackFileName returns a string with how the pack file name would be: Vendor.PackName.x.y.z.pack
 func (p *PackType) PackFileName() string {
-	return p.PackIDWithVersion() + ".pack"
+	return p.PackIDWithVersion() + PackExtension
 }
 
 // PdscFileName returns a string with how the pack's pdsc file name would be: Vendor.PackName.pdsc
 func (p *PackType) PdscFileName() string {
-	return p.PackID() + ".pdsc"
+	return p.PackID() + PdscExtension
 }
 
 // PdscFileNameWithVersion returns a string with how the pack's pdsc file name would be: Vendor.PackName.x.y.z.pdsc
 func (p *PackType) PdscFileNameWithVersion() string {
-	return p.PackIDWithVersion() + ".pdsc"
+	return p.PackIDWithVersion() + PdscExtension
 }
 
 // GetVersion makes sure to get the latest version for the pack

@@ -30,6 +30,8 @@ import (
 )
 
 const PublicIndexName = "index.pidx"
+const PdscExtension = ".pdsc"
+const PackExtension = ".pack"
 const KeilDefaultPackRoot = "https://www.keil.com/pack/"
 const ConnectionTryURL = "https://www.keil.com/pack/keil.vidx"
 
@@ -1002,7 +1004,7 @@ func findInstalledPacks(addLocalPacks, removeDuplicates bool) ([]installedPack, 
 			installedPdscs := Installation.LocalPidx.ListPdscTags()
 			for _, pdsc := range installedPdscs {
 				pack := installedPack{PdscTag: pdsc, isPdscInstalled: true}
-				pack.pdscPath = pdsc.URL + pack.Vendor + "/" + pack.Name + ".pdsc"
+				pack.pdscPath = pdsc.URL + pack.Vendor + "/" + pack.Name + PdscExtension
 
 				parsedURL, err := url.ParseRequestURI(pdsc.URL)
 				pack.err = err
@@ -1011,7 +1013,7 @@ func findInstalledPacks(addLocalPacks, removeDuplicates bool) ([]installedPack, 
 					continue
 				}
 
-				pack.pdscPath = filepath.Join(utils.CleanPath(parsedURL.Path), pack.VName()+".pdsc")
+				pack.pdscPath = filepath.Join(utils.CleanPath(parsedURL.Path), pack.VName()+PdscExtension)
 				pdscXML := xml.NewPdscXML(pack.pdscPath)
 				pack.err = pdscXML.Read()
 				if pack.err == nil {
@@ -1095,7 +1097,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, t
 		// List all available packs from the index
 		for _, pdscTag := range pdscTags {
 			logMessage := pdscTag.YamlPackID()
-			packFilePath := filepath.Join(Installation.DownloadDir, pdscTag.Key()) + ".pack"
+			packFilePath := filepath.Join(Installation.DownloadDir, pdscTag.Key()) + PackExtension
 
 			if ok, _ := Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}, false); ok {
 				logMessage += " (installed)"
@@ -1129,7 +1131,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, t
 			return strings.ToLower(matches[i]) < strings.ToLower(matches[j])
 		})
 		for _, packFilePath := range matches {
-			packFilePath = strings.ReplaceAll(packFilePath, ".pack", "")
+			packFilePath = strings.ReplaceAll(packFilePath, PackExtension, "")
 			packInfo, err := utils.ExtractPackInfo(packFilePath)
 			if err != nil {
 				log.Errorf("A pack in the cache folder has malformed pack name: %s", packFilePath)
