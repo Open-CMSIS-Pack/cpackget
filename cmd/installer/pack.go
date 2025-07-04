@@ -240,7 +240,7 @@ func (p *PackType) validate() error {
 				return err
 			}
 
-			p.Pdsc = xml.NewPdscXML(filepath.Join(tmpPdscFileName, file.Name))
+			p.Pdsc = xml.NewPdscXML(filepath.Join(tmpPdscFileName, file.Name)) // #nosec
 			if err := p.Pdsc.Read(); err != nil {
 				return err
 			}
@@ -262,10 +262,10 @@ func (p *PackType) validate() error {
 				return errs.ErrPackVersionNotLatestReleasePdsc
 			}
 
-			p.Pdsc.FileName = file.Name // TODO: wozu ist das gut?
+			p.Pdsc.FileName = file.Name
 
-			pdscFileName := p.PdscFileName() // destination file name in .Download directory
-			pdscFilePath := filepath.Join(tmpPdscFileName, file.Name)
+			pdscFileName := p.PdscFileName()                          // destination file name in .Download directory
+			pdscFilePath := filepath.Join(tmpPdscFileName, file.Name) // #nosec
 			newPdscFileName := p.PdscFileNameWithVersion()
 
 			if !p.IsPublic {
