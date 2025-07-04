@@ -65,7 +65,7 @@ func SecureCopy(dst io.Writer, src io.Reader) (int64, error) {
 // compressed files. It avoids extracting files with "../"
 // if stripPrefix is provided, use that to strip file.Name files
 func SecureInflateFile(file *zip.File, destinationDir, stripPrefix string) error {
-	log.Debugf("Inflating \"%s\"", file.Name)
+	log.Debugf("Inflating %q", file.Name)
 
 	if strings.Contains(file.Name, "../") || strings.Contains(file.Name, "..\\") {
 		return errs.ErrInsecureZipFileName

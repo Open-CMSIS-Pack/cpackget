@@ -53,7 +53,7 @@ func (p *EncodedProgress) Print() {
 	newPercent := int(float64(p.current) / float64(p.total) * 100)
 	if p.currentPercent != newPercent {
 		if p.currentPercent == 0 {
-			log.Infof("[I%d:F\"%s\",T%d,P%d]", p.instanceNo, p.name, p.total, newPercent)
+			log.Infof("[I%d:F%q,T%d,P%d]", p.instanceNo, p.name, p.total, newPercent)
 		} else {
 			log.Infof("[I%d:P%d,C%d]", p.instanceNo, newPercent, p.current)
 		}
