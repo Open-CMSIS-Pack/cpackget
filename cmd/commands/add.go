@@ -100,7 +100,7 @@ Add a pack using the following "<pack>" specification or using packs provided by
 		installer.UnlockPackRoot()
 		for _, packPath := range args {
 			var err error
-			if filepath.Ext(packPath) == ".pdsc" {
+			if filepath.Ext(packPath) == installer.PdscExtension {
 				err = installer.AddPdsc(packPath)
 			} else {
 				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, addCmdFlags.noRequirements, false, viper.GetInt("timeout"))

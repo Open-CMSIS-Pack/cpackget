@@ -184,7 +184,7 @@ type PackInfo struct {
 // - PackInfo: A struct containing the extracted pack information.
 // - error: An error if the pack path is invalid or if there is an issue during extraction.
 func ExtractPackInfo(packPath string) (PackInfo, error) {
-	log.Debugf("Extracting pack info from \"%s\"", FormatVersions(packPath))
+	log.Debugf("Extracting pack info from %q", FormatVersions(packPath))
 
 	info := PackInfo{}
 	maxVersion := ""
@@ -243,7 +243,7 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 		// (found in Windows)
 		location = strings.ReplaceAll(location, "\\", "/")
 		info.Location = location
-		log.Debugf("\"%s\" is a file name or a URL with Vendor=\"%s\", Pack=\"%s\", Version=\"%s\", Extension=\"%v\", Location=\"%s\"", packPath, info.Vendor, info.Pack, info.Version, info.Extension, location)
+		log.Debugf("%q is a file name or a URL with Vendor=%q, Pack=%q, Version=%q, Extension=\"%v\", Location=%q", packPath, info.Vendor, info.Pack, info.Version, info.Extension, location)
 		return info, nil
 	}
 
@@ -281,7 +281,7 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 		info.Version = version
 	}
 
-	log.Debugf("\"%s\" is a packID with Vendor=\"%s\", Pack=\"%s\", Version=\"%s\", VersionModifier=\"%v\"", packPath, info.Vendor, info.Pack, FormatVersions(info.Version), info.VersionModifier)
+	log.Debugf("%q is a packID with Vendor=%q, Pack=%q, Version=%q, VersionModifier=\"%v\"", packPath, info.Vendor, info.Pack, FormatVersions(info.Version), info.VersionModifier)
 	return info, nil
 }
 

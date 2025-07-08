@@ -58,7 +58,7 @@ type PdscTag struct {
 // Returns:
 //   - *PidxXML: A pointer to the newly created PidxXML object.
 func NewPidxXML(fileName string) *PidxXML {
-	log.Debugf("Initializing PidxXML object for \"%s\"", fileName)
+	log.Debugf("Initializing PidxXML object for %q", fileName)
 	p := new(PidxXML)
 	p.fileName = fileName
 	return p
@@ -67,6 +67,10 @@ func NewPidxXML(fileName string) *PidxXML {
 // GetFileName returns the file name associated with the PidxXML instance.
 func (p *PidxXML) GetFileName() string {
 	return p.fileName
+}
+
+func (p *PidxXML) SetFileName(fileName string) {
+	p.fileName = fileName
 }
 
 // AddPdsc adds a PdscTag to the PidxXML's pdscList if it does not already exist.
@@ -82,7 +86,7 @@ func (p *PidxXML) GetFileName() string {
 //
 //	error: An error if the PdscTag already exists, otherwise nil.
 func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
-	log.Debugf("Adding pdsc tag \"%s\" to \"%s\"", pdsc, p.fileName)
+	log.Debugf("Adding pdsc tag %v to %q", pdsc, p.fileName)
 	if p.HasPdsc(pdsc) != PdscIndexNotFound {
 		return errs.ErrPdscEntryExists
 	}
@@ -106,7 +110,7 @@ func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 //
 //	error - An error if the PDSC tag is not found, otherwise nil.
 func (p *PidxXML) ReplacePdscVersion(pdsc PdscTag) error {
-	log.Debugf("Replacing version of pdsc tag \"%s\"", pdsc)
+	log.Debugf("Replacing version of pdsc tag %v", pdsc)
 	name := strings.ToLower(pdsc.VName())
 	key, ok := p.pdscListName[name]
 	if !ok {
@@ -115,9 +119,9 @@ func (p *PidxXML) ReplacePdscVersion(pdsc PdscTag) error {
 
 	oldPdsc := p.pdscList[key]
 	oldPdsc[0].Version = pdsc.Version
-	delete(p.pdscList, key) // neuen Eintrag entfernen
-	key = pdsc.Key()        // und wieder durch den alten ersetzen
-	p.pdscList[key] = append(p.pdscList[key], oldPdsc[0])
+	delete(p.pdscList, key) // remove the old key
+	key = pdsc.Key()        // and replyce by new one
+	p.pdscList[key] = oldPdsc
 	p.pdscListName[name] = key
 	return nil
 }
@@ -141,7 +145,7 @@ func (p *PidxXML) Empty() bool {
 // Returns:
 //   - error: An error if the Pdsc entry was not found, otherwise nil.
 func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
-	log.Debugf("Removing pdsc tag \"%s\" from \"%s\"", pdsc, p.fileName)
+	log.Debugf("Removing pdsc tag \"%v\" from %q", pdsc, p.fileName)
 
 	// removeInfo serves as a helper to identify which pdsc tags need removal
 	// key is mandatory pdscTag.Key() formatted as Vendor.Pack[.x.y.z]
@@ -219,7 +223,7 @@ func (p *PidxXML) HasPdsc(pdsc PdscTag) int {
 		}
 	}
 
-	log.Debugf("Checking if pidx \"%s\" contains \"%s (%s)\": %d", p.fileName, pdsc.Key(), pdsc.URL, index)
+	log.Debugf("Checking if pidx %q contains \"%s (%s)\": %d", p.fileName, pdsc.Key(), pdsc.URL, index)
 	return index
 }
 
@@ -244,10 +248,10 @@ func (p *PidxXML) ListPdscTags() []PdscTag {
 // Returns:
 //   - A slice of PdscTag containing the found tags.
 func (p *PidxXML) FindPdscTags(pdsc PdscTag) []PdscTag {
-	log.Debugf("Searching for pdsc \"%s\"", pdsc.Key())
+	log.Debugf("Searching for pdsc %q", pdsc.Key())
 	if pdsc.Version != "" {
 		foundTags := p.pdscList[pdsc.Key()]
-		log.Debugf("\"%s\" contains %d pdsc tag(s) for \"%s\"", p.fileName, len(foundTags), pdsc.Key())
+		log.Debugf("%q contains %d pdsc tag(s) for %q", p.fileName, len(foundTags), pdsc.Key())
 		return foundTags
 	}
 
@@ -258,19 +262,19 @@ func (p *PidxXML) FindPdscTags(pdsc PdscTag) []PdscTag {
 	if ok {
 		foundTags = p.pdscList[foundKey]
 	}
-	log.Debugf("\"%s\" contains %d pdsc tag(s) for \"%s\"", p.fileName, len(foundTags), foundKey)
+	log.Debugf("%q contains %d pdsc tag(s) for %q", p.fileName, len(foundTags), foundKey)
 	return foundTags
 }
 
 func (p *PidxXML) FindPdscNameTags(pdsc PdscTag) []PdscTag {
-	log.Debugf("Searching for pdsc \"%s\"", pdsc.VName())
+	log.Debugf("Searching for pdsc %q", pdsc.VName())
 	name := strings.ToLower(pdsc.VName())
 	foundKey, ok := p.pdscListName[name]
 	foundTags := []PdscTag{}
 	if ok {
 		foundTags = p.pdscList[foundKey]
 	}
-	log.Debugf("\"%s\" contains %d pdsc tag(s) for \"%s\"", p.fileName, len(foundTags), foundKey)
+	log.Debugf("%q contains %d pdsc tag(s) for %q", p.fileName, len(foundTags), foundKey)
 	return foundTags
 }
 
@@ -284,7 +288,7 @@ func (p *PidxXML) FindPdscNameTags(pdsc PdscTag) []PdscTag {
 // 6. Parses the timestamp and checks if it is older than 24 hours; if so, returns an error indicating the index is too old.
 // Returns an error if any of the steps fail, otherwise returns nil.
 func (p *PidxXML) CheckTime() error {
-	log.Debugf("Checking timestamp of pidx \"%s\"", p.fileName)
+	log.Debugf("Checking timestamp of pidx %q", p.fileName)
 
 	p.pdscList = make(map[string][]PdscTag)
 
@@ -314,14 +318,14 @@ func (p *PidxXML) CheckTime() error {
 //
 // Returns an error if reading the XML file fails or if writing a new file fails.
 func (p *PidxXML) Read() error {
-	log.Debugf("Reading pidx from file \"%s\"", p.fileName)
+	log.Debugf("Reading pidx from file %q", p.fileName)
 
 	p.pdscList = make(map[string][]PdscTag)
 	p.pdscListName = make(map[string]string)
 
 	// Create a new empty l
 	if !utils.FileExists(p.fileName) {
-		log.Debugf("\"%v\" not found. Creating a new one.", p.fileName)
+		log.Debugf("%q not found. Creating a new one.", p.fileName)
 		p.SchemaVersion = "1.1.0"
 		vendorName := ""
 		if p.URL == "" {
@@ -341,7 +345,7 @@ func (p *PidxXML) Read() error {
 	for _, pdsc := range p.Pindex.Pdscs {
 		key := pdsc.Key()
 		name := strings.ToLower(pdsc.VName())
-		//		log.Debugf("Registring \"%s\"", key)
+		//		log.Debugf("Registring %q", key)
 		p.pdscList[key] = append(p.pdscList[key], pdsc)
 		p.pdscListName[name] = key
 	}
@@ -357,7 +361,7 @@ func (p *PidxXML) Read() error {
 // and truncates p.Pindex.Pdscs after writing to prepare for potential future writes.
 // Returns an error if the writing process fails.
 func (p *PidxXML) Write() error {
-	log.Debugf("Writing pidx file to \"%s\"", p.fileName)
+	log.Debugf("Writing pidx file to %q", p.fileName)
 
 	// Use p.pdscList as the main source of pdsc tags
 	for _, pdscs := range p.pdscList {

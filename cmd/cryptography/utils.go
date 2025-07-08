@@ -100,7 +100,7 @@ func getDigestList(sourcePack, hashFunction string) (map[string]string, error) {
 
 	zipReader, err := zip.OpenReader(sourcePack)
 	if err != nil {
-		log.Errorf("can't decompress \"%s\": %s", sourcePack, err)
+		log.Errorf("can't decompress %q: %s", sourcePack, err)
 		return nil, errs.ErrFailedDecompressingFile
 	}
 

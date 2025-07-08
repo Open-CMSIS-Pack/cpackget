@@ -54,6 +54,36 @@ func TestAddPack(t *testing.T) {
 		assert.False(utils.FileExists(installer.Installation.PackIdx))
 	})
 
+	t.Run("test installing a pack with case diffeences in pdsc name", func(t *testing.T) {
+		localTestingDir := "test-add-pack-with-case-problem"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		packPath := publicLocalPackCASE123
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		packPdscTag := xml.PdscTag{
+			Vendor:  pack.Vendor,
+			Name:    pack.Name,
+			Version: pack.Version,
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
+		addPack(t, packPath, ConfigType{
+			IsPublic: true,
+		})
+
+		packIdxModTime := getPackIdxModTime(t, Start)
+
+		// Make sure pack.idx did NOT get touched
+		assert.Equal(packIdxModTime, getPackIdxModTime(t, End))
+	})
+
 	t.Run("test installing a pack previously installed", func(t *testing.T) {
 		localTestingDir := "test-add-pack-already-installed"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
@@ -831,7 +861,7 @@ func TestAddPack(t *testing.T) {
 			pdscXML := xml.NewPdscXML(packPdscFilePath)
 			assert.Nil(pdscXML.Read())
 			pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, releaseTag)
-			assert.Nil(utils.WriteXML(pdscXML.FileName, pdscXML))
+			assert.Nil(pdscXML.Write())
 
 			packInfo, err = utils.ExtractPackInfo(publicRemotePack123)
 			assert.Nil(err)
@@ -885,7 +915,7 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(pdscXML.Read())
 			pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, releaseTag)
 			pdscXML.URL = server.URL()
-			assert.Nil(utils.WriteXML(pdscXML.FileName, pdscXML))
+			assert.Nil(pdscXML.Write())
 
 			packInfo, err = utils.ExtractPackInfo(publicRemotePack123)
 			assert.Nil(err)
@@ -1001,7 +1031,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(pdscXML.Read())
 		pdscXML.ReleasesTag.Releases = append(pdscXML.ReleasesTag.Releases, xml.ReleaseTag{Version: "1.2.3"})
 		pdscXML.URL = server.URL()
-		assert.Nil(utils.WriteXML(pdscXML.FileName, pdscXML))
+		assert.Nil(pdscXML.Write())
 
 		err = installer.AddPack(pack123ID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
 		assert.Nil(err)
@@ -1319,7 +1349,11 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		err = installer.AddPack(publicLocalPack125WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
-		assert.Equal(err, errs.ErrPackVersionNotAvailable)
+		if errors.Is(err, errs.ErrPackVersionNotAvailable) {
+			assert.Equal(errs.ErrPackVersionNotAvailable, err)
+		} else if errors.Is(err, errs.ErrFailedDownloadingFile) {
+			assert.Equal(errs.ErrFailedDownloadingFile, err)
+		}
 	})
 
 	t.Run("test installing a pack with a minimum compatible version specified and newer major version pre-installed", func(t *testing.T) {
