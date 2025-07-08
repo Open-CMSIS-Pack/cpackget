@@ -68,7 +68,7 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 	}
 	checksumFilename := base + "." + strings.ReplaceAll(hashFunction, "-", "") + ".checksum"
 	if utils.FileExists(checksumFilename) {
-		log.Errorf("%q already exists, choose a diferent path", checksumFilename)
+		log.Errorf("%q already exists, choose a different path", checksumFilename)
 		return errs.ErrPathAlreadyExists
 	}
 
