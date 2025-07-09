@@ -50,6 +50,17 @@ func TestPidxXML(t *testing.T) {
 		assert.NotNil(pidx, "NewPidxXML should not fail on a simple instance creation")
 	})
 
+	t.Run("test GetFileName returns correct file name", func(t *testing.T) {
+		fileName := "testfile.pidx"
+		pidx := xml.NewPidxXML(fileName)
+		assert.Equal(fileName, pidx.GetFileName(), "GetFileName should return the file name set at initialization")
+
+		// Change file name and check again
+		newFileName := "newfile.pidx"
+		pidx.SetFileName(newFileName)
+		assert.Equal(newFileName, pidx.GetFileName(), "GetFileName should return the updated file name after SetFileName")
+	})
+
 	t.Run("test adding a PDSC tag to a PIDX file", func(t *testing.T) {
 		fileName := utils.RandStringBytes(10) + ".pidx"
 		defer os.Remove(fileName)
@@ -89,6 +100,107 @@ func TestPidxXML(t *testing.T) {
 
 		// Adding a PDSC of a Pack with different URL is also OK
 		assert.Nil(pidx.AddPdsc(pdscTag2DiffURL))
+	})
+
+	t.Run("test ReplacePdscVersion replaces version successfully", func(t *testing.T) {
+		fileName := utils.RandStringBytes(10) + ".pidx"
+		defer os.Remove(fileName)
+
+		originalTag := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "1.0.0",
+		}
+		newVersionTag := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "2.0.0",
+		}
+
+		pidx := xml.NewPidxXML(fileName)
+		assert.Nil(pidx.Read())
+
+		// Add the original tag
+		assert.Nil(pidx.AddPdsc(originalTag))
+
+		// Replace version
+		assert.Nil(pidx.ReplacePdscVersion(newVersionTag))
+
+		// The old version should not be found
+		assert.Equal(pidx.HasPdsc(originalTag), xml.PdscIndexNotFound)
+
+		// The new version should be found
+		assert.GreaterOrEqual(pidx.HasPdsc(newVersionTag), 0)
+
+		// The tag in the list should have the new version
+		foundTags := pidx.FindPdscTags(newVersionTag)
+		assert.Equal(1, len(foundTags))
+		assert.Equal("2.0.0", foundTags[0].Version)
+	})
+
+	t.Run("test ReplacePdscVersion returns error if tag not found", func(t *testing.T) {
+		fileName := utils.RandStringBytes(10) + ".pidx"
+		defer os.Remove(fileName)
+
+		nonExistentTag := xml.PdscTag{
+			Vendor:  "NoVendor",
+			URL:     "http://novendor.com/",
+			Name:    "NoPack",
+			Version: "1.0.0",
+		}
+
+		pidx := xml.NewPidxXML(fileName)
+		assert.Nil(pidx.Read())
+
+		// Attempt to replace version for a tag that doesn't exist
+		err := pidx.ReplacePdscVersion(nonExistentTag)
+		assert.Equal(err, errs.ErrPdscEntryNotFound)
+	})
+
+	t.Run("test Empty returns true for new PidxXML", func(t *testing.T) {
+		fileName := utils.RandStringBytes(10) + ".pidx"
+		defer os.Remove(fileName)
+
+		pidx := xml.NewPidxXML(fileName)
+		assert.True(pidx.Empty(), "Empty should return true for a new PidxXML with no pdsc tags")
+	})
+
+	t.Run("test Empty returns false after adding PdscTag", func(t *testing.T) {
+		fileName := utils.RandStringBytes(10) + ".pidx"
+		defer os.Remove(fileName)
+
+		pidx := xml.NewPidxXML(fileName)
+		assert.Nil(pidx.Read())
+
+		pdscTag := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "0.0.1",
+		}
+		assert.Nil(pidx.AddPdsc(pdscTag))
+		assert.False(pidx.Empty(), "Empty should return false after adding a PdscTag")
+	})
+
+	t.Run("test Empty returns true after removing all PdscTags", func(t *testing.T) {
+		fileName := utils.RandStringBytes(10) + ".pidx"
+		defer os.Remove(fileName)
+
+		pidx := xml.NewPidxXML(fileName)
+		assert.Nil(pidx.Read())
+
+		pdscTag := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "0.0.1",
+		}
+		assert.Nil(pidx.AddPdsc(pdscTag))
+		assert.False(pidx.Empty(), "Empty should return false after adding a PdscTag")
+		assert.Nil(pidx.RemovePdsc(pdscTag))
+		assert.True(pidx.Empty(), "Empty should return true after removing all PdscTags")
 	})
 
 	t.Run("test removing a PDSC tag from a PIDX file", func(t *testing.T) {
@@ -171,7 +283,7 @@ func TestPidxXML(t *testing.T) {
 		// assert.Equal(pidx.RemovePdsc(pdscTag2), errs.ErrPdscEntryNotFound)
 	})
 
-	t.Run("test writting changes to a PIDX file", func(t *testing.T) {
+	t.Run("test writing changes to a PIDX file", func(t *testing.T) {
 		fileName := utils.RandStringBytes(10) + ".pidx"
 		defer os.Remove(fileName)
 

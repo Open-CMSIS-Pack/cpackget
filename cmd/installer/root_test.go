@@ -285,6 +285,7 @@ var (
 	publicLocalPack123meta   = filepath.Join(testDir, "1.2.3+meta", "TheVendor.PublicLocalPack.1.2.3+meta.pack")
 	publicRemotePack123      = filepath.Join(testDir, "1.2.3", publicRemotePack123PackID+".pack")
 	publicRemotePack123alpha = filepath.Join(testDir, "1.2.3-alpha.1.0", publicRemotePack123PackIDAlpha+".pack")
+	publicLocalPackCASE123   = filepath.Join(testDir, "1.2.3", "TheVendor.PublicLocalPackCASE.1.2.3.pack")
 
 	// Private packs
 	nonPublicLocalPack123  = filepath.Join(testDir, "1.2.3", nonPublicLocalPack123PackID+".pack")

@@ -324,19 +324,19 @@ func embedPack(packFilename, version string, z *zip.ReadCloser, rawCert, signedH
 // specific creation functions.
 func SignPack(packPath, certPath, keyPath, outputDir, version string, certOnly, skipCertValidation, skipInfo bool) error {
 	if !utils.FileExists(packPath) {
-		log.Errorf("\"%s\" does not exist", packPath)
+		log.Errorf("%q does not exist", packPath)
 		return errs.ErrFileNotFound
 	}
 	// Flag validation is already performed in the command package,
 	// so we can assume they make sense
 	if keyPath != "" && !utils.FileExists(keyPath) {
-		log.Errorf("\"%s\" does not exist", keyPath)
+		log.Errorf("%q does not exist", keyPath)
 		return errs.ErrFileNotFound
 	}
 	pgp := false
 	if certPath != "" {
 		if !utils.FileExists(certPath) {
-			log.Errorf("\"%s\" does not exist", certPath)
+			log.Errorf("%q does not exist", certPath)
 			return errs.ErrFileNotFound
 		}
 	} else {
@@ -362,7 +362,7 @@ func SignPack(packPath, certPath, keyPath, outputDir, version string, certOnly, 
 
 	zip, err := zip.OpenReader(packPath)
 	if err != nil {
-		log.Errorf("Can't decompress \"%s\": %s", packPath, err)
+		log.Errorf("Can't decompress %q: %s", packPath, err)
 		return errs.ErrFailedDecompressingFile
 	}
 	switch validateSignatureScheme(zip, version, true) {
@@ -514,16 +514,16 @@ func verifyPackPGPSignature(zip *zip.ReadCloser, keyPath, b64Signature string) e
 // specific validation functions.
 func VerifyPackSignature(packPath, pubPath, version string, export, skipCertValidation, skipInfo bool) error {
 	if !utils.FileExists(packPath) {
-		log.Errorf("\"%s\" does not exist", packPath)
+		log.Errorf("%q does not exist", packPath)
 		return errs.ErrFileNotFound
 	}
 	if pubPath != "" && !utils.FileExists(pubPath) {
-		log.Errorf("\"%s\" does not exist", packPath)
+		log.Errorf("%q does not exist", packPath)
 		return errs.ErrFileNotFound
 	}
 	zip, err := zip.OpenReader(packPath)
 	if err != nil {
-		log.Errorf("Can't decompress \"%s\": %s", packPath, err)
+		log.Errorf("Can't decompress %q: %s", packPath, err)
 		return errs.ErrFailedDecompressingFile
 	}
 
