@@ -130,11 +130,11 @@ jobs:
         goos: [windows, linux, darwin]
         include:
           - goos: windows
-            runs-on: windows-latest
+            runs-on: windows-2022
           - goos: linux
-            runs-on: ubuntu-latest
+            runs-on: ubuntu-24.04
           - goos: darwin
-            runs-on: macos-latest
+            runs-on: macos-14
 
     name: "${{ matrix.goos }} | amd64"
     runs-on: ${{ matrix.runs-on }}
