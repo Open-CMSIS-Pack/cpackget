@@ -212,6 +212,7 @@ func (p *PackType) fetch(timeout int) error {
 // to be installed.
 func (p *PackType) validate() error {
 	log.Debug("Validating pack")
+	var err error
 	myPdscFileName := p.PdscFileName()
 	for _, file := range p.zipReader.File {
 		ext := strings.ToLower(filepath.Ext(file.Name))
@@ -219,7 +220,39 @@ func (p *PackType) validate() error {
 			// Check if pack was compressed in a subfolder
 			subfoldersCount := strings.Count(file.Name, "/") + strings.Count(file.Name, "\\")
 			if subfoldersCount > 1 {
-				return errs.ErrPdscFileTooDeepInPack
+				err = errs.ErrPdscFileTooDeepInPack
+			} else if subfoldersCount == 1 {
+				p.Subfolder = filepath.Dir(file.Name)
+			} else {
+				p.Subfolder = "/" // only for marking that there is a .pdsc file in the root of the pack
+			}
+
+			// Ensure the file path does not contain ".."
+			if strings.Contains(file.Name, "..") {
+				log.Errorf("File %q invalid file path", file.Name)
+				return errs.ErrInvalidFilePath
+			}
+		} else {
+			if strings.Contains(file.Name, "..") {
+				return errs.ErrInsecureZipFileName
+			}
+		}
+	}
+	if err != nil {
+		if len(p.Subfolder) != 0 {
+			log.Warnf("Pack %q contains multiple .pdsc files in different levels, this may cause issues", p.path)
+		} else {
+			return err
+		}
+	}
+	p.Subfolder = "" // reset subfolder to empty string
+	for _, file := range p.zipReader.File {
+		ext := strings.ToLower(filepath.Ext(file.Name))
+		if ext == PdscExtension {
+			// Check if pack was compressed in a subfolder
+			subfoldersCount := strings.Count(file.Name, "/") + strings.Count(file.Name, "\\")
+			if subfoldersCount > 1 {
+				continue
 			} else if subfoldersCount == 1 {
 				p.Subfolder = filepath.Dir(file.Name)
 			}
@@ -275,10 +308,6 @@ func (p *PackType) validate() error {
 			_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.DownloadDir, newPdscFileName))
 
 			return nil
-		} else {
-			if strings.Contains(file.Name, "..") {
-				return errs.ErrInsecureZipFileName
-			}
 		}
 	}
 
