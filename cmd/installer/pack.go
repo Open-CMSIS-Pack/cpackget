@@ -236,7 +236,8 @@ func (p *PackType) validate() error {
 			if subfoldersCount > 1 {
 				err = errs.ErrPdscFileTooDeepInPack // save for later decision if error or warning
 			} else {
-				if !strings.EqualFold(file.Name, myPdscFileName) {
+				tmpFileName := filepath.Base(file.Name) // normalize file name
+				if !strings.EqualFold(tmpFileName, myPdscFileName) {
 					if err != nil {
 						log.Warnf("Pack %q contains an additional .pdsc file in a deeper subfolder, this may cause issues", p.path)
 					}
