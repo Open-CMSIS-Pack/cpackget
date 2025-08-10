@@ -168,7 +168,7 @@ jobs:
 
       - name: Publish coverage report to QLTY
         if: ${{ startsWith(matrix.runs-on, 'ubuntu') && (github.workflow != 'Release') }}
-        uses: qltysh/qlty-action/coverage@f13b3559771beedd11e68b03d49512f3c21a75ba # v1
+        uses: qltysh/qlty-action/coverage@782ebe01413b63470fe8c3d481de77cef79e1486 # v1
         with:
           token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
           files: ./cover.out
