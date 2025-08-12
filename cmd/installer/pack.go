@@ -212,78 +212,110 @@ func (p *PackType) fetch(timeout int) error {
 // to be installed.
 func (p *PackType) validate() error {
 	log.Debug("Validating pack")
+	var err error
 	myPdscFileName := p.PdscFileName()
+	var validPdscFiles []*zip.File
+
+	// Single pass: validate all files and collect valid PDSC files
 	for _, file := range p.zipReader.File {
 		ext := strings.ToLower(filepath.Ext(file.Name))
+
+		// Ensure all file paths do not contain ".."
+		if strings.Contains(file.Name, "..") {
+			if ext == PdscExtension {
+				log.Errorf("File %q invalid file path", file.Name)
+				return errs.ErrInvalidFilePath
+			} else {
+				return errs.ErrInsecureZipFileName
+			}
+		}
+
 		if ext == PdscExtension {
 			// Check if pack was compressed in a subfolder
 			subfoldersCount := strings.Count(file.Name, "/") + strings.Count(file.Name, "\\")
 			if subfoldersCount > 1 {
-				return errs.ErrPdscFileTooDeepInPack
-			} else if subfoldersCount == 1 {
-				p.Subfolder = filepath.Dir(file.Name)
-			}
-
-			// Ensure the file path does not contain ".."
-			if strings.Contains(file.Name, "..") {
-				log.Errorf("File %q invalid file path", file.Name)
-				return errs.ErrInvalidFilePath
-			}
-
-			myPdscFileName = p.PackID() + filepath.Ext(file.Name)
-
-			// Read pack's pdsc
-			tmpPdscFileName := filepath.Join(os.TempDir(), utils.RandStringBytes(10))
-			defer os.RemoveAll(tmpPdscFileName)
-
-			if err := utils.SecureInflateFile(file, tmpPdscFileName, ""); err != nil {
-				return err
-			}
-
-			p.Pdsc = xml.NewPdscXML(filepath.Join(tmpPdscFileName, file.Name)) // #nosec
-			if err := p.Pdsc.Read(); err != nil {
-				return err
-			}
-
-			// Sanity check: make sure the version being installed actually exists in the PDSC file
-			version := p.GetVersion()
-			latestVersion := p.Pdsc.LatestVersion()
-
-			log.Debugf("Making sure %s is the latest release in %s", version, myPdscFileName)
-
-			if utils.SemverCompare(version, latestVersion) != 0 {
-				releaseTag := p.Pdsc.FindReleaseTagByVersion(version)
-				if releaseTag == nil {
-					log.Errorf("The pack's pdsc (%s) has no release tag matching version %q", myPdscFileName, version)
-					return errs.ErrPackVersionNotFoundInPdsc
+				err = errs.ErrPdscFileTooDeepInPack // save for later decision if error or warning
+			} else {
+				tmpFileName := filepath.Base(file.Name) // normalize file name
+				if !strings.EqualFold(tmpFileName, myPdscFileName) {
+					if err != nil {
+						log.Warnf("Pack %q contains an additional .pdsc file in a deeper subfolder, this may cause issues", p.path)
+					}
+					return fmt.Errorf("%q: %w", file.Name, errs.ErrPdscWrongName)
 				}
+				// Collect valid PDSC files for processing
+				validPdscFiles = append(validPdscFiles, file)
 
-				log.Errorf("The latest release (%s) in pack's pdsc (%s) does not match pack version %q", latestVersion, myPdscFileName, version)
-				return errs.ErrPackVersionNotLatestReleasePdsc
-			}
-
-			p.Pdsc.FileName = file.Name
-
-			pdscFileName := p.PdscFileName()                          // destination file name in .Download directory
-			pdscFilePath := filepath.Join(tmpPdscFileName, file.Name) // #nosec
-			newPdscFileName := p.PdscFileNameWithVersion()
-
-			if !p.IsPublic {
-				_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.LocalDir, pdscFileName))
-			}
-
-			_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.DownloadDir, newPdscFileName))
-
-			return nil
-		} else {
-			if strings.Contains(file.Name, "..") {
-				return errs.ErrInsecureZipFileName
+				if subfoldersCount == 1 {
+					p.Subfolder = filepath.Dir(file.Name)
+				}
 			}
 		}
 	}
 
-	log.Errorf("%q not found in %q", myPdscFileName, p.path)
-	return errs.ErrPdscFileNotFound
+	if len(validPdscFiles) > 1 {
+		return errs.ErrMultiplePdscFilesInPack
+	}
+
+	if err != nil {
+		if len(validPdscFiles) > 0 {
+			log.Warnf("Pack %q contains an additional .pdsc file in a deeper subfolder, this may cause issues", p.path)
+		} else {
+			return err
+		}
+	}
+
+	if len(validPdscFiles) == 0 {
+		log.Errorf("%q not found in %q", myPdscFileName, p.path)
+		return errs.ErrPdscFileNotFound
+	}
+
+	// Process the first valid PDSC file found
+	file := validPdscFiles[0]
+
+	// Read pack's pdsc
+	tmpPdscFileName := filepath.Join(os.TempDir(), utils.RandStringBytes(10))
+	defer os.RemoveAll(tmpPdscFileName)
+
+	if err := utils.SecureInflateFile(file, tmpPdscFileName, ""); err != nil {
+		return err
+	}
+
+	p.Pdsc = xml.NewPdscXML(filepath.Join(tmpPdscFileName, file.Name)) // #nosec
+	if err := p.Pdsc.Read(); err != nil {
+		return err
+	}
+
+	// Sanity check: make sure the version being installed actually exists in the PDSC file
+	version := p.GetVersion()
+	latestVersion := p.Pdsc.LatestVersion()
+
+	log.Debugf("Making sure %s is the latest release in %s", version, myPdscFileName)
+
+	if utils.SemverCompare(version, latestVersion) != 0 {
+		releaseTag := p.Pdsc.FindReleaseTagByVersion(version)
+		if releaseTag == nil {
+			log.Errorf("The pack's pdsc (%s) has no release tag matching version %q", myPdscFileName, version)
+			return errs.ErrPackVersionNotFoundInPdsc
+		}
+
+		log.Errorf("The latest release (%s) in pack's pdsc (%s) does not match pack version %q", latestVersion, myPdscFileName, version)
+		return errs.ErrPackVersionNotLatestReleasePdsc
+	}
+
+	p.Pdsc.FileName = file.Name
+
+	pdscFileName := p.PdscFileName()                          // destination file name in .Download directory
+	pdscFilePath := filepath.Join(tmpPdscFileName, file.Name) // #nosec
+	newPdscFileName := p.PdscFileNameWithVersion()
+
+	if !p.IsPublic {
+		_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.LocalDir, pdscFileName))
+	}
+
+	_ = utils.CopyFile(pdscFilePath, filepath.Join(Installation.DownloadDir, newPdscFileName))
+
+	return nil
 }
 
 // purge removes all cached files matching the pattern derived from the PackType's

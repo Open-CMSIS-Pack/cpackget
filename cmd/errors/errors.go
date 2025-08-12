@@ -32,16 +32,18 @@ var (
 	ErrBadPackVersion = errors.New("bad pack version: cannot add a version with build metadata")
 
 	// Errors related to package content
-	ErrPdscFileNotFound      = errors.New("pdsc not found")
-	ErrPackNotInstalled      = errors.New("pack not installed")
-	ErrPdscEntryExists       = errors.New("pdsc already in index")
-	ErrPdscEntryNotFound     = errors.New("pdsc not found in index")
-	ErrEula                  = errors.New("user does not agree with the pack's license")
-	ErrExtractEula           = errors.New("user wants to extract embedded license only")
-	ErrLicenseNotFound       = errors.New("embedded license not found")
-	ErrPackRootNotFound      = errors.New("no CMSIS Pack Root directory specified. Either the environment CMSIS_PACK_ROOT needs to be set or the path specified using the command line option -R/--pack-root string")
-	ErrPackRootDoesNotExist  = errors.New("the specified CMSIS Pack Root directory does NOT exist! Please take a moment to review if the value is correct or create a new one via `cpackget init` command")
-	ErrPdscFileTooDeepInPack = errors.New("pdsc file is too deep in pack file")
+	ErrPdscFileNotFound        = errors.New("pdsc not found")
+	ErrPackNotInstalled        = errors.New("pack not installed")
+	ErrPdscEntryExists         = errors.New("pdsc already in index")
+	ErrPdscEntryNotFound       = errors.New("pdsc not found in index")
+	ErrEula                    = errors.New("user does not agree with the pack's license")
+	ErrExtractEula             = errors.New("user wants to extract embedded license only")
+	ErrLicenseNotFound         = errors.New("embedded license not found")
+	ErrPackRootNotFound        = errors.New("no CMSIS Pack Root directory specified. Either the environment CMSIS_PACK_ROOT needs to be set or the path specified using the command line option -R/--pack-root string")
+	ErrPackRootDoesNotExist    = errors.New("the specified CMSIS Pack Root directory does NOT exist! Please take a moment to review if the value is correct or create a new one via `cpackget init` command")
+	ErrPdscFileTooDeepInPack   = errors.New("pdsc file is too deep in pack file")
+	ErrMultiplePdscFilesInPack = errors.New("multiple pdsc files found in pack file, cannot determine which one to use. Please remove the extra pdsc files")
+	ErrPdscWrongName           = errors.New("pdsc file has wrong name, it should be <PackID>.pdsc")
 
 	// Errors related to network
 	ErrBadRequest            = errors.New("bad request")

@@ -1894,9 +1894,21 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) (f
 		if latestVersion == "" {
 			log.Debugf("Could not find latest version for %q", pack.PackIDWithVersion())
 		} else {
+			log.Debugf("Checking for installed packs %s", utils.FormatVersions(pack.Version))
+			for _, version := range installedVersions {
+				log.Debugf("- checking against: %s", version)
+				if utils.SemverCompare(version, latestVersion) >= 0 {
+					found = true
+					return
+				}
+			}
 			packDir := filepath.Join(installationDir, latestVersion)
 			found = utils.DirExists(packDir)
-			pack.targetVersion = latestVersion
+			if !found && utils.SemverCompare(latestVersion, pack.Version) >= 0 {
+				pack.targetVersion = latestVersion
+			} else {
+				pack.targetVersion = pack.Version
+			}
 		}
 	}
 
