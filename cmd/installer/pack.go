@@ -253,19 +253,16 @@ func (p *PackType) validate() error {
 		}
 	}
 
+	if len(validPdscFiles) > 1 {
+		return errs.ErrMultiplePdscFilesInPack
+	}
+
 	if err != nil {
 		if len(validPdscFiles) > 0 {
-			if len(validPdscFiles) > 1 {
-				return errs.ErrMultiplePdscFilesInPack
-			}
 			log.Warnf("Pack %q contains an additional .pdsc file in a deeper subfolder, this may cause issues", p.path)
 		} else {
 			return err
 		}
-	}
-
-	if len(validPdscFiles) > 1 {
-		return errs.ErrMultiplePdscFilesInPack
 	}
 
 	if len(validPdscFiles) == 0 {
