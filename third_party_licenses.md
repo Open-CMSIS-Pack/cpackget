@@ -9,7 +9,7 @@
 | github.com/cloudflare/circl | v1.6.1  | [BSD-3-Clause](https://github.com/cloudflare/circl/blob/v1.6.1/LICENSE) |
 | github.com/fsnotify/fsnotify | v1.8.0  | [BSD-3-Clause](https://github.com/fsnotify/fsnotify/blob/v1.8.0/LICENSE) |
 | github.com/gabriel-vasile/mimetype | v1.4.4  | [MIT](https://github.com/gabriel-vasile/mimetype/blob/v1.4.4/LICENSE) |
-| github.com/go-viper/mapstructure/v2 | v2.3.0  | [MIT](https://github.com/go-viper/mapstructure/blob/v2.3.0/LICENSE) |
+| github.com/go-viper/mapstructure/v2 | v2.4.0  | [MIT](https://github.com/go-viper/mapstructure/blob/v2.4.0/LICENSE) |
 | github.com/jroimartin/gocui | v0.5.0  | [BSD-3-Clause](https://github.com/jroimartin/gocui/blob/v0.5.0/LICENSE) |
 | github.com/lu4p/cat | v0.1.5  | [Unlicense](https://github.com/lu4p/cat/blob/v0.1.5/LICENSE) |
 | github.com/lu4p/cat/rtftxt | v0.1.5  | [MIT](https://github.com/lu4p/cat/blob/v0.1.5/rtftxt/LICENSE) |
@@ -27,16 +27,16 @@
 | github.com/spf13/afero | v1.12.0  | [Apache-2.0](https://github.com/spf13/afero/blob/v1.12.0/LICENSE.txt) |
 | github.com/spf13/cast | v1.7.1  | [MIT](https://github.com/spf13/cast/blob/v1.7.1/LICENSE) |
 | github.com/spf13/cobra | v1.9.1  | [Apache-2.0](https://github.com/spf13/cobra/blob/v1.9.1/LICENSE.txt) |
-| github.com/spf13/pflag | v1.0.6  | [BSD-3-Clause](https://github.com/spf13/pflag/blob/v1.0.6/LICENSE) |
+| github.com/spf13/pflag | v1.0.9  | [BSD-3-Clause](https://github.com/spf13/pflag/blob/v1.0.9/LICENSE) |
 | github.com/spf13/viper | v1.20.1  | [MIT](https://github.com/spf13/viper/blob/v1.20.1/LICENSE) |
 | github.com/subosito/gotenv | v1.6.0  | [MIT](https://github.com/subosito/gotenv/blob/v1.6.0/LICENSE) |
-| golang.org/x/crypto | v0.39.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.39.0:LICENSE) |
-| golang.org/x/mod/semver | v0.25.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.25.0:LICENSE) |
-| golang.org/x/net/html | v0.41.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.41.0:LICENSE) |
-| golang.org/x/sync/semaphore | v0.15.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.15.0:LICENSE) |
-| golang.org/x/sys | v0.33.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.33.0:LICENSE) |
-| golang.org/x/term | v0.32.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/term/+/v0.32.0:LICENSE) |
-| golang.org/x/text | v0.26.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.26.0:LICENSE) |
+| golang.org/x/crypto | v0.41.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.41.0:LICENSE) |
+| golang.org/x/mod/semver | v0.27.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.27.0:LICENSE) |
+| golang.org/x/net/html | v0.43.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.43.0:LICENSE) |
+| golang.org/x/sync/semaphore | v0.16.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.16.0:LICENSE) |
+| golang.org/x/sys | v0.35.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.35.0:LICENSE) |
+| golang.org/x/term | v0.34.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/term/+/v0.34.0:LICENSE) |
+| golang.org/x/text | v0.28.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.28.0:LICENSE) |
 | gopkg.in/yaml.v3 | v3.0.1  | [MIT](https://github.com/go-yaml/yaml/blob/v3.0.1/LICENSE) |
 
 Report generated and repository checked for [forbidden](https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go#L323) and [restricted](https://github.com/google/licenseclassifier/blob/842c0d70d7027215932deb13801890992c9ba364/license_type.go#L176) licenses.
