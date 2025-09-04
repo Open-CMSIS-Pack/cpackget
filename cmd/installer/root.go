@@ -651,7 +651,7 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 // Parameters:
 //   - pidxXML: The current public index XML structure.
 //   - oldPidxXML: The previous public index XML structure (can be nil).
-//   - updatePrivatePdsc: Whether to update private PDSC files (currently not used in logic).
+//   - updatePrivatePdsc: Whether to update private PDSC files.
 //   - showInfo: If true, logs informational messages about the download.
 //   - concurrency: Number of concurrent downloads allowed.
 //   - timeout: Timeout in seconds for downloading PDSC files.
