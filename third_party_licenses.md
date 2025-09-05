@@ -26,8 +26,8 @@
 | github.com/sourcegraph/conc | v0.3.0  | [MIT](https://github.com/sourcegraph/conc/blob/v0.3.0/LICENSE) |
 | github.com/spf13/afero | v1.12.0  | [Apache-2.0](https://github.com/spf13/afero/blob/v1.12.0/LICENSE.txt) |
 | github.com/spf13/cast | v1.7.1  | [MIT](https://github.com/spf13/cast/blob/v1.7.1/LICENSE) |
-| github.com/spf13/cobra | v1.9.1  | [Apache-2.0](https://github.com/spf13/cobra/blob/v1.9.1/LICENSE.txt) |
-| github.com/spf13/pflag | v1.0.9  | [BSD-3-Clause](https://github.com/spf13/pflag/blob/v1.0.9/LICENSE) |
+| github.com/spf13/cobra | v1.10.1  | [Apache-2.0](https://github.com/spf13/cobra/blob/v1.10.1/LICENSE.txt) |
+| github.com/spf13/pflag | v1.0.10  | [BSD-3-Clause](https://github.com/spf13/pflag/blob/v1.0.10/LICENSE) |
 | github.com/spf13/viper | v1.20.1  | [MIT](https://github.com/spf13/viper/blob/v1.20.1/LICENSE) |
 | github.com/subosito/gotenv | v1.6.0  | [MIT](https://github.com/subosito/gotenv/blob/v1.6.0/LICENSE) |
 | golang.org/x/crypto | v0.41.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.41.0:LICENSE) |
