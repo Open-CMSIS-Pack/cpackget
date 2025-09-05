@@ -148,3 +148,29 @@ func TestNewLicenseWindow_AgreeDisagreeExtractHandlers(t *testing.T) {
 	assert.Equal(gocui.ErrQuit, err)
 	assert.True(ui.Extract, "Extract handler should set Extract to true")
 }
+
+func TestLayoutRectValidation(t *testing.T) {
+	assert := assert.New(t)
+
+	t.Run("license rect invalid when terminal too small", func(t *testing.T) {
+		lbx, lby, lex, ley, _, _, _, _ := ui.ComputeLicenseAndPromptRectsForTest(1, 1)
+		err := ui.ValidateLicenseRectForTest(lbx, lby, lex, ley)
+		assert.Error(err)
+		assert.Contains(err.Error(), "increase size of license window")
+	})
+
+	t.Run("prompt rect invalid when terminal too small", func(t *testing.T) {
+		// Choose width=2 so pbx==pex and triggers invalid prompt rect
+		_, _, _, _, pbx, pby, pex, pey := ui.ComputeLicenseAndPromptRectsForTest(2, 6)
+		err := ui.ValidatePromptRectForTest(pbx, pby, pex, pey)
+		if assert.Error(err) {
+			assert.Contains(err.Error(), "increase size of prompt window")
+		}
+	})
+
+	t.Run("rects valid on reasonable terminal size", func(t *testing.T) {
+		lbx, lby, lex, ley, pbx, pby, pex, pey := ui.ComputeLicenseAndPromptRectsForTest(80, 24)
+		assert.NoError(ui.ValidateLicenseRectForTest(lbx, lby, lex, ley))
+		assert.NoError(ui.ValidatePromptRectForTest(pbx, pby, pex, pey))
+	})
+}
