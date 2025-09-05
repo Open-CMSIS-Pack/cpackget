@@ -79,7 +79,7 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 			// Exclude index updating commands to not double update
 			if cmd.Name() != "init" && cmd.Name() != "index" && cmd.Name() != "update-index" && cmd.Name() != "list" {
 				installer.UnlockPackRoot()
-				err = installer.UpdatePublicIndex(installer.ActualPublicIndex, true, true, false, false, 0, 0)
+				err = installer.UpdatePublicIndex(installer.ActualPublicIndex, true, true, false, false, false, true, 0, 0)
 				if err != nil {
 					return err
 				}

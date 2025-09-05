@@ -191,7 +191,7 @@ func (p *PackType) fetch(timeout int) error {
 	log.Debugf("Fetching pack file %q (or just making sure it exists locally)", p.path)
 	var err error
 	if strings.HasPrefix(p.path, "http") {
-		p.path, err = utils.DownloadFile(p.path, true, false, timeout)
+		p.path, err = utils.DownloadFile(p.path, true, true, true, timeout)
 		if err == errs.ErrTerminatedByUser {
 			log.Infof("Aborting pack download. Removing %q", p.path)
 		}
