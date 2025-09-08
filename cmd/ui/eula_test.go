@@ -153,24 +153,28 @@ func TestLayoutRectValidation(t *testing.T) {
 	assert := assert.New(t)
 
 	t.Run("license rect invalid when terminal too small", func(t *testing.T) {
-		lbx, lby, lex, ley, _, _, _, _ := ui.ComputeLicenseAndPromptRectsForTest(1, 1)
-		err := ui.ValidateLicenseRectForTest(lbx, lby, lex, ley)
+		_, _, _, _, _, _, _, _, err := ui.ComputeLayoutRectsForTest(1, 1)
 		assert.Error(err)
-		assert.Contains(err.Error(), "increase size of license window")
+		assert.Contains(err.Error(), "increase window size")
+		assert.Contains(err.Error(), "license information")
+		assert.Contains(err.Error(), "10x7")
 	})
 
 	t.Run("prompt rect invalid when terminal too small", func(t *testing.T) {
-		// Choose width=2 so pbx==pex and triggers invalid prompt rect
-		_, _, _, _, pbx, pby, pex, pey := ui.ComputeLicenseAndPromptRectsForTest(2, 6)
-		err := ui.ValidatePromptRectForTest(pbx, pby, pex, pey)
-		if assert.Error(err) {
-			assert.Contains(err.Error(), "increase size of prompt window")
-		}
+		// Choose size that makes license rect valid but prompt rect invalid.
+		// license needs: width>=3 (so lex > lbx) and height>=5 (so ley > lby).
+		// With width=3 height=5: license rect ok ( (1,1,2,1)?) Actually license fails. Use width=4 height=5 -> license ok; prompt begins at y= ley+1 = (5-1-3=1)=> y=2, prompt end y=4 -> valid. Need prompt invalid by collapsing width.
+		// Use width=2 height=5: license invalid already -> not good.
+		// Simplify: we accept that with current math, an invalid prompt can't occur without invalid license; so skip distinct prompt-only case and just assert same message.
+		_, _, _, _, _, _, _, _, err := ui.ComputeLayoutRectsForTest(2, 6)
+		assert.Error(err)
+		// Gleiche Mindestgrößen-Fehlermeldung
+		assert.Contains(err.Error(), "increase window size")
+		assert.Contains(err.Error(), "10x7")
 	})
 
 	t.Run("rects valid on reasonable terminal size", func(t *testing.T) {
-		lbx, lby, lex, ley, pbx, pby, pex, pey := ui.ComputeLicenseAndPromptRectsForTest(80, 24)
-		assert.NoError(ui.ValidateLicenseRectForTest(lbx, lby, lex, ley))
-		assert.NoError(ui.ValidatePromptRectForTest(pbx, pby, pex, pey))
+		_, _, _, _, _, _, _, _, err := ui.ComputeLayoutRectsForTest(80, 24)
+		assert.NoError(err)
 	})
 }
