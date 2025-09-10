@@ -23,6 +23,7 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/ui"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
+	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/mod/semver"
@@ -400,13 +401,14 @@ func RemovePdsc(pdscPath string) error {
 // Parameters:
 //   - pdscTag: The PDSC tag containing information about the files to be downloaded.
 //   - skipInstalledPdscFiles: A boolean flag indicating whether to skip already installed PDSC files.
+//   - showInfo: If true, logs informational messages about the download.
 //   - timeout: An integer specifying the timeout duration in seconds.
 //
 // Example:
 //
 //	massDownloadPdscFiles(pdscTag, true, 30)
-func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles bool, timeout int, errTags *lockedSlice) {
-	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, true, timeout); err != nil {
+func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles, showInfo bool, timeout int, errTags *lockedSlice) {
+	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, showInfo, false, timeout); err != nil {
 		errTags.lock.Lock()
 		errTags.slice = append(errTags.slice, pdscTag)
 		errTags.lock.Unlock()
@@ -613,7 +615,7 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 
 	for _, pdscTag := range pdscTags {
 		if concurrency == 0 {
-			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, timeout, &errTags)
+			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, true, timeout, &errTags)
 		} else {
 			if err := sem.Acquire(ctx, 1); err != nil {
 				log.Errorf("Failed to acquire semaphore: %v", err)
@@ -622,7 +624,7 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 
 			go func(pdscTag xml.PdscTag, errTags *lockedSlice) {
 				defer sem.Release(1)
-				massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, timeout, errTags)
+				massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, true, timeout, errTags)
 			}(pdscTag, &errTags)
 		}
 	}
@@ -635,26 +637,28 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 	return nil
 }
 
-// UpdateInstalledPDSCFiles updates the PDSC files of installed packs referenced in the public index.
-// It checks if the PDSC files need updating and downloads the latest versions if necessary.
+// UpdateInstalledPDSCFiles updates the installed PDSC files for both public and private packs.
+// It compares the provided pidxXML (current index) and oldPidxXML (previous index) to determine
+// which PDSC files need to be updated. For public packs, it downloads new versions of PDSC files
+// if available, using concurrency control. If any errors occur during download, it attempts to
+// revert to previous versions. After updating, it writes the updated index and moves it to the
+// installation directory, handling file permissions appropriately.
+//
+// For private packs, it scans the local directory for PDSC files and checks if they need updating
+// by loading the latest version from the source. If an update is available, it logs the upgrade
+// information. The function supports configurable concurrency and timeout for downloads.
 //
 // Parameters:
-// - pidxXML: A pointer to the PidxXML structure containing the public index data.
-// - concurrency: The number of concurrent downloads allowed. If set to 0, downloads are performed sequentially.
-// - timeout: The timeout duration for downloading PDSC files.
+//   - pidxXML: The current public index XML structure.
+//   - oldPidxXML: The previous public index XML structure (can be nil).
+//   - updatePrivatePdsc: Whether to update private PDSC files.
+//   - showInfo: If true, logs informational messages about the download.
+//   - concurrency: Number of concurrent downloads allowed.
+//   - timeout: Timeout in seconds for downloading PDSC files.
 //
 // Returns:
-// - error: An error if any issue occurs during the update process.
-//
-// The function performs the following steps:
-// 1. Lists all PDSC files in the installation web directory.
-// 2. For each PDSC file, it reads the file and checks if the pack is still present in the public index.
-// 3. If the pack is no longer present, it deletes the PDSC file.
-// 4. If the pack is present but has a newer version in the public index, it downloads the latest version.
-// 5. Lists all PDSC files in the local directory and repeats the update process for these files.
-func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, concurrency int, timeout int) error {
-	log.Info("Updating PDSC files of public packs")
-
+//   - error: An error if any operation fails, otherwise nil.
+func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, updatePrivatePdsc, showInfo bool, concurrency int, timeout int) error {
 	ctx := context.TODO()
 	concurrency = CheckConcurrency(concurrency)
 	sem := semaphore.NewWeighted(int64(concurrency))
@@ -662,27 +666,67 @@ func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, concurrency int,
 	var errTags lockedSlice
 
 	if oldPidxXML != nil && !oldPidxXML.Empty() {
+		var pdscToUpdate []xml.PdscTag
+		updatingMessageShown := false
+		// Find all pdsc tags that are in the new pidxXML but not in the oldPidxXML
+		// or have a different URL (indicating a new version)
+		// and add them to the pdscToUpdate slice
 		for _, pdscTag := range pidxXML.ListPdscTags() {
 			if oldPidxXML.HasPdsc(pdscTag) != xml.PdscIndexNotFound {
 				continue // found in old pidx and same URL
 			}
 			oldTags := oldPidxXML.FindPdscNameTags(pdscTag)
 			if len(oldTags) != 0 {
-				log.Infof("%s::%s has a new version %q, previous was %q", pdscTag.Vendor, pdscTag.Name, pdscTag.Version, oldTags[0].Version)
-
-				if concurrency == 0 {
-					massDownloadPdscFiles(pdscTag, false, timeout, &errTags)
-				} else {
-					if err := sem.Acquire(ctx, 1); err != nil {
-						log.Errorf("Failed to acquire semaphore: %v", err)
-						break
-					}
-
-					go func(pdscTag xml.PdscTag, errTags *lockedSlice) {
-						defer sem.Release(1)
-						massDownloadPdscFiles(pdscTag, false, timeout, errTags)
-					}(pdscTag, &errTags)
+				if !updatingMessageShown {
+					log.Info("Updating cached public PDSC files with new version")
+					updatingMessageShown = true
 				}
+				if showInfo {
+					log.Infof("%s::%s has a new version %q, previous was %q", pdscTag.Vendor, pdscTag.Name, pdscTag.Version, oldTags[0].Version)
+				}
+				pdscToUpdate = append(pdscToUpdate, pdscTag)
+			}
+		}
+		// Avoid repeated calls to IsTerminalInteractive
+		// as it cleans the stdout buffer
+		interactiveTerminal := utils.IsTerminalInteractive()
+		var progress *progressbar.ProgressBar
+		var encodedProgress *utils.EncodedProgress
+
+		if !showInfo && len(pdscToUpdate) > 0 {
+			if utils.GetEncodedProgress() {
+				encodedProgress = utils.NewEncodedProgress(int64(len(pdscToUpdate)), 0, "PDSC files updated:")
+			} else if interactiveTerminal && log.GetLevel() != log.ErrorLevel {
+				progress = progressbar.Default(int64(len(pdscToUpdate)), "I:")
+			}
+		}
+		for _, pdscTag := range pdscToUpdate {
+			if concurrency == 0 {
+				if !showInfo {
+					if utils.GetEncodedProgress() {
+						_ = encodedProgress.Add(1)
+					} else if interactiveTerminal && log.GetLevel() != log.ErrorLevel {
+						_ = progress.Add64(1)
+					}
+				}
+				massDownloadPdscFiles(pdscTag, false, showInfo, timeout, &errTags)
+			} else {
+				if err := sem.Acquire(ctx, 1); err != nil {
+					log.Errorf("Failed to acquire semaphore: %v", err)
+					break
+				}
+
+				go func(pdscTag xml.PdscTag, errTags *lockedSlice) {
+					defer sem.Release(1)
+					if !showInfo {
+						if utils.GetEncodedProgress() {
+							_ = encodedProgress.Add(1)
+						} else if interactiveTerminal && log.GetLevel() != log.ErrorLevel {
+							_ = progress.Add64(1)
+						}
+					}
+					massDownloadPdscFiles(pdscTag, false, showInfo, timeout, errTags)
+				}(pdscTag, &errTags)
 			}
 		}
 		if len(errTags.slice) > 0 {
@@ -712,6 +756,10 @@ func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, concurrency int,
 		utils.SetReadOnly(Installation.PublicIndex)
 	}
 
+	if !updatePrivatePdsc {
+		return nil
+	}
+
 	pdscFiles, err := utils.ListDir(Installation.LocalDir, ".pdsc$")
 	if err != nil {
 		return err
@@ -721,6 +769,11 @@ func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, concurrency int,
 	if utils.GetEncodedProgress() {
 		log.Infof("[J%d:F%q]", numPdsc, Installation.LocalDir)
 	}
+	if numPdsc == 0 {
+		return nil
+	}
+
+	log.Info("Updating PDSC files of private packs")
 
 	for _, pdscFile := range pdscFiles {
 		log.Debugf("Checking if %q needs updating", pdscFile)
@@ -816,7 +869,7 @@ func UpdatePublicIndexIfOnline() error {
 			err = Installation.checkUpdateCfg(&updateConf)
 			if err != nil {
 				UnlockPackRoot()
-				err1 := UpdatePublicIndex(ActualPublicIndex, true, false, false, false, 0, 0)
+				err1 := UpdatePublicIndex(ActualPublicIndex, true, false, false, false, false, false, 0, 0)
 				if err1 != nil {
 					return err1
 				}
@@ -829,7 +882,7 @@ func UpdatePublicIndexIfOnline() error {
 	// if public index does not or not yet exist then download without check
 	if !utils.FileExists(Installation.PublicIndex) {
 		UnlockPackRoot()
-		err1 := UpdatePublicIndex(ActualPublicIndex, true, false, false, false, 0, 0)
+		err1 := UpdatePublicIndex(ActualPublicIndex, true, false, false, false, false, false, 0, 0)
 		if err1 != nil {
 			return err1
 		}
@@ -848,12 +901,14 @@ func UpdatePublicIndexIfOnline() error {
 //   - sparse: A boolean flag to indicate whether to perform a sparse update.
 //   - downloadPdsc: A boolean flag to indicate whether to download PDSC files.
 //   - downloadRemainingPdscFiles: A boolean flag to indicate whether to download all remaining PDSC files.
+//   - updatePrivatePdsc: If true, updates private PDSC files during the update process.
+//   - showInfo: If true, logs informational messages about the download.
 //   - concurrency: The number of concurrent operations allowed.
 //   - timeout: The timeout duration for network operations.
 //
 // Returns:
 //   - error: An error if the update fails, otherwise nil.
-func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPdsc bool, downloadRemainingPdscFiles bool, concurrency int, timeout int) error {
+func UpdatePublicIndex(indexPath string, overwrite, sparse, downloadPdsc, downloadRemainingPdscFiles, updatePrivatePdsc, showInfo bool, concurrency int, timeout int) error {
 	// TODO: Remove overwrite when cpackget v1 gets released
 	if !overwrite {
 		return errs.ErrCannotOverwritePublicIndex
@@ -886,7 +941,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 			log.Warnf("Non-HTTPS url: %q", indexPath)
 		}
 
-		indexPath, err = utils.DownloadFile(indexPath, false, false, timeout)
+		indexPath, err = utils.DownloadFile(indexPath, false, true, true, timeout)
 		if err != nil {
 			return err
 		}
@@ -933,7 +988,7 @@ func UpdatePublicIndex(indexPath string, overwrite bool, sparse bool, downloadPd
 	}
 
 	if !sparse {
-		err = UpdateInstalledPDSCFiles(Installation.PublicIndexXML, oldPidxXML, concurrency, timeout)
+		err = UpdateInstalledPDSCFiles(Installation.PublicIndexXML, oldPidxXML, updatePrivatePdsc, showInfo, concurrency, timeout)
 		if err != nil {
 			return err
 		}
@@ -1320,7 +1375,7 @@ func FindPackURL(pack *PackType, testing bool) (string, error) {
 				Name:   pack.Name,
 			})
 			if len(tags) != 0 {
-				if err := Installation.downloadPdscFile(tags[0], true, false, 0); err != nil {
+				if err := Installation.downloadPdscFile(tags[0], true, true, true, 0); err != nil {
 					return "", err
 				}
 			} else {
@@ -1331,7 +1386,7 @@ func FindPackURL(pack *PackType, testing bool) (string, error) {
 				URL:    pack.URL,
 				Vendor: pack.Vendor,
 				Name:   pack.Name,
-			}, true, false, 0); err != nil {
+			}, true, true, true, 0); err != nil {
 				return "", err
 			}
 		}
@@ -1358,7 +1413,7 @@ func FindPackURL(pack *PackType, testing bool) (string, error) {
 					URL:    pack.URL,
 					Vendor: pack.Vendor,
 					Name:   pack.Name,
-				}, false, false, 0); err != nil {
+				}, false, true, true, 0); err != nil {
 					log.Warnf("Latest pdsc %q does not exist in public index", xmlTag.Key())
 					return "", err
 				}
@@ -1962,7 +2017,8 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, pdscTag *xml.PdscTa
 // Parameters:
 //   - pdscTag: An xml.PdscTag object containing metadata about the PDSC file to be downloaded.
 //   - skipInstalledPdscFiles: A boolean flag indicating whether to skip downloading if the PDSC file already exists locally.
-//   - noProgressBar: A boolean flag indicating whether to suppress the progress bar during the download.
+//   - showInfo: If true, logs informational messages about the download.
+//   - showProgressBar: A boolean flag indicating whether to show the progress bar during the download.
 //   - timeout: An integer specifying the timeout duration (in seconds) for the download operation.
 //
 // Returns:
@@ -1974,7 +2030,7 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, pdscTag *xml.PdscTa
 //     the function switches to the cache URL for downloading.
 //   - The function downloads the PDSC file, temporarily saves it, and then moves it to the target location,
 //     ensuring proper file permissions are set before and after the operation.
-func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstalledPdscFiles, noProgressBar bool, timeout int) error {
+func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstalledPdscFiles, showInfo, showProgressBar bool, timeout int) error {
 	basePdscFile := fmt.Sprintf("%s.pdsc", pdscTag.VName())
 	pdscFilePath := filepath.Join(p.WebDir, basePdscFile)
 
@@ -2004,7 +2060,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 
 	pdscFileURL.Path = path.Join(pdscFileURL.Path, basePdscFile)
 
-	localFileName, err := utils.DownloadFile(pdscFileURL.String(), true, noProgressBar, timeout)
+	localFileName, err := utils.DownloadFile(pdscFileURL.String(), true, showInfo, showProgressBar, timeout)
 	defer os.Remove(localFileName)
 
 	if err != nil {
@@ -2066,7 +2122,7 @@ func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) e
 		return nil
 	}
 
-	localFileName, err := utils.DownloadFile(pdscFileURL.String(), true, false, timeout)
+	localFileName, err := utils.DownloadFile(pdscFileURL.String(), true, true, true, timeout)
 	defer os.Remove(localFileName)
 
 	if err != nil {
