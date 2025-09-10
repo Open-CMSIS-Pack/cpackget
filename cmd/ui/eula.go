@@ -196,7 +196,7 @@ func computeLayoutRects(terminalWidth, terminalHeight int) (lbx, lby, lex, ley, 
 	marginSize := 1
 	promptWindowHeight := 3
 	const minTerminalWidth = 10
-	const minTerminalHeight = 7
+	const minTerminalHeight = 8
 
 	if terminalWidth < minTerminalWidth || terminalHeight < minTerminalHeight {
 		err = fmt.Errorf("increase window size to display license information and obtain user response to at least %dx%d", minTerminalWidth, minTerminalHeight)
@@ -277,7 +277,7 @@ func (l *LicenseWindowType) PromptUser() (bool, error) {
 	log.Debug("Prompting user for license agreement")
 	err := l.Gui.MainLoop()
 	if err != nil && err != gocui.ErrQuit && err != errs.ErrExtractEula {
-		log.Error("Cannot obtain user response: ", err)
+		//		log.Error("Cannot obtain user response: ", err)
 		return false, err
 	}
 
