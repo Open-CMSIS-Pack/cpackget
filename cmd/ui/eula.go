@@ -195,7 +195,7 @@ func NewLicenseWindow(licenseTitle, licenseContents, promptText string) *License
 func computeLayoutRects(terminalWidth, terminalHeight int) (lbx, lby, lex, ley, pbx, pby, pex, pey int, err error) {
 	marginSize := 1
 	promptWindowHeight := 3
-	const minTerminalWidth = 10
+	const minTerminalWidth = 15
 	const minTerminalHeight = 8
 
 	if terminalWidth < minTerminalWidth || terminalHeight < minTerminalHeight {

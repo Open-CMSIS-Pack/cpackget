@@ -157,7 +157,7 @@ func TestLayoutRectValidation(t *testing.T) {
 		assert.Error(err)
 		assert.Contains(err.Error(), "increase window size")
 		assert.Contains(err.Error(), "license information")
-		assert.Contains(err.Error(), "10x7")
+		assert.Contains(err.Error(), "15x8")
 	})
 
 	t.Run("prompt rect invalid when terminal too small", func(t *testing.T) {
@@ -170,7 +170,7 @@ func TestLayoutRectValidation(t *testing.T) {
 		assert.Error(err)
 		// Gleiche Mindestgrößen-Fehlermeldung
 		assert.Contains(err.Error(), "increase window size")
-		assert.Contains(err.Error(), "10x7")
+		assert.Contains(err.Error(), "15x8")
 	})
 
 	t.Run("rects valid on reasonable terminal size", func(t *testing.T) {
