@@ -659,8 +659,6 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 // Returns:
 //   - error: An error if any operation fails, otherwise nil.
 func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, updatePrivatePdsc, showInfo bool, concurrency int, timeout int) error {
-	log.Info("Updating PDSC files of public packs")
-
 	ctx := context.TODO()
 	concurrency = CheckConcurrency(concurrency)
 	sem := semaphore.NewWeighted(int64(concurrency))
@@ -669,6 +667,7 @@ func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, updatePrivatePds
 
 	if oldPidxXML != nil && !oldPidxXML.Empty() {
 		var pdscToUpdate []xml.PdscTag
+		updatingMessageShown := false
 		// Find all pdsc tags that are in the new pidxXML but not in the oldPidxXML
 		// or have a different URL (indicating a new version)
 		// and add them to the pdscToUpdate slice
@@ -678,6 +677,10 @@ func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, updatePrivatePds
 			}
 			oldTags := oldPidxXML.FindPdscNameTags(pdscTag)
 			if len(oldTags) != 0 {
+				if !updatingMessageShown {
+					log.Info("Updating cached public PDSC files with new version")
+					updatingMessageShown = true
+				}
 				if showInfo {
 					log.Infof("%s::%s has a new version %q, previous was %q", pdscTag.Vendor, pdscTag.Name, pdscTag.Version, oldTags[0].Version)
 				}
@@ -690,7 +693,7 @@ func UpdateInstalledPDSCFiles(pidxXML, oldPidxXML *xml.PidxXML, updatePrivatePds
 		var progress *progressbar.ProgressBar
 		var encodedProgress *utils.EncodedProgress
 
-		if !showInfo {
+		if !showInfo && len(pdscToUpdate) > 0 {
 			if utils.GetEncodedProgress() {
 				encodedProgress = utils.NewEncodedProgress(int64(len(pdscToUpdate)), 0, "PDSC files updated:")
 			} else if interactiveTerminal && log.GetLevel() != log.ErrorLevel {
