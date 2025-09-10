@@ -17,6 +17,8 @@ var Agreed = true
 var Disagreed = false
 var LicenseAgreed *bool
 var Extract = false
+var terminalWidth, terminalHeight int
+var minTerminalWidth int
 
 // LicenseWindowType defines the struct to handle UI
 type LicenseWindowType struct {
@@ -89,8 +91,10 @@ func DisplayAndWaitForEULA(licenseTitle, licenseContents string) (bool, error) {
 
 func NewLicenseWindow(licenseTitle, licenseContents, promptText string) *LicenseWindowType {
 	licenseWindow := &LicenseWindowType{}
+	licenseContents = strings.ReplaceAll(licenseContents, "\r", "")
 	licenseHeight := utils.CountLines(licenseContents)
 	licenseMarginBottom := 10
+	minTerminalWidth = len(promptText) + 3 // add margins and one space behind "(E)xtract"
 
 	// The LayoutManager is called on events, like key press or window resize
 	// and it is going to look more or less like
@@ -104,7 +108,7 @@ func NewLicenseWindow(licenseTitle, licenseContents, promptText string) *License
 	// | promptText                 |
 	// +----------------------------+
 	licenseWindow.LayoutManager = func(g *gocui.Gui) error {
-		terminalWidth, terminalHeight := g.Size()
+		terminalWidth, terminalHeight = g.Size()
 
 		// Compute and validate rectangles
 		lbx, lby, lex, ley, pbx, pby, pex, pey, err := computeLayoutRects(terminalWidth, terminalHeight)
@@ -118,7 +122,8 @@ func NewLicenseWindow(licenseTitle, licenseContents, promptText string) *License
 			}
 			v.Wrap = true
 			v.Title = licenseTitle
-			fmt.Fprint(v, strings.ReplaceAll(licenseContents, "\r", ""))
+			// fmt.Fprintf(v, "tW: %d, tH: %d, lbx: %d, lby: %d, lex: %d, ley: %d, pbx: %d, pby: %d, pex: %d, pey: %d\n", terminalWidth, terminalHeight, lbx, lby, lex, ley, pbx, pby, pex, pey)
+			fmt.Fprint(v, licenseContents)
 		}
 
 		if v, err := g.SetView("prompt", pbx, pby, pex, pey); err != nil {
@@ -195,7 +200,6 @@ func NewLicenseWindow(licenseTitle, licenseContents, promptText string) *License
 func computeLayoutRects(terminalWidth, terminalHeight int) (lbx, lby, lex, ley, pbx, pby, pex, pey int, err error) {
 	marginSize := 1
 	promptWindowHeight := 3
-	const minTerminalWidth = 15
 	const minTerminalHeight = 8
 
 	if terminalWidth < minTerminalWidth || terminalHeight < minTerminalHeight {
@@ -204,8 +208,8 @@ func computeLayoutRects(terminalWidth, terminalHeight int) (lbx, lby, lex, ley, 
 	}
 
 	// License window dimensions
-	lbx = marginSize
-	lby = marginSize
+	lbx = 0
+	lby = 0
 	lex = terminalWidth - marginSize
 	ley = terminalHeight - marginSize - promptWindowHeight
 
@@ -225,12 +229,14 @@ func computeLayoutRects(terminalWidth, terminalHeight int) (lbx, lby, lex, ley, 
 
 func (l *LicenseWindowType) Setup() error {
 	log.Debug("Setting up UI to display license")
+
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
 		log.Error("Cannot initialize UI: ", err)
 		return err
 	}
 
+	terminalWidth, terminalHeight = g.Size()
 	g.SetManagerFunc(l.LayoutManager)
 
 	bindings := []struct {

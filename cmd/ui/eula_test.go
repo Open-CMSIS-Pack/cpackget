@@ -157,7 +157,7 @@ func TestLayoutRectValidation(t *testing.T) {
 		assert.Error(err)
 		assert.Contains(err.Error(), "increase window size")
 		assert.Contains(err.Error(), "license information")
-		assert.Contains(err.Error(), "15x8")
+		assert.Contains(err.Error(), "9x8")
 	})
 
 	t.Run("prompt rect invalid when terminal too small", func(t *testing.T) {
@@ -168,9 +168,8 @@ func TestLayoutRectValidation(t *testing.T) {
 		// Simplify: we accept that with current math, an invalid prompt can't occur without invalid license; so skip distinct prompt-only case and just assert same message.
 		_, _, _, _, _, _, _, _, err := ui.ComputeLayoutRectsForTest(2, 6)
 		assert.Error(err)
-		// Gleiche Mindestgrößen-Fehlermeldung
 		assert.Contains(err.Error(), "increase window size")
-		assert.Contains(err.Error(), "15x8")
+		assert.Contains(err.Error(), "9x8")
 	})
 
 	t.Run("rects valid on reasonable terminal size", func(t *testing.T) {
