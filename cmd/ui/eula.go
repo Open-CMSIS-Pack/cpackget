@@ -114,6 +114,9 @@ func NewLicenseWindow(licenseTitle, licenseContents, promptText string) *License
 		licenseWindowBeginY := marginSize
 		licenseWindowEndX := terminalWidth - marginSize
 		licenseWindowEndY := terminalHeight - marginSize - promptWindowHeight
+		if licenseWindowBeginX >= licenseWindowEndX || licenseWindowBeginY >= licenseWindowEndY {
+			return fmt.Errorf("dimensions for license window are invalid (%d, %d, %d, %d)", licenseWindowBeginX, licenseWindowBeginY, licenseWindowEndX, licenseWindowEndY)
+		}
 		if v, err := g.SetView("license", licenseWindowBeginX, licenseWindowBeginY, licenseWindowEndX, licenseWindowEndY); err != nil {
 			if err != gocui.ErrUnknownView {
 				log.Error("Cannot modify license window: ", err)
@@ -129,6 +132,9 @@ func NewLicenseWindow(licenseTitle, licenseContents, promptText string) *License
 		promptWindowBeginY := licenseWindowEndY + marginSize
 		promptWindowEndX := licenseWindowEndX
 		promptWindowEndY := terminalHeight - marginSize
+		if promptWindowBeginX >= promptWindowEndX || promptWindowBeginY >= promptWindowEndY {
+			return fmt.Errorf("dimensions for prompt window are invalid (%d, %d, %d, %d)", promptWindowBeginX, promptWindowBeginY, promptWindowEndX, promptWindowEndY)
+		}
 		if v, err := g.SetView("prompt", promptWindowBeginX, promptWindowBeginY, promptWindowEndX, promptWindowEndY); err != nil {
 			if err != gocui.ErrUnknownView {
 				log.Error("Cannot modify prompt window: ", err)

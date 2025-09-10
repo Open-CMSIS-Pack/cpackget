@@ -112,7 +112,8 @@ var (
 // Parameters:
 //   - URL: The URL of the file to download.
 //   - useCache: If true, uses the cached file if it exists instead of downloading again.
-//   - noProgressBar: If true, disables the progress bar during download.
+//   - showInfo: If true, logs informational messages about the download.
+//   - showProgressBar: If true, shows the progress bar during download.
 //   - timeout: The download timeout in seconds. If 0, no timeout is set.
 //
 // Returns:
@@ -122,7 +123,7 @@ var (
 // The function handles special cases for localhost HTTPS downloads by skipping TLS verification,
 // retries the request without a user agent if a 404 is received, and handles cookies if a 403 is returned.
 // It also supports progress reporting and secure file writing.
-func DownloadFile(URL string, useCache, noProgressBar bool, timeout int) (string, error) {
+func DownloadFile(URL string, useCache, showInfo, showProgressBar bool, timeout int) (string, error) {
 	parsedURL, _ := url.Parse(URL)
 	fileBase := path.Base(parsedURL.Path)
 	filePath := filepath.Join(CacheDir, fileBase)
@@ -206,7 +207,9 @@ func DownloadFile(URL string, useCache, noProgressBar bool, timeout int) (string
 	}
 	defer out.Close()
 
-	log.Infof("Downloading %s...", fileBase)
+	if showInfo {
+		log.Infof("Downloading %s...", fileBase)
+	}
 	writers := []io.Writer{out}
 	if log.GetLevel() != log.ErrorLevel {
 		length := resp.ContentLength
@@ -215,7 +218,7 @@ func DownloadFile(URL string, useCache, noProgressBar bool, timeout int) (string
 			writers = append(writers, progressWriter)
 			instCnt++
 		} else {
-			if !noProgressBar && IsTerminalInteractive() {
+			if showProgressBar && IsTerminalInteractive() {
 				progressWriter := progressbar.DefaultBytes(length, "I:")
 				writers = append(writers, progressWriter)
 			}
