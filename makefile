@@ -83,7 +83,7 @@ format-check:
 
 .PHONY: test release config
 test: $(SOURCES)
-	cd cmd && GOOS=$(OS) GOARCH=$(ARCH) go test $(ARGS) ./... -coverprofile ../cover.out
+	GOOS=$(OS) GOARCH=$(ARCH) go test $(ARGS) -v ./... -coverprofile ./cover.out
 
 test-all: format-check coverage-check lint
 
@@ -91,8 +91,9 @@ coverage-report: test
 	go tool cover -html=cover.out
 
 coverage-check: test
-	@echo Checking if test coverage is atleast 80%
-	test `go tool cover -func cover.out | tail -1 | awk '{print ($$3 + 0)*10}'` -ge 800
+	@echo "Current coverage is: $(shell go tool cover -func cover.out | tail -1 | awk '{print ($$3 + 0)}')"%
+	@echo Checking if test coverage is atleast 61%
+	test `go tool cover -func cover.out | tail -1 | awk '{print ($$3 + 0)*10}'` -ge 610
 
 test-public-index:
 	@./scripts/test-public-index

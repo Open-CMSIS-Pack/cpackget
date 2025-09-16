@@ -1,0 +1,86 @@
+name: ci
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches: [ main ]
+  pull_request:
+    paths:
+      - '.github/workflows/ci.yml'
+      - '**/*.go'
+      - testdata/**/*
+      - 'makefile'
+      - 'go.mod'
+      - 'go.sum'
+      - '!**/*.md'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-verify:
+    uses: Open-CMSIS-Pack/workflows-and-actions-collection/.github/workflows/build-and-verify.yml@strip-coverage-data
+    secrets:
+      QLTY_COVERAGE_TOKEN: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+    with:
+      program: cpackget
+      test-matrix: '[{"platform":"windows-2022","arch":"amd64"},{"platform":"ubuntu-24.04","arch":"amd64"},{"platform":"macos-14","arch":"amd64"},{"platform":"ubuntu-24.04","arch":"arm64"}]'
+      go-version-file: ./go.mod
+      enable-qlty-coverage: true
+
+
+  # Make sure local_repository.pidx is linted against PackIndex.xsd
+  xmllint:
+    name: Xmllint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - name: Check out repository code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Install Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - name: Install xmllint
+        run: sudo apt-get update && sudo apt-get install libxml2-utils
+
+      - name: Check if local_repository.pidx is valid
+        run: |
+          make test-xmllint-localrepository
+
+  publish-test-results:
+    name: "Publish Tests Results"
+    needs: [ build-and-verify ]
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+    if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' && github.workflow != 'Release' }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: audit
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          path: artifacts
+
+      - name: publish test results
+        uses: EnricoMi/publish-unit-test-result-action/linux@3a74b2957438d0b6e2e61d67b05318aa25c9e6c6 # v2.20.0
+        with:
+          files: artifacts/**/cpackget-testreport-*.xml
+          report_individual_runs: true
