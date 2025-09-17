@@ -33,7 +33,6 @@ jobs:
       go-version-file: ./go.mod
       enable-qlty-coverage: true
 
-
   # Make sure local_repository.pidx is linted against PackIndex.xsd
   xmllint:
     name: Xmllint
