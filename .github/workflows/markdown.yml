@@ -11,47 +11,9 @@ on:
 permissions: read-all
 
 jobs:
-  linter:
-    name: Lint markdown files
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
-        with:
-          egress-policy: audit
-
-      - name: Checkout devtools
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-
-      - name: Register markdownlint warning matcher
-        run: |
-          echo "::add-matcher::.github/markdownlint.json"
-
-      - name: Lint markdown files
-        uses: avto-dev/markdown-lint@04d43ee9191307b50935a753da3b775ab695eceb # v1.5.0
-        with:
-          args: '**/*.md'
-          config: '.github/markdownlint.jsonc'
-          ignore: 'third_party_licenses.md'
-
-      - name: Remove markdownlint warning matcher
-        if: always()
-        run: |
-          echo "::remove-matcher owner=markdownlint::"
-
-  check-links:
-    name: Check markdown links
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout devtools
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-
-      - name: Check links
-        uses: gaurav-nelson/github-action-markdown-link-check@3c3b66f1f7d0900e37b71eca45b63ea9eedfce31 # master
-        # Checks all Markdown files, including those in subfolders,
-        # as the PR may involve removing referenced Markdown files.
-        with:
-          use-quiet-mode: 'yes'
-          use-verbose-mode: 'yes'
-          base-branch: ${{ github.base_ref }}
-          config-file: '.github/markdown-link-check.jsonc'
+  markdown-check:
+    uses: Open-CMSIS-Pack/workflows-and-actions-collection/.github/workflows/markdown-lint.yml@v1.0.1
+    with:
+      lint-config: '.github/markdownlint.jsonc'
+      link-check-config: '.github/markdown-link-check.jsonc'
+      ignore-files: 'third_party_licenses.md'
