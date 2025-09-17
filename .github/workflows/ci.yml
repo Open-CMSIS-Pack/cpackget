@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   build-and-verify:
-    uses: Open-CMSIS-Pack/workflows-and-actions-collection/.github/workflows/build-and-verify.yml@strip-coverage-data
+    uses: Open-CMSIS-Pack/workflows-and-actions-collection/.github/workflows/build-and-verify.yml@v1.0.1
     secrets:
       QLTY_COVERAGE_TOKEN: ${{ secrets.QLTY_COVERAGE_TOKEN }}
     with:
