@@ -13,4 +13,4 @@ jobs:
   update-workflows:
     uses: Open-CMSIS-Pack/workflows-and-actions-collection/.github/workflows/update-workflow.yml@v1.0.1
     secrets:
-      TOKEN_ACCESS: ${{ secrets.GITHUB_TOKEN }}
+      TOKEN_ACCESS: ${{ secrets.GRASCI_WORKFLOW_UPDATE }}
