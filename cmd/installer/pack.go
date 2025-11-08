@@ -26,7 +26,7 @@ import (
 type PackType struct {
 	xml.PdscTag
 
-	//IsLocallySourced tells whether the pack's source is local or an HTTP URL
+	// IsLocallySourced tells whether the pack's source is local or an HTTP URL
 	IsLocallySourced bool
 
 	// IsPublic tells whether the pack exists in the public index or not
@@ -155,7 +155,7 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 
 	if pack.isPackID && nometa {
 		if meta, found := utils.SemverHasMeta(pack.Version); found {
-			return pack, fmt.Errorf("%w: %q. Expected vendor.pack.version", errs.ErrBadPackVersion, meta)
+			return pack, fmt.Errorf("%w: %q. Expected vendor%s.version", errs.ErrBadPackVersion, meta, utils.PackExtension)
 		}
 	}
 
@@ -208,8 +208,7 @@ func (p *PackType) fetch(timeout int) error {
 	return nil
 }
 
-// validate ensures the pack is legit and it has all minimal requirements
-// to be installed.
+// validate ensures the pack is legit and it has all minimal requirements to be installed.
 func (p *PackType) validate() error {
 	log.Debug("Validating pack")
 	var err error
@@ -222,7 +221,7 @@ func (p *PackType) validate() error {
 
 		// Ensure all file paths do not contain ".."
 		if strings.Contains(file.Name, "..") {
-			if ext == PdscExtension {
+			if ext == utils.PdscExtension {
 				log.Errorf("File %q invalid file path", file.Name)
 				return errs.ErrInvalidFilePath
 			} else {
@@ -230,7 +229,7 @@ func (p *PackType) validate() error {
 			}
 		}
 
-		if ext == PdscExtension {
+		if ext == utils.PdscExtension {
 			// Check if pack was compressed in a subfolder
 			subfoldersCount := strings.Count(file.Name, "/") + strings.Count(file.Name, "\\")
 			if subfoldersCount > 1 {
@@ -239,7 +238,7 @@ func (p *PackType) validate() error {
 				tmpFileName := filepath.Base(file.Name) // normalize file name
 				if !strings.EqualFold(tmpFileName, myPdscFileName) {
 					if err != nil {
-						log.Warnf("Pack %q contains an additional .pdsc file in a deeper subfolder, this may cause issues", p.path)
+						log.Warnf("Pack %q contains an additional %s file in a deeper subfolder, this may cause issues", p.path, utils.PdscExtension)
 					}
 					return fmt.Errorf("%q: %w", file.Name, errs.ErrPdscWrongName)
 				}
@@ -259,7 +258,7 @@ func (p *PackType) validate() error {
 
 	if err != nil {
 		if len(validPdscFiles) > 0 {
-			log.Warnf("Pack %q contains an additional .pdsc file in a deeper subfolder, this may cause issues", p.path)
+			log.Warnf("Pack %q contains an additional %s file in a deeper subfolder, this may cause issues", p.path, utils.PdscExtension)
 		} else {
 			return err
 		}
@@ -345,6 +344,13 @@ func (p *PackType) purge() (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
+	cTag := xml.CacheTag{Vendor: p.Vendor, Name: p.Name, Version: p.Version}
+	if err = Installation.PublicCacheIndexXML.RemovePdsc(cTag); err == nil {
+		webFile := Installation.WebDir + "/" + p.VName() + utils.PdscExtension
+		files = append(files, webFile) // also add pdsc file in .Web
+	}
+	_ = Installation.PublicCacheIndexXML.Write()
 
 	log.Debugf("Files to be purged \"%v\"", files)
 	if len(files) == 0 {
@@ -763,17 +769,17 @@ func (p *PackType) PackIDWithVersion() string {
 
 // PackFileName returns a string with how the pack file name would be: Vendor.PackName.x.y.z.pack
 func (p *PackType) PackFileName() string {
-	return p.PackIDWithVersion() + PackExtension
+	return p.PackIDWithVersion() + utils.PackExtension
 }
 
 // PdscFileName returns a string with how the pack's pdsc file name would be: Vendor.PackName.pdsc
 func (p *PackType) PdscFileName() string {
-	return p.PackID() + PdscExtension
+	return p.PackID() + utils.PdscExtension
 }
 
 // PdscFileNameWithVersion returns a string with how the pack's pdsc file name would be: Vendor.PackName.x.y.z.pdsc
 func (p *PackType) PdscFileNameWithVersion() string {
-	return p.PackIDWithVersion() + PdscExtension
+	return p.PackIDWithVersion() + utils.PdscExtension
 }
 
 // GetVersion makes sure to get the latest version for the pack

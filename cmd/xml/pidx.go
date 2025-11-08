@@ -172,7 +172,7 @@ func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 			tags := p.pdscList[key]
 			index := PdscIndexNotFound
 			for i, tag := range tags {
-				if tag.URL == pdsc.URL {
+				if tag.VName() == pdsc.VName() {
 					index = i
 					break
 				}
@@ -216,7 +216,7 @@ func (p *PidxXML) HasPdsc(pdsc PdscTag) int {
 	index := PdscIndexNotFound
 	if tags, found := p.pdscList[pdsc.Key()]; found {
 		for i, tag := range tags {
-			if tag.URL == pdsc.URL {
+			if tag.Key() == pdsc.Key() {
 				index = i
 				break
 			}
@@ -323,7 +323,7 @@ func (p *PidxXML) Read() error {
 	p.pdscList = make(map[string][]PdscTag)
 	p.pdscListName = make(map[string]string)
 
-	// Create a new empty l
+	// Create a new empty Pidx file if it does not exist
 	if !utils.FileExists(p.fileName) {
 		log.Debugf("%q not found. Creating a new one.", p.fileName)
 		p.SchemaVersion = "1.1.0"
@@ -399,5 +399,5 @@ func (p *PdscTag) YamlPackID() string {
 // PackURL constructs and returns the full URL of the pack file
 // by concatenating the base URL with the key and the ".pack" extension.
 func (p *PdscTag) PackURL() string {
-	return p.URL + p.VName() + utils.SemverStripMeta(p.Version) + ".pack"
+	return p.URL + p.VName() + utils.SemverStripMeta(p.Version) + utils.PackExtension
 }

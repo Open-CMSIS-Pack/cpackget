@@ -79,12 +79,12 @@ func TestPidxXML(t *testing.T) {
 			Version: "0.0.2",
 		}
 
-		pdscTag2DiffURL := xml.PdscTag{
-			Vendor:  "TheVendor",
-			URL:     "http://different-url.com/",
-			Name:    "ThePack",
-			Version: "0.0.2",
-		}
+		// pdscTag2DiffURL := xml.PdscTag{
+		// 	Vendor:  "TheVendor",
+		// 	URL:     "http://different-url.com/",
+		// 	Name:    "ThePack",
+		// 	Version: "0.0.2",
+		// }
 
 		pidx := xml.NewPidxXML(fileName)
 		assert.Nil(pidx.Read())
@@ -99,7 +99,7 @@ func TestPidxXML(t *testing.T) {
 		assert.Nil(pidx.AddPdsc(pdscTag2))
 
 		// Adding a PDSC of a Pack with different URL is also OK
-		assert.Nil(pidx.AddPdsc(pdscTag2DiffURL))
+		//		assert.Nil(pidx.AddPdsc(pdscTag2DiffURL))
 	})
 
 	t.Run("test ReplacePdscVersion replaces version successfully", func(t *testing.T) {

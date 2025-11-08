@@ -14,6 +14,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const PdscExtension = ".pdsc"
+const PackExtension = ".pack"
+
 // namePattern specifies a regular expression that matches Pack and Vendor names.
 // Ref: https://github.com/Open-CMSIS-Pack/Open-CMSIS-Pack-Spec/blob/4e2ef7dddc4bcd2a43b530d79908720c9c52da9e/schema/PACK.xsd#L1659
 var namePattern = `[\-_A-Za-z0-9]+`
