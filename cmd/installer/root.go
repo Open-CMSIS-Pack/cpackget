@@ -555,7 +555,7 @@ func InitializeCache() error {
 	}
 
 	Installation.PublicCacheIndexXML.Clear()
-	defer Installation.PublicCacheIndexXML.Write()
+	defer func() { _ = Installation.PublicCacheIndexXML.Write() }()
 	if len(matches) == 0 {
 		log.Info("(no packs cached)")
 		return nil
@@ -591,7 +591,7 @@ func InitializeCache() error {
 				cacheTag.URL = releaseTag.URL[:i+1]
 			}
 		}
-		Installation.PublicCacheIndexXML.AddPdsc(cacheTag)
+		_ = Installation.PublicCacheIndexXML.AddPdsc(cacheTag)
 	}
 	return nil
 }
@@ -2134,8 +2134,8 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 			cacheTag.URL = releaseTag.URL[:i+1]
 		}
 	}
-	p.PublicCacheIndexXML.AddPdsc(cacheTag)
-	p.PublicCacheIndexXML.Write()
+	_ = p.PublicCacheIndexXML.AddPdsc(cacheTag)
+	_ = p.PublicCacheIndexXML.Write()
 
 	return err
 }
