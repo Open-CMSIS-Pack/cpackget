@@ -90,11 +90,17 @@ func (c *CidxXML) AddPdsc(cTag CacheTag) error {
 	key, ok := c.pdscListName[name]
 	if ok {
 		oldPdsc := c.pdscList[key]
-		oldPdsc[0].URL = cTag.URL
-		oldPdsc[0].Version = cTag.Version
-		delete(c.pdscList, key) // remove the old key
-		key = cTag.Key()        // and replace by new one
-		c.pdscList[key] = oldPdsc
+		if len(oldPdsc) > 0 {
+			oldPdsc[0].URL = cTag.URL
+			oldPdsc[0].Version = cTag.Version
+			delete(c.pdscList, key) // remove the old key
+			key = cTag.Key()        // and replace by new one
+			c.pdscList[key] = oldPdsc
+		} else {
+			// If the slice is empty, treat it as a new entry
+			key = cTag.Key()
+			c.pdscList[key] = append(c.pdscList[key], cTag)
+		}
 	} else {
 		key = cTag.Key() // insert new key
 		c.pdscList[key] = append(c.pdscList[key], cTag)
@@ -123,6 +129,9 @@ func (c *CidxXML) ReplacePdscVersion(cTag CacheTag) error {
 	}
 
 	oldPdsc := c.pdscList[key]
+	if len(oldPdsc) == 0 {
+		return errs.ErrPdscEntryNotFound
+	}
 	oldPdsc[0].URL = cTag.URL
 	oldPdsc[0].Version = cTag.Version
 	delete(c.pdscList, key) // remove the old key
