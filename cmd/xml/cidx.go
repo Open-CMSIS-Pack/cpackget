@@ -6,6 +6,7 @@ package xml
 import (
 	"encoding/xml"
 	"strings"
+	"sync"
 	"time"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -28,6 +29,7 @@ type CidxXML struct {
 		Pdscs   []CacheTag `xml:"pdsc"`
 	} `xml:"cindex"`
 
+	mu           sync.Mutex            // protects concurrent access to maps and slices
 	pdscList     map[string][]CacheTag // map of CacheTag.Key() to CacheTag
 	pdscListName map[string]string     // map of lowercase Vendor.Pack to CacheTag.Key()
 	fileName     string
@@ -67,6 +69,8 @@ func (c *CidxXML) SetFileName(fileName string) {
 }
 
 func (c *CidxXML) Clear() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.pdscList = make(map[string][]CacheTag)
 	c.pdscListName = make(map[string]string)
 	// truncate Cindex.Pdscs
@@ -86,15 +90,24 @@ func (c *CidxXML) Clear() {
 //   - error: Always returns nil in the current implementation
 func (c *CidxXML) AddPdsc(cTag CacheTag) error {
 	log.Debugf("Adding pdsc tag %v to %q", cTag, c.fileName)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	name := strings.ToLower(cTag.VName())
 	key, ok := c.pdscListName[name]
 	if ok {
 		oldPdsc := c.pdscList[key]
-		oldPdsc[0].URL = cTag.URL
-		oldPdsc[0].Version = cTag.Version
-		delete(c.pdscList, key) // remove the old key
-		key = cTag.Key()        // and replace by new one
-		c.pdscList[key] = oldPdsc
+		if len(oldPdsc) > 0 {
+			oldPdsc[0].URL = cTag.URL
+			oldPdsc[0].Version = cTag.Version
+			delete(c.pdscList, key) // remove the old key
+			key = cTag.Key()        // and replace by new one
+			c.pdscList[key] = oldPdsc
+		} else {
+			// If the slice is empty, treat it as a new entry
+			key = cTag.Key()
+			c.pdscList[key] = append(c.pdscList[key], cTag)
+		}
 	} else {
 		key = cTag.Key() // insert new key
 		c.pdscList[key] = append(c.pdscList[key], cTag)
@@ -116,6 +129,9 @@ func (c *CidxXML) AddPdsc(cTag CacheTag) error {
 //	error - An error if the CacheTag is not found, otherwise nil.
 func (c *CidxXML) ReplacePdscVersion(cTag CacheTag) error {
 	log.Debugf("Replacing version of pdsc tag %v", cTag)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	name := strings.ToLower(cTag.VName())
 	key, ok := c.pdscListName[name]
 	if !ok {
@@ -123,6 +139,9 @@ func (c *CidxXML) ReplacePdscVersion(cTag CacheTag) error {
 	}
 
 	oldPdsc := c.pdscList[key]
+	if len(oldPdsc) == 0 {
+		return errs.ErrPdscEntryNotFound
+	}
 	oldPdsc[0].URL = cTag.URL
 	oldPdsc[0].Version = cTag.Version
 	delete(c.pdscList, key) // remove the old key
@@ -135,6 +154,8 @@ func (c *CidxXML) ReplacePdscVersion(cTag CacheTag) error {
 // Empty checks if the CidxXML instance has an uninitialized or nil pdscList.
 // It returns true if pdscList is nil, indicating that the CidxXML is empty.
 func (c *CidxXML) Empty() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return len(c.pdscList) == 0
 }
 
@@ -153,6 +174,9 @@ func (c *CidxXML) Empty() bool {
 func (c *CidxXML) RemovePdsc(pdsc CacheTag) error {
 	log.Debugf("Removing pdsc tag \"%v\" from %q", pdsc, c.fileName)
 
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	// removeInfo serves as a helper to identify which pdsc tags need removal
 	// key is mandatory pdscTag.Key() formatted as Vendor.Pack[.x.y.z]
 	// index is the index of the pdsc tags available for Vendor.Pack.x.y.z,
@@ -165,7 +189,7 @@ func (c *CidxXML) RemovePdsc(pdsc CacheTag) error {
 
 	name := strings.ToLower(pdsc.VName())
 	if pdsc.Version != "" {
-		if index := c.HasPdsc(pdsc); index != PdscIndexNotFound {
+		if index := c.hasPdscUnsafe(pdsc); index != PdscIndexNotFound {
 			toRemove = append(toRemove, removeInfo{
 				key:   pdsc.Key(),
 				index: index,
@@ -218,7 +242,10 @@ func (c *CidxXML) RemovePdsc(pdsc CacheTag) error {
 // Returns:
 //
 //	int: The index of the CacheTag if found, otherwise PdscIndexNotFound.
-func (c *CidxXML) HasPdsc(pdsc CacheTag) int {
+//
+// hasPdscUnsafe is an internal method that checks for PDSC without locking.
+// Must be called with c.mu already locked.
+func (c *CidxXML) hasPdscUnsafe(pdsc CacheTag) int {
 	index := PdscIndexNotFound
 	if tags, found := c.pdscList[pdsc.Key()]; found {
 		for i, tag := range tags {
@@ -228,7 +255,13 @@ func (c *CidxXML) HasPdsc(pdsc CacheTag) int {
 			}
 		}
 	}
+	return index
+}
 
+func (c *CidxXML) HasPdsc(pdsc CacheTag) int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	index := c.hasPdscUnsafe(pdsc)
 	log.Debugf("Checking if pidx %q contains \"%s (%s)\": %d", c.fileName, pdsc.Key(), pdsc.URL, index)
 	return index
 }
@@ -237,6 +270,8 @@ func (c *CidxXML) HasPdsc(pdsc CacheTag) int {
 // from the pdscList field of the CidxXML struct. It iterates over each
 // element in the pdscList and appends the tags to the resulting slice.
 func (c *CidxXML) ListPdscTags() []CacheTag {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	tags := []CacheTag{}
 	for _, pdscTags := range c.pdscList {
 		tags = append(tags, pdscTags...)
@@ -255,6 +290,8 @@ func (c *CidxXML) ListPdscTags() []CacheTag {
 //   - A slice of CacheTag containing the found tags.
 func (c *CidxXML) FindPdscTags(pdsc CacheTag) []CacheTag {
 	log.Debugf("Searching for pdsc %q", pdsc.Key())
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if pdsc.Version != "" {
 		foundTags := c.pdscList[pdsc.Key()]
 		log.Debugf("%q contains %d pdsc tag(s) for %q", c.fileName, len(foundTags), pdsc.Key())
@@ -274,6 +311,8 @@ func (c *CidxXML) FindPdscTags(pdsc CacheTag) []CacheTag {
 
 func (c *CidxXML) FindPdscNameTags(pdsc CacheTag) []CacheTag {
 	log.Debugf("Searching for pdsc %q", pdsc.VName())
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	name := strings.ToLower(pdsc.VName())
 	foundKey, ok := c.pdscListName[name]
 	foundTags := []CacheTag{}
@@ -358,17 +397,21 @@ func (c *CidxXML) Read() error {
 func (c *CidxXML) Write() error {
 	log.Debugf("Writing cidx file to %q", c.fileName)
 
+	c.mu.Lock()
 	// Use c.pdscList as the main source of pdsc tags
 	for _, pdscs := range c.pdscList {
 		c.Cindex.Pdscs = append(c.Cindex.Pdscs, pdscs...)
 	}
+	c.mu.Unlock()
 
 	t := time.Now()
 	c.TimeStamp = t.Format(time.RFC3339Nano)
 	err := utils.WriteXML(c.fileName, c)
 
 	// Truncate Cindex.Pdscs in case a new Write is requested
+	c.mu.Lock()
 	c.Cindex.Pdscs = c.Cindex.Pdscs[:0]
+	c.mu.Unlock()
 
 	return err
 }
