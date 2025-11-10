@@ -55,6 +55,17 @@ jobs:
       - name: Install xmllint
         run: sudo apt-get update && sudo apt-get install libxml2-utils
 
+      - name: TEST cpackget for ubuntu/amd64
+        run: |
+          chmod +x scripts/run-tests-with-output.sh
+          ./scripts/run-tests-with-output.sh build/cpackget-ubuntu-amd64.txt
+
+      - name: Archive tpip report
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: tpip-report
+          path: ./build/cpackget-ubuntu-amd64.txt
+
       - name: Check if local_repository.pidx is valid
         run: |
           make test-xmllint-localrepository
