@@ -572,7 +572,7 @@ func InitializeCache() error {
 		}
 		pdscXML := xml.NewPdscXML(pdscFilePath)
 		if err := pdscXML.Read(); err != nil {
-			log.Debugf("Could not retrieve pack's PDSC file from %q", pdscFilePath)
+			log.Errorf("Could not retrieve pack's PDSC file from %q", pdscFilePath)
 			return errs.ErrUnknownBehavior
 		}
 		releaseTag := pdscXML.FindReleaseTagByVersion("")
@@ -2117,7 +2117,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 
 	pdscXML := xml.NewPdscXML(pdscFilePath)
 	if err := pdscXML.Read(); err != nil {
-		log.Debugf("Could not retrieve pack's PDSC file from %q", pdscFilePath)
+		log.Errorf("Could not retrieve pack's PDSC file from %q", pdscFilePath)
 		return errs.ErrUnknownBehavior
 	}
 	releaseTag := pdscXML.FindReleaseTagByVersion("")
