@@ -75,6 +75,13 @@ func (p *PidxXML) SetFileName(fileName string) {
 	p.fileName = fileName
 }
 
+func (p *PidxXML) GetListSizes() (int, int) {
+	if p.pdscList == nil {
+		return 0, 0
+	}
+	return len(p.pdscList), len(p.pdscListName)
+}
+
 func (p *PidxXML) Clear() {
 	p.pdscList = make(map[string][]PdscTag)
 	p.pdscListName = make(map[string]string)
@@ -102,6 +109,12 @@ func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 
 	key := pdsc.Key()
 	name := strings.ToLower(pdsc.VName())
+	if p.pdscList == nil { // initialize map if needed
+		p.pdscList = make(map[string][]PdscTag)
+	}
+	if p.pdscListName == nil {
+		p.pdscListName = make(map[string]string)
+	}
 	p.pdscList[key] = append(p.pdscList[key], pdsc)
 	p.pdscListName[name] = key
 	return nil
@@ -134,10 +147,22 @@ func (p *PidxXML) AddReplacePdsc(cTag PdscTag) error {
 		} else {
 			// If the slice is empty, treat it as a new entry
 			key = cTag.Key()
+			if p.pdscList == nil { // initialize map if needed
+				p.pdscList = make(map[string][]PdscTag)
+			}
+			if p.pdscListName == nil {
+				p.pdscListName = make(map[string]string)
+			}
 			p.pdscList[key] = append(p.pdscList[key], cTag)
 		}
 	} else {
-		key = cTag.Key() // insert new key
+		key = cTag.Key()       // insert new key
+		if p.pdscList == nil { // initialize map if needed
+			p.pdscList = make(map[string][]PdscTag)
+		}
+		if p.pdscListName == nil {
+			p.pdscListName = make(map[string]string)
+		}
 		p.pdscList[key] = append(p.pdscList[key], cTag)
 	}
 	p.pdscListName[name] = key

@@ -48,6 +48,8 @@ func TestPidxXML(t *testing.T) {
 		var fileName = "somefile.pidx"
 		pidx := xml.NewPidxXML(fileName, false)
 		assert.NotNil(pidx, "NewPidxXML should not fail on a simple instance creation")
+		cidx := xml.NewPidxXML(fileName, true)
+		assert.NotNil(cidx, "NewPidxXML should not fail on a simple instance creation")
 	})
 
 	t.Run("test GetFileName returns correct file name", func(t *testing.T) {
@@ -59,6 +61,30 @@ func TestPidxXML(t *testing.T) {
 		newFileName := "newfile.pidx"
 		pidx.SetFileName(newFileName)
 		assert.Equal(newFileName, pidx.GetFileName(), "GetFileName should return the updated file name after SetFileName")
+	})
+
+	t.Run("test clear PIDX lists", func(t *testing.T) {
+		fileName := "testfile.pidx"
+		pidx := xml.NewPidxXML(fileName, true)
+
+		pdscTag1 := xml.PdscTag{
+			Vendor:  "TheVendor",
+			URL:     "http://vendor.com/",
+			Name:    "ThePack",
+			Version: "0.0.1",
+		}
+
+		// Adding something, implicit clear
+		assert.Nil(pidx.AddPdsc(pdscTag1))
+		len1, len2 := pidx.GetListSizes()
+		assert.Equal(1, len1, "After adding, the PdscsList should have one entry")
+		assert.Equal(1, len2, "After adding, the PdscsListName should have one entry")
+
+		// Clearing
+		pidx.Clear()
+		len1, len2 = pidx.GetListSizes()
+		assert.Equal(0, len1, "After Clear, the PdscsList should be empty")
+		assert.Equal(0, len2, "After Clear, the PdscsListName should be empty")
 	})
 
 	t.Run("test adding a PDSC tag to a PIDX file", func(t *testing.T) {
