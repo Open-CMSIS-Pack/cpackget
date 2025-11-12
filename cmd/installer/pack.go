@@ -345,7 +345,7 @@ func (p *PackType) purge() (bool, error) {
 		return false, err
 	}
 
-	cTag := xml.CacheTag{Vendor: p.Vendor, Name: p.Name, Version: p.Version}
+	cTag := xml.PdscTag{Vendor: p.Vendor, Name: p.Name, Version: p.Version}
 	if err = Installation.PublicCacheIndexXML.RemovePdsc(cTag); err == nil {
 		webFile := Installation.WebDir + "/" + p.VName() + utils.PdscExtension
 		files = append(files, webFile) // also add pdsc file in .Web

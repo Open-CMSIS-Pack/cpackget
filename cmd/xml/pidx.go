@@ -36,6 +36,7 @@ type PidxXML struct {
 	pdscList     map[string][]PdscTag // map of PdscTag.Key() to PdscTag
 	pdscListName map[string]string    // map of lowercase Vendor.Pack to PdscTag.Key()
 	fileName     string
+	isCache      bool // to know if this really is a cache index instead of a PDSC index
 }
 
 // PdscTag maps a <pdsc> tag that goes in PIDX files.
@@ -57,10 +58,11 @@ type PdscTag struct {
 //
 // Returns:
 //   - *PidxXML: A pointer to the newly created PidxXML object.
-func NewPidxXML(fileName string) *PidxXML {
+func NewPidxXML(fileName string, isCache bool) *PidxXML {
 	log.Debugf("Initializing PidxXML object for %q", fileName)
 	p := new(PidxXML)
 	p.fileName = fileName
+	p.isCache = isCache
 	return p
 }
 
@@ -71,6 +73,13 @@ func (p *PidxXML) GetFileName() string {
 
 func (p *PidxXML) SetFileName(fileName string) {
 	p.fileName = fileName
+}
+
+func (p *PidxXML) Clear() {
+	p.pdscList = make(map[string][]PdscTag)
+	p.pdscListName = make(map[string]string)
+	// truncate Pindex.Pdscs
+	p.Pindex.Pdscs = p.Pindex.Pdscs[:0]
 }
 
 // AddPdsc adds a PdscTag to the PidxXML's pdscList if it does not already exist.
@@ -98,6 +107,43 @@ func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 	return nil
 }
 
+// AddReplacePdsc adds a new PDSC tag to the PIDX XML structure or replaces an existing one.
+// If a PDSC tag with the same vendor and name (case-insensitive) already exists, it updates
+// the URL and version of the existing tag and re-indexes it with the new key.
+// If no matching tag exists, the new tag is added to the PDSC list.
+// The method maintains both a key-based lookup (pdscList) and a name-based lookup (pdscListName)
+// to efficiently manage PDSC tags.
+//
+// Parameters:
+//   - cTag: The PdscTag to add or use for replacement
+//
+// Returns:
+//   - error: Always returns nil in the current implementation
+func (p *PidxXML) AddReplacePdsc(cTag PdscTag) error {
+	log.Debugf("AddReplacePdsc pdsc tag %v to %q", cTag, p.fileName)
+	name := strings.ToLower(cTag.VName())
+	key, ok := p.pdscListName[name]
+	if ok {
+		oldPdsc := p.pdscList[key]
+		if len(oldPdsc) > 0 {
+			oldPdsc[0].URL = cTag.URL
+			oldPdsc[0].Version = cTag.Version
+			delete(p.pdscList, key) // remove the old key
+			key = cTag.Key()        // and replace by new one
+			p.pdscList[key] = oldPdsc
+		} else {
+			// If the slice is empty, treat it as a new entry
+			key = cTag.Key()
+			p.pdscList[key] = append(p.pdscList[key], cTag)
+		}
+	} else {
+		key = cTag.Key() // insert new key
+		p.pdscList[key] = append(p.pdscList[key], cTag)
+	}
+	p.pdscListName[name] = key
+	return nil
+}
+
 // ReplacePdscVersion replaces the version of an existing PDSC tag in the PidxXML structure.
 // It updates the version of the PDSC tag identified by the given PdscTag.
 // If the PDSC tag is not found, it returns an error.
@@ -118,6 +164,12 @@ func (p *PidxXML) ReplacePdscVersion(pdsc PdscTag) error {
 	}
 
 	oldPdsc := p.pdscList[key]
+	if len(oldPdsc) == 0 {
+		return errs.ErrPdscEntryNotFound
+	}
+	if p.isCache {
+		oldPdsc[0].URL = pdsc.URL // only for cache tags
+	}
 	oldPdsc[0].Version = pdsc.Version
 	delete(p.pdscList, key) // remove the old key
 	key = pdsc.Key()        // and replyce by new one
@@ -328,18 +380,33 @@ func (p *PidxXML) Read() error {
 		log.Debugf("%q not found. Creating a new one.", p.fileName)
 		p.SchemaVersion = "1.1.0"
 		vendorName := ""
-		if p.URL == "" {
-			vendorName = "local_repository.pidx"
+		if p.isCache {
+			vendorName = "cpackget"
+			p.URL = p.fileName
 		} else {
-			vendorName = path.Base(p.fileName)
+			if p.URL == "" {
+				vendorName = "local_repository.pidx"
+			} else {
+				vendorName = path.Base(p.fileName)
+			}
 		}
 		t := time.Now()
 		p.TimeStamp = t.Format(time.RFC3339Nano)
 		p.Vendor = strings.TrimSuffix(vendorName, filepath.Ext(vendorName))
+		if p.isCache {
+			return errs.ErrFileNotFound // only to trigger an initialization
+		}
 		return p.Write()
 	}
 	if err := utils.ReadXML(p.fileName, p); err != nil {
 		return err
+	}
+
+	if p.isCache && p.SchemaVersion == "1.0.0" {
+		p.SchemaVersion = "1.1.0"
+		p.Vendor = "cpackget"
+		p.URL = p.fileName
+		return errs.ErrFileNotFound // only to trigger an initialization
 	}
 
 	for _, pdsc := range p.Pindex.Pdscs {

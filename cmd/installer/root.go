@@ -576,7 +576,7 @@ func InitializeCache() error {
 			return errs.ErrUnknownBehavior
 		}
 		releaseTag := pdscXML.FindReleaseTagByVersion("")
-		cacheTag := xml.CacheTag{
+		cacheTag := xml.PdscTag{
 			Vendor:  packInfo.Vendor,
 			Name:    packInfo.Pack,
 			Version: releaseTag.Version,
@@ -591,7 +591,7 @@ func InitializeCache() error {
 				cacheTag.URL = releaseTag.URL[:i+1]
 			}
 		}
-		_ = Installation.PublicCacheIndexXML.AddPdsc(cacheTag)
+		_ = Installation.PublicCacheIndexXML.AddReplacePdsc(cacheTag)
 	}
 	return nil
 }
@@ -709,7 +709,7 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 //
 // Returns:
 //   - error: An error if any operation fails, otherwise nil.
-func UpdateInstalledPDSCFiles(pidxXML *xml.PidxXML, cidxXML *xml.CidxXML, updatePrivatePdsc, showInfo bool, concurrency int, timeout int) error {
+func UpdateInstalledPDSCFiles(pidxXML, cidxXML *xml.PidxXML, updatePrivatePdsc, showInfo bool, concurrency int, timeout int) error {
 	ctx := context.TODO()
 	concurrency = CheckConcurrency(concurrency)
 	sem := semaphore.NewWeighted(int64(concurrency))
@@ -1005,7 +1005,7 @@ func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemaining
 		}
 	}
 
-	cidxXML := xml.NewCidxXML(Installation.PublicCacheIndex)
+	cidxXML := xml.NewPidxXML(Installation.PublicCacheIndex, true)
 	if err := cidxXML.Read(); err != nil { // public cache index XML
 		if err = InitializeCache(); err != nil {
 			return err
@@ -1604,11 +1604,11 @@ func SetPackRoot(packRoot string, create bool) error {
 		WebDir:      filepath.Join(packRoot, ".Web"),
 		PackIdx:     filepath.Join(packRoot, "pack.idx"),
 	}
-	Installation.LocalPidx = xml.NewPidxXML(filepath.Join(Installation.LocalDir, "local_repository.pidx"))
+	Installation.LocalPidx = xml.NewPidxXML(filepath.Join(Installation.LocalDir, "local_repository.pidx"), false)
 	Installation.PublicIndex = filepath.Join(Installation.WebDir, PublicIndexName)
 	Installation.PublicCacheIndex = filepath.Join(Installation.WebDir, PublicCacheIndex)
-	Installation.PublicIndexXML = xml.NewPidxXML(Installation.PublicIndex)
-	Installation.PublicCacheIndexXML = xml.NewCidxXML(Installation.PublicCacheIndex)
+	Installation.PublicIndexXML = xml.NewPidxXML(Installation.PublicIndex, false)
+	Installation.PublicCacheIndexXML = xml.NewPidxXML(Installation.PublicCacheIndex, true)
 
 	missingDirs := []string{}
 	for _, dir := range []string{packRoot, Installation.DownloadDir, Installation.LocalDir, Installation.WebDir} {
@@ -1698,8 +1698,8 @@ type PacksInstallationType struct {
 	// PublicIndexXML stores a xml.PidxXML reference for PackRoot/WebDir/index.pidx
 	PublicIndexXML *xml.PidxXML
 
-	// PublicCacheIndexXML stores a xml.CidxXML reference for PackRoot/WebDir/cache.idx
-	PublicCacheIndexXML *xml.CidxXML
+	// PublicCacheIndexXML stores a xml.PidxXML reference for PackRoot/WebDir/cache.idx
+	PublicCacheIndexXML *xml.PidxXML
 
 	// LocalPidx is a reference to "local_repository.pidx" that contains a flat
 	// list of PDSC tags representing all packs installed via PDSC files.
@@ -1713,6 +1713,8 @@ type PacksInstallationType struct {
 	PackIdx string
 
 	ReadOnly bool
+
+	lock sync.Mutex
 }
 
 // updateCfg represents the content of "update.cfg" file.
@@ -2119,7 +2121,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 		return errs.ErrUnknownBehavior
 	}
 	releaseTag := pdscXML.FindReleaseTagByVersion("")
-	cacheTag := xml.CacheTag{
+	cacheTag := xml.PdscTag{
 		Vendor:  pdscTag.Vendor,
 		Name:    pdscTag.Name,
 		Version: releaseTag.Version,
@@ -2134,7 +2136,10 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 			cacheTag.URL = releaseTag.URL[:i+1]
 		}
 	}
-	_ = p.PublicCacheIndexXML.AddPdsc(cacheTag)
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	_ = p.PublicCacheIndexXML.AddReplacePdsc(cacheTag)
 	_ = p.PublicCacheIndexXML.Write()
 
 	return err

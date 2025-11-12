@@ -46,13 +46,13 @@ func TestPidxXML(t *testing.T) {
 
 	t.Run("test NewPidxXML", func(t *testing.T) {
 		var fileName = "somefile.pidx"
-		pidx := xml.NewPidxXML(fileName)
+		pidx := xml.NewPidxXML(fileName, false)
 		assert.NotNil(pidx, "NewPidxXML should not fail on a simple instance creation")
 	})
 
 	t.Run("test GetFileName returns correct file name", func(t *testing.T) {
 		fileName := "testfile.pidx"
-		pidx := xml.NewPidxXML(fileName)
+		pidx := xml.NewPidxXML(fileName, false)
 		assert.Equal(fileName, pidx.GetFileName(), "GetFileName should return the file name set at initialization")
 
 		// Change file name and check again
@@ -86,7 +86,7 @@ func TestPidxXML(t *testing.T) {
 		// 	Version: "0.0.2",
 		// }
 
-		pidx := xml.NewPidxXML(fileName)
+		pidx := xml.NewPidxXML(fileName, false)
 		assert.Nil(pidx.Read())
 
 		// Adding first time is OK
@@ -119,7 +119,7 @@ func TestPidxXML(t *testing.T) {
 			Version: "2.0.0",
 		}
 
-		pidx := xml.NewPidxXML(fileName)
+		pidx := xml.NewPidxXML(fileName, false)
 		assert.Nil(pidx.Read())
 
 		// Add the original tag
@@ -151,7 +151,7 @@ func TestPidxXML(t *testing.T) {
 			Version: "1.0.0",
 		}
 
-		pidx := xml.NewPidxXML(fileName)
+		pidx := xml.NewPidxXML(fileName, false)
 		assert.Nil(pidx.Read())
 
 		// Attempt to replace version for a tag that doesn't exist
@@ -163,7 +163,7 @@ func TestPidxXML(t *testing.T) {
 		fileName := utils.RandStringBytes(10) + ".pidx"
 		defer os.Remove(fileName)
 
-		pidx := xml.NewPidxXML(fileName)
+		pidx := xml.NewPidxXML(fileName, false)
 		assert.True(pidx.Empty(), "Empty should return true for a new PidxXML with no pdsc tags")
 	})
 
@@ -171,7 +171,7 @@ func TestPidxXML(t *testing.T) {
 		fileName := utils.RandStringBytes(10) + ".pidx"
 		defer os.Remove(fileName)
 
-		pidx := xml.NewPidxXML(fileName)
+		pidx := xml.NewPidxXML(fileName, false)
 		assert.Nil(pidx.Read())
 
 		pdscTag := xml.PdscTag{
@@ -188,7 +188,7 @@ func TestPidxXML(t *testing.T) {
 		fileName := utils.RandStringBytes(10) + ".pidx"
 		defer os.Remove(fileName)
 
-		pidx := xml.NewPidxXML(fileName)
+		pidx := xml.NewPidxXML(fileName, false)
 		assert.Nil(pidx.Read())
 
 		pdscTag := xml.PdscTag{
@@ -214,7 +214,7 @@ func TestPidxXML(t *testing.T) {
 			Version: "0.0.1",
 		}
 
-		pidx := xml.NewPidxXML(fileName)
+		pidx := xml.NewPidxXML(fileName, false)
 		assert.Nil(utils.WriteXML(fileName, &pidx))
 		assert.Nil(pidx.Read())
 
@@ -263,7 +263,7 @@ func TestPidxXML(t *testing.T) {
 			Version: "0.0.1",
 		}
 
-		pidx := xml.NewPidxXML(fileName)
+		pidx := xml.NewPidxXML(fileName, false)
 		assert.Nil(utils.WriteXML(fileName, &pidx))
 		assert.Nil(pidx.Read())
 
@@ -301,7 +301,7 @@ func TestPidxXML(t *testing.T) {
 			Version: "0.0.2",
 		}
 
-		pidx := xml.NewPidxXML(fileName)
+		pidx := xml.NewPidxXML(fileName, false)
 		assert.Nil(utils.WriteXML(fileName, &pidx))
 		assert.Nil(pidx.Read())
 
@@ -311,28 +311,28 @@ func TestPidxXML(t *testing.T) {
 
 		// Make sure it writes OK
 		assert.Nil(pidx.Write())
-		newPidx := xml.NewPidxXML(fileName)
+		newPidx := xml.NewPidxXML(fileName, false)
 		assert.Nil(newPidx.Read())
 		assert.Greater(newPidx.HasPdsc(pdscTag1), xml.PdscIndexNotFound)
 		assert.Greater(newPidx.HasPdsc(pdscTag2), xml.PdscIndexNotFound)
 	})
 
 	t.Run("test reading PIDX file with malformed XML", func(t *testing.T) {
-		pidx := xml.NewPidxXML("../../testdata/MalformedPack.pidx")
+		pidx := xml.NewPidxXML("../../testdata/MalformedPack.pidx", false)
 		err := pidx.Read()
 		assert.NotNil(err)
 		assert.Equal(err.Error(), "XML syntax error on line 3: unexpected EOF")
 	})
 
 	t.Run("test check public index file for old timestamp", func(t *testing.T) {
-		pidx := xml.NewPidxXML("../../testdata/OldTimestamp.pidx")
+		pidx := xml.NewPidxXML("../../testdata/OldTimestamp.pidx", false)
 		err := pidx.CheckTime()
 		assert.NotNil(err)
 		assert.Equal(err, errs.ErrIndexTooOld)
 	})
 
 	t.Run("test check public index file for new timestamp", func(t *testing.T) {
-		pidx := xml.NewPidxXML("../../testdata/NewTimestamp.pidx")
+		pidx := xml.NewPidxXML("../../testdata/NewTimestamp.pidx", false)
 		err := pidx.CheckTime()
 		assert.Nil(err)
 	})
@@ -355,7 +355,7 @@ func TestPidxXML(t *testing.T) {
 			Version: "0.0.2",
 		}
 
-		pidx := xml.NewPidxXML(fileName)
+		pidx := xml.NewPidxXML(fileName, false)
 		assert.Nil(pidx.Read())
 
 		// Find with empty version

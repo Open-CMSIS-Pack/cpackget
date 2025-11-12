@@ -759,7 +759,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		// Create a temp index file to serve it for update
 		tempIndexFile := filepath.Join(localTestingDir, installer.PublicIndexName)
 		assert.Nil(utils.CopyFile(samplePublicIndex, tempIndexFile))
-		indexXML := xml.NewPidxXML(tempIndexFile)
+		indexXML := xml.NewPidxXML(tempIndexFile, false)
 		assert.Nil(indexXML.Read())
 		assert.Nil(indexXML.AddPdsc(xml.PdscTag{
 			URL:     indexServer.URL(),
@@ -827,7 +827,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		// Now get a new index.pidx and the 1.2.4 pdscs into the server and attempt updating with sparse=false
 		tempIndexFile := filepath.Join(localTestingDir, installer.PublicIndexName)
 		assert.Nil(utils.CopyFile(samplePublicIndex, tempIndexFile))
-		indexXML := xml.NewPidxXML(tempIndexFile)
+		indexXML := xml.NewPidxXML(tempIndexFile, false)
 		assert.Nil(indexXML.Read())
 
 		for i := 1; i < 11; i++ {
