@@ -128,19 +128,23 @@ func (p *PdscXML) Write() error {
 	return utils.WriteXML(p.FileName, p)
 }
 
+// BaseURL returns the URL with a trailing slash.
+// If the URL already has a trailing slash, it returns the URL as is.
+// Otherwise, it appends a trailing slash to the URL before returning it.
+func (p *PdscXML) BaseURL() string {
+	if strings.HasSuffix(p.URL, "/") {
+		return p.URL
+	}
+	return p.URL + "/"
+}
+
 // PackURL returns a url for the Pack described in this PDSC file
 func (p *PdscXML) PackURL(version string) string {
-	baseURL := p.URL
-	lenBaseURL := len(baseURL)
-	if lenBaseURL > 0 && baseURL[len(baseURL)-1] != '/' {
-		baseURL += "/"
-	}
-
 	if version == "" {
 		version = p.LatestVersion()
 	}
 
-	return baseURL + p.Vendor + "." + p.Name + "." + utils.SemverStripMeta(version) + ".pack"
+	return p.BaseURL() + p.Vendor + "." + p.Name + "." + utils.SemverStripMeta(version) + utils.PackExtension
 }
 
 // Dependencies returns all the listed packs that need to be installed

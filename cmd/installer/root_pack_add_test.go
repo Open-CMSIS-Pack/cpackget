@@ -1951,6 +1951,7 @@ func TestAddPack(t *testing.T) {
 		// Inject pdsc into .Web folder
 		packPdscFilePath := filepath.Join(installer.Installation.WebDir, filepath.Base(pdscPublicLocalPack))
 		assert.Nil(utils.CopyFile(pdscPublicLocalPack, packPdscFilePath))
+		assert.Nil(installer.InitializeCache())
 
 		packInfo, err := utils.ExtractPackInfo(publicLocalPack123)
 		assert.Nil(err)
