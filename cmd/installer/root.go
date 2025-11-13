@@ -572,7 +572,9 @@ func InitializeCache() error {
 		}
 		pdscXML := xml.NewPdscXML(pdscFilePath)
 		if err := pdscXML.Read(); err != nil {
-			return fmt.Errorf("%q: %w", pdscFilePath, err)
+			utils.UnsetReadOnly(pdscFilePath)
+			os.Remove(pdscFilePath)
+			return fmt.Errorf("%s: %w, file removed", pdscFilePath, err)
 		}
 		releaseTag := pdscXML.FindReleaseTagByVersion("")
 		cacheTag := xml.PdscTag{
@@ -810,7 +812,7 @@ func UpdateInstalledPDSCFiles(pidxXML, cidxXML *xml.PidxXML, updatePrivatePdsc, 
 		pdscXML := xml.NewPdscXML(pdscFile)
 		err := pdscXML.Read()
 		if err != nil {
-			log.Errorf("%s: %v", pdscFile, err)
+			log.Errorf("%q: %v, file removed", pdscFile, err)
 			utils.UnsetReadOnly(pdscFile)
 			os.Remove(pdscFile)
 			continue
@@ -831,7 +833,7 @@ func UpdateInstalledPDSCFiles(pidxXML, cidxXML *xml.PidxXML, updatePrivatePdsc, 
 		pdscXML = xml.NewPdscXML(pdscFile)
 		err = pdscXML.Read()
 		if err != nil {
-			log.Errorf("%s: %v", pdscFile, err)
+			log.Errorf("%q: %v, file removed", pdscFile, err)
 			utils.UnsetReadOnly(pdscFile)
 			os.Remove(pdscFile)
 			continue
@@ -1287,7 +1289,9 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, t
 			if listRequirements {
 				p.Pdsc = xml.NewPdscXML(pack.pdscPath)
 				if err := p.Pdsc.Read(); err != nil {
-					return err
+					utils.UnsetReadOnly(pack.pdscPath)
+					os.Remove(pack.pdscPath)
+					return fmt.Errorf("%s: %w, file removed", pack.pdscPath, err)
 				}
 				if err := p.loadDependencies(false); err != nil {
 					return err
@@ -1417,7 +1421,7 @@ func FindPackURL(pack *PackType, testing bool) (string, error) {
 		packPdscXML := xml.NewPdscXML(packPdscFileName)
 		if err := packPdscXML.Read(); err != nil {
 			if errors.Unwrap(err) == syscall.ENOENT {
-				err = fmt.Errorf("%q: %w", packPdscFileName, errs.ErrPackPdscCannotBeFound)
+				err = fmt.Errorf("%s: %w", packPdscFileName, errs.ErrPackPdscCannotBeFound)
 			}
 			return "", err
 		}
@@ -1445,7 +1449,7 @@ func FindPackURL(pack *PackType, testing bool) (string, error) {
 				if err := packPdscXML.Read(); err != nil {
 					log.Warnf("Latest pdsc %q does not exist in public index", xmlTag.Key())
 					if errors.Unwrap(err) == syscall.ENOENT {
-						err = fmt.Errorf("%q: %w", packPdscFileName, errs.ErrPackPdscCannotBeFound)
+						err = fmt.Errorf("%s: %w", packPdscFileName, errs.ErrPackPdscCannotBeFound)
 					}
 					return "", err
 				}
@@ -2105,7 +2109,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 
 	if err != nil {
 		//		log.Errorf("Could not download %q: %s", pdscFileURL, err)
-		//		return fmt.Errorf("%q: %w", pdscFileURL, errs.ErrPackPdscCannotBeFound)
+		//		return fmt.Errorf("%s: %w", pdscFileURL, errs.ErrPackPdscCannotBeFound)
 		return err
 	}
 
@@ -2116,7 +2120,9 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 
 	pdscXML := xml.NewPdscXML(pdscFilePath)
 	if err := pdscXML.Read(); err != nil {
-		return fmt.Errorf("%q: %w", pdscFilePath, err)
+		utils.UnsetReadOnly(pdscFilePath)
+		os.Remove(pdscFilePath)
+		return fmt.Errorf("%s: %w, file removed", pdscFilePath, err)
 	}
 	releaseTag := pdscXML.FindReleaseTagByVersion("")
 	cacheTag := xml.PdscTag{
@@ -2193,7 +2199,7 @@ func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) e
 
 	if err != nil {
 		//		log.Errorf("Could not download %q: %s", pdscFileURL, err)
-		//		return fmt.Errorf("%q: %w", pdscFileURL, errs.ErrPackPdscCannotBeFound)
+		//		return fmt.Errorf("%s: %w", pdscFileURL, errs.ErrPackPdscCannotBeFound)
 		return err
 	}
 
