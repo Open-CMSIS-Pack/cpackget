@@ -32,7 +32,7 @@
 | github.com/subosito/gotenv | v1.6.0  | [MIT](https://github.com/subosito/gotenv/blob/v1.6.0/LICENSE) |
 | go.yaml.in/yaml/v3 | v3.0.4  | [MIT](https://github.com/yaml/go-yaml/blob/v3.0.4/LICENSE) |
 | golang.org/x/crypto | v0.43.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.43.0:LICENSE) |
-| golang.org/x/mod/semver | v0.29.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.29.0:LICENSE) |
+| golang.org/x/mod/semver | v0.30.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.30.0:LICENSE) |
 | golang.org/x/net/html | v0.46.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.46.0:LICENSE) |
 | golang.org/x/sync/semaphore | v0.18.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.18.0:LICENSE) |
 | golang.org/x/sys | v0.37.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.37.0:LICENSE) |
