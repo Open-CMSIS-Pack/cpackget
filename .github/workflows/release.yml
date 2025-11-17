@@ -13,7 +13,7 @@ on:
 
 jobs:
   build-and-verify:
-    uses: Open-CMSIS-Pack/workflows-and-actions-collection/.github/workflows/build-and-verify.yml@v1.0.1
+    uses: Open-CMSIS-Pack/workflows-and-actions-collection/.github/workflows/build-and-verify.yml@v1.0.2
     with:
       program: cpackget
       test-matrix: '[{"platform":"windows-2022","arch":"amd64"},{"platform":"ubuntu-24.04","arch":"amd64"},{"platform":"macos-14","arch":"amd64"},{"platform":"ubuntu-24.04","arch":"arm64"}]'
