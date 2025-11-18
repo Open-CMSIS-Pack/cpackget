@@ -474,7 +474,6 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	assert := assert.New(t)
 
-	var Overwrite = true
 	var Sparse = true
 	var DownloadPdsc = false
 	var DownloadRemainingPdscFiles = true
@@ -500,7 +499,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 	// 	indexPath := httpServer.URL + "/" + installer.PublicIndexindex.pidx
 
-	// 	err := installer.UpdatePublicIndex(indexPath, Overwrite)
+	// 	err := installer.UpdatePublicIndex(indexPath)
 	// 	assert.NotNil(err)
 	// 	assert.Equal(errs.ErrIndexPathNotSafe, err)
 	// })
@@ -516,7 +515,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		indexPath := server.URL() + "this-file-does-not-exist"
 
-		err := installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
+		err := installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
 
 		assert.NotNil(err)
 		assert.Equal(errors.Unwrap(err), errs.ErrBadRequest)
@@ -536,7 +535,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute(installer.PublicIndexName, indexContent)
 		indexPath := indexServer.URL() + installer.PublicIndexName
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
 
 		assert.NotNil(err)
 		assert.Equal(err.Error(), "XML syntax error on line 3: unexpected EOF")
@@ -555,7 +554,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute(installer.PublicIndexName, indexContent)
 		indexPath := indexServer.URL() + installer.PublicIndexName
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
 
 		assert.Nil(err)
 
@@ -586,7 +585,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err)
 		indexServer.AddRoute("TheVendor.PublicLocalPack.pdsc", pdscContent)
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
 		assert.Nil(err)
 
 		assert.True(utils.FileExists(path.Join(localTestingDir, ".Web", "TheVendor.PublicLocalPack.pdsc")))
@@ -606,7 +605,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute(installer.PublicIndexName, indexContent)
 		indexPath := indexServer.URL() + installer.PublicIndexName
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
 		assert.Nil(err)
 
 		publicIndex := installer.Installation.PublicIndex
@@ -620,7 +619,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		err = utils.CopyFile(pdscPackNotInIndex, filepath.Join(localTestingDir, ".Web", "TheVendor.PackNotInIndex.pdsc"))
 		assert.Nil(err)
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, false, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, false, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
 		assert.Nil(err)
 
 		// assert.False(utils.FileExists(filepath.Join(localTestingDir, ".Web", "TheVendor.PackNotInIndex.pdsc")))
@@ -636,55 +635,8 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexContent, err := os.ReadFile(samplePublicIndex)
 		assert.Nil(err)
 
-		assert.Nil(installer.UpdatePublicIndex(samplePublicIndex, Overwrite, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout))
+		assert.Nil(installer.UpdatePublicIndex(samplePublicIndex, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout))
 
-		assert.True(utils.FileExists(installer.Installation.PublicIndex))
-
-		copied, err2 := os.ReadFile(installer.Installation.PublicIndex)
-		assert.Nil(err2)
-
-		assert.Equal(copied, indexContent)
-	})
-
-	t.Run("test do not overwrite "+installer.PublicIndexName, func(t *testing.T) {
-		localTestingDir := "test-do-not-overwrite-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
-		defer os.RemoveAll(localTestingDir)
-
-		_ = utils.TouchFile(installer.Installation.PublicIndex)
-
-		indexContent, err := os.ReadFile(samplePublicIndex)
-		assert.Nil(err)
-		indexServer := NewServer()
-		indexServer.AddRoute(installer.PublicIndexName, indexContent)
-		indexPath := indexServer.URL() + installer.PublicIndexName
-
-		err = installer.UpdatePublicIndex(indexPath, !Overwrite, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
-
-		assert.NotNil(err)
-		assert.Equal(errs.ErrCannotOverwritePublicIndex, err)
-	})
-
-	t.Run("test overwrite "+installer.PublicIndexName, func(t *testing.T) {
-		localTestingDir := "test-overwrite-index"
-		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
-		installer.UnlockPackRoot()
-		assert.Nil(installer.ReadIndexFiles())
-		defer os.RemoveAll(localTestingDir)
-
-		_ = utils.TouchFile(installer.Installation.PublicIndex)
-
-		indexContent, err := os.ReadFile(samplePublicIndex)
-		assert.Nil(err)
-		indexServer := NewServer()
-		indexServer.AddRoute(installer.PublicIndexName, indexContent)
-		indexPath := indexServer.URL() + installer.PublicIndexName
-
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
-
-		assert.Nil(err)
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
 
 		copied, err2 := os.ReadFile(installer.Installation.PublicIndex)
@@ -718,7 +670,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err)
 		indexServer.AddRoute("TheVendor.PublicLocalPack.pdsc", pdscContent)
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, !DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, Sparse, !DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout)
 
 		assert.Nil(err)
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
@@ -752,7 +704,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 			indexServer.AddRoute(publicConcurrentLocalPdscBase+fmt.Sprint(i)+".pdsc", pdscContent)
 		}
 
-		err = installer.UpdatePublicIndex(indexPath, Overwrite, Sparse, !DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, 5, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, Sparse, !DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, 5, Timeout)
 
 		assert.Nil(err)
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
@@ -798,6 +750,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		// Place 1.2.3 pdsc in .Web/
 		pdscFile := filepath.Join(installer.Installation.WebDir, filepath.Base(publicLocalPack123Pdsc))
 		assert.Nil(utils.CopyFile(publicLocalPack123Pdsc, pdscFile))
+		assert.Nil(installer.InitializeCache())
 
 		// Now get a new index.pidx and the 1.2.4 pdsc into the server and attempt updating with sparse=false
 		pack124Info, err := utils.ExtractPackInfo(publicLocalPack124)
@@ -806,7 +759,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		// Create a temp index file to serve it for update
 		tempIndexFile := filepath.Join(localTestingDir, installer.PublicIndexName)
 		assert.Nil(utils.CopyFile(samplePublicIndex, tempIndexFile))
-		indexXML := xml.NewPidxXML(tempIndexFile)
+		indexXML := xml.NewPidxXML(tempIndexFile, false)
 		assert.Nil(indexXML.Read())
 		assert.Nil(indexXML.AddPdsc(xml.PdscTag{
 			URL:     indexServer.URL(),
@@ -826,7 +779,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		indexServer.AddRoute(filepath.Base(publicLocalPack124Pdsc), pdscContent)
 
-		assert.Nil(installer.UpdatePublicIndex("", Overwrite, !Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout))
+		assert.Nil(installer.UpdatePublicIndex("", !Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, Concurrency, Timeout))
 
 		// Make sure index.pidx exists and it is updated
 		assert.FileExists(installer.Installation.PublicIndex)
@@ -869,11 +822,12 @@ func TestUpdatePublicIndex(t *testing.T) {
 			pdsc := publicConcurrentLocalPdscBase + fmt.Sprint(i) + ".pdsc"
 			assert.Nil(utils.CopyFile(filepath.Join(testDir, "concurrent", "1.2.3", pdsc), filepath.Join(installer.Installation.WebDir, pdsc)))
 		}
+		assert.Nil(installer.InitializeCache())
 
 		// Now get a new index.pidx and the 1.2.4 pdscs into the server and attempt updating with sparse=false
 		tempIndexFile := filepath.Join(localTestingDir, installer.PublicIndexName)
 		assert.Nil(utils.CopyFile(samplePublicIndex, tempIndexFile))
-		indexXML := xml.NewPidxXML(tempIndexFile)
+		indexXML := xml.NewPidxXML(tempIndexFile, false)
 		assert.Nil(indexXML.Read())
 
 		for i := 1; i < 11; i++ {
@@ -898,7 +852,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 			indexServer.AddRoute(pdsc, pdscContent)
 		}
 
-		assert.Nil(installer.UpdatePublicIndex("", Overwrite, !Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, 5, Timeout))
+		assert.Nil(installer.UpdatePublicIndex("", !Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, 5, Timeout))
 
 		// Make sure index.pidx exists and it is updated
 		assert.FileExists(installer.Installation.PublicIndex)
