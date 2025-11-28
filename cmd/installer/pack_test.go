@@ -239,16 +239,16 @@ func TestPackTypeLockUnlock(t *testing.T) {
 	packHomeDir := filepath.Join(installer.Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta())
 	assert.Nil(utils.EnsureDir(packHomeDir))
 	testFile := filepath.Join(packHomeDir, "test.txt")
-	assert.Nil(os.WriteFile(testFile, []byte("test"), 0644))
+	assert.Nil(os.WriteFile(testFile, []byte("test"), 0600))
 
 	packBackupPath := filepath.Join(installer.Installation.DownloadDir, pack.PackFileName())
-	assert.Nil(os.WriteFile(packBackupPath, []byte("test"), 0644))
+	assert.Nil(os.WriteFile(packBackupPath, []byte("test"), 0600))
 
 	packVersionedPdscPath := filepath.Join(installer.Installation.DownloadDir, pack.PdscFileNameWithVersion())
-	assert.Nil(os.WriteFile(packVersionedPdscPath, []byte("test"), 0644))
+	assert.Nil(os.WriteFile(packVersionedPdscPath, []byte("test"), 0600))
 
 	packPdscPath := filepath.Join(installer.Installation.WebDir, pack.PdscFileName())
-	assert.Nil(os.WriteFile(packPdscPath, []byte("test"), 0644))
+	assert.Nil(os.WriteFile(packPdscPath, []byte("test"), 0600))
 
 	// Test Lock
 	pack.Lock()
@@ -263,7 +263,7 @@ func TestPackTypeLockUnlock(t *testing.T) {
 	pack.Unlock()
 
 	// Verify we can write to the file after unlock
-	err := os.WriteFile(testFile, []byte("modified"), 0644)
+	err := os.WriteFile(testFile, []byte("modified"), 0600)
 	assert.Nil(err)
 
 	// Verify the content changed
@@ -301,18 +301,17 @@ func TestPackTypeLockUnlockLocalPack(t *testing.T) {
 	packHomeDir := filepath.Join(installer.Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta())
 	assert.Nil(utils.EnsureDir(packHomeDir))
 	testFile := filepath.Join(packHomeDir, "readme.txt")
-	assert.Nil(os.WriteFile(testFile, []byte("readme"), 0644))
+	assert.Nil(os.WriteFile(testFile, []byte("readme"), 0600))
 
 	packBackupPath := filepath.Join(installer.Installation.DownloadDir, pack.PackFileName())
-	assert.Nil(os.WriteFile(packBackupPath, []byte("pack"), 0644))
+	assert.Nil(os.WriteFile(packBackupPath, []byte("pack"), 0600))
 
 	packVersionedPdscPath := filepath.Join(installer.Installation.DownloadDir, pack.PdscFileNameWithVersion())
-	assert.Nil(os.WriteFile(packVersionedPdscPath, []byte("pdsc"), 0644))
+	assert.Nil(os.WriteFile(packVersionedPdscPath, []byte("pdsc"), 0600))
 
 	// For local packs, PDSC goes to .Local directory
 	packPdscPath := filepath.Join(installer.Installation.LocalDir, pack.PdscFileName())
-	assert.Nil(os.WriteFile(packPdscPath, []byte("local pdsc"), 0644))
-
+	assert.Nil(os.WriteFile(packPdscPath, []byte("local pdsc"), 0600))
 	// Test Lock
 	pack.Lock()
 
@@ -324,7 +323,7 @@ func TestPackTypeLockUnlockLocalPack(t *testing.T) {
 	pack.Unlock()
 
 	// Verify we can write after unlock
-	err := os.WriteFile(testFile, []byte("updated readme"), 0644)
+	err := os.WriteFile(testFile, []byte("updated readme"), 0600)
 	assert.Nil(err)
 }
 
