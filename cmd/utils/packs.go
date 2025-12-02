@@ -226,20 +226,21 @@ func ExtractPackInfo(packPath string) (PackInfo, error) {
 		// file system. If it's the latter, make sure to fill in
 		// in case the file is coming from the current directory
 		//nolint:staticcheck // intentional logic for clarity
-		if !(strings.HasPrefix(location, "http://") || strings.HasPrefix(location, "https://") || strings.HasPrefix(location, "file://")) {
-			if !filepath.IsAbs(location) {
-				if len(filepath.VolumeName(location)) == 0 && len(location) > 0 && (location[0] == '/' || location[0] == '\\') {
-					location, _ = filepath.Abs(location) // relative from root, only in windows
+		if !(strings.HasPrefix(location, "http://") || strings.HasPrefix(location, "https://")) {
+			if !strings.HasPrefix(location, "file://") {
+				if !filepath.IsAbs(location) {
+					if len(filepath.VolumeName(location)) == 0 && len(location) > 0 && (location[0] == '/' || location[0] == '\\') {
+						location, _ = filepath.Abs(location) // relative from root, only in windows
+					} else {
+						absPath, _ := os.Getwd()
+						location = filepath.Join(absPath, location)
+						location, _ = filepath.Abs(location)
+					}
 				} else {
-					absPath, _ := os.Getwd()
-					location = filepath.Join(absPath, location)
-					location, _ = filepath.Abs(location)
+					location = filepath.Clean(location)
 				}
-			} else {
-				location = filepath.Clean(location)
+				location = "file://localhost/" + location + string(os.PathSeparator)
 			}
-
-			location = "file://localhost/" + location + string(os.PathSeparator)
 		}
 
 		// As per the specification, no path backslashes allowed
