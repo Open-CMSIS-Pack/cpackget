@@ -30,7 +30,7 @@ func createTestPdscFile(t *testing.T, dir, vendor, name, version, url string) st
 </package>`
 
 	pdscFileName := filepath.Join(dir, vendor+"."+name+".pdsc")
-	err := os.WriteFile(pdscFileName, []byte(pdscContent), 0644)
+	err := os.WriteFile(pdscFileName, []byte(pdscContent), 0600)
 	assert.Nil(t, err)
 	return pdscFileName
 }
@@ -426,7 +426,7 @@ func TestPdscRelativePath(t *testing.T) {
 	// Change to temp directory for relative path testing
 	origDir, err := os.Getwd()
 	assert.Nil(err)
-	defer os.Chdir(origDir)
+	defer func() { _ = os.Chdir(origDir) }()
 
 	err = os.Chdir(localTestingDir)
 	assert.Nil(err)
