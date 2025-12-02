@@ -170,6 +170,7 @@ func TestDetectKeyType(t *testing.T) {
 	assert := assert.New(t)
 
 	t.Run("detect PKCS1 key", func(t *testing.T) {
+		// #nosec G101 -- This is a test string, not actual credentials
 		key := "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----"
 		keyType, err := detectKeyType(key)
 		assert.Nil(err)
@@ -202,7 +203,7 @@ func TestDetectKeyType(t *testing.T) {
 		// This will panic with index out of range due to missing PEM markers
 		// The function should be improved to handle this case gracefully
 		assert.Panics(func() {
-			detectKeyType(key)
+			_, _ = detectKeyType(key)
 		})
 	})
 }
@@ -352,6 +353,7 @@ func TestGetUnlockedKeyring(t *testing.T) {
 	})
 
 	t.Run("unlock keyring with invalid key", func(t *testing.T) {
+		// #nosec G101 -- This is a test string, not actual credentials
 		invalidKey := "-----BEGIN PGP PRIVATE KEY BLOCK-----\ninvalid\n-----END PGP PRIVATE KEY BLOCK-----"
 		passphrase := []byte("test")
 

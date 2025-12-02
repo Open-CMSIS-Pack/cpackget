@@ -468,7 +468,7 @@ func TestExportCertificate(t *testing.T) {
 
 	t.Run("export to existing file", func(t *testing.T) {
 		exportPath := filepath.Join(localTestingDir, "existing.pem")
-		err := os.WriteFile(exportPath, []byte("existing"), 0644)
+		err := os.WriteFile(exportPath, []byte("existing"), 0600)
 		assert.Nil(err)
 
 		err = exportCertificate("test", exportPath)
