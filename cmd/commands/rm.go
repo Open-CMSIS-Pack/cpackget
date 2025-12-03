@@ -60,7 +60,7 @@ please use "--purge".`,
 		installer.UnlockPackRoot()
 		for _, packPath := range args {
 			var err error
-			if filepath.Ext(packPath) == installer.PdscExtension {
+			if filepath.Ext(packPath) == utils.PdscExtension {
 				err = installer.RemovePdsc(packPath)
 				if err == errs.ErrPdscEntryNotFound {
 					err = errs.ErrPackNotInstalled

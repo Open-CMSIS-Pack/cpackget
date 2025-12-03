@@ -103,6 +103,7 @@ func getDigestList(sourcePack, hashFunction string) (map[string]string, error) {
 		log.Errorf("can't decompress %q: %s", sourcePack, err)
 		return nil, errs.ErrFailedDecompressingFile
 	}
+	defer zipReader.Close()
 
 	digests := make(map[string]string)
 	for _, file := range zipReader.File {
@@ -149,7 +150,7 @@ func getKeyUsage(k x509.KeyUsage) []string {
 
 	// Simple bitmask "decoding"
 	var uses []string
-	for key := x509.KeyUsageDigitalSignature; key < 9; key <<= 1 {
+	for key := x509.KeyUsageDigitalSignature; key <= x509.KeyUsageDecipherOnly; key <<= 1 {
 		if k&key != 0 {
 			uses = append(uses, getSingleUsage(key))
 		}

@@ -48,8 +48,15 @@ func validateSignatureScheme(zip *zip.ReadCloser, version string, signing bool) 
 		return "invalid"
 	}
 	// Warn the user if the tag was made by an older cpackget version
-	if utils.SemverCompare(strings.Split(sv, "-")[1][1:], strings.Split(version, "-")[0][1:]) == -1 {
-		log.Warnf("This pack was signed with an older version of cpackget (%s)", sv)
+	svParts := strings.Split(sv, "-")
+	versionParts := strings.Split(version, "-")
+	if len(svParts) > 1 && len(versionParts) > 0 {
+		// Extract version strings safely
+		svVersion := strings.TrimPrefix(svParts[1], "v")
+		vVersion := strings.TrimPrefix(versionParts[0], "v")
+		if utils.SemverCompare(svVersion, vVersion) == -1 {
+			log.Warnf("This pack was signed with an older version of cpackget (%s)", sv)
+		}
 	}
 	if s[1] == "f" && len(s) == 4 {
 		if !utils.IsBase64(s[2]) && !utils.IsBase64(s[3]) {
@@ -148,12 +155,19 @@ func sanityCheckCertificate(cert *x509.Certificate, vendor string) error {
 		log.Warn("Certificate should not be a CA certificate")
 	}
 	ku := getKeyUsage(cert.KeyUsage)
-	if len(ku) == 2 {
-		if ku[0] != "\"Digital Signature\"" || ku[1] != "\"Content Commitment\"" {
-			log.Warn("Does not have \"Digital Signature\" and \"Content Commitment\" key usage fields")
+	// Check for required key usages: "Digital Signature" and "Content Commitment"
+	hasDigitalSig := false
+	hasContentCommit := false
+	for _, usage := range ku {
+		if usage == "\"Digital Signature\"" {
+			hasDigitalSig = true
 		}
-	} else {
-		log.Warn("Does not have \"Digital Signature\" and \"Content Commitment\" key usage fields")
+		if usage == "\"Content Commitment\"" {
+			hasContentCommit = true
+		}
+	}
+	if !hasDigitalSig || !hasContentCommit {
+		log.Warn("Does not have required \"Digital Signature\" and \"Content Commitment\" key usage fields")
 	}
 	return nil
 }
@@ -196,6 +210,7 @@ func exportCertificate(b64Cert, path string) error {
 	if err != nil {
 		return err
 	}
+	defer out.Close()
 	b64, err := base64.StdEncoding.DecodeString(b64Cert)
 	if err != nil {
 		return err
@@ -237,7 +252,10 @@ func signPackHashX509(keyPath string, cert *x509.Certificate, hash []byte) ([]by
 		b, err := isPrivateKeyFromCertificate(cert, block.Bytes, "PKCS1")
 		if !b {
 			log.Error("Private key does not derive from provided x509 certificate")
-			return nil, err
+			if err != nil {
+				return nil, err
+			}
+			return nil, errs.ErrBadPrivateKey
 		}
 		rsaPrivateKey, err = x509.ParsePKCS1PrivateKey(block.Bytes)
 		if err != nil {
@@ -247,7 +265,10 @@ func signPackHashX509(keyPath string, cert *x509.Certificate, hash []byte) ([]by
 		b, err := isPrivateKeyFromCertificate(cert, block.Bytes, "PKCS8")
 		if !b {
 			log.Error("Private key does not derive from provided x509 certificate")
-			return nil, err
+			if err != nil {
+				return nil, err
+			}
+			return nil, errs.ErrBadPrivateKey
 		}
 		pk, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
