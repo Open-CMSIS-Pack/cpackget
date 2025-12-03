@@ -162,7 +162,8 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 			log.Debugf("Moved pack to temporary path %q", backupPackPath)
 			dropPreInstalled = true
 		} else {
-			if pack.versionModifier == utils.AnyVersion {
+			switch pack.versionModifier {
+			case utils.AnyVersion:
 				if len(pack.installedVersions) > 1 {
 					log.Infof("Pack %q is already installed here: %q, versions: %s",
 						packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name), utils.VersionList(pack.installedVersions))
@@ -170,9 +171,17 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 					log.Infof("Pack %q is already installed here: %q",
 						packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.installedVersions[0]))
 				}
-			} else {
-				log.Errorf("Pack \"%s@%s\" is already installed here: %q, use the --force-reinstall (-F) flag to force installation",
-					packPath, pack.targetVersion, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta()))
+			case utils.LatestVersion:
+				if pack.targetVersion == "" {
+					log.Errorf("Pack %q is already installed here: %q, use the --force-reinstall (-F) flag to force installation",
+						packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta()))
+				} else {
+					log.Errorf("Pack %q (%s) is already installed here: %q, use the --force-reinstall (-F) flag to force installation",
+						packPath, pack.targetVersion, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta()))
+				}
+			default:
+				log.Errorf("Pack %q is already installed here: %q, use the --force-reinstall (-F) flag to force installation",
+					packPath, filepath.Join(Installation.PackRoot, pack.Vendor, pack.Name, pack.GetVersionNoMeta()))
 			}
 			return nil
 		}
