@@ -18,7 +18,7 @@ inconsistencies.
 
 The major improvement is the introduction of a **cache index file** located at:
 
-```
+```text
 <CMSIS_PACK_ROOT>/.Web/cache.pidx
 ```
 
@@ -52,6 +52,7 @@ cpackget update-index
 ```
 
 The initialization process:
+
 - Scans all `*.pdsc` files in the `.Web` directory
 - Extracts pack information (Vendor, Name, Version)
 - Reads each PDSC file to get the latest version and URL information
@@ -191,6 +192,7 @@ cpackget -v add ARM::CMSIS
 ```
 
 This will show:
+
 - Cache reads and writes
 - PDSC file downloads
 - Cache synchronization operations
@@ -203,6 +205,7 @@ If you're upgrading from a version without the cache feature:
    be automatically created from your existing `.Web` PDSC files.
 
 2. **Manual Verification**: After migration, compare your installed packs:
+
    ```bash
    cpackget list
    ```
