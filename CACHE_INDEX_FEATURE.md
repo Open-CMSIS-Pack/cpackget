@@ -2,11 +2,15 @@
 
 ## Overview
 
-As of the recent update, cpackget has introduced a new **cache index file** (`cache.pidx`) to improve reliability and performance when managing PDSC files. This document describes the changes and how users can test the new system.
+As of the recent update, cpackget has introduced a new **cache index file**
+(`cache.pidx`) to improve reliability and performance when managing PDSC files.
+This document describes the changes and how users can test the new system.
 
 ## Background
 
-Previously, cpackget relied on the `index.pidx` file in the `.Web` directory to retrieve information about installed PDSC files. This could lead to inconsistencies.
+Previously, cpackget relied on the `index.pidx` file in the `.Web` directory
+to retrieve information about installed PDSC files. This could lead to
+inconsistencies.
 
 ## What Changed
 
@@ -18,13 +22,18 @@ The major improvement is the introduction of a **cache index file** located at:
 <CMSIS_PACK_ROOT>/.Web/cache.pidx
 ```
 
-This cache file maintains an accurate record of all PDSC files that are currently cached in the `.Web` directory.
+This cache file maintains an accurate record of all PDSC files that are
+currently cached in the `.Web` directory.
 
 ### Key Benefits
 
-1. **Improved Reliability**: The cache index accurately reflects what is actually present in the `.Web` directory, eliminating discrepancies between the public index and local cache.
+1. **Improved Reliability**: The cache index accurately reflects what is
+   actually present in the `.Web` directory, eliminating discrepancies between
+   the public index and local cache.
 
-2. **Better Performance**: Operations that check for cached PDSC files no longer need to scan the entire `.Web` directory or rely on potentially outdated information from `index.pidx`.
+2. **Better Performance**: Operations that check for cached PDSC files no
+   longer need to scan the entire `.Web` directory or rely on potentially
+   outdated information from `index.pidx`.
 
 3. **Automatic Synchronization**: The cache index is automatically updated when:
    - PDSC files are downloaded
@@ -190,7 +199,8 @@ This will show:
 
 If you're upgrading from a version without the cache feature:
 
-1. **Automatic Migration**: Simply run any cpackget command. The cache will be automatically created from your existing `.Web` PDSC files.
+1. **Automatic Migration**: Simply run any cpackget command. The cache will
+   be automatically created from your existing `.Web` PDSC files.
 
 2. **Manual Verification**: After migration, compare your installed packs:
    ```bash
@@ -233,6 +243,11 @@ If you encounter any issues with the cache system:
 
 ## Summary
 
-The introduction of `cache.pidx` significantly improves the performance of cpackget by maintaining an accurate record of cached PDSC files. The feature is transparent to users and requires no changes to existing workflows, while providing automatic error recovery and synchronization.
+The introduction of `cache.pidx` significantly improves the performance of
+cpackget by maintaining an accurate record of cached PDSC files. The feature is
+transparent to users and requires no changes to existing workflows, while
+providing automatic error recovery and synchronization.
 
-For most users, the transition will be seamless - the cache will be automatically created and maintained. Power users can verify cache operations using verbose logging and can manually trigger cache rebuilds when needed.
+For most users, the transition will be seamless - the cache will be
+automatically created and maintained. Power users can verify cache operations
+using verbose logging and can manually trigger cache rebuilds when needed.
