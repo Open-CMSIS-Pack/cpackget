@@ -38,7 +38,7 @@ func TestAddPdsc(t *testing.T) {
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
 		assert.Nil(installer.ReadIndexFiles())
-		installer.Installation.LocalPidx = xml.NewPidxXML(badLocalRepositoryPidx)
+		installer.Installation.LocalPidx = xml.NewPidxXML(badLocalRepositoryPidx, false)
 		defer removePackRoot(localTestingDir)
 
 		err := installer.AddPdsc(pdscPack123)

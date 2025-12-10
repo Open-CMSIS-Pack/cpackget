@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
-	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
 )
@@ -64,7 +63,7 @@ func GenerateChecksum(sourcePack, destinationDir, hashFunction string) error {
 		if !utils.DirExists(destinationDir) {
 			return errs.ErrDirectoryNotFound
 		}
-		base = filepath.Clean(destinationDir) + string(filepath.Separator) + strings.TrimSuffix(string(filepath.Base(sourcePack)), installer.PackExtension)
+		base = filepath.Clean(destinationDir) + string(filepath.Separator) + strings.TrimSuffix(string(filepath.Base(sourcePack)), utils.PackExtension)
 	}
 	checksumFilename := base + "." + strings.ReplaceAll(hashFunction, "-", "") + ".checksum"
 	if utils.FileExists(checksumFilename) {
@@ -96,7 +95,7 @@ func VerifyChecksum(packPath, checksumPath string) error {
 	// exist .checksums with different algos in the same dir
 	if checksumPath == "" {
 		for _, hash := range Hashes {
-			checksumPath = strings.ReplaceAll(packPath, installer.PackExtension, "."+hash+".checksum")
+			checksumPath = strings.ReplaceAll(packPath, utils.PackExtension, "."+hash+".checksum")
 			if utils.FileExists(checksumPath) {
 				break
 			}
