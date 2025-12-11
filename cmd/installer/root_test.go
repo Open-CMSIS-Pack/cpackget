@@ -501,7 +501,7 @@ func TestUpdatePublicIndexIfOnline(t *testing.T) {
 		updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
 		recentDate := time.Now().Format("2-1-2006")
 		updateCfgContent := "Date: " + recentDate + "\nAuto: true\n"
-		assert.Nil(os.WriteFile(updateCfgPath, []byte(updateCfgContent), 0644))
+		assert.Nil(os.WriteFile(updateCfgPath, []byte(updateCfgContent), 0600))
 
 		// Get modification time before
 		statBefore, err := os.Stat(installer.Installation.PublicIndex)
@@ -552,7 +552,7 @@ func TestUpdatePublicIndexIfOnline(t *testing.T) {
 		updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
 		oldDate := time.Now().AddDate(0, 0, -2).Format("2-1-2006")
 		updateCfgContent := "Date: " + oldDate + "\nAuto: true\n"
-		assert.Nil(os.WriteFile(updateCfgPath, []byte(updateCfgContent), 0644))
+		assert.Nil(os.WriteFile(updateCfgPath, []byte(updateCfgContent), 0600))
 
 		// Call UpdatePublicIndexIfOnline - may fail depending on connection but should return nil
 		err = installer.UpdatePublicIndexIfOnline()
@@ -654,7 +654,7 @@ func TestUpdatePublicIndexIfOnline(t *testing.T) {
 		// Create a corrupted update.cfg file (invalid date format)
 		updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
 		corruptedContent := "Date: invalid-date-format\nAuto: true\n"
-		assert.Nil(os.WriteFile(updateCfgPath, []byte(corruptedContent), 0644))
+		assert.Nil(os.WriteFile(updateCfgPath, []byte(corruptedContent), 0600))
 
 		// Call UpdatePublicIndexIfOnline - should handle corrupted file gracefully
 		err = installer.UpdatePublicIndexIfOnline()
