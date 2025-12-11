@@ -42,9 +42,6 @@ const DefaultPublicCacheIndex = KeilDefaultPackRoot + PublicCacheIndex
 // would be reset to the public index URL when reading the public index
 var ActualPublicIndex = DefaultPublicIndex
 
-// flag for update public index if online to show no error but a warning instead
-var WarningInsteadOfErrors = false
-
 type lockedSlice struct {
 	lock  sync.Mutex
 	slice []xml.PdscTag
@@ -904,25 +901,20 @@ func UpdatePublicIndexIfOnline() error {
 	// If public index already exists then first check if online, then its timestamp
 	// if we are online and it is too old then download a current version
 
-	WarningInsteadOfErrors = true
-
 	if utils.FileExists(Installation.PublicIndex) {
 		err := utils.CheckConnection(ConnectionTryURL, 0)
 		if err != nil && errors.Unwrap(err) != errs.ErrOffline {
-			if WarningInsteadOfErrors {
-				log.Warnf("Cannot check for public index update: %v", err)
-			} else {
-				return err
-			}
+			log.Warnf("Cannot check for public index update: %v", err)
 		}
 		if errors.Unwrap(err) != errs.ErrOffline {
 			var updateConf updateCfg
-			err = Installation.checkUpdateCfg(&updateConf)
+			err = Installation.checkUpdateCfg(&updateConf, true)
 			if err != nil {
 				UnlockPackRoot()
 				err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, false, false, 0, 0)
 				if err1 != nil {
-					return err1
+					log.Warnf("Cannot update public index: %v", err1)
+					return nil
 				}
 				_ = Installation.updateUpdateCfg(&updateConf)
 			}
@@ -935,11 +927,8 @@ func UpdatePublicIndexIfOnline() error {
 		UnlockPackRoot()
 		err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, false, false, 0, 0)
 		if err1 != nil {
-			if WarningInsteadOfErrors {
-				log.Warnf("Cannot update public index: %v", err1)
-				return nil
-			}
-			return err1
+			log.Warnf("Cannot update public index: %v", err1)
+			return nil
 		}
 		var updateConf updateCfg
 		updateConf.Auto = true
@@ -1761,12 +1750,13 @@ type updateCfg struct {
 // Parameters:
 //   - conf (*updateCfg): A pointer to the updateCfg structure that will be populated
 //     with the parsed configuration values.
+//   - WarningInsteadOfErrors (bool): A flag indicating whether to log warnings instead of returning errors.
 //
 // Returns:
 //   - error: An error is returned if the "update.cfg" file cannot be opened, if the
 //     "Date" field cannot be parsed, or if the timestamp in the "Date" field is older
 //     than 24 hours. If no errors occur, nil is returned.
-func (p *PacksInstallationType) checkUpdateCfg(conf *updateCfg) error {
+func (p *PacksInstallationType) checkUpdateCfg(conf *updateCfg, WarningInsteadOfErrors bool) error {
 	f, err := os.Open(filepath.Join(p.WebDir, "update.cfg"))
 	if err != nil {
 		if WarningInsteadOfErrors {
