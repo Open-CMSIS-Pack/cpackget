@@ -470,6 +470,266 @@ func TestGetDefaultCmsisPackRoot(t *testing.T) {
 	}
 }
 
+func TestUpdatePublicIndexIfOnline(t *testing.T) {
+	assert := assert.New(t)
+
+	t.Run("test with existing index and recent update.cfg", func(t *testing.T) {
+		localTestingDir := "test-update-online-no-update-needed"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+
+		// Create a test server
+		server := NewServer()
+		defer server.httpsServer.Close()
+
+		// Create a public index file
+		publicIndexContent, err := os.ReadFile(samplePublicIndex)
+		assert.Nil(err)
+
+		// Add route for the public index
+		server.AddRoute("index.pidx", publicIndexContent)
+
+		// Update the Installation to use the test server
+		installer.Installation.PublicIndexXML.URL = server.URL() + "index.pidx"
+		installer.ActualPublicIndex = server.URL() + "index.pidx"
+
+		// Create an existing index file
+		assert.Nil(utils.TouchFile(installer.Installation.PublicIndex))
+
+		// Create a recent update.cfg file (less than one day old)
+		updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
+		recentDate := time.Now().Format("2-1-2006")
+		updateCfgContent := "Date: " + recentDate + "\nAuto: true\n"
+		assert.Nil(os.WriteFile(updateCfgPath, []byte(updateCfgContent), 0600))
+
+		// Get modification time before
+		statBefore, err := os.Stat(installer.Installation.PublicIndex)
+		assert.Nil(err)
+		modTimeBefore := statBefore.ModTime()
+
+		// Call UpdatePublicIndexIfOnline - should not update because update.cfg is recent
+		err = installer.UpdatePublicIndexIfOnline()
+		// May fail internally due to connection check, but always returns nil
+		assert.Nil(err)
+
+		// public index should not be modified since update.cfg is recent
+		statAfter, err2 := os.Stat(installer.Installation.PublicIndex)
+		assert.Nil(err2)
+		modTimeAfter := statAfter.ModTime()
+
+		// File modification times should be very close (within filesystem precision)
+		// If the index was updated, the mod time would be significantly different
+		timeDiff := modTimeAfter.Sub(modTimeBefore).Abs()
+		assert.True(timeDiff < 2*time.Second, "Index should not be updated when update.cfg is recent (time diff: %v)", timeDiff)
+	})
+
+	t.Run("test with existing index and old update.cfg", func(t *testing.T) {
+		localTestingDir := "test-update-online-old-updatecfg"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+
+		// Create a test server
+		server := NewServer()
+		defer server.httpsServer.Close()
+
+		// Create a public index file
+		publicIndexContent, err := os.ReadFile(samplePublicIndex)
+		assert.Nil(err)
+
+		// Add route for the public index
+		server.AddRoute("index.pidx", publicIndexContent)
+
+		// Update the Installation to use the test server
+		installer.Installation.PublicIndexXML.URL = server.URL() + "index.pidx"
+		installer.ActualPublicIndex = server.URL() + "index.pidx"
+
+		// Create an existing index file
+		assert.Nil(utils.TouchFile(installer.Installation.PublicIndex))
+
+		// Create an old update.cfg file (more than one day old)
+		updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
+		oldDate := time.Now().AddDate(0, 0, -2).Format("2-1-2006")
+		updateCfgContent := "Date: " + oldDate + "\nAuto: true\n"
+		assert.Nil(os.WriteFile(updateCfgPath, []byte(updateCfgContent), 0600))
+
+		// Call UpdatePublicIndexIfOnline - may fail depending on connection but should return nil
+		err = installer.UpdatePublicIndexIfOnline()
+		// May fail internally due to connection check, but always returns nil
+		assert.Nil(err)
+	})
+
+	t.Run("test with missing index file", func(t *testing.T) {
+		localTestingDir := "test-update-missing-index"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+
+		// Create a test server
+		server := NewServer()
+		defer server.httpsServer.Close()
+
+		// Create a public index file
+		publicIndexContent, err := os.ReadFile(samplePublicIndex)
+		assert.Nil(err)
+
+		// Add route for the public index
+		server.AddRoute("index.pidx", publicIndexContent)
+
+		// Update the Installation to use the test server
+		installer.Installation.PublicIndexXML.URL = server.URL() + "index.pidx"
+		installer.ActualPublicIndex = server.URL() + "index.pidx"
+
+		// Ensure index file does not exist
+		if utils.FileExists(installer.Installation.PublicIndex) {
+			os.Remove(installer.Installation.PublicIndex)
+		}
+
+		// Call UpdatePublicIndexIfOnline - should try to download
+		err = installer.UpdatePublicIndexIfOnline()
+		// Should always succeed
+		assert.Nil(err)
+
+		// Verify that index file was created
+		assert.True(utils.FileExists(installer.Installation.PublicIndex))
+
+		// Verify that update.cfg was created
+		updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
+		assert.True(utils.FileExists(updateCfgPath))
+	})
+
+	t.Run("test with missing index and download failure", func(t *testing.T) {
+		localTestingDir := "test-update-missing-index-download-failure"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+
+		// Create a test server that returns 404
+		server := NewServer()
+		defer server.httpsServer.Close()
+
+		// Add route that returns nil (causes 404)
+		server.AddRoute("index.pidx", nil)
+
+		// Update the Installation to use the test server
+		installer.Installation.PublicIndexXML.URL = server.URL() + "index.pidx"
+		installer.ActualPublicIndex = server.URL() + "index.pidx"
+
+		// Ensure index file does not exist
+		if utils.FileExists(installer.Installation.PublicIndex) {
+			os.Remove(installer.Installation.PublicIndex)
+		}
+
+		// Call UpdatePublicIndexIfOnline
+		err := installer.UpdatePublicIndexIfOnline()
+		// Should not return error because WarningInsteadOfErrors is true
+		assert.Nil(err)
+	})
+
+	t.Run("test with corrupted update.cfg file", func(t *testing.T) {
+		localTestingDir := "test-update-corrupted-updatecfg"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+
+		// Create a test server
+		server := NewServer()
+		defer server.httpsServer.Close()
+
+		// Create a public index file
+		publicIndexContent, err := os.ReadFile(samplePublicIndex)
+		assert.Nil(err)
+
+		// Add route for the public index
+		server.AddRoute("index.pidx", publicIndexContent)
+
+		// Update the Installation to use the test server
+		installer.Installation.PublicIndexXML.URL = server.URL() + "index.pidx"
+		installer.ActualPublicIndex = server.URL() + "index.pidx"
+
+		// Create an existing index file
+		assert.Nil(utils.TouchFile(installer.Installation.PublicIndex))
+
+		// Create a corrupted update.cfg file (invalid date format)
+		updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
+		corruptedContent := "Date: invalid-date-format\nAuto: true\n"
+		assert.Nil(os.WriteFile(updateCfgPath, []byte(corruptedContent), 0600))
+
+		// Call UpdatePublicIndexIfOnline - should handle corrupted file gracefully
+		err = installer.UpdatePublicIndexIfOnline()
+		// May fail internally due to connection check, but always returns nil
+		assert.Nil(err)
+	})
+
+	t.Run("test with missing update.cfg file", func(t *testing.T) {
+		localTestingDir := "test-update-missing-updatecfg"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+
+		// Create a test server
+		server := NewServer()
+		defer server.httpsServer.Close()
+
+		// Create a public index file
+		publicIndexContent, err := os.ReadFile(samplePublicIndex)
+		assert.Nil(err)
+
+		// Add route for the public index
+		server.AddRoute("index.pidx", publicIndexContent)
+
+		// Update the Installation to use the test server
+		installer.Installation.PublicIndexXML.URL = server.URL() + "index.pidx"
+		installer.ActualPublicIndex = server.URL() + "index.pidx"
+
+		// Create an existing index file
+		assert.Nil(utils.TouchFile(installer.Installation.PublicIndex))
+
+		// Ensure update.cfg does not exist
+		updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
+		if utils.FileExists(updateCfgPath) {
+			os.Remove(updateCfgPath)
+		}
+
+		// Call UpdatePublicIndexIfOnline - should try to update because update.cfg is missing
+		err = installer.UpdatePublicIndexIfOnline()
+		// May fail internally due to connection check, but always returns nil
+		assert.Nil(err)
+	})
+
+	t.Run("test with invalid XML response", func(t *testing.T) {
+		localTestingDir := "test-update-invalid-xml"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+
+		// Create a test server
+		server := NewServer()
+		defer server.httpsServer.Close()
+
+		// Create invalid XML content
+		invalidIndexContent := []byte("This is not valid XML content")
+
+		// Add route for the public index
+		server.AddRoute("index.pidx", invalidIndexContent)
+
+		// Update the Installation to use the test server
+		installer.Installation.PublicIndexXML.URL = server.URL() + "index.pidx"
+		installer.ActualPublicIndex = server.URL() + "index.pidx"
+
+		// Ensure index file does not exist
+		if utils.FileExists(installer.Installation.PublicIndex) {
+			os.Remove(installer.Installation.PublicIndex)
+		}
+
+		// Call UpdatePublicIndexIfOnline
+		err := installer.UpdatePublicIndexIfOnline()
+		// Should handle gracefully with warning (WarningInsteadOfErrors is true)
+		assert.Nil(err)
+	})
+}
+
 func TestUpdatePublicIndex(t *testing.T) {
 
 	assert := assert.New(t)

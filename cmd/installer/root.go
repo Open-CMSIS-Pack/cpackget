@@ -900,19 +900,21 @@ func UpdateInstalledPDSCFiles(pidxXML, cidxXML *xml.PidxXML, updatePrivatePdsc, 
 func UpdatePublicIndexIfOnline() error {
 	// If public index already exists then first check if online, then its timestamp
 	// if we are online and it is too old then download a current version
+
 	if utils.FileExists(Installation.PublicIndex) {
 		err := utils.CheckConnection(ConnectionTryURL, 0)
 		if err != nil && errors.Unwrap(err) != errs.ErrOffline {
-			return err
+			log.Warnf("Cannot check for public index update: %v", err)
 		}
 		if errors.Unwrap(err) != errs.ErrOffline {
 			var updateConf updateCfg
-			err = Installation.checkUpdateCfg(&updateConf)
+			err = Installation.checkUpdateCfg(&updateConf, true)
 			if err != nil {
 				UnlockPackRoot()
 				err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, false, false, 0, 0)
 				if err1 != nil {
-					return err1
+					log.Warnf("Cannot update public index: %v", err1)
+					return nil
 				}
 				_ = Installation.updateUpdateCfg(&updateConf)
 			}
@@ -925,7 +927,8 @@ func UpdatePublicIndexIfOnline() error {
 		UnlockPackRoot()
 		err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, false, false, 0, 0)
 		if err1 != nil {
-			return err1
+			log.Warnf("Cannot update public index: %v", err1)
+			return nil
 		}
 		var updateConf updateCfg
 		updateConf.Auto = true
@@ -1385,9 +1388,9 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, t
 // 1.2.1. if pack's pdsc file not found in Installation.LocalDir then raise errs.ErrPackURLCannotBeFound
 // 1.2.2. read .Local/PDSC file into pdscXML
 // 1.2.3. releastTag = pdscXML.FindReleaseTagByVersion(pack.Version)
-// 1.2.3. if releaseTag == nil then raise ErrPackVersionNotFoundInPdsc
-// 1.2.4. if releaseTag.URL != "", return releaseTag.URL
-// 1.2.5. return pdscTag.URL + pack.Vendor + "." + pack.Name + "." + pack.Version + ".pack"
+// 1.2.4. if releaseTag == nil then raise ErrPackVersionNotFoundInPdsc
+// 1.2.5. if releaseTag.URL != "", return releaseTag.URL
+// 1.2.6. return pdscTag.URL + pack.Vendor + "." + pack.Name + "." + pack.Version + ".pack"
 //
 // The function resolves the version modifier to determine the correct version of the pack to fetch.
 // It then checks the release tag for the specified version and returns the URL if found.
@@ -1747,14 +1750,19 @@ type updateCfg struct {
 // Parameters:
 //   - conf (*updateCfg): A pointer to the updateCfg structure that will be populated
 //     with the parsed configuration values.
+//   - WarningInsteadOfErrors (bool): A flag indicating whether to log warnings instead of returning errors.
 //
 // Returns:
 //   - error: An error is returned if the "update.cfg" file cannot be opened, if the
 //     "Date" field cannot be parsed, or if the timestamp in the "Date" field is older
 //     than 24 hours. If no errors occur, nil is returned.
-func (p *PacksInstallationType) checkUpdateCfg(conf *updateCfg) error {
+func (p *PacksInstallationType) checkUpdateCfg(conf *updateCfg, WarningInsteadOfErrors bool) error {
 	f, err := os.Open(filepath.Join(p.WebDir, "update.cfg"))
 	if err != nil {
+		if WarningInsteadOfErrors {
+			log.Warnf("Could not open update.cfg: %v", err)
+			return nil
+		}
 		return err
 	}
 	defer f.Close()
