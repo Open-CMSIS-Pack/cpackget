@@ -2205,4 +2205,321 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(err)
 		checkPackIsInstalled(t, packInfoToType(packInfo))
 	})
+
+	// Tests with CreatePackRoot = false (no automatic directory creation)
+
+	t.Run("test installing a pack with non-existent pack directory", func(t *testing.T) {
+		localTestingDir := "test-add-pack-non-existent-directory"
+		// Do NOT create the pack root directory
+		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot)
+
+		// Should fail because pack root doesn't exist
+		assert.NotNil(err)
+		assert.Equal(errs.ErrPackRootDoesNotExist, err)
+	})
+
+	t.Run("test installing a pack with empty pack directory", func(t *testing.T) {
+		localTestingDir := "test-add-pack-empty-directory"
+		// Create pack root but don't create subdirectories
+		assert.Nil(os.Mkdir(localTestingDir, 0700))
+		defer removePackRoot(localTestingDir)
+
+		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot)
+
+		// Should fail because subdirectories (.Web, .Download, .Local) are missing
+		assert.NotNil(err)
+		assert.Equal(errs.ErrAlreadyLogged, err)
+	})
+
+	t.Run("test installing a pack with partially initialized pack directory - missing .Web", func(t *testing.T) {
+		localTestingDir := "test-add-pack-partial-directory-no-web"
+		// Create pack root and some subdirectories, but not all
+		assert.Nil(os.Mkdir(localTestingDir, 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Download"), 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Local"), 0700))
+		// .Web is missing
+		defer removePackRoot(localTestingDir)
+
+		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot)
+
+		// Should fail because .Web subdirectory is missing
+		assert.NotNil(err)
+		assert.Equal(errs.ErrAlreadyLogged, err)
+	})
+
+	t.Run("test installing a pack with partially initialized pack directory - missing .Download", func(t *testing.T) {
+		localTestingDir := "test-add-pack-partial-directory-no-download"
+		// Create pack root and some subdirectories, but not all
+		assert.Nil(os.Mkdir(localTestingDir, 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Web"), 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Local"), 0700))
+		// .Download is missing
+		defer removePackRoot(localTestingDir)
+
+		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot)
+
+		// Should fail because .Download subdirectory is missing
+		assert.NotNil(err)
+		assert.Equal(errs.ErrAlreadyLogged, err)
+	})
+
+	t.Run("test installing a pack with partially initialized pack directory - missing .Local", func(t *testing.T) {
+		localTestingDir := "test-add-pack-partial-directory-no-local"
+		// Create pack root and some subdirectories, but not all
+		assert.Nil(os.Mkdir(localTestingDir, 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Web"), 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Download"), 0700))
+		// .Local is missing
+		defer removePackRoot(localTestingDir)
+
+		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot)
+
+		// Should fail because .Local subdirectory is missing
+		assert.NotNil(err)
+		assert.Equal(errs.ErrAlreadyLogged, err)
+	})
+
+	t.Run("test installing a pack with partially initialized pack directory - only .Web exists", func(t *testing.T) {
+		localTestingDir := "test-add-pack-partial-directory-only-web"
+		// Create pack root and only .Web subdirectory
+		assert.Nil(os.Mkdir(localTestingDir, 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Web"), 0700))
+		// .Download and .Local are missing
+		defer removePackRoot(localTestingDir)
+
+		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot)
+
+		// Should fail because .Download and .Local subdirectories are missing
+		assert.NotNil(err)
+		assert.Equal(errs.ErrAlreadyLogged, err)
+	})
+
+	t.Run("test installing a pack with fully initialized pack directory", func(t *testing.T) {
+		localTestingDir := "test-add-pack-fully-initialized-directory"
+		// Create pack root and all required subdirectories
+		assert.Nil(os.Mkdir(localTestingDir, 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Web"), 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Download"), 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Local"), 0700))
+		defer removePackRoot(localTestingDir)
+
+		err := installer.SetPackRoot(localTestingDir, !CreatePackRoot)
+
+		// Should succeed because all required subdirectories exist
+		assert.Nil(err)
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+
+		// Now try installing a pack
+		packPath := publicLocalPack123
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		assert.Nil(err)
+
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		checkPackIsInstalled(t, packInfoToType(packInfo))
+	})
+
+	// Tests with CreatePackRoot = true (automatic directory creation)
+
+	t.Run("test installing a pack with non-existent pack directory with CreatePackRoot", func(t *testing.T) {
+		localTestingDir := "test-add-pack-non-existent-directory-create"
+		defer removePackRoot(localTestingDir)
+
+		// Should succeed and create all necessary directories
+		err := installer.SetPackRoot(localTestingDir, CreatePackRoot)
+		assert.Nil(err)
+
+		// Verify that all subdirectories were created
+		assert.DirExists(localTestingDir)
+		assert.DirExists(filepath.Join(localTestingDir, ".Web"))
+		assert.DirExists(filepath.Join(localTestingDir, ".Download"))
+		assert.DirExists(filepath.Join(localTestingDir, ".Local"))
+
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+
+		// Verify that index files were created
+		assert.FileExists(filepath.Join(localTestingDir, ".Local", "local_repository.pidx"))
+		assert.FileExists(filepath.Join(localTestingDir, ".Web", "cache.pidx"))
+		assert.FileExists(filepath.Join(localTestingDir, ".Web", "index.pidx"))
+
+		// Now try installing a pack
+		packPath := publicLocalPack123
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		assert.Nil(err)
+
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		checkPackIsInstalled(t, packInfoToType(packInfo))
+	})
+
+	t.Run("test installing a pack with empty pack directory with CreatePackRoot", func(t *testing.T) {
+		localTestingDir := "test-add-pack-empty-directory-create"
+		// Create pack root but don't create subdirectories
+		assert.Nil(os.Mkdir(localTestingDir, 0700))
+		defer removePackRoot(localTestingDir)
+
+		// Should succeed and create missing subdirectories
+		err := installer.SetPackRoot(localTestingDir, CreatePackRoot)
+		assert.Nil(err)
+
+		// Verify that all subdirectories were created
+		assert.DirExists(filepath.Join(localTestingDir, ".Web"))
+		assert.DirExists(filepath.Join(localTestingDir, ".Download"))
+		assert.DirExists(filepath.Join(localTestingDir, ".Local"))
+
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+
+		// Verify that index files were created
+		assert.FileExists(filepath.Join(localTestingDir, ".Local", "local_repository.pidx"))
+		assert.FileExists(filepath.Join(localTestingDir, ".Web", "cache.pidx"))
+		assert.FileExists(filepath.Join(localTestingDir, ".Web", "index.pidx"))
+
+		// Now try installing a pack
+		packPath := publicLocalPack123
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		assert.Nil(err)
+
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		checkPackIsInstalled(t, packInfoToType(packInfo))
+	})
+
+	t.Run("test installing a pack with partially initialized pack directory - missing .Web with CreatePackRoot", func(t *testing.T) {
+		localTestingDir := "test-add-pack-partial-directory-no-web-create"
+		// Create pack root and some subdirectories, but not all
+		assert.Nil(os.Mkdir(localTestingDir, 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Download"), 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Local"), 0700))
+		// .Web is missing
+		defer removePackRoot(localTestingDir)
+
+		// Should succeed and create missing .Web subdirectory
+		err := installer.SetPackRoot(localTestingDir, CreatePackRoot)
+		assert.Nil(err)
+
+		// Verify that .Web was created
+		assert.DirExists(filepath.Join(localTestingDir, ".Web"))
+
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+
+		// Verify that index files were created
+		assert.FileExists(filepath.Join(localTestingDir, ".Local", "local_repository.pidx"))
+		assert.FileExists(filepath.Join(localTestingDir, ".Web", "cache.pidx"))
+		assert.FileExists(filepath.Join(localTestingDir, ".Web", "index.pidx"))
+
+		// Now try installing a pack
+		packPath := publicLocalPack123
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		assert.Nil(err)
+
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		checkPackIsInstalled(t, packInfoToType(packInfo))
+	})
+
+	t.Run("test installing a pack with partially initialized pack directory - missing .Download with CreatePackRoot", func(t *testing.T) {
+		localTestingDir := "test-add-pack-partial-directory-no-download-create"
+		// Create pack root and some subdirectories, but not all
+		assert.Nil(os.Mkdir(localTestingDir, 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Web"), 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Local"), 0700))
+		// .Download is missing
+		defer removePackRoot(localTestingDir)
+
+		// Should succeed and create missing .Download subdirectory
+		err := installer.SetPackRoot(localTestingDir, CreatePackRoot)
+		assert.Nil(err)
+
+		// Verify that .Download was created
+		assert.DirExists(filepath.Join(localTestingDir, ".Download"))
+
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+
+		// Verify that index files were created
+		assert.FileExists(filepath.Join(localTestingDir, ".Local", "local_repository.pidx"))
+		assert.FileExists(filepath.Join(localTestingDir, ".Web", "cache.pidx"))
+		assert.FileExists(filepath.Join(localTestingDir, ".Web", "index.pidx"))
+
+		// Now try installing a pack
+		packPath := publicLocalPack123
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		assert.Nil(err)
+
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		checkPackIsInstalled(t, packInfoToType(packInfo))
+	})
+
+	t.Run("test installing a pack with partially initialized pack directory - missing .Local with CreatePackRoot", func(t *testing.T) {
+		localTestingDir := "test-add-pack-partial-directory-no-local-create"
+		// Create pack root and some subdirectories, but not all
+		assert.Nil(os.Mkdir(localTestingDir, 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Web"), 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Download"), 0700))
+		// .Local is missing
+		defer removePackRoot(localTestingDir)
+
+		// Should succeed and create missing .Local subdirectory
+		err := installer.SetPackRoot(localTestingDir, CreatePackRoot)
+		assert.Nil(err)
+
+		// Verify that .Local was created
+		assert.DirExists(filepath.Join(localTestingDir, ".Local"))
+
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+
+		// Verify that index files were created
+		assert.FileExists(filepath.Join(localTestingDir, ".Local", "local_repository.pidx"))
+		assert.FileExists(filepath.Join(localTestingDir, ".Web", "cache.pidx"))
+		assert.FileExists(filepath.Join(localTestingDir, ".Web", "index.pidx"))
+
+		// Now try installing a pack
+		packPath := publicLocalPack123
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		assert.Nil(err)
+
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		checkPackIsInstalled(t, packInfoToType(packInfo))
+	})
+
+	t.Run("test installing a pack with partially initialized pack directory - only .Web exists with CreatePackRoot", func(t *testing.T) {
+		localTestingDir := "test-add-pack-partial-directory-only-web-create"
+		// Create pack root and only .Web subdirectory
+		assert.Nil(os.Mkdir(localTestingDir, 0700))
+		assert.Nil(os.Mkdir(filepath.Join(localTestingDir, ".Web"), 0700))
+		// .Download and .Local are missing
+		defer removePackRoot(localTestingDir)
+
+		// Should succeed and create missing subdirectories
+		err := installer.SetPackRoot(localTestingDir, CreatePackRoot)
+		assert.Nil(err)
+
+		// Verify that missing subdirectories were created
+		assert.DirExists(filepath.Join(localTestingDir, ".Download"))
+		assert.DirExists(filepath.Join(localTestingDir, ".Local"))
+
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+
+		// Verify that index files were created
+		assert.FileExists(filepath.Join(localTestingDir, ".Local", "local_repository.pidx"))
+		assert.FileExists(filepath.Join(localTestingDir, ".Web", "cache.pidx"))
+		assert.FileExists(filepath.Join(localTestingDir, ".Web", "index.pidx"))
+
+		// Now try installing a pack
+		packPath := publicLocalPack123
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		assert.Nil(err)
+
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		checkPackIsInstalled(t, packInfoToType(packInfo))
+	})
 }
