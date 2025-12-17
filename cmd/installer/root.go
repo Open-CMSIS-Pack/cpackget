@@ -1760,8 +1760,7 @@ func (p *PacksInstallationType) checkUpdateCfg(conf *updateCfg, WarningInsteadOf
 	f, err := os.Open(filepath.Join(p.WebDir, "update.cfg"))
 	if err != nil {
 		if WarningInsteadOfErrors {
-			log.Warnf("Could not open update.cfg: %v", err)
-			return nil
+			log.Debugf("Could not open update.cfg: %v", err)
 		}
 		return err
 	}
