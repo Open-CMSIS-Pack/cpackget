@@ -11,8 +11,14 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: read
+
 jobs:
   build-and-verify:
+    permissions:
+      contents: read
+      actions: write
     uses: Open-CMSIS-Pack/workflows-and-actions-collection/.github/workflows/build-and-verify.yml@v1.0.2
     with:
       program: cpackget
@@ -23,7 +29,9 @@ jobs:
   goreleaser:
     needs: [build-and-verify]
     permissions:
-      contents: write  # for goreleaser/goreleaser-action to create a GitHub release
+      contents: write
+      actions: read
+      id-token: write
     runs-on: ubuntu-latest
     steps:
       - name: Harden Runner
