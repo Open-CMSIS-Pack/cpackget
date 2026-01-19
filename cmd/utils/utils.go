@@ -140,6 +140,7 @@ func DownloadFile(URL string, useCache, showInfo, showProgressBar, insecureSkipV
 		// #nosec G402
 		tls.InsecureSkipVerify = true //nolint:gosec
 	} else {
+		// #nosec G402
 		tls.InsecureSkipVerify = insecureSkipVerify //nolint:gosec
 	}
 
