@@ -433,9 +433,6 @@ func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles, showInfo
 // UpdatePack updates the specified pack or all installed packs if packPath is empty.
 // It checks for EULA acceptance and installs any required dependencies unless noRequirements is true.
 //
-// If packPath is empty, it updates all installed packs.
-// If packPath is specified, it updates only that specific pack.
-//
 // Parameters:
 //   - packPath: Path or identifier of the pack to update. Empty string updates all packs.
 //   - checkEula: If true, requires EULA acceptance before installation.
