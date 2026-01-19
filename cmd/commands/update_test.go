@@ -81,6 +81,12 @@ var updateCmdTests = []TestCase{
 		expectedErr:    errs.ErrFileNotFound,
 		expectedStdout: []string{"Parsing packs urls via file " + fileWithPacksListed},
 	},
+	{
+		name:           "test updating with insecure-skip-verify flag",
+		args:           []string{"update", "--insecure-skip-verify"},
+		createPackRoot: true,
+		expectedErr:    nil,
+	},
 }
 
 func TestUpdateCmd(t *testing.T) {

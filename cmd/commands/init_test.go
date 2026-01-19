@@ -72,6 +72,11 @@ var initCmdTests = []TestCase{
 			os.Remove("foo/")
 		},
 	},
+	{
+		name:           "test create with insecure-skip-verify flag",
+		args:           []string{"init", "--insecure-skip-verify", pidxFilePath},
+		createPackRoot: true,
+	},
 }
 
 func TestInitCmd(t *testing.T) {

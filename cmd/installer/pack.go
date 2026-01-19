@@ -181,15 +181,16 @@ func preparePack(packPath string, toBeRemoved, forceLatest, noLocal, nometa bool
 // Returns an error if the file does not exist or if there is an issue during download.
 //
 // Parameters:
+//   - insecureSkipVerify: a boolean indicating whether to skip TLS certificate verification.
 //   - timeout: an integer specifying the timeout duration for the download operation.
 //
 // Returns:
-//   - error: an error object if the file does not exist or if there is an issue during download.
-func (p *PackType) fetch(timeout int) error {
+//   - error: An error object if the file does not exist or if there is an issue during download.
+func (p *PackType) fetch(insecureSkipVerify bool, timeout int) error {
 	log.Debugf("Fetching pack file %q (or just making sure it exists locally)", p.path)
 	var err error
 	if strings.HasPrefix(p.path, "http") {
-		p.path, err = utils.DownloadFile(p.path, true, true, true, timeout)
+		p.path, err = utils.DownloadFile(p.path, true, true, true, insecureSkipVerify, timeout)
 		if err == errs.ErrTerminatedByUser {
 			log.Infof("Aborting pack download. Removing %q", p.path)
 		}

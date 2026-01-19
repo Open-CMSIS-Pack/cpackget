@@ -116,6 +116,12 @@ var addCmdTests = []TestCase{
 		expectedErr:    errs.ErrFileNotFound,
 		expectedStdout: []string{"Parsing packs urls via file " + fileWithPacksListed},
 	},
+	{
+		name:           "test adding pack with insecure-skip-verify flag",
+		args:           []string{"add", "--insecure-skip-verify", packFilePath},
+		createPackRoot: true,
+		expectedStdout: []string{"Adding pack", filepath.Base(packFilePath)},
+	},
 }
 
 func TestAddCmd(t *testing.T) {

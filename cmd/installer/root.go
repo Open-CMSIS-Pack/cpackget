@@ -94,6 +94,7 @@ func GetDefaultCmsisPackRoot() string {
 //   - extractEula: If true, extracts the EULA for the pack without installing it.
 //   - forceReinstall: If true, forces reinstallation of the pack even if it is already installed.
 //   - noRequirements: If true, skips checking and installing dependencies for the pack.
+//   - insecureSkipVerify: If true, skips TLS certificate verification for HTTPS downloads.
 //   - testing: If true, skips certain operations for testing purposes.
 //   - timeout: The timeout duration (in seconds) for network operations.
 //
@@ -106,7 +107,7 @@ func GetDefaultCmsisPackRoot() string {
 //   - Fetches the pack from its source and installs it, ensuring dependencies are satisfied unless skipped.
 //   - Provides detailed logging for each step of the installation process.
 //   - Ensures proper cleanup and rollback in case of errors during installation.
-func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirements, testing bool, timeout int) error {
+func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirements, insecureSkipVerify, testing bool, timeout int) error {
 
 	isDep := false
 	// tag dependency packs with $ for correct logging output
@@ -138,7 +139,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 		return err
 	}
 	if pack.isPackID {
-		if pack.path, err = FindPackURL(pack, testing); err != nil {
+		if pack.path, err = FindPackURL(pack, insecureSkipVerify, testing); err != nil {
 			return err
 		}
 	}
@@ -187,7 +188,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 		}
 	}
 
-	if err = pack.fetch(timeout); err != nil {
+	if err = pack.fetch(insecureSkipVerify, timeout); err != nil {
 		return err
 	}
 
@@ -257,7 +258,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 				}
 				if !pack.isInstalled {
 					log.Debug("pack has dependencies, installing")
-					err := AddPack("$"+path, checkEula, extractEula, forceReinstall, false, false, timeout)
+					err := AddPack("$"+path, checkEula, extractEula, forceReinstall, false, insecureSkipVerify, false, timeout)
 					if err != nil {
 						return err
 					}
@@ -414,13 +415,14 @@ func RemovePdsc(pdscPath string) error {
 //   - pdscTag: The PDSC tag containing information about the files to be downloaded.
 //   - skipInstalledPdscFiles: A boolean flag indicating whether to skip already installed PDSC files.
 //   - showInfo: If true, logs informational messages about the download.
+//   - insecureSkipVerify: A boolean flag indicating whether to skip TLS certificate verification for HTTPS downloads.
 //   - timeout: An integer specifying the timeout duration in seconds.
 //
 // Example:
 //
 //	massDownloadPdscFiles(pdscTag, true, 30)
-func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles, showInfo bool, timeout int, errTags *lockedSlice) {
-	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, showInfo, false, timeout); err != nil {
+func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles, showInfo, insecureSkipVerify bool, timeout int, errTags *lockedSlice) {
+	if err := Installation.downloadPdscFile(pdscTag, skipInstalledPdscFiles, showInfo, false, insecureSkipVerify, timeout); err != nil {
 		errTags.lock.Lock()
 		errTags.slice = append(errTags.slice, pdscTag)
 		errTags.lock.Unlock()
@@ -431,15 +433,21 @@ func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles, showInfo
 // UpdatePack updates the specified pack or all installed packs if packPath is empty.
 // It checks for EULA acceptance and installs any required dependencies unless noRequirements is true.
 //
+// If packPath is empty, it updates all installed packs.
+// If packPath is specified, it updates only that specific pack.
+//
 // Parameters:
-//   - packPath: The path or identifier of the pack to update. If empty, all installed packs are updated.
-//   - checkEula: A boolean indicating whether to check for EULA acceptance.
-//   - noRequirements: A boolean indicating whether to skip checking and installing dependencies.
-//   - timeout: An integer specifying the timeout duration for operations.
+//   - packPath: Path or identifier of the pack to update. Empty string updates all packs.
+//   - checkEula: If true, requires EULA acceptance before installation.
+//   - noRequirements: If true, skips installation of pack dependencies.
+//   - subCall: Indicates if this is a recursive call (used internally).
+//   - insecureSkipVerify: If true, skips TLS certificate verification during fetch.
+//   - testing: If true, skips public index updates (used for testing).
+//   - timeout: HTTP timeout in seconds for pack download operations.
 //
 // Returns:
 //   - error: An error if the update process fails, otherwise nil.
-func UpdatePack(packPath string, checkEula, noRequirements, subCall, testing bool, timeout int) error {
+func UpdatePack(packPath string, checkEula, noRequirements, subCall, insecureSkipVerify, testing bool, timeout int) error {
 
 	if !subCall {
 		if packPath == "" {
@@ -466,7 +474,7 @@ func UpdatePack(packPath string, checkEula, noRequirements, subCall, testing boo
 			return err
 		}
 		for _, installedPack := range installedPacks {
-			err = UpdatePack(installedPack.VName(), checkEula, noRequirements, true, testing, timeout)
+			err = UpdatePack(installedPack.VName(), checkEula, noRequirements, true, insecureSkipVerify, testing, timeout)
 			if err != nil {
 				log.Error(err)
 			}
@@ -491,12 +499,12 @@ func UpdatePack(packPath string, checkEula, noRequirements, subCall, testing boo
 	log.Infof("Updating pack %q", packPath)
 
 	if pack.isPackID {
-		if pack.path, err = FindPackURL(pack, testing); err != nil {
+		if pack.path, err = FindPackURL(pack, insecureSkipVerify, testing); err != nil {
 			return err
 		}
 	}
 
-	if err = pack.fetch(timeout); err != nil {
+	if err = pack.fetch(insecureSkipVerify, timeout); err != nil {
 		return err
 	}
 
@@ -538,7 +546,7 @@ func UpdatePack(packPath string, checkEula, noRequirements, subCall, testing boo
 				}
 				if !pack.isInstalled {
 					log.Debug("pack has dependencies, installing")
-					err := AddPack("$"+path, checkEula, false, false, false, false, timeout)
+					err := AddPack("$"+path, checkEula, false, false, false, insecureSkipVerify, false, timeout)
 					if err != nil {
 						return err
 					}
@@ -647,12 +655,13 @@ func CheckConcurrency(concurrency int) int {
 //
 // Parameters:
 // - skipInstalledPdscFiles: If true, skips downloading PDSC files that are already installed.
+// - insecureSkipVerify: If true, skips TLS certificate verification for HTTPS downloads.
 // - concurrency: The number of concurrent downloads to allow. If 0, downloads are sequential.
 // - timeout: The timeout for each download operation.
 //
 // Returns:
 // - An error if there is an issue reading the public index XML or acquiring the semaphore.
-func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int) error {
+func DownloadPDSCFiles(skipInstalledPdscFiles, insecureSkipVerify bool, concurrency int, timeout int) error {
 	log.Info("Downloading all PDSC files available on the public index")
 	// if err := Installation.PublicIndexXML.Read(); err != nil {
 	// 	return err
@@ -677,7 +686,7 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 
 	for _, pdscTag := range pdscTags {
 		if concurrency == 0 {
-			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, true, timeout, &errTags)
+			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, true, insecureSkipVerify, timeout, &errTags)
 		} else {
 			if err := sem.Acquire(ctx, 1); err != nil {
 				log.Errorf("Failed to acquire semaphore: %v", err)
@@ -686,7 +695,7 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 
 			go func(pdscTag xml.PdscTag, errTags *lockedSlice) {
 				defer sem.Release(1)
-				massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, true, timeout, errTags)
+				massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, true, insecureSkipVerify, timeout, errTags)
 			}(pdscTag, &errTags)
 		}
 	}
@@ -714,12 +723,13 @@ func DownloadPDSCFiles(skipInstalledPdscFiles bool, concurrency int, timeout int
 //   - pidxXML: The current public index XML structure.
 //   - updatePrivatePdsc: Whether to update private PDSC files.
 //   - showInfo: If true, logs informational messages about the download.
+//   - insecureSkipVerify: If true, skips TLS certificate verification for HTTPS downloads.
 //   - concurrency: Number of concurrent downloads allowed.
 //   - timeout: Timeout in seconds for downloading PDSC files.
 //
 // Returns:
 //   - error: An error if any operation fails, otherwise nil.
-func UpdateInstalledPDSCFiles(pidxXML, cidxXML *xml.PidxXML, updatePrivatePdsc, showInfo bool, concurrency int, timeout int) error {
+func UpdateInstalledPDSCFiles(pidxXML, cidxXML *xml.PidxXML, updatePrivatePdsc, showInfo, insecureSkipVerify bool, concurrency int, timeout int) error {
 	ctx := context.TODO()
 	concurrency = CheckConcurrency(concurrency)
 	sem := semaphore.NewWeighted(int64(concurrency))
@@ -769,7 +779,7 @@ func UpdateInstalledPDSCFiles(pidxXML, cidxXML *xml.PidxXML, updatePrivatePdsc, 
 					_ = progress.Add64(1)
 				}
 			}
-			massDownloadPdscFiles(pdscTag, false, showInfo, timeout, &errTags)
+			massDownloadPdscFiles(pdscTag, false, showInfo, insecureSkipVerify, timeout, &errTags)
 		} else {
 			if err := sem.Acquire(ctx, 1); err != nil {
 				log.Errorf("Failed to acquire semaphore: %v", err)
@@ -785,7 +795,7 @@ func UpdateInstalledPDSCFiles(pidxXML, cidxXML *xml.PidxXML, updatePrivatePdsc, 
 						_ = progress.Add64(1)
 					}
 				}
-				massDownloadPdscFiles(pdscTag, false, showInfo, timeout, errTags)
+				massDownloadPdscFiles(pdscTag, false, showInfo, insecureSkipVerify, timeout, errTags)
 			}(pdscTag, &errTags)
 		}
 	}
@@ -835,7 +845,7 @@ func UpdateInstalledPDSCFiles(pidxXML, cidxXML *xml.PidxXML, updatePrivatePdsc, 
 			URL:    pdscXML.URL,
 			Vendor: pdscXML.Vendor,
 			Name:   pdscXML.Name,
-		}, timeout); err != nil {
+		}, insecureSkipVerify, timeout); err != nil {
 			log.Error(err)
 		}
 
@@ -911,7 +921,7 @@ func UpdatePublicIndexIfOnline() error {
 			err = Installation.checkUpdateCfg(&updateConf, true)
 			if err != nil {
 				UnlockPackRoot()
-				err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, false, false, 0, 0)
+				err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, false, false, false, 0, 0)
 				if err1 != nil {
 					log.Warnf("Cannot update public index: %v", err1)
 					return nil
@@ -925,7 +935,7 @@ func UpdatePublicIndexIfOnline() error {
 	// if public index does not or not yet exist then download without check
 	if !utils.FileExists(Installation.PublicIndex) {
 		UnlockPackRoot()
-		err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, false, false, 0, 0)
+		err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, false, false, false, 0, 0)
 		if err1 != nil {
 			log.Warnf("Cannot update public index: %v", err1)
 			return nil
@@ -947,12 +957,13 @@ func UpdatePublicIndexIfOnline() error {
 //   - downloadRemainingPdscFiles: A boolean flag to indicate whether to download all remaining PDSC files.
 //   - updatePrivatePdsc: If true, updates private PDSC files during the update process.
 //   - showInfo: If true, logs informational messages about the download.
+//   - insecureSkipVerify: A boolean flag to indicate whether to skip TLS certificate verification for HTTPS downloads.
 //   - concurrency: The number of concurrent operations allowed.
 //   - timeout: The timeout duration for network operations.
 //
 // Returns:
 //   - error: An error if the update fails, otherwise nil.
-func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemainingPdscFiles, updatePrivatePdsc, showInfo bool, concurrency int, timeout int) error {
+func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemainingPdscFiles, updatePrivatePdsc, showInfo, insecureSkipVerify bool, concurrency int, timeout int) error {
 	// For backwards compatibility, allow indexPath to be a file, but ideally it should be empty
 	if indexPath == "" {
 		indexPath = strings.TrimSuffix(Installation.PublicIndexXML.URL, "/") + "/" + PublicIndexName
@@ -980,7 +991,7 @@ func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemaining
 			log.Warnf("Non-HTTPS url: %q", indexPath)
 		}
 
-		indexPath, err = utils.DownloadFile(indexPath, false, true, true, timeout)
+		indexPath, err = utils.DownloadFile(indexPath, false, true, true, insecureSkipVerify, timeout)
 		if err != nil {
 			return err
 		}
@@ -1012,7 +1023,7 @@ func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemaining
 	utils.SetReadOnly(Installation.PublicIndex)
 
 	if downloadPdsc {
-		err = DownloadPDSCFiles(false, concurrency, timeout)
+		err = DownloadPDSCFiles(false, insecureSkipVerify, concurrency, timeout)
 		if err != nil {
 			return err
 		}
@@ -1026,14 +1037,14 @@ func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemaining
 	}
 
 	if !sparse {
-		err = UpdateInstalledPDSCFiles(Installation.PublicIndexXML, cidxXML, updatePrivatePdsc, showInfo, concurrency, timeout)
+		err = UpdateInstalledPDSCFiles(Installation.PublicIndexXML, cidxXML, updatePrivatePdsc, showInfo, insecureSkipVerify, concurrency, timeout)
 		if err != nil {
 			return err
 		}
 	}
 
 	if downloadRemainingPdscFiles {
-		err = DownloadPDSCFiles(true, concurrency, timeout)
+		err = DownloadPDSCFiles(true, insecureSkipVerify, concurrency, timeout)
 		if err != nil {
 			return err
 		}
@@ -1398,11 +1409,13 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, t
 //
 // Parameters:
 //   - pack: A pointer to the PackType struct representing the pack to find the URL for.
+//   - insecureSkipVerify: A boolean flag indicating whether to skip TLS certificate verification for HTTPS downloads.
+//   - testing: A boolean flag indicating whether the function is being run in a testing environment.
 //
 // Returns:
 //   - string: The URL of the pack if found.
 //   - error: An error if the URL cannot be found or if there are issues with the pack's version.
-func FindPackURL(pack *PackType, testing bool) (string, error) {
+func FindPackURL(pack *PackType, insecureSkipVerify, testing bool) (string, error) {
 	log.Debugf("Finding URL for \"%v\"", pack.path)
 
 	if pack.IsPublic {
@@ -1415,7 +1428,7 @@ func FindPackURL(pack *PackType, testing bool) (string, error) {
 				Name:   pack.Name,
 			})
 			if len(tags) != 0 {
-				if err := Installation.downloadPdscFile(tags[0], true, true, true, 0); err != nil {
+				if err := Installation.downloadPdscFile(tags[0], true, true, true, insecureSkipVerify, 0); err != nil {
 					return "", err
 				}
 			} else {
@@ -1426,7 +1439,7 @@ func FindPackURL(pack *PackType, testing bool) (string, error) {
 				URL:    pack.URL,
 				Vendor: pack.Vendor,
 				Name:   pack.Name,
-			}, true, true, true, 0); err != nil {
+			}, true, true, true, insecureSkipVerify, 0); err != nil {
 				return "", err
 			}
 		}
@@ -1453,7 +1466,7 @@ func FindPackURL(pack *PackType, testing bool) (string, error) {
 					URL:    pack.URL,
 					Vendor: pack.Vendor,
 					Name:   pack.Name,
-				}, false, true, true, 0); err != nil {
+				}, false, true, true, insecureSkipVerify, 0); err != nil {
 					log.Warnf("Latest pdsc %q does not exist in public index", xmlTag.Key())
 					return "", err
 				}
@@ -2079,6 +2092,7 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, pdscTag *xml.PdscTa
 //   - skipInstalledPdscFiles: A boolean flag indicating whether to skip downloading if the PDSC file already exists locally.
 //   - showInfo: If true, logs informational messages about the download.
 //   - showProgressBar: A boolean flag indicating whether to show the progress bar during the download.
+//   - insecureSkipVerify: A boolean flag indicating whether to skip TLS certificate verification for HTTPS downloads.
 //   - timeout: An integer specifying the timeout duration (in seconds) for the download operation.
 //
 // Returns:
@@ -2090,7 +2104,7 @@ func (p *PacksInstallationType) packIsPublic(pack *PackType, pdscTag *xml.PdscTa
 //     the function switches to the cache URL for downloading.
 //   - The function downloads the PDSC file, temporarily saves it, and then moves it to the target location,
 //     ensuring proper file permissions are set before and after the operation.
-func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstalledPdscFiles, showInfo, showProgressBar bool, timeout int) error {
+func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstalledPdscFiles, showInfo, showProgressBar, insecureSkipVerify bool, timeout int) error {
 	basePdscFile := fmt.Sprintf("%s%s", pdscTag.VName(), utils.PdscExtension)
 	pdscFilePath := filepath.Join(p.WebDir, basePdscFile)
 
@@ -2120,7 +2134,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 
 	pdscFileURL.Path = path.Join(pdscFileURL.Path, basePdscFile)
 
-	localFileName, err := utils.DownloadFile(pdscFileURL.String(), true, showInfo, showProgressBar, timeout)
+	localFileName, err := utils.DownloadFile(pdscFileURL.String(), true, showInfo, showProgressBar, insecureSkipVerify, timeout)
 	defer os.Remove(localFileName)
 
 	if err != nil {
@@ -2170,6 +2184,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 //
 // Parameters:
 //   - pdscTag: An xml.PdscTag struct containing the vendor, name, and URL of the PDSC file.
+//   - insecureSkipVerify: A boolean flag indicating whether to skip TLS certificate verification for HTTPS downloads.
 //   - timeout: An integer specifying the timeout duration for downloading the file.
 //
 // Returns:
@@ -2181,7 +2196,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 //  3. If the URL scheme is "file", it copies the file from the local source to the destination.
 //  4. If the URL scheme is not "file", it downloads the file from the remote URL.
 //  5. Sets the file to read-only after copying or downloading it.
-func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) error {
+func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, insecureSkipVerify bool, timeout int) error {
 	basePdscFile := fmt.Sprintf("%s%s", pdscTag.VName(), utils.PdscExtension)
 	pdscFilePath := filepath.Join(p.LocalDir, basePdscFile)
 
@@ -2210,7 +2225,7 @@ func (p *PacksInstallationType) loadPdscFile(pdscTag xml.PdscTag, timeout int) e
 		return nil
 	}
 
-	localFileName, err := utils.DownloadFile(pdscFileURL.String(), true, true, true, timeout)
+	localFileName, err := utils.DownloadFile(pdscFileURL.String(), true, true, true, insecureSkipVerify, timeout)
 	defer os.Remove(localFileName)
 
 	if err != nil {

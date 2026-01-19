@@ -45,7 +45,7 @@ func TestDownloadFile(t *testing.T) {
 				},
 			),
 		)
-		_, err := utils.DownloadFile(goodServer.URL+"/file.txt", true, true, true, 0)
+		_, err := utils.DownloadFile(goodServer.URL+"/file.txt", true, true, true, false, 0)
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrFailedCreatingFile))
 		utils.CacheDir = oldCache
@@ -55,7 +55,7 @@ func TestDownloadFile(t *testing.T) {
 		fileName := "file.txt"
 		defer os.Remove(fileName)
 
-		_, err := utils.DownloadFile(fileName, true, true, true, 0)
+		_, err := utils.DownloadFile(fileName, true, true, true, false, 0)
 		assert.NotNil(err)
 		assert.Equal(errors.Unwrap(err), errs.ErrFailedDownloadingFile)
 	})
@@ -71,7 +71,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 
-		_, err := utils.DownloadFile(notFoundServer.URL+"/"+fileName, true, true, true, 0)
+		_, err := utils.DownloadFile(notFoundServer.URL+"/"+fileName, true, true, true, false, 0)
 		assert.NotNil(err)
 		assert.Equal(errors.Unwrap(err), errs.ErrBadRequest)
 		assert.False(utils.FileExists(fileName))
@@ -89,7 +89,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 
-		_, err := utils.DownloadFile(bodyErrorServer.URL+"/"+fileName, true, true, true, 0)
+		_, err := utils.DownloadFile(bodyErrorServer.URL+"/"+fileName, true, true, true, false, 0)
 		assert.NotNil(err)
 		assert.True(errs.Is(err, errs.ErrFailedWrittingToLocalFile))
 	})
@@ -106,7 +106,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 		url := goodServer.URL + "/" + fileName
-		_, err1 := utils.DownloadFile(url, true, true, true, 0)
+		_, err1 := utils.DownloadFile(url, true, true, true, false, 0)
 		assert.Nil(err1)
 		assert.True(utils.FileExists(fileName))
 		bytes, err2 := os.ReadFile(fileName)
@@ -132,7 +132,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 		url := goodServer.URL + "/" + fileName
-		_, err1 := utils.DownloadFile(url, true, true, true, 0)
+		_, err1 := utils.DownloadFile(url, true, true, true, false, 0)
 		assert.Nil(err1)
 		assert.True(utils.FileExists(fileName))
 		bytes, err2 := os.ReadFile(fileName)
@@ -161,7 +161,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 		url := goodServer.URL + "/" + fileName
-		_, err1 := utils.DownloadFile(url, true, true, true, 0)
+		_, err1 := utils.DownloadFile(url, true, true, true, false, 0)
 		assert.Nil(err1)
 		assert.True(utils.FileExists(fileName))
 		bytes, err2 := os.ReadFile(fileName)
@@ -183,7 +183,7 @@ func TestDownloadFile(t *testing.T) {
 			),
 		)
 		url := goodServer.URL + "/" + fileName
-		_, err1 := utils.DownloadFile(url, true, true, true, 0)
+		_, err1 := utils.DownloadFile(url, true, true, true, false, 0)
 		assert.Nil(err1)
 		assert.True(utils.FileExists(fileName))
 		bytes, err2 := os.ReadFile(fileName)
@@ -192,9 +192,35 @@ func TestDownloadFile(t *testing.T) {
 		assert.Equal(1, requestCount)
 
 		// Download it again, this time it shouldn't trigger any HTTP request
-		_, err1 = utils.DownloadFile(url, true, true, true, 0)
+		_, err1 = utils.DownloadFile(url, true, true, true, false, 0)
 		assert.Nil(err1)
 		assert.Equal(1, requestCount)
+	})
+
+	t.Run("test download with insecure skip verify", func(t *testing.T) {
+		fileName := "file.txt"
+		defer os.Remove(fileName)
+		goodResponse := []byte("all good")
+
+		// Create a TLS server
+		tlsServer := httptest.NewTLSServer(
+			http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprint(w, string(goodResponse))
+				},
+			),
+		)
+		defer tlsServer.Close()
+
+		// Without insecureSkipVerify=true, this would fail with certificate verification error
+		// With insecureSkipVerify=true, it should succeed
+		url := tlsServer.URL + "/" + fileName
+		_, err := utils.DownloadFile(url, false, true, true, true, 0)
+		assert.Nil(err)
+		assert.True(utils.FileExists(fileName))
+		bytes, err2 := os.ReadFile(fileName)
+		assert.Nil(err2)
+		assert.Equal(bytes, goodResponse)
 	})
 }
 
