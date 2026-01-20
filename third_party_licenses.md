@@ -22,7 +22,7 @@
 | github.com/rivo/uniseg | v0.4.7  | [MIT](https://github.com/rivo/uniseg/blob/v0.4.7/LICENSE.txt) |
 | github.com/sagikazarmark/locafero | v0.11.0  | [MIT](https://github.com/sagikazarmark/locafero/blob/v0.11.0/LICENSE) |
 | github.com/schollz/progressbar/v3 | v3.19.0  | [MIT](https://github.com/schollz/progressbar/blob/v3.19.0/LICENSE) |
-| github.com/sirupsen/logrus | v1.9.3  | [MIT](https://github.com/sirupsen/logrus/blob/v1.9.3/LICENSE) |
+| github.com/sirupsen/logrus | v1.9.4  | [MIT](https://github.com/sirupsen/logrus/blob/v1.9.4/LICENSE) |
 | github.com/sourcegraph/conc | v0.3.1-0.20240121214520-5f936abd7ae8  | [MIT](https://github.com/sourcegraph/conc/blob/5f936abd7ae8/LICENSE) |
 | github.com/spf13/afero | v1.15.0  | [Apache-2.0](https://github.com/spf13/afero/blob/v1.15.0/LICENSE.txt) |
 | github.com/spf13/cast | v1.10.0  | [MIT](https://github.com/spf13/cast/blob/v1.10.0/LICENSE) |
