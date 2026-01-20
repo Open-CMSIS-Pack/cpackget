@@ -29,7 +29,7 @@ func TestUpdatePack(t *testing.T) {
 		defer removePackRoot(localTestingDir)
 
 		for i := range malformedPackNames {
-			err := installer.UpdatePack(malformedPackNames[i], !CheckEula, !NoRequirements, SubCall, true, Timeout)
+			err := installer.UpdatePack(malformedPackNames[i], !CheckEula, !NoRequirements, SubCall, !InsecureSkipVerify, true, Timeout)
 			// Sanity check
 			assert.NotNil(err)
 			assert.Equal(err, errs.ErrBadPackName)
@@ -48,7 +48,7 @@ func TestUpdatePack(t *testing.T) {
 		defer removePackRoot(localTestingDir)
 
 		packPath := publicLocalPack123
-		assert.Nil(installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, true, Timeout))
+		assert.Nil(installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, !InsecureSkipVerify, true, Timeout))
 	})
 
 	t.Run("test updating downloaded pack", func(t *testing.T) {
@@ -62,11 +62,11 @@ func TestUpdatePack(t *testing.T) {
 		addPack(t, packPath, ConfigType{})
 		removePack(t, packPath, true, true, false)
 		packPath = filepath.Join(installer.Installation.DownloadDir, packToUpdateFileName)
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// ensure downloaded pack remains valid
-		err = installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, true, Timeout)
+		err = installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packToUpdate, err := utils.ExtractPackInfo(packPath)
@@ -82,10 +82,10 @@ func TestUpdatePack(t *testing.T) {
 		defer removePackRoot(localTestingDir)
 
 		packPath := publicLocalPack123meta
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
-		err = installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, true, Timeout)
+		err = installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packToReinstall, err := utils.ExtractPackInfo(packPath)
@@ -102,7 +102,7 @@ func TestUpdatePack(t *testing.T) {
 
 		packPath := packThatDoesNotExist
 
-		err := installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, true, Timeout)
+		err := installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Make sure pack.idx never got touched
@@ -120,7 +120,7 @@ func TestUpdatePack(t *testing.T) {
 
 		packPath := notFoundServer.URL() + packThatDoesNotExist
 
-		err := installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, true, Timeout)
+		err := installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Make sure pack.idx never got touched
@@ -136,7 +136,7 @@ func TestUpdatePack(t *testing.T) {
 
 		packPath := packWithMalformedURL
 
-		err := installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, true, Timeout)
+		err := installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, !InsecureSkipVerify, true, Timeout)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -154,14 +154,14 @@ func TestUpdatePack(t *testing.T) {
 		defer removePackRoot(localTestingDir)
 
 		// packPath := publicLocalPack123
-		// err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, true, Timeout)
+		// err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		// assert.Nil(err)
 
 		// packPath := packToUpdate
 		// addPack(t, packPath, ConfigType{})
 		// removePack(t, packPath, true, true, false)
 		// packPath = filepath.Join(installer.Installation.DownloadDir, packToUpdateFileName)
-		// err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		// err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		// assert.Nil(err)
 
 		// Inject pdsc into .Web folder
@@ -201,9 +201,32 @@ func TestUpdatePack(t *testing.T) {
 		pdscXML.URL = server.URL()
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
-		err = installer.UpdatePack("", !CheckEula, !NoRequirements, SubCall, true, Timeout)
+		err = installer.UpdatePack("", !CheckEula, !NoRequirements, SubCall, !InsecureSkipVerify, true, Timeout)
 
 		// Sanity check
+		assert.Nil(err)
+	})
+
+	t.Run("test updating pack with insecureSkipVerify parameter", func(t *testing.T) {
+		localTestingDir := "test-update-pack-insecure-skip-verify"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		installer.Installation.WebDir = filepath.Join(testDir, "public_index")
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		packPath := publicLocalPack123
+
+		// First, install the pack
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
+		assert.Nil(err)
+
+		// Test update with insecureSkipVerify = true
+		err = installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, InsecureSkipVerify, true, Timeout)
+		assert.Nil(err)
+
+		// Test update with insecureSkipVerify = false (default)
+		err = installer.UpdatePack(packPath, !CheckEula, !NoRequirements, SubCall, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 	})
 

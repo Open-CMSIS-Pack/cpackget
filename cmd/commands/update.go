@@ -26,6 +26,9 @@ var updateCmdFlags struct {
 
 	// Reports encoded progress for files and download when used by other tools
 	encodedProgress bool
+
+	// insecureSkipVerify skips TLS certificate verification for HTTPS downloads
+	insecureSkipVerify bool
 }
 
 var UpdateCmd = &cobra.Command{
@@ -70,7 +73,7 @@ Update a pack using the following "<pack>" specification or using packs provided
 				return nil // nothing to do
 			}
 			installer.UnlockPackRoot()
-			err := installer.UpdatePack("", !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, false, viper.GetInt("timeout"))
+			err := installer.UpdatePack("", !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, updateCmdFlags.insecureSkipVerify, false, viper.GetInt("timeout"))
 			if err != nil {
 				lastErr = err
 				if !errs.AlreadyLogged(err) {
@@ -84,7 +87,7 @@ Update a pack using the following "<pack>" specification or using packs provided
 		log.Debugf("Specified packs %v", args)
 		installer.UnlockPackRoot()
 		for _, packPath := range args {
-			err := installer.UpdatePack(packPath, !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, false, viper.GetInt("timeout"))
+			err := installer.UpdatePack(packPath, !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, updateCmdFlags.insecureSkipVerify, false, viper.GetInt("timeout"))
 			if err != nil {
 				lastErr = err
 				if !errs.AlreadyLogged(err) {
@@ -103,6 +106,7 @@ func init() {
 	UpdateCmd.Flags().StringVarP(&updateCmdFlags.packsListFileName, "packs-list-filename", "f", "", "specifies a file listing packs urls, one per line")
 	UpdateCmd.Flags().BoolVar(&updateCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
 	UpdateCmd.Flags().BoolVarP(&updateCmdFlags.encodedProgress, "encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
+	UpdateCmd.Flags().BoolVar(&updateCmdFlags.insecureSkipVerify, "insecure-skip-verify", false, "skip verification of server's TLS certificate when downloading packs over HTTPS")
 
 	UpdateCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		// Small workaround to keep the linter happy, not

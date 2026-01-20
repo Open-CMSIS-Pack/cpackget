@@ -22,6 +22,9 @@ var updateIndexCmdFlags struct {
 
 	// skipTouch does not touch pack.idx after adding
 	skipTouch bool
+
+	// insecureSkipVerify skips TLS certificate verification for HTTPS downloads
+	insecureSkipVerify bool
 }
 
 var UpdateIndexCmd = &cobra.Command{
@@ -44,7 +47,7 @@ var UpdateIndexCmd = &cobra.Command{
 			return err
 		}
 
-		err = installer.UpdatePublicIndex("", updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, true, true, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
+		err = installer.UpdatePublicIndex("", updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, true, true, updateIndexCmdFlags.insecureSkipVerify, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
 		return err
 	},
 }
@@ -59,4 +62,5 @@ func init() {
 	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.downloadUpdatePdscFiles, "all-pdsc-files", "a", false, "updates/downloads all the latest .pdsc files from the public index")
 	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.encodedProgress, "encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
 	UpdateIndexCmd.Flags().BoolVar(&updateIndexCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
+	UpdateIndexCmd.Flags().BoolVar(&updateIndexCmdFlags.insecureSkipVerify, "insecure-skip-verify", false, "skip verification of server's TLS certificate when downloading packs over HTTPS")
 }

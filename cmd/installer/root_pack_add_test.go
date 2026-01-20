@@ -44,7 +44,7 @@ func TestAddPack(t *testing.T) {
 		defer removePackRoot(localTestingDir)
 
 		for i := 0; i < len(malformedPackNames); i++ {
-			err := installer.AddPack(malformedPackNames[i], !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+			err := installer.AddPack(malformedPackNames[i], !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 			// Sanity check
 			assert.NotNil(err)
 			assert.Equal(err, errs.ErrBadPackName)
@@ -112,7 +112,7 @@ func TestAddPack(t *testing.T) {
 
 		// Attempt installing it again, this time it should noop
 		packPath = publicLocalPack123
-		assert.Nil(installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout))
+		assert.Nil(installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout))
 
 		// Make sure pack.idx did NOT get touched
 		assert.Equal(packIdxModTime, getPackIdxModTime(t, End))
@@ -126,7 +126,7 @@ func TestAddPack(t *testing.T) {
 		defer removePackRoot(localTestingDir)
 
 		packPath := publicLocalPack123
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packInfo, err := utils.ExtractPackInfo(packPath)
@@ -144,7 +144,7 @@ func TestAddPack(t *testing.T) {
 		packPath := packToReinstall
 		addPack(t, packPath, ConfigType{})
 
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packToReinstall, err := utils.ExtractPackInfo(packPath)
@@ -163,11 +163,11 @@ func TestAddPack(t *testing.T) {
 		addPack(t, packPath, ConfigType{})
 		removePack(t, packPath, true, true, false)
 		packPath = filepath.Join(installer.Installation.DownloadDir, packToReinstallFileName)
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// ensure downloaded pack remains valid
-		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packToReinstall, err := utils.ExtractPackInfo(packPath)
@@ -183,7 +183,7 @@ func TestAddPack(t *testing.T) {
 		defer removePackRoot(localTestingDir)
 
 		packPath := publicLocalPack123meta
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packToReinstall, err := utils.ExtractPackInfo(packPath)
@@ -202,7 +202,7 @@ func TestAddPack(t *testing.T) {
 		packPath := packToReinstall
 		addPack(t, packPath, ConfigType{})
 
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packToReinstall, err := utils.ExtractPackInfo(packPath)
@@ -229,7 +229,7 @@ func TestAddPack(t *testing.T) {
 			utils.ShouldAbortFunction = nil
 		}()
 
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		// Should not install anything, and revert the temporary pack to its original directory
 		originalPackPath := filepath.Join(installer.Installation.PackRoot, "TheVendor", "PackToReinstall", "1.2.3")
 		assert.True(errs.Is(err, errs.ErrTerminatedByUser))
@@ -246,7 +246,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packThatDoesNotExist
 
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -267,7 +267,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := notFoundServer.URL() + packThatDoesNotExist
 
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -286,7 +286,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithCorruptZip
 
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -305,7 +305,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithMalformedURL
 
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -324,7 +324,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithoutPdscFileInside
 
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -351,7 +351,7 @@ func TestAddPack(t *testing.T) {
 
 	   			// Force a bad file path
 	   			installer.Installation.PackRoot = filepath.Join(string(os.PathSeparator), "CON")
-	   			err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+	   			err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 	   			// Sanity check
 	   			assert.NotNil(err)
@@ -372,7 +372,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithTaintedCompressedFiles
 
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -392,7 +392,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := packWithParentDirectoryFiles
 
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -411,7 +411,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := pack123MissingVersion
 
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -430,7 +430,7 @@ func TestAddPack(t *testing.T) {
 
 		packPath := pack123VersionNotLatest
 
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -590,7 +590,7 @@ func TestAddPack(t *testing.T) {
 
 		// Should NOT be installed if license is not agreed
 		ui.LicenseAgreed = &ui.Disagreed
-		err = installer.AddPack(packPath, CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packPath, CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 		// Sanity check
 		assert.Nil(err)
@@ -705,7 +705,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(err)
 
 		// Should NOT be installed if license is missing
-		err = installer.AddPack(packPath, CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packPath, CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 		// Sanity check
 		assert.NotNil(err)
@@ -730,7 +730,7 @@ func TestAddPack(t *testing.T) {
 
 		ui.Extract = true
 		ui.LicenseAgreed = nil
-		err := installer.AddPack(packPath, CheckEula, ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, CheckEula, ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.NotNil(err)
 		assert.Equal(errs.ErrLicenseNotFound, err)
 		assert.False(utils.FileExists(extractedLicensePath))
@@ -757,7 +757,7 @@ func TestAddPack(t *testing.T) {
 		defer removePackRoot(localTestingDir)
 
 		packPath := packWithSubSubFolder
-		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.NotNil(err)
 		assert.Equal(err, errs.ErrPdscFileTooDeepInPack)
 	})
@@ -791,7 +791,7 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
 			assert.Nil(installer.Installation.PublicIndexXML.Write())
 
-			err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+			err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 			assert.NotNil(err)
 			if !errors.Is(err, errs.ErrBadRequest) {
@@ -818,7 +818,7 @@ func TestAddPack(t *testing.T) {
 			// Place the bogus pdsc file in .Web/
 			assert.Nil(utils.CopyFile(pdscPack123MissingVersion, filepath.Join(installer.Installation.WebDir, pack.PdscFileName())))
 
-			err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+			err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 			assert.NotNil(err)
 			//			assert.Equal(errs.ErrPackVersionNotFoundInPdsc, err)
@@ -874,7 +874,7 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
 			assert.Nil(installer.Installation.PublicIndexXML.Write())
 
-			err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+			err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 			assert.Nil(err)
 
 			pack.Version = "1.2.3+metaInjected"
@@ -928,7 +928,7 @@ func TestAddPack(t *testing.T) {
 			assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
 			assert.Nil(installer.Installation.PublicIndexXML.Write())
 
-			err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+			err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 			assert.Nil(err)
 
 			pack.IsPublic = true
@@ -1012,7 +1012,7 @@ func TestAddPack(t *testing.T) {
 		server.AddRoute(pack123.PackFileName(), pack123Content)
 
 		// Attempt to install with PackID only first time, with no success (no pdsc in .Local)
-		err = installer.AddPack(pack123ID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(pack123ID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Equal(err, errs.ErrPackURLCannotBeFound)
 
 		// Add the pack via file, then remove it just to leave the pdsc in .Local
@@ -1022,7 +1022,7 @@ func TestAddPack(t *testing.T) {
 
 		// The 1.2.4 pack's PDSC does NOT contain the 1.2.3 release tag on purpose
 		// so an attemp to install it should raise an error
-		err = installer.AddPack(pack123ID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(pack123ID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Equal(err, errs.ErrPackVersionNotFoundInPdsc)
 
 		// Tweak the URL to retrieve version 1.2.3 and inject the 1.2.3 tag
@@ -1033,7 +1033,7 @@ func TestAddPack(t *testing.T) {
 		pdscXML.URL = server.URL()
 		assert.Nil(pdscXML.Write())
 
-		err = installer.AddPack(pack123ID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(pack123ID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 		checkPackIsInstalled(t, pack123)
 	})
@@ -1048,7 +1048,7 @@ func TestAddPack(t *testing.T) {
 
 		pack123ID := publicRemotePack123PackIDMeta
 
-		err := installer.AddPack(pack123ID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err := installer.AddPack(pack123ID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 
 		assert.NotNil(err)
 		assert.Equal(errors.Unwrap(err), errs.ErrBadPackVersion)
@@ -1083,7 +1083,7 @@ func TestAddPack(t *testing.T) {
 		_, packBasePath := filepath.Split(publicRemotePack123)
 
 		packPath := packServer.URL() + packBasePath
-		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.NotNil(err)
 		assert.Equal(errs.ErrTerminatedByUser, err)
 
@@ -1127,7 +1127,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
-		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.NotNil(err)
 		assert.Equal(errs.ErrTerminatedByUser, err)
 
@@ -1186,7 +1186,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(err)
 		packIdxModTime := packIdx.ModTime()
 
-		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Make sure pack.idx did NOT get touched
@@ -1242,7 +1242,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install >=1.2.3
-		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Check that 1.2.4 is installed
@@ -1313,7 +1313,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 		// Install >=1.2.3
-		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Check that 1.2.4 is installed
@@ -1348,7 +1348,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
-		err = installer.AddPack(publicLocalPack125WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack125WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		if errors.Is(err, errs.ErrPackVersionNotAvailable) {
 			assert.Equal(errs.ErrPackVersionNotAvailable, err)
 		} else if errors.Is(err, errs.ErrFailedDownloadingFile) {
@@ -1420,7 +1420,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install @^0.1.0
-		err = installer.AddPack(publicLocalPack010WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack010WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Check that 0.1.1 is installed
@@ -1474,7 +1474,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install @^0.1.0
-		err = installer.AddPack(publicLocalPack010WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack010WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Check that 0.1.1 is installed
@@ -1545,7 +1545,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install @^0.1.0
-		err = installer.AddPack(publicLocalPack011WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack011WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Check that 0.1.1 is installed
@@ -1589,7 +1589,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(err)
 		packIdxModTime := packIdx.ModTime()
 
-		err = installer.AddPack(publicLocalPack011WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack011WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Make sure pack.idx did NOT get touched
@@ -1626,7 +1626,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
-		err = installer.AddPack(publicLocalPack211WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack211WithMinimumCompatibleVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Equal(err, errs.ErrPackVersionNotAvailable)
 	})
 
@@ -1683,7 +1683,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
 		// Install @~0.1.0
-		err = installer.AddPack(publicLocalPack010WithPatchVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack010WithPatchVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Check that 0.1.1 is installed
@@ -1737,7 +1737,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install @~0.1.0
-		err = installer.AddPack(publicLocalPack010WithPatchVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack010WithPatchVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Check that 0.1.1 is installed
@@ -1797,7 +1797,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
 		// Install @~0.1.0
-		err = installer.AddPack(publicLocalPack011WithPatchVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack011WithPatchVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Check that 0.1.1 is installed
@@ -1841,7 +1841,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(err)
 		packIdxModTime := packIdx.ModTime()
 
-		err = installer.AddPack(publicLocalPack011WithPatchVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack011WithPatchVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Make sure pack.idx did NOT get touched
@@ -1878,7 +1878,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(packPdscTag))
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
-		err = installer.AddPack(publicLocalPack211WithPatchVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack211WithPatchVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Equal(err, errs.ErrPackVersionNotAvailable)
 	})
 
@@ -1929,7 +1929,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install @latest
-		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Check that 1.2.4 is installed
@@ -2001,7 +2001,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.Installation.PublicIndexXML.Write())
 
 		// Install @latest
-		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Check that 1.2.4 is installed
@@ -2045,7 +2045,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(err)
 		packIdxModTime := packIdx.ModTime()
 
-		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Make sure pack.idx did NOT get touched
@@ -2096,7 +2096,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(utils.WriteXML(packPdscFilePath, pdscXML))
 
 		// Install >=1.2.3
-		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPack123WithMinimumVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Check that 1.2.4 is installed
@@ -2123,7 +2123,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(err)
 		packIdxModTime := packIdx.ModTime()
 
-		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(publicLocalPackLatestVersionLegacyPackID, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		// Make sure pack.idx did NOT get touched
@@ -2153,7 +2153,7 @@ func TestAddPack(t *testing.T) {
 
 		addPack(t, publicRemotePack123, ConfigType{IsPublic: true})
 
-		err = installer.AddPack(packWithSingleDependency, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packWithSingleDependency, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packInfo, err = utils.ExtractPackInfo(packWithSingleDependency)
@@ -2182,7 +2182,7 @@ func TestAddPack(t *testing.T) {
 
 		addPack(t, publicRemotePack123alpha, ConfigType{IsPublic: true})
 
-		err = installer.AddPack(packWithSingleDependencyAlpha, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packWithSingleDependencyAlpha, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packInfo, err = utils.ExtractPackInfo(packWithSingleDependencyAlpha)
@@ -2198,7 +2198,7 @@ func TestAddPack(t *testing.T) {
 		assert.Nil(installer.ReadIndexFiles())
 		defer removePackRoot(localTestingDir)
 
-		err := installer.AddPack(packWithSingleDependency, !CheckEula, !ExtractEula, !ForceReinstall, NoRequirements, true, Timeout)
+		err := installer.AddPack(packWithSingleDependency, !CheckEula, !ExtractEula, !ForceReinstall, NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packInfo, err := utils.ExtractPackInfo(packWithSingleDependency)
@@ -2312,7 +2312,7 @@ func TestAddPack(t *testing.T) {
 
 		// Now try installing a pack
 		packPath := publicLocalPack123
-		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packInfo, err := utils.ExtractPackInfo(packPath)
@@ -2346,7 +2346,7 @@ func TestAddPack(t *testing.T) {
 
 		// Now try installing a pack
 		packPath := publicLocalPack123
-		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packInfo, err := utils.ExtractPackInfo(packPath)
@@ -2379,7 +2379,7 @@ func TestAddPack(t *testing.T) {
 
 		// Now try installing a pack
 		packPath := publicLocalPack123
-		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packInfo, err := utils.ExtractPackInfo(packPath)
@@ -2413,7 +2413,7 @@ func TestAddPack(t *testing.T) {
 
 		// Now try installing a pack
 		packPath := publicLocalPack123
-		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packInfo, err := utils.ExtractPackInfo(packPath)
@@ -2447,7 +2447,7 @@ func TestAddPack(t *testing.T) {
 
 		// Now try installing a pack
 		packPath := publicLocalPack123
-		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packInfo, err := utils.ExtractPackInfo(packPath)
@@ -2481,7 +2481,7 @@ func TestAddPack(t *testing.T) {
 
 		// Now try installing a pack
 		packPath := publicLocalPack123
-		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packInfo, err := utils.ExtractPackInfo(packPath)
@@ -2515,11 +2515,39 @@ func TestAddPack(t *testing.T) {
 
 		// Now try installing a pack
 		packPath := publicLocalPack123
-		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, true, Timeout)
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
 		assert.Nil(err)
 
 		packInfo, err := utils.ExtractPackInfo(packPath)
 		assert.Nil(err)
 		checkPackIsInstalled(t, packInfoToType(packInfo))
+	})
+
+	t.Run("test adding pack with insecureSkipVerify parameter", func(t *testing.T) {
+		localTestingDir := "test-add-pack-insecure-skip-verify"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		packPath := publicLocalPack123
+
+		// Test with insecureSkipVerify = true
+		err := installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, InsecureSkipVerify, true, Timeout)
+		assert.Nil(err)
+
+		packInfo, err := utils.ExtractPackInfo(packPath)
+		assert.Nil(err)
+		pack := packInfoToType(packInfo)
+		checkPackIsInstalled(t, pack)
+
+		// Clean up for second test
+		_, err = installer.RemovePack(pack.PackID(), true, true)
+		assert.Nil(err)
+
+		// Test with insecureSkipVerify = false (default)
+		err = installer.AddPack(packPath, !CheckEula, !ExtractEula, !ForceReinstall, !NoRequirements, !InsecureSkipVerify, true, Timeout)
+		assert.Nil(err)
+		checkPackIsInstalled(t, pack)
 	})
 }

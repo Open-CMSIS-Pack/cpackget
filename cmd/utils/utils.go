@@ -114,6 +114,7 @@ var (
 //   - useCache: If true, uses the cached file if it exists instead of downloading again.
 //   - showInfo: If true, logs informational messages about the download.
 //   - showProgressBar: If true, shows the progress bar during download.
+//   - insecureSkipVerify: If true, skips TLS certificate verification for HTTPS downloads.
 //   - timeout: The download timeout in seconds. If 0, no timeout is set.
 //
 // Returns:
@@ -123,7 +124,7 @@ var (
 // The function handles special cases for localhost HTTPS downloads by skipping TLS verification,
 // retries the request without a user agent if a 404 is received, and handles cookies if a 403 is returned.
 // It also supports progress reporting and secure file writing.
-func DownloadFile(URL string, useCache, showInfo, showProgressBar bool, timeout int) (string, error) {
+func DownloadFile(URL string, useCache, showInfo, showProgressBar, insecureSkipVerify bool, timeout int) (string, error) {
 	parsedURL, _ := url.Parse(URL)
 	fileBase := path.Base(parsedURL.Path)
 	filePath := filepath.Join(CacheDir, fileBase)
@@ -139,7 +140,8 @@ func DownloadFile(URL string, useCache, showInfo, showProgressBar bool, timeout 
 		// #nosec G402
 		tls.InsecureSkipVerify = true //nolint:gosec
 	} else {
-		tls.InsecureSkipVerify = false
+		// #nosec G402
+		tls.InsecureSkipVerify = insecureSkipVerify //nolint:gosec
 	}
 
 	var rtt time.Duration

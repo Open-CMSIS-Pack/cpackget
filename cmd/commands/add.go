@@ -34,6 +34,9 @@ var addCmdFlags struct {
 
 	// Reports encoded progress for files and download when used by other tools
 	encodedProgress bool
+
+	// insecureSkipVerify skips TLS certificate verification for HTTPS downloads
+	insecureSkipVerify bool
 }
 
 var AddCmd = &cobra.Command{
@@ -103,7 +106,7 @@ Add a pack using the following "<pack>" specification or using packs provided by
 			if filepath.Ext(packPath) == utils.PdscExtension {
 				err = installer.AddPdsc(packPath)
 			} else {
-				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, addCmdFlags.noRequirements, false, viper.GetInt("timeout"))
+				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, addCmdFlags.noRequirements, addCmdFlags.insecureSkipVerify, false, viper.GetInt("timeout"))
 			}
 			if err != nil {
 				lastErr = err
@@ -125,6 +128,7 @@ func init() {
 	AddCmd.Flags().StringVarP(&addCmdFlags.packsListFileName, "packs-list-filename", "f", "", "specifies a file listing packs urls, one per line")
 	AddCmd.Flags().BoolVar(&addCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
 	AddCmd.Flags().BoolVarP(&addCmdFlags.encodedProgress, "encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
+	AddCmd.Flags().BoolVar(&addCmdFlags.insecureSkipVerify, "insecure-skip-verify", false, "skip verification of server's TLS certificate when downloading packs over HTTPS")
 
 	AddCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		// Small workaround to keep the linter happy, not

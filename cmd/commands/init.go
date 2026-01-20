@@ -19,6 +19,9 @@ var initCmdFlags struct {
 
 	// skipTouch does not touch pack.idx after adding
 	skipTouch bool
+
+	// insecureSkipVerify skips TLS certificate verification for HTTPS downloads
+	insecureSkipVerify bool
 }
 
 var InitCmd = &cobra.Command{
@@ -53,7 +56,7 @@ The index-url is mandatory. Ex "cpackget init --pack-root path/to/mypackroot htt
 			return err
 		}
 
-		err = installer.UpdatePublicIndex(indexPath, true, initCmdFlags.downloadPdscFiles, false, true, true, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
+		err = installer.UpdatePublicIndex(indexPath, true, initCmdFlags.downloadPdscFiles, false, true, true, initCmdFlags.insecureSkipVerify, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
 		return err
 	},
 }
@@ -62,4 +65,5 @@ func init() {
 	InitCmd.Flags().BoolVarP(&initCmdFlags.downloadPdscFiles, "all-pdsc-files", "a", false, "downloads all the latest .pdsc files from the public index")
 	InitCmd.Flags().BoolVarP(&initCmdFlags.encodedProgress, "encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
 	InitCmd.Flags().BoolVar(&initCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
+	InitCmd.Flags().BoolVar(&initCmdFlags.insecureSkipVerify, "insecure-skip-verify", false, "skip verification of server's TLS certificate when downloading packs over HTTPS")
 }
