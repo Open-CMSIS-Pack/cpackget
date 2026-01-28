@@ -96,7 +96,7 @@ var (
 	ErrPackVersionNotFoundInPdsc       = errors.New("pack version not found in the pdsc file")
 	ErrPackVersionNotLatestReleasePdsc = errors.New("pack version is not the latest in the pdsc file")
 	ErrPackVersionNotAvailable         = errors.New("target pack version is not available")
-	ErrPackURLCannotBeFound            = errors.New("the pack is not found in the public index. The command 'cpackget list --public' shows all public packs.")
+	ErrPackURLCannotBeFound            = errors.New("the pack is not found in the public index. The command 'cpackget list --public' shows all public packs")
 
 	// Hack to allow multiple error logs while still avoiding duplicating the last error log
 	ErrAlreadyLogged = errors.New("already logged")
