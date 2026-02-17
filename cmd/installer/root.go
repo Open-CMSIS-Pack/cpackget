@@ -321,10 +321,16 @@ func RemovePack(packPath string, purge, testing bool) (bool, error) {
 		}
 
 		return false, Installation.touchPackIdx()
-	} else if purge {
-		pack.Unlock()
-		ok, err := pack.purge()
-		return ok, err
+	} else {
+		if len(pack.installedVersions) > 0 { // not installed but found in local_repository
+			err = RemovePdsc(packPath)
+			return false, err
+		}
+		if purge {
+			pack.Unlock()
+			ok, err := pack.purge()
+			return ok, err
+		}
 	}
 
 	log.Errorf("Pack \"%v\" is not installed", packPath)
@@ -1882,7 +1888,20 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) (f
 	// First make sure there's at least one version of the pack installed
 	installationDir := filepath.Join(p.PackRoot, pack.Vendor, pack.Name)
 	if !utils.DirExists(installationDir) {
-		return
+		if noLocal {
+			return
+		}
+		// Gather all versions in local_repository.idx for local .psdc installed packs
+		if err := p.LocalPidx.Read(); err != nil {
+			log.Warn("Could not read local index")
+			return
+		}
+		for _, pdsc := range p.LocalPidx.ListPdscTags() {
+			if pack.Vendor == pdsc.Vendor && pack.Name == pdsc.Name {
+				installedVersions = append(installedVersions, pdsc.Version)
+			}
+		}
+		return // not found in installationDir, but maybe in local repository
 	}
 
 	// Exact version is easy, just find a matching installation folder
