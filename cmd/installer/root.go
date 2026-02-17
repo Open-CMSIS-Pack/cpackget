@@ -321,16 +321,17 @@ func RemovePack(packPath string, purge, testing bool) (bool, error) {
 		}
 
 		return false, Installation.touchPackIdx()
-	} else {
-		if len(pack.installedVersions) > 0 { // not installed but found in local_repository
-			err = RemovePdsc(packPath)
-			return false, err
-		}
-		if purge {
-			pack.Unlock()
-			ok, err := pack.purge()
-			return ok, err
-		}
+	}
+
+	if len(pack.installedVersions) > 0 { // not installed but found in local_repository
+		err = RemovePdsc(packPath)
+		return false, err
+	}
+
+	if purge {
+		pack.Unlock()
+		ok, err := pack.purge()
+		return ok, err
 	}
 
 	log.Errorf("Pack \"%v\" is not installed", packPath)
@@ -1891,7 +1892,7 @@ func (p *PacksInstallationType) PackIsInstalled(pack *PackType, noLocal bool) (f
 		if noLocal {
 			return
 		}
-		// Gather all versions in local_repository.idx for local .psdc installed packs
+		// Gather all versions in local_repository.idx for local .pdsc installed packs
 		if err := p.LocalPidx.Read(); err != nil {
 			log.Warn("Could not read local index")
 			return

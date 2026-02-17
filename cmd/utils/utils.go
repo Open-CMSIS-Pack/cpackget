@@ -166,6 +166,7 @@ func DownloadFile(URL string, useCache, showInfo, showProgressBar, insecureSkipV
 
 	req, _ := http.NewRequest("GET", URL, nil)
 	req.Header.Add("User-Agent", gUserAgent)
+	//nolint:gosec // G704: URL is provided as function parameter and validated by caller
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Error(err)
@@ -176,6 +177,7 @@ func DownloadFile(URL string, useCache, showInfo, showProgressBar, insecureSkipV
 	if resp.StatusCode == http.StatusNotFound {
 		// resend GET request without user agent header
 		req.Header.Del("User-Agent")
+		//nolint:gosec // G704: URL is provided as function parameter and validated by caller
 		resp, err = client.Do(req)
 		if err != nil {
 			log.Error(err)
@@ -189,6 +191,7 @@ func DownloadFile(URL string, useCache, showInfo, showProgressBar, insecureSkipV
 			// add cookie and resend GET request
 			log.Debugf("Cookie: %s", cookie)
 			req.Header.Add("Cookie", cookie)
+			//nolint:gosec // G704: URL is provided as function parameter and validated by caller
 			resp, err = client.Do(req)
 			if err != nil {
 				log.Error(err)
@@ -202,6 +205,7 @@ func DownloadFile(URL string, useCache, showInfo, showProgressBar, insecureSkipV
 		return "", fmt.Errorf("%q: %w", URL, errs.ErrBadRequest)
 	}
 
+	//nolint:gosec // G703: filePath is safely constructed using path.Base() which prevents directory traversal
 	out, err := os.Create(filePath)
 	if err != nil {
 		log.Error(err)
@@ -234,6 +238,7 @@ func DownloadFile(URL string, useCache, showInfo, showProgressBar, insecureSkipV
 
 	if err != nil {
 		out.Close()
+		//nolint:gosec // G703: filePath is safely constructed using path.Base() which prevents directory traversal
 		_ = os.Remove(filePath)
 	}
 
@@ -276,6 +281,7 @@ func CheckConnection(url string, timeOut int) error {
 
 // FileExists checks if filePath is an actual file in the local file system
 func FileExists(filePath string) bool {
+	//nolint:gosec // G703: filePath parameter is from trusted callers, path validation done at entry points
 	info, err := os.Stat(filePath)
 	if info == nil || os.IsNotExist(err) {
 		return false
