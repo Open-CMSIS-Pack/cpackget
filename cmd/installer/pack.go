@@ -353,7 +353,7 @@ func (p *PackType) purge() (bool, error) {
 
 	log.Debugf("Files to be purged \"%v\"", files)
 	if len(files) == 0 {
-		log.Infof("pack %s.%s already removed from %s", p.path, p.Version, Installation.DownloadDir)
+		// log.Infof("pack %s already removed from %s", p.path, Installation.DownloadDir)
 		return true, nil
 	}
 

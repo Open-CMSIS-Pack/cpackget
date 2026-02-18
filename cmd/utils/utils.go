@@ -21,6 +21,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 
@@ -29,6 +30,50 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/html/charset"
 )
+
+// FileURLToPath converts a file:// URL to a local file system path.
+// It handles various formats including:
+//   - file:///path/to/file (Unix)
+//   - file://localhost/path/to/file
+//   - file:///C:/path/to/file (Windows)
+//   - file://localhost/C:/path/to/file (Windows)
+//
+// The function performs URL decoding and removes leading slashes on Windows
+// for absolute paths with drive letters.
+func FileURLToPath(fileURL string) (string, error) {
+	if !strings.HasPrefix(fileURL, "file://") {
+		// Not a file URL, return as is
+		return fileURL, nil
+	}
+
+	// Remove file:// prefix
+	path := strings.TrimPrefix(fileURL, "file://")
+
+	// Remove localhost if present
+	path = strings.TrimPrefix(path, "localhost/")
+	path = strings.TrimPrefix(path, "localhost\\")
+
+	// URL decode (handles %20 and other encoded characters)
+	decodedPath, err := url.PathUnescape(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode file URL %q: %w", fileURL, err)
+	}
+
+	// On Windows, remove leading slash before drive letter (e.g., /C:/ -> C:/)
+	if runtime.GOOS == "windows" {
+		// Match patterns like /C:/ or /c:/
+		if len(decodedPath) >= 3 && decodedPath[0] == '/' &&
+			((decodedPath[1] >= 'A' && decodedPath[1] <= 'Z') || (decodedPath[1] >= 'a' && decodedPath[1] <= 'z')) &&
+			decodedPath[2] == ':' {
+			decodedPath = decodedPath[1:]
+		}
+	}
+
+	// Convert forward slashes to backslashes on Windows
+	decodedPath = filepath.FromSlash(decodedPath)
+
+	return decodedPath, nil
+}
 
 var gEncodedProgress = false
 var gSkipTouch = false
@@ -166,6 +211,7 @@ func DownloadFile(URL string, useCache, showInfo, showProgressBar, insecureSkipV
 
 	req, _ := http.NewRequest("GET", URL, nil)
 	req.Header.Add("User-Agent", gUserAgent)
+	//nolint:gosec // G704: URL is provided as function parameter and validated by caller
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Error(err)
@@ -176,6 +222,7 @@ func DownloadFile(URL string, useCache, showInfo, showProgressBar, insecureSkipV
 	if resp.StatusCode == http.StatusNotFound {
 		// resend GET request without user agent header
 		req.Header.Del("User-Agent")
+		//nolint:gosec // G704: URL is provided as function parameter and validated by caller
 		resp, err = client.Do(req)
 		if err != nil {
 			log.Error(err)
@@ -189,6 +236,7 @@ func DownloadFile(URL string, useCache, showInfo, showProgressBar, insecureSkipV
 			// add cookie and resend GET request
 			log.Debugf("Cookie: %s", cookie)
 			req.Header.Add("Cookie", cookie)
+			//nolint:gosec // G704: URL is provided as function parameter and validated by caller
 			resp, err = client.Do(req)
 			if err != nil {
 				log.Error(err)
@@ -202,6 +250,7 @@ func DownloadFile(URL string, useCache, showInfo, showProgressBar, insecureSkipV
 		return "", fmt.Errorf("%q: %w", URL, errs.ErrBadRequest)
 	}
 
+	//nolint:gosec // G703: filePath is safely constructed using path.Base() which prevents directory traversal
 	out, err := os.Create(filePath)
 	if err != nil {
 		log.Error(err)
@@ -234,6 +283,7 @@ func DownloadFile(URL string, useCache, showInfo, showProgressBar, insecureSkipV
 
 	if err != nil {
 		out.Close()
+		//nolint:gosec // G703: filePath is safely constructed using path.Base() which prevents directory traversal
 		_ = os.Remove(filePath)
 	}
 
@@ -276,6 +326,7 @@ func CheckConnection(url string, timeOut int) error {
 
 // FileExists checks if filePath is an actual file in the local file system
 func FileExists(filePath string) bool {
+	//nolint:gosec // G703: filePath parameter is from trusted callers, path validation done at entry points
 	info, err := os.Stat(filePath)
 	if info == nil || os.IsNotExist(err) {
 		return false

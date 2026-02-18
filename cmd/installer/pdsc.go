@@ -4,7 +4,6 @@
 package installer
 
 import (
-	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -126,28 +125,25 @@ func (p *PdscType) uninstall(installation *PacksInstallationType) error {
 		return errs.ErrPdscEntryNotFound
 	}
 
-	toRemove := []xml.PdscTag{}
-	dirName := filepath.Dir(p.path)
-	if dirName == "" || dirName == "." {
-		toRemove = tags
-	} else {
-		targetPath := strings.ReplaceAll(dirName, "\\", "/")
-		for _, tag := range tags {
-			tagURL := strings.ReplaceAll(tag.URL, "\\", "/")
-			if strings.Contains(tagURL, targetPath) {
-				toRemove = append(toRemove, tag)
-			}
-		}
+	var err error
+	// Convert file:// URLs to local file system paths
+	p.path, err = utils.FileURLToPath(tags[0].URL + tags[0].PdscFileName())
+	if err != nil {
+		return err
+	}
+	tag, err := p.toPdscTag()
+	if err != nil {
+		return err
 	}
 
-	if len(toRemove) == 0 {
+	if p.Version != "" && tag.Version != p.Version {
 		return errs.ErrPdscEntryNotFound
 	}
 
-	for _, tag := range toRemove {
-		if err := installation.LocalPidx.RemovePdsc(tag); err != nil {
-			return err
-		}
+	tag.Version = "" // version is not relevant for uninstall, since we want to remove the pack even if the version in the pdsc file is different
+	if err := installation.LocalPidx.RemovePdsc(tag); err != nil {
+		return err
 	}
+
 	return nil
 }
