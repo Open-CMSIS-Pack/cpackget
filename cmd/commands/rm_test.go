@@ -39,6 +39,7 @@ var rmCmdTests = []TestCase{
 		createPackRoot: true,
 		defaultMode:    true,
 		expectedStdout: []string{"Removing [Vendor.Pack.1.2.3 Vendor.PackInstalledViaPdsc.pdsc]"},
+		expectedErr:    errs.ErrAlreadyLogged,
 		setUpFunc: func(t *TestCase) {
 			packRoot := os.Getenv("CMSIS_PACK_ROOT")
 			packFolder := filepath.Join(packRoot, "Vendor", "Pack", "1.2.3")
@@ -56,6 +57,7 @@ var rmCmdTests = []TestCase{
 		args:           []string{"rm", "Vendor.Pack.1.2.3", "Vendor.PackInstalledViaPdsc.pdsc"},
 		createPackRoot: true,
 		expectedStdout: []string{"Removing [Vendor.Pack.1.2.3 Vendor.PackInstalledViaPdsc.pdsc]"},
+		expectedErr:    errs.ErrAlreadyLogged,
 		setUpFunc: func(t *TestCase) {
 			packRoot := os.Getenv("CMSIS_PACK_ROOT")
 			packFolder := filepath.Join(packRoot, "Vendor", "Pack", "1.2.3")
