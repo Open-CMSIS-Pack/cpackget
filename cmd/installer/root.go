@@ -320,7 +320,16 @@ func RemovePack(packPath string, purge, testing bool) (bool, error) {
 			}
 		}
 
-		return false, Installation.touchPackIdx()
+		if err = Installation.touchPackIdx(); err != nil {
+			return false, err
+		}
+
+		// If the pack was installed via PDSC file, we also need to remove the PDSC file reference from local_repository.pidx
+		// for that reason we prepare the pack again to find the installed versions and get the PDSC file path
+		pack, err = preparePack(packPath, true, false, false, true)
+		if err != nil {
+			return false, err
+		}
 	}
 
 	if len(pack.installedVersions) > 0 { // not installed but found in local_repository
