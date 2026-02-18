@@ -493,3 +493,8 @@ func (p *PdscTag) YamlPackID() string {
 func (p *PdscTag) PackURL() string {
 	return p.URL + p.VName() + utils.SemverStripMeta(p.Version) + utils.PackExtension
 }
+
+// PdscFileName returns a string with how the pack's pdsc file name would be: Vendor.PackName.pdsc
+func (p *PdscTag) PdscFileName() string {
+	return p.VName() + utils.PdscExtension
+}
