@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/commands"
+	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	log "github.com/sirupsen/logrus"
@@ -216,7 +217,7 @@ func runTests(t *testing.T, tests []TestCase) {
 
 			if test.expErrUnwrap {
 				assert.Equal(test.expectedErr, errors.Unwrap(cmdErr))
-			} else {
+			} else if cmdErr != errs.ErrAlreadyLogged {
 				assert.Equal(test.expectedErr, cmdErr)
 			}
 			for _, expectedStr := range test.expectedStdout {

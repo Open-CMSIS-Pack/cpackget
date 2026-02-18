@@ -83,6 +83,9 @@ func matchPackFileName(packFileName string) []string {
 	matches := packFileNameRegex.FindStringSubmatch(packFileName)
 
 	// Golang's optional regex groups generate empty group matches, need to filter them out
+	if len(matches) == 6 && matches[5] == "pdsc" {
+		matches[5] = "" // if it's a pdsc file, we don't want to return the extension as a match group
+	}
 	nonEmpty := []string{}
 	for _, group := range matches {
 		if group != "" {

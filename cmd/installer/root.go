@@ -302,6 +302,8 @@ func RemovePack(packPath string, purge, testing bool) (bool, error) {
 		return false, err
 	}
 
+	removeInstalled := false
+
 	if pack.isInstalled {
 		// TODO: If removing-all is enabled, get rid of the version
 		// pack.Version = ""
@@ -323,6 +325,7 @@ func RemovePack(packPath string, purge, testing bool) (bool, error) {
 		if err = Installation.touchPackIdx(); err != nil {
 			return false, err
 		}
+		removeInstalled = true
 
 		// If the pack was installed via PDSC file, we also need to remove the PDSC file reference from local_repository.pidx
 		// for that reason we prepare the pack again to find the installed versions and get the PDSC file path
@@ -337,14 +340,17 @@ func RemovePack(packPath string, purge, testing bool) (bool, error) {
 		return false, err
 	}
 
-	if purge {
+	if purge && !removeInstalled {
 		pack.Unlock()
 		ok, err := pack.purge()
 		return ok, err
 	}
 
-	log.Errorf("Pack \"%v\" is not installed", packPath)
-	return false, errs.ErrPackNotInstalled
+	if !removeInstalled {
+		log.Errorf("Pack \"%v\" is not installed", packPath)
+		return false, errs.ErrPackNotInstalled
+	}
+	return false, err
 }
 
 // AddPdsc adds a PDSC (Pack Description) file to the installation.
