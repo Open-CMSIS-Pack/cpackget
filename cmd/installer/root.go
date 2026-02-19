@@ -1030,6 +1030,7 @@ func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemaining
 		}
 	}
 
+	savedIndexPath := Installation.PublicIndexXML.GetFileName()
 	Installation.PublicIndexXML.SetFileName(indexPath) // The downloaded index.pidx
 	if err := Installation.PublicIndexXML.Read(); err != nil {
 		return err
@@ -1061,6 +1062,8 @@ func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemaining
 			return err
 		}
 	}
+
+	Installation.PublicIndexXML.SetFileName(savedIndexPath)
 
 	if downloadRemainingPdscFiles {
 		err = DownloadPDSCFiles(true, insecureSkipVerify, concurrency, timeout)
