@@ -5,4 +5,4 @@ package main
 
 var version string
 
-const copyRight = "(C) 2021-2023 Linaro, 2024-2025 Arm Ltd."
+const copyRight = "(C) 2021-2023 Linaro, 2024-2026 Arm Ltd."
