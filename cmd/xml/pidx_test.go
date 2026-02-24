@@ -50,7 +50,7 @@ func TestPdscTag(t *testing.T) {
 		packURL := pdscTag.PackURL()
 		assert.NotContains(packURL, "+build456")
 		assert.Contains(packURL, "1.2.3")
-		assert.Equal("http://vendor.com/TheVendor.ThePack1.2.3.pack", packURL)
+		assert.Equal("http://vendor.com/TheVendor.ThePack.1.2.3.pack", packURL)
 	})
 }
 

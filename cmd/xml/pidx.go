@@ -495,7 +495,7 @@ func (p *PdscTag) YamlPackID() string {
 // PackURL constructs and returns the full URL of the pack file
 // by concatenating the base URL with the key and the ".pack" extension.
 func (p *PdscTag) PackURL() string {
-	return p.URL + p.VName() + utils.SemverStripMeta(p.Version) + utils.PackExtension
+	return p.URL + p.VName() + "." + utils.SemverStripMeta(p.Version) + utils.PackExtension
 }
 
 // PdscFileName returns a string with how the pack's pdsc file name would be: Vendor.PackName.pdsc
