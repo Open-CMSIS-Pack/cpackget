@@ -4,6 +4,7 @@
 package installer
 
 import (
+	"io/fs"
 	"runtime"
 	"strings"
 
@@ -132,7 +133,7 @@ func (p *PdscType) uninstall(installation *PacksInstallationType) error {
 		return err
 	}
 	tag, err := p.toPdscTag()
-	if err != nil {
+	if err != nil && err != err.(*fs.PathError) {
 		return err
 	}
 

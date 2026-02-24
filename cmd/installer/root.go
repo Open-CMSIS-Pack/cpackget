@@ -616,7 +616,7 @@ func InitializeCache() error {
 		cacheTag := xml.PdscTag{
 			Vendor:  packInfo.Vendor,
 			Name:    packInfo.Pack,
-			Version: releaseTag.Version,
+			Version: utils.SemverStripMeta(releaseTag.Version),
 		}
 		if releaseTag.URL == "" {
 			cacheTag.URL = pdscXML.BaseURL()
@@ -2193,7 +2193,7 @@ func (p *PacksInstallationType) downloadPdscFile(pdscTag xml.PdscTag, skipInstal
 	cacheTag := xml.PdscTag{
 		Vendor:  pdscTag.Vendor,
 		Name:    pdscTag.Name,
-		Version: releaseTag.Version,
+		Version: utils.SemverStripMeta(releaseTag.Version),
 	}
 	if releaseTag.URL == "" {
 		cacheTag.URL = pdscXML.BaseURL()

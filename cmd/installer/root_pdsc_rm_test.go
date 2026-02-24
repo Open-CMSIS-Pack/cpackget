@@ -4,11 +4,13 @@
 package installer_test
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/installer"
+	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -128,6 +130,41 @@ func TestRemovePdsc(t *testing.T) {
 		// Make sure 1.2.4 is still present in local_repository.pidx
 		// tags := installer.Installation.LocalPidx.ListPdscTags()
 		// assert.Greater(len(tags), 0)
+	})
+
+	t.Run("test remove a pdsc whose source file no longer exists", func(t *testing.T) {
+		localTestingDir := "test-remove-pdsc-source-file-missing"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		// Create a temporary copy of a PDSC file so we can delete it later
+		tempDir := filepath.Join(localTestingDir, "temp-pdsc")
+		assert.Nil(os.MkdirAll(tempDir, 0700))
+		tempPdsc := filepath.Join(tempDir, "TheVendor.PackName.pdsc")
+		assert.Nil(utils.CopyFile(pdscPack123, tempPdsc))
+
+		// Add the PDSC — this registers it in local_repository.pidx
+		err := installer.AddPdsc(tempPdsc)
+		assert.Nil(err)
+
+		// Verify it is registered
+		tags := installer.Installation.LocalPidx.ListPdscTags()
+		assert.Equal(1, len(tags))
+
+		// Now delete the source PDSC file so the path in local_repository.pidx
+		// points to a file that no longer exists
+		assert.Nil(os.Remove(tempPdsc))
+		assert.False(utils.FileExists(tempPdsc))
+
+		// Remove the PDSC entry — should succeed without error
+		err = installer.RemovePdsc(shortenPackPath(pdscPack123, true))
+		assert.Nil(err)
+
+		// Verify the entry was removed from local_repository.pidx
+		tags = installer.Installation.LocalPidx.ListPdscTags()
+		assert.Equal(0, len(tags))
 	})
 
 	t.Run("test remove a pdsc that does not exist", func(t *testing.T) {

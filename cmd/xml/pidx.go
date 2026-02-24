@@ -103,6 +103,7 @@ func (p *PidxXML) Clear() {
 //	error: An error if the PdscTag already exists, otherwise nil.
 func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 	log.Debugf("Adding pdsc tag %v to %q", pdsc, p.fileName)
+	pdsc.Version = utils.SemverStripMeta(pdsc.Version)
 	if p.HasPdsc(pdsc) != PdscIndexNotFound {
 		return errs.ErrPdscEntryExists
 	}
@@ -134,6 +135,7 @@ func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 //   - error: Always returns nil in the current implementation
 func (p *PidxXML) AddReplacePdsc(cTag PdscTag) error {
 	log.Debugf("AddReplacePdsc pdsc tag %v to %q", cTag, p.fileName)
+	cTag.Version = utils.SemverStripMeta(cTag.Version)
 	name := strings.ToLower(cTag.VName())
 	key, ok := p.pdscListName[name]
 	if ok {
@@ -182,6 +184,7 @@ func (p *PidxXML) AddReplacePdsc(cTag PdscTag) error {
 //	error - An error if the PDSC tag is not found, otherwise nil.
 func (p *PidxXML) ReplacePdscVersion(pdsc PdscTag) error {
 	log.Debugf("Replacing version of pdsc tag %v", pdsc)
+	pdsc.Version = utils.SemverStripMeta(pdsc.Version)
 	name := strings.ToLower(pdsc.VName())
 	key, ok := p.pdscListName[name]
 	if !ok {
@@ -435,6 +438,7 @@ func (p *PidxXML) Read() error {
 	}
 
 	for _, pdsc := range p.Pindex.Pdscs {
+		pdsc.Version = utils.SemverStripMeta(pdsc.Version)
 		key := pdsc.Key()
 		name := strings.ToLower(pdsc.VName())
 		//		log.Debugf("Registring %q", key)

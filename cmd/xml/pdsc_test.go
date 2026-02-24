@@ -100,7 +100,7 @@ func TestPdscXML(t *testing.T) {
 		assert.Equal(pdsc.URL, "file:///testdata/devpack/1.2.3/")
 		assert.Equal(pdsc.Name, "DevPack")
 		assert.Equal(0, utils.SemverCompare(pdsc.LatestVersion(), "1.2.3"))
-		assert.Equal("1.2.3+meta3", pdsc.LatestVersion())
+		assert.Equal("1.2.3", pdsc.LatestVersion())
 	})
 
 	t.Run("test finding release tag", func(t *testing.T) {
