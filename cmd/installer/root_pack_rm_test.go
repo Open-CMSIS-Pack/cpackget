@@ -289,4 +289,135 @@ func TestRemovePack(t *testing.T) {
 		// Assert that the file did not get created during the operation
 		assert.False(utils.FileExists(pdscFilePath))
 	})
+
+	t.Run("test remove pack registered only via AddPdsc using Vendor::Name", func(t *testing.T) {
+		localTestingDir := "test-remove-pack-pdsc-only-vendor-name"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		// Register a pack via AddPdsc (only creates entry in local_repository.pidx)
+		err := installer.AddPdsc(pdscPack123)
+		assert.Nil(err)
+
+		// Verify it is registered
+		tags := installer.Installation.LocalPidx.ListPdscTags()
+		assert.Equal(1, len(tags))
+
+		// RemovePack using legacy PackID format Vendor::Name
+		_, err = installer.RemovePack("TheVendor::PackName", false, true)
+		assert.Nil(err)
+
+		// Verify the entry was removed from local_repository.pidx
+		tags = installer.Installation.LocalPidx.ListPdscTags()
+		assert.Equal(0, len(tags))
+	})
+
+	t.Run("test remove pack registered only via AddPdsc using Vendor::Name@Version", func(t *testing.T) {
+		localTestingDir := "test-remove-pack-pdsc-only-vendor-name-version"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		// Register a pack via AddPdsc
+		err := installer.AddPdsc(pdscPack123)
+		assert.Nil(err)
+
+		// Verify it is registered
+		tags := installer.Installation.LocalPidx.ListPdscTags()
+		assert.Equal(1, len(tags))
+
+		// RemovePack using legacy PackID format Vendor::Name@Version
+		_, err = installer.RemovePack("TheVendor::PackName@1.2.3", false, true)
+		assert.Nil(err)
+
+		// Verify the entry was removed from local_repository.pidx
+		tags = installer.Installation.LocalPidx.ListPdscTags()
+		assert.Equal(0, len(tags))
+	})
+
+	t.Run("test remove pack registered only via AddPdsc using Vendor.Name", func(t *testing.T) {
+		localTestingDir := "test-remove-pack-pdsc-only-dotted-name"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		// Register a pack via AddPdsc
+		err := installer.AddPdsc(pdscPack123)
+		assert.Nil(err)
+
+		// Verify it is registered
+		tags := installer.Installation.LocalPidx.ListPdscTags()
+		assert.Equal(1, len(tags))
+
+		// RemovePack using dotted PackID format Vendor.Name
+		_, err = installer.RemovePack("TheVendor.PackName", false, true)
+		assert.Nil(err)
+
+		// Verify the entry was removed from local_repository.pidx
+		tags = installer.Installation.LocalPidx.ListPdscTags()
+		assert.Equal(0, len(tags))
+	})
+
+	t.Run("test remove pack registered only via AddPdsc whose source file no longer exists", func(t *testing.T) {
+		localTestingDir := "test-remove-pack-pdsc-only-source-missing"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		// Create a temporary copy of a PDSC file so we can delete it later
+		tempDir := filepath.Join(localTestingDir, "temp-pdsc")
+		assert.Nil(os.MkdirAll(tempDir, 0700))
+		tempPdsc := filepath.Join(tempDir, "TheVendor.PackName.pdsc")
+		assert.Nil(utils.CopyFile(pdscPack123, tempPdsc))
+
+		// Register via AddPdsc
+		err := installer.AddPdsc(tempPdsc)
+		assert.Nil(err)
+
+		// Verify it is registered
+		tags := installer.Installation.LocalPidx.ListPdscTags()
+		assert.Equal(1, len(tags))
+
+		// Delete the source file
+		assert.Nil(os.Remove(tempPdsc))
+		assert.False(utils.FileExists(tempPdsc))
+
+		// RemovePack should still succeed
+		_, err = installer.RemovePack("TheVendor::PackName", false, true)
+		assert.Nil(err)
+
+		// Verify the entry was removed from local_repository.pidx
+		tags = installer.Installation.LocalPidx.ListPdscTags()
+		assert.Equal(0, len(tags))
+	})
+
+	t.Run("test remove pack registered via AddPdsc with wrong version returns error", func(t *testing.T) {
+		localTestingDir := "test-remove-pack-pdsc-only-wrong-version"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		// Register a pack via AddPdsc (version in pdsc is 1.2.3)
+		err := installer.AddPdsc(pdscPack123)
+		assert.Nil(err)
+
+		// Verify it is registered
+		tags := installer.Installation.LocalPidx.ListPdscTags()
+		assert.Equal(1, len(tags))
+
+		// RemovePack with a non-matching version should fail
+		_, err = installer.RemovePack("TheVendor::PackName@9.9.9", false, true)
+		assert.NotNil(err)
+		assert.Equal(errs.ErrPdscEntryNotFound, err)
+
+		// Verify the entry is still present in local_repository.pidx
+		tags = installer.Installation.LocalPidx.ListPdscTags()
+		assert.Equal(1, len(tags))
+	})
 }

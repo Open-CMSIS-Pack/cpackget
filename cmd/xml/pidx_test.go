@@ -38,6 +38,20 @@ func TestPdscTag(t *testing.T) {
 
 		assert.Equal(pdscTag.YamlPackID(), "TheVendor::ThePack@0.0.1")
 	})
+
+	t.Run("test PdscTag PackURL strips meta from version", func(t *testing.T) {
+		pdscTag := xml.PdscTag{
+			Vendor:  "TheVendor",
+			Name:    "ThePack",
+			Version: "1.2.3+build456",
+			URL:     "http://vendor.com/",
+		}
+
+		packURL := pdscTag.PackURL()
+		assert.NotContains(packURL, "+build456")
+		assert.Contains(packURL, "1.2.3")
+		assert.Equal("http://vendor.com/TheVendor.ThePack.1.2.3.pack", packURL)
+	})
 }
 
 func TestPidxXML(t *testing.T) {

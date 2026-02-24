@@ -68,7 +68,7 @@ func NewPdscXML(fileName string) *PdscXML {
 func (p *PdscXML) LatestVersion() string {
 	releases := p.ReleasesTag.Releases
 	if len(releases) > 0 {
-		return releases[0].Version
+		return utils.SemverStripMeta(releases[0].Version)
 	}
 	return ""
 }

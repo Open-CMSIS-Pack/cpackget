@@ -1148,6 +1148,180 @@ func removePackRoot(packRoot string) {
 	os.RemoveAll(packRoot)
 }
 
+func TestInitializeCacheMetaVersionStripping(t *testing.T) {
+
+	assert := assert.New(t)
+
+	t.Run("test InitializeCache strips meta from version in cache.pidx", func(t *testing.T) {
+		localTestingDir := "test-cache-meta-stripping"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		// Create a PDSC file with a meta version in .Web/
+		pdscContent := `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+   <vendor>TheVendor</vendor>
+   <url>http://vendor.com/</url>
+   <name>MetaPack</name>
+   <description>Pack with meta version for testing</description>
+   <releases>
+      <release version="1.2.3+build456" date="2024-01-01">Release with meta.</release>
+      <release version="1.2.2">Previous release.</release>
+   </releases>
+</package>`
+		pdscFilePath := filepath.Join(installer.Installation.WebDir, "TheVendor.MetaPack.pdsc")
+		assert.Nil(os.WriteFile(pdscFilePath, []byte(pdscContent), 0600))
+
+		// Run InitializeCache
+		assert.Nil(installer.InitializeCache())
+
+		// Read the cache.pidx and verify the version does NOT contain meta info
+		cacheContent, err := os.ReadFile(installer.Installation.PublicCacheIndex)
+		assert.Nil(err)
+		cacheStr := string(cacheContent)
+
+		assert.NotContains(cacheStr, "+build456", "cache.pidx should not contain build metadata")
+		assert.Contains(cacheStr, "1.2.3", "cache.pidx should contain the base version")
+		assert.Contains(cacheStr, "TheVendor", "cache.pidx should contain the vendor")
+		assert.Contains(cacheStr, "MetaPack", "cache.pidx should contain the pack name")
+	})
+
+	t.Run("test InitializeCache strips complex meta from version in cache.pidx", func(t *testing.T) {
+		localTestingDir := "test-cache-complex-meta-stripping"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		// Create a PDSC file with a complex meta version in .Web/
+		pdscContent := `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+   <vendor>TheVendor</vendor>
+   <url>http://vendor.com/</url>
+   <name>ComplexMetaPack</name>
+   <description>Pack with complex meta version for testing</description>
+   <releases>
+      <release version="2.0.0+20240101.git.abc123" date="2024-01-01">Complex meta release.</release>
+   </releases>
+</package>`
+		pdscFilePath := filepath.Join(installer.Installation.WebDir, "TheVendor.ComplexMetaPack.pdsc")
+		assert.Nil(os.WriteFile(pdscFilePath, []byte(pdscContent), 0600))
+
+		// Run InitializeCache
+		assert.Nil(installer.InitializeCache())
+
+		// Read the cache.pidx and verify the version does NOT contain meta info
+		cacheContent, err := os.ReadFile(installer.Installation.PublicCacheIndex)
+		assert.Nil(err)
+		cacheStr := string(cacheContent)
+
+		assert.NotContains(cacheStr, "+20240101.git.abc123", "cache.pidx should not contain complex build metadata")
+		assert.Contains(cacheStr, "2.0.0", "cache.pidx should contain the base version")
+	})
+
+	t.Run("test InitializeCache preserves prerelease but strips meta", func(t *testing.T) {
+		localTestingDir := "test-cache-prerelease-meta-stripping"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		// Create a PDSC file with a version that has prerelease AND meta in .Web/
+		pdscContent := `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+   <vendor>TheVendor</vendor>
+   <url>http://vendor.com/</url>
+   <name>PrereleasePack</name>
+   <description>Pack with prerelease and meta version for testing</description>
+   <releases>
+      <release version="1.0.0-alpha.1+build789" date="2024-01-01">Alpha with meta.</release>
+   </releases>
+</package>`
+		pdscFilePath := filepath.Join(installer.Installation.WebDir, "TheVendor.PrereleasePack.pdsc")
+		assert.Nil(os.WriteFile(pdscFilePath, []byte(pdscContent), 0600))
+
+		// Run InitializeCache
+		assert.Nil(installer.InitializeCache())
+
+		// Read the cache.pidx and verify meta is stripped but prerelease is preserved
+		cacheContent, err := os.ReadFile(installer.Installation.PublicCacheIndex)
+		assert.Nil(err)
+		cacheStr := string(cacheContent)
+
+		assert.NotContains(cacheStr, "+build789", "cache.pidx should not contain build metadata")
+		assert.Contains(cacheStr, "1.0.0-alpha.1", "cache.pidx should preserve prerelease info")
+	})
+
+	t.Run("test InitializeCache with version without meta remains unchanged", func(t *testing.T) {
+		localTestingDir := "test-cache-no-meta"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		// Create a PDSC file with a normal version (no meta) in .Web/
+		pdscContent := `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="PACK.xsd">
+   <vendor>TheVendor</vendor>
+   <url>http://vendor.com/</url>
+   <name>NormalPack</name>
+   <description>Pack with normal version for testing</description>
+   <releases>
+      <release version="3.4.5" date="2024-01-01">Normal release.</release>
+   </releases>
+</package>`
+		pdscFilePath := filepath.Join(installer.Installation.WebDir, "TheVendor.NormalPack.pdsc")
+		assert.Nil(os.WriteFile(pdscFilePath, []byte(pdscContent), 0600))
+
+		// Run InitializeCache
+		assert.Nil(installer.InitializeCache())
+
+		// Read the cache.pidx and verify the version is present as-is
+		cacheContent, err := os.ReadFile(installer.Installation.PublicCacheIndex)
+		assert.Nil(err)
+		cacheStr := string(cacheContent)
+
+		assert.Contains(cacheStr, "3.4.5", "cache.pidx should contain the version")
+		assert.Contains(cacheStr, "TheVendor", "cache.pidx should contain the vendor")
+		assert.Contains(cacheStr, "NormalPack", "cache.pidx should contain the pack name")
+	})
+}
+
+func TestIndexPidxMetaVersionStripping(t *testing.T) {
+
+	assert := assert.New(t)
+
+	t.Run("test index.pidx AddPdsc version with meta in update flow", func(t *testing.T) {
+		localTestingDir := "test-index-meta-stripping"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		// Simulate adding a pack entry with meta version to the public index
+		pdscTag := xml.PdscTag{
+			Vendor:  "TheVendor",
+			Name:    "MetaIndexPack",
+			Version: "1.5.0+meta123",
+			URL:     "http://vendor.com/",
+		}
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(pdscTag))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
+		// Read the index.pidx file and check its contents
+		indexContent, err := os.ReadFile(installer.Installation.PublicIndex)
+		assert.Nil(err)
+		indexStr := string(indexContent)
+
+		// The version in the index.pidx file should not contain the meta info
+		assert.NotContains(indexStr, "+meta123", "index.pidx should not contain build metadata")
+		assert.Contains(indexStr, "TheVendor", "index.pidx should contain the vendor")
+		assert.Contains(indexStr, "MetaIndexPack", "index.pidx should contain the pack name")
+	})
+}
+
 func TestSetPackRoot(t *testing.T) {
 
 	assert := assert.New(t)
