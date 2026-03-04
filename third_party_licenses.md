@@ -6,7 +6,7 @@
 | github.com/ProtonMail/go-crypto | v1.3.0  | [BSD-3-Clause](https://github.com/ProtonMail/go-crypto/blob/v1.3.0/LICENSE) |
 | github.com/ProtonMail/go-mime | v0.0.0-20230322103455-7d82a3887f2f  | [MIT](https://github.com/ProtonMail/go-mime/blob/7d82a3887f2f/LICENSE) |
 | github.com/ProtonMail/gopenpgp/v2 | v2.9.0  | [MIT](https://github.com/ProtonMail/gopenpgp/blob/v2.9.0/LICENSE) |
-| github.com/cloudflare/circl | v1.6.1  | [BSD-3-Clause](https://github.com/cloudflare/circl/blob/v1.6.1/LICENSE) |
+| github.com/cloudflare/circl | v1.6.3  | [BSD-3-Clause](https://github.com/cloudflare/circl/blob/v1.6.3/LICENSE) |
 | github.com/fsnotify/fsnotify | v1.9.0  | [BSD-3-Clause](https://github.com/fsnotify/fsnotify/blob/v1.9.0/LICENSE) |
 | github.com/gabriel-vasile/mimetype | v1.4.4  | [MIT](https://github.com/gabriel-vasile/mimetype/blob/v1.4.4/LICENSE) |
 | github.com/go-viper/mapstructure/v2 | v2.4.0  | [MIT](https://github.com/go-viper/mapstructure/blob/v2.4.0/LICENSE) |
@@ -33,7 +33,7 @@
 | go.yaml.in/yaml/v3 | v3.0.4  | [MIT](https://github.com/yaml/go-yaml/blob/v3.0.4/LICENSE) |
 | golang.org/x/crypto | v0.48.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.48.0:LICENSE) |
 | golang.org/x/mod/semver | v0.33.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.33.0:LICENSE) |
-| golang.org/x/net/html | v0.50.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.50.0:LICENSE) |
+| golang.org/x/net/html | v0.51.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.51.0:LICENSE) |
 | golang.org/x/sync/semaphore | v0.19.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.19.0:LICENSE) |
 | golang.org/x/sys | v0.41.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.41.0:LICENSE) |
 | golang.org/x/term | v0.40.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/term/+/v0.40.0:LICENSE) |
