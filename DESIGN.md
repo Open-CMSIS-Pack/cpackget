@@ -25,7 +25,12 @@
 
 ## 1. Introduction
 
-**cpackget** is a command-line package manager for [Open-CMSIS-Pack](https://www.open-cmsis-pack.org/) software packs, developed as part of the CMSIS-Toolbox. It enables developers to discover, install, update, and remove CMSIS-Pack packages on their local systems. The project is written in Go and licensed under Apache 2.0.
+**cpackget** is a command-line package manager for
+[Open-CMSIS-Pack](https://www.open-cmsis-pack.org/) software packs,
+developed as part of the CMSIS-Toolbox.
+It enables developers to discover, install, update, and remove
+CMSIS-Pack packages on their local systems.
+The project is written in Go and licensed under Apache 2.0.
 
 ### Key Capabilities
 
@@ -42,7 +47,7 @@
 
 ## 2. High-Level Architecture
 
-```
+```text
 ┌───────────────────────────────────────────────────────────────────┐
 │                          CLI Entry Point                          │
 │                         cmd/main.go                               │
@@ -115,7 +120,7 @@ cpackget manages an on-disk directory structure referred to as the **Pack Root**
 
 It can also be specified via the `CMSIS_PACK_ROOT` environment variable or the `--pack-root` flag.
 
-```
+```text
 <PackRoot>/
 ├── .Download/                        # Cached downloaded .pack files
 │   ├── Vendor.PackName.1.0.0.pack
@@ -145,13 +150,17 @@ It can also be specified via the `CMSIS_PACK_ROOT` environment variable or the `
 
 ### File Permissions
 
-As of v0.7.0, the pack root is **read-only by default**. cpackget manages file permissions internally via `LockPackRoot()` / `UnlockPackRoot()` and `SetReadOnly()` / `UnsetReadOnly()` utilities. This prevents accidental modification of managed content.
+As of v0.7.0, the pack root is **read-only by default**.
+cpackget manages file permissions internally via
+`LockPackRoot()` / `UnlockPackRoot()` and `SetReadOnly()` / `UnsetReadOnly()` utilities.
+This prevents accidental modification of managed content.
 
 ---
 
 ## 5. CLI Layer (`cmd/commands/`)
 
-The CLI is built with [Cobra](https://github.com/spf13/cobra). Each command is defined in its own file and registered in `root.go`.
+The CLI is built with [Cobra](https://github.com/spf13/cobra).
+Each command is defined in its own file and registered in `root.go`.
 
 ### Root Command (`root.go`)
 
@@ -167,6 +176,7 @@ Sets up the Cobra root command with global flags and the `configureInstaller` pr
 | `--version` | `-V` | Print version and exit |
 
 The `configureInstaller` pre-run hook:
+
 1. Resolves the pack root directory (flag → env var → OS default)
 2. Sets the pack root via `installer.SetPackRoot()`
 3. Validates its existence
@@ -261,7 +271,7 @@ type PackType struct {
 
 #### Pack Lifecycle Methods
 
-```
+```text
 preparePack()  →  fetch()  →  validate()  →  install()
                                                ├── checkEula()
                                                ├── extract files
@@ -511,11 +521,14 @@ Machine-readable progress output for tool integration (IDEs, CI systems).
 | `instNo` | Instance number (auto-incremented per download, links output to a filename) |
 | `filename` | Name of the file being processed |
 
-The `EncodedProgress` struct implements `io.Writer`, so it can be passed directly to an `io.MultiWriter` alongside the file output. Each `Write()` call updates the internal byte counter and emits a log line when the percentage changes.
+The `EncodedProgress` struct implements `io.Writer`, so it can be passed directly
+to an `io.MultiWriter` alongside the file output.
+Each `Write()` call updates the internal byte counter and emits a log line
+when the percentage changes.
 
 Output format — first message includes all fields, subsequent messages only percentage and count:
 
-```
+```text
 [I<instNo>:F"<filename>",T<max>,P<percent>]    // initial
 [I<instNo>:P<percent>,C<current>]               // updates
 ```
@@ -556,7 +569,7 @@ Signs packs by embedding a cryptographic signature in the ZIP comment field.
 
 #### Signature Format
 
-```
+```text
 cpackget-v<version>:<mode>:<payload1>[:<payload2>]
 ```
 
@@ -568,7 +581,7 @@ cpackget-v<version>:<mode>:<payload1>[:<payload2>]
 
 #### Signing Flow (X.509 Full Mode)
 
-```
+```text
 .pack file
   │
   ├─→ calculatePackHash()     →  SHA-256 of ZIP content
@@ -579,12 +592,13 @@ cpackget-v<version>:<mode>:<payload1>[:<payload2>]
 ```
 
 Main entry points:
+
 - `SignPack()` — Top-level function for creating a pack signature (X.509 or PGP)
 - `VerifyPackSignature()` — Top-level function for verifying a signed pack
 
 #### Verification Flow
 
-```
+```text
 .pack.signed file
   │
   ├─→ validateSignatureScheme()  →  Parse mode from ZIP comment
@@ -610,7 +624,7 @@ Main entry points:
 
 An interactive terminal UI built with [gocui](https://github.com/jroimartin/gocui) for displaying pack licenses:
 
-```
+```text
 ┌─── License: PackName ─────────────────────┐
 │                                           │
 │  <scrollable license text>                │
@@ -623,6 +637,7 @@ An interactive terminal UI built with [gocui](https://github.com/jroimartin/gocu
 ```
 
 Key functions:
+
 - `DisplayAndWaitForEULA()` — High-level function that shows a license and returns whether the user accepted
 - `NewLicenseWindow()` — Creates and configures the TUI window
 - `Setup()` — Initializes the gocui layout and key bindings
@@ -649,6 +664,7 @@ All errors are predefined constants in `errors.go`, allowing consistent error ch
 | EULA | `ErrEula` (internal, not surfaced to user) |
 
 Helper functions:
+
 - `Is()` — Wraps `errors.Is()` for convenience
 - `AlreadyLogged()` — Wraps errors to prevent the same message from being logged twice as the error travels up the call stack
 
@@ -658,7 +674,7 @@ Helper functions:
 
 ### 12.1 Pack Installation (`cpackget add`)
 
-```
+```text
 User input (pack ID / URL / path / PDSC)
   │
   ▼
@@ -681,7 +697,7 @@ installer.AddPack()
 
 ### 12.2 Public Index Update (`cpackget update-index`)
 
-```
+```text
 commands/update_index.go
   │
   ▼
@@ -696,7 +712,7 @@ installer.UpdatePublicIndex()
 
 ### 12.3 Pack Removal (`cpackget rm`)
 
-```
+```text
 commands/rm.go
   │
   ▼
@@ -710,7 +726,7 @@ installer.RemovePack()
 
 ### 12.4 Version Resolution
 
-```
+```text
 User specifies: Vendor::PackName@^1.2.0
   │
   ▼
@@ -740,7 +756,9 @@ cpackget supports flexible version matching, similar to npm or apt:
 | Patch (tilde) | `@~1.2.3` | Highest with same major.minor (≥1.2.3, <1.3.0) |
 | Range | `1.0.0:2.0.0` | Any version in [1.0.0, 2.0.0] |
 
-Versions follow [Semantic Versioning 2.0](https://semver.org/) with optional pre-release (`-alpha.1`) and build metadata (`+meta`) suffixes. Build metadata is stripped during comparison.
+Versions follow [Semantic Versioning 2.0](https://semver.org/) with optional
+pre-release (`-alpha.1`) and build metadata (`+meta`) suffixes.
+Build metadata is stripped during comparison.
 
 ---
 
@@ -802,11 +820,15 @@ for _, pdsc := range pdscsToUpdate {
 
 ### Signal Handling
 
-A dedicated goroutine listens for OS signals (`SIGINT`, `SIGTERM`). Long-running operations check the abort flag via `ShouldAbortFunction` so they can stop cleanly when the user presses Ctrl+C.
+A dedicated goroutine listens for OS signals (`SIGINT`, `SIGTERM`).
+Long-running operations check the abort flag via `ShouldAbortFunction`
+so they can stop cleanly when the user presses Ctrl+C.
 
 ### Progress Tracking
 
-`EncodedProgress` uses a mutex so multiple goroutines can safely update progress at the same time. The output format is machine-readable, designed for IDE and tool integration.
+`EncodedProgress` uses a mutex so multiple goroutines can safely update
+progress at the same time.
+The output format is machine-readable, designed for IDE and tool integration.
 
 ---
 
@@ -820,7 +842,7 @@ A dedicated goroutine listens for OS signals (`SIGINT`, `SIGTERM`). Long-running
 | **Strategy** | Version modifiers pick the right version-matching logic at runtime |
 | **Template Method** | `configureInstaller` pre-run hook runs the same setup for every command |
 | **Observer** | Signal watcher notifies long-running operations of user interrupts |
-| **Wrapper** | `installer.AddPack()` / `RemovePack()` provide a simple interface that hides the complex steps behind it |
+| **Wrapper** | `installer.AddPack()` / `RemovePack()` — simple interface hiding complex steps |
 | **Fixed Error Constants** | Predefined error values for consistent error-type checking |
 
 ---
@@ -851,7 +873,9 @@ A dedicated goroutine listens for OS signals (`SIGINT`, `SIGTERM`). Long-running
 
 ### Unit Tests
 
-Each package has comprehensive unit tests (`*_test.go` files) co-located with production code. Tests use the `testify` assertion library.
+Each package has comprehensive unit tests (`*_test.go` files)
+co-located with production code.
+Tests use the `testify` assertion library.
 
 ### Platform-Specific Tests
 
@@ -872,6 +896,7 @@ The `testdata/` directory provides fixtures for testing:
 ### Integration Testing
 
 Integration test fixtures in `testdata/integration/` include:
+
 - Sample public indexes (`SamplePublicIndex.pidx`)
 - Packs at various versions (`0.1.0/`, `1.2.3/`, `1.2.4/`)
 - Pre-release versions (`1.2.3-alpha.1.0/`)
