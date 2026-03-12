@@ -602,6 +602,12 @@ func SetReadOnlyR(path string) {
 		return
 	}
 
+	root, err := os.OpenRoot(path)
+	if err != nil {
+		return
+	}
+	defer root.Close()
+
 	// At this point all files and subdirs should be set to read-only recurisively
 	// there's only one catch that files and subdirs need to be set to read-only before
 	// its parent directory. This is why dirsByLevel exist. It'll help set read-only
@@ -609,16 +615,21 @@ func SetReadOnlyR(path string) {
 	dirsByLevel := make(map[int][]string)
 	maxLevel := -1
 
-	_ = filepath.WalkDir(path, func(path string, info fs.DirEntry, err error) error {
+	_ = filepath.WalkDir(path, func(currentPath string, info fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(path, currentPath)
 		if err != nil {
 			return err
 		}
 
 		if !info.IsDir() {
-			_ = os.Chmod(path, FileModeRO)
+			_ = root.Chmod(filepath.ToSlash(relPath), FileModeRO)
 		} else {
-			levelCount := strings.Count(path, "/") + strings.Count(path, "\\")
-			dirsByLevel[levelCount] = append(dirsByLevel[levelCount], path)
+			levelCount := strings.Count(relPath, "/") + strings.Count(relPath, "\\")
+			dirsByLevel[levelCount] = append(dirsByLevel[levelCount], relPath)
 			if levelCount > maxLevel {
 				maxLevel = levelCount
 			}
@@ -631,7 +642,7 @@ func SetReadOnlyR(path string) {
 	for level := maxLevel; level >= 0; level-- {
 		if dirs, ok := dirsByLevel[level]; ok {
 			for _, dir := range dirs {
-				_ = os.Chmod(dir, DirModeRO)
+				_ = root.Chmod(filepath.ToSlash(dir), DirModeRO)
 			}
 		}
 	}
@@ -659,7 +670,18 @@ func UnsetReadOnlyR(path string) {
 		return
 	}
 
-	_ = filepath.WalkDir(path, func(path string, info fs.DirEntry, err error) error {
+	root, err := os.OpenRoot(path)
+	if err != nil {
+		return
+	}
+	defer root.Close()
+
+	_ = filepath.WalkDir(path, func(currentPath string, info fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(path, currentPath)
 		if err != nil {
 			return err
 		}
@@ -668,7 +690,7 @@ func UnsetReadOnlyR(path string) {
 		if info.IsDir() {
 			mode = DirModeRW
 		}
-		_ = os.Chmod(path, mode)
+		_ = root.Chmod(filepath.ToSlash(relPath), mode)
 
 		return nil
 	})
