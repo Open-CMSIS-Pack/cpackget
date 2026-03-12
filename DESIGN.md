@@ -99,7 +99,7 @@ The architecture follows a layered design:
 ## 3. Module Overview
 
 | Package | Path | Responsibility |
-|---|---|---|
+| --- | --- | --- |
 | `main` | `cmd/main.go` | Entry point, logging setup, signal watcher, version |
 | `commands` | `cmd/commands/` | Cobra CLI command definitions and flag handling |
 | `installer` | `cmd/installer/` | Core business logic for pack management |
@@ -143,7 +143,7 @@ It can also be specified via the `CMSIS_PACK_ROOT` environment variable or the `
 ### Key Files
 
 | File | Purpose |
-|---|---|
+| --- | --- |
 | `.Web/index.pidx` | Main public pack index, downloaded from the upstream source |
 | `.Web/cache.pidx` | Locally-maintained cache tracking which PDSC files exist in `.Web/` |
 | `.Local/local_repository.pidx` | Registry of packs added via local PDSC file references |
@@ -167,7 +167,7 @@ Each command is defined in its own file and registered in `root.go`.
 Sets up the Cobra root command with global flags and the `configureInstaller` pre-run hook:
 
 | Global Flag | Short | Description |
-|---|---|---|
+| --- | --- | --- |
 | `--pack-root` | `-R` | Path to pack root (overrides `CMSIS_PACK_ROOT`) |
 | `--verbose` | `-v` | Enable debug-level logging |
 | `--quiet` | `-q` | Suppress all non-error output |
@@ -184,7 +184,7 @@ The `configureInstaller` pre-run hook:
 ### Command Summary
 
 | Command | File | Description |
-|---|---|---|
+| --- | --- | --- |
 | `init` | `init.go` | Creates pack root and downloads the public index |
 | `add` | `add.go` | Installs packs from index, URL, local file, or PDSC |
 | `rm` | `rm.go` | Removes installed packs (with optional cache purge) |
@@ -200,7 +200,7 @@ The `configureInstaller` pre-run hook:
 ### Subcommands of `list`
 
 | Subcommand | Description |
-|---|---|
+| --- | --- |
 | `list` (default) | Lists all installed packs |
 | `list --cached` | Lists packs in `.Download/` |
 | `list --public` | Lists all packs from the public index |
@@ -426,7 +426,7 @@ This is how cpackget interprets user input. Validation helpers:
 The `ExtractPackInfo()` function parses any of these formats:
 
 | Input Format | Example | Type |
-|---|---|---|
+| --- | --- | --- |
 | Pack ID (dotted) | `Vendor.PackName.1.0.0` | Pack ID |
 | Pack ID (YAML) | `Vendor::PackName@1.0.0` | Pack ID |
 | Version modifier | `Vendor::PackName@^1.0.0` | Pack ID with modifier |
@@ -451,7 +451,7 @@ type PackInfo struct {
 #### Version Modifiers
 
 | Constant | Syntax | Meaning |
-|---|---|---|
+| --- | --- | --- |
 | `ExactVersion` (0) | `@1.2.3` | Install exactly this version |
 | `LatestVersion` (1) | `@latest` | Install the latest available version |
 | `AnyVersion` (2) | (none) | Use any/latest if not installed |
@@ -516,7 +516,7 @@ Machine-readable progress output for tool integration (IDEs, CI systems).
 `NewEncodedProgress(max int64, instNo int, filename string)` creates a new progress tracker:
 
 | Parameter | Description |
-|---|---|
+| --- | --- |
 | `max` | Total size in bytes (used to calculate percentage) |
 | `instNo` | Instance number (auto-incremented per download, links output to a filename) |
 | `filename` | Name of the file being processed |
@@ -536,7 +536,7 @@ Output format — first message includes all fields, subsequent messages only pe
 Field codes used across encoded progress messages:
 
 | Code | Meaning |
-|---|---|
+| --- | --- |
 | `I` | Instance number (always counts up), connected to the filename |
 | `F` | Filename currently processed |
 | `T` | Total bytes of file or number of files |
@@ -574,7 +574,7 @@ cpackget-v<version>:<mode>:<payload1>[:<payload2>]
 ```
 
 | Mode | Code | Payload | Security Level |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Full (X.509) | `f` | `<base64-cert>:<base64-signed-hash>` | Highest — integrity + authenticity |
 | Cert-only | `c` | `<base64-cert>` | Medium — authenticity only (no digest) |
 | PGP | `p` | `<base64-pgp-message>` | High — integrity + authenticity |
@@ -654,7 +654,7 @@ Key functions:
 All errors are predefined constants in `errors.go`, allowing consistent error checking with `errors.Is()`:
 
 | Category | Examples |
-|---|---|
+| --- | --- |
 | Pack naming | `ErrBadPackName`, `ErrBadPackURL` |
 | Pack state | `ErrPackNotInstalled`, `ErrPackVersionNotAvailable`, `ErrPackAlreadyInstalled` |
 | File system | `ErrFileNotFound`, `ErrFailedDecompressingFile`, `ErrInsecureZipFileName` |
@@ -747,7 +747,7 @@ resolveVersionModifier()
 cpackget supports flexible version matching, similar to npm or apt:
 
 | Modifier | Symbol | Resolution Logic |
-|---|---|---|
+| --- | --- | --- |
 | Exact | `@1.2.3` | Must match exactly |
 | Latest | `@latest` | Highest available version |
 | Any | (omitted) | Latest if not installed; current if installed |
@@ -835,7 +835,7 @@ The output format is machine-readable, designed for IDE and tool integration.
 ## 16. Design Patterns
 
 | Pattern | Usage |
-|---|---|
+| --- | --- |
 | **Singleton** | `installer.Installation` — Single global pack root state |
 | **Command** | Each Cobra command wraps a CLI action into its own object |
 | **Factory** | `preparePack()` / `preparePdsc()` — Build pack/PDSC objects from raw user input |
@@ -850,7 +850,7 @@ The output format is machine-readable, designed for IDE and tool integration.
 ## 17. External Dependencies
 
 | Dependency | Version | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | `spf13/cobra` | v1.10.2 | CLI framework and command routing |
 | `spf13/pflag` | v1.0.10 | POSIX/GNU-style flag parsing (used by Cobra) |
 | `spf13/viper` | v1.21.0 | Configuration management |
@@ -887,7 +887,7 @@ Tests use the `testify` assertion library.
 The `testdata/` directory provides fixtures for testing:
 
 | Path | Purpose |
-|---|---|
+| --- | --- |
 | `testdata/*.pidx` | Sample and malformed index files for parsing tests |
 | `testdata/devpack/` | Mock pack PDSC files at different versions |
 | `testdata/integration/` | Full integration test fixtures with versioned packs |
@@ -907,6 +907,6 @@ Integration test fixtures in `testdata/integration/` include:
 
 ### Build and CI
 
-- **Makefile targets:** `make test`, `make build`, `make coverage`
+- **Makefile targets:** `make test`, `make build`, `make coverage-report`
 - **CI pipelines:** GitHub Actions for build, test, and release workflows
 - **Linting:** GolangCI-Lint for static analysis
