@@ -4,7 +4,9 @@
 package xml_test
 
 import (
+	"io"
 	"os"
+	"strings"
 	"testing"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -358,10 +360,56 @@ func TestPidxXML(t *testing.T) {
 	})
 
 	t.Run("test reading PIDX file with malformed XML", func(t *testing.T) {
-		pidx := xml.NewPidxXML("../../testdata/MalformedPack.pidx", false)
+		fileName := "../../testdata/MalformedPack.pidx"
+		pidx := xml.NewPidxXML(fileName, false)
 		err := pidx.Read()
 		assert.NotNil(err)
-		assert.Equal(err.Error(), "XML syntax error on line 3: unexpected EOF")
+		assert.Contains(err.Error(), "XML syntax error on line 3: unexpected EOF")
+		assert.Contains(err.Error(), fileName)
+	})
+
+	t.Run("test Read wraps XML parsing errors with filename", func(t *testing.T) {
+		fileName := "../../testdata/MalformedPack.pidx"
+		pidx := xml.NewPidxXML(fileName, false)
+		err := pidx.Read()
+		assert.NotNil(err)
+		// filename should appear exactly once (no double wrapping)
+		assert.Equal(1, strings.Count(err.Error(), fileName))
+	})
+
+	t.Run("test Read wraps EOF error with filename and (unexpected EOF)", func(t *testing.T) {
+		fileName := utils.RandStringBytes(10) + ".pidx"
+		defer os.Remove(fileName)
+		// Create an empty file to trigger EOF
+		assert.Nil(os.WriteFile(fileName, []byte{}, 0600))
+		pidx := xml.NewPidxXML(fileName, false)
+		err := pidx.Read()
+		assert.NotNil(err)
+		assert.ErrorIs(err, io.EOF)
+		assert.Contains(err.Error(), fileName)
+		assert.Contains(err.Error(), "(unexpected EOF)")
+	})
+
+	t.Run("test CheckTime wraps XML parsing errors with filename", func(t *testing.T) {
+		fileName := "../../testdata/MalformedPack.pidx"
+		pidx := xml.NewPidxXML(fileName, false)
+		err := pidx.CheckTime()
+		assert.NotNil(err)
+		assert.Contains(err.Error(), fileName)
+		assert.Equal(1, strings.Count(err.Error(), fileName))
+	})
+
+	t.Run("test CheckTime wraps EOF error with filename and (unexpected EOF)", func(t *testing.T) {
+		fileName := utils.RandStringBytes(10) + ".pidx"
+		defer os.Remove(fileName)
+		// Create an empty file to trigger EOF
+		assert.Nil(os.WriteFile(fileName, []byte{}, 0600))
+		pidx := xml.NewPidxXML(fileName, false)
+		err := pidx.CheckTime()
+		assert.NotNil(err)
+		assert.ErrorIs(err, io.EOF)
+		assert.Contains(err.Error(), fileName)
+		assert.Contains(err.Error(), "(unexpected EOF)")
 	})
 
 	t.Run("test check public index file for old timestamp", func(t *testing.T) {

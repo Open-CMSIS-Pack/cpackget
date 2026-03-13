@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -422,7 +423,14 @@ func ReadXML(path string, targetStruct interface{}) error {
 	reader := bytes.NewReader(contents)
 	decoder := xml.NewDecoder(reader)
 	decoder.CharsetReader = charset.NewReaderLabel
-	return decoder.Decode(targetStruct)
+	err = decoder.Decode(targetStruct)
+	if err != nil {
+		if errors.Is(err, io.EOF) {
+			return fmt.Errorf("reading %q: %w (unexpected EOF)", path, err)
+		}
+		return fmt.Errorf("%q: %w", path, err)
+	}
+	return nil
 }
 
 // WriteXML writes an XML struct to a file

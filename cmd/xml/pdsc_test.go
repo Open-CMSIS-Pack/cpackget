@@ -4,7 +4,10 @@
 package xml_test
 
 import (
+	"io"
+	"os"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
@@ -212,5 +215,37 @@ func TestPdscXML(t *testing.T) {
 
 		pdscXML.RequirementsTag.Packages = nil
 		assert.Nil(pdscXML.Dependencies())
+	})
+
+	t.Run("test Read wraps XML parsing errors with filename", func(t *testing.T) {
+		fileName := "../../testdata/MalformedPack.pdsc"
+		pdsc := xml.NewPdscXML(fileName)
+		err := pdsc.Read()
+		assert.NotNil(err)
+		assert.Contains(err.Error(), "XML syntax error on line 3: unexpected EOF")
+		assert.Contains(err.Error(), fileName)
+		assert.Equal(1, strings.Count(err.Error(), fileName))
+	})
+
+	t.Run("test Read wraps EOF error with filename and (unexpected EOF)", func(t *testing.T) {
+		fileName := utils.RandStringBytes(10) + ".pdsc"
+		defer os.Remove(fileName)
+		assert.Nil(os.WriteFile(fileName, []byte{}, 0600))
+		pdsc := xml.NewPdscXML(fileName)
+		err := pdsc.Read()
+		assert.NotNil(err)
+		assert.ErrorIs(err, io.EOF)
+		assert.Contains(err.Error(), fileName)
+		assert.Contains(err.Error(), "(unexpected EOF)")
+	})
+
+	t.Run("test Read does not double-wrap filename from os errors", func(t *testing.T) {
+		fileName := "nonexistent-dir/nonexistent.pdsc"
+		pdsc := xml.NewPdscXML(fileName)
+		err := pdsc.Read()
+		assert.NotNil(err)
+		assert.Contains(err.Error(), fileName)
+		// filename should appear exactly once
+		assert.Equal(1, strings.Count(err.Error(), fileName))
 	})
 }

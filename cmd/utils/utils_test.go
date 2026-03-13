@@ -374,7 +374,7 @@ func TestReadXML(t *testing.T) {
 		dummy := dummyXML{}
 		err := utils.ReadXML(filepath.Join("..", "..", "testdata", "MalformedPack.pidx"), &dummy)
 		assert.NotNil(err)
-		assert.Equal(err.Error(), "XML syntax error on line 3: unexpected EOF")
+		assert.Contains(err.Error(), "XML syntax error on line 3: unexpected EOF")
 	})
 
 	t.Run("test read file", func(t *testing.T) {

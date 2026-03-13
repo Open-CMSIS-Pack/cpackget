@@ -118,7 +118,7 @@ func (p *PdscXML) Tag() PdscTag {
 // Note: The filename matching is currently case-sensitive.
 func (p *PdscXML) Read() error {
 	log.Debugf("Reading pdsc from file %q", p.FileName)
-	return utils.ReadXML(p.FileName, p) // TODO: read should ignore case of filename
+	return utils.ReadXML(p.FileName, p)
 }
 
 // Write saves the PdscXML struct to the file specified by FileName in XML format.
