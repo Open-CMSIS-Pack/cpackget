@@ -5,6 +5,9 @@ package xml
 
 import (
 	"encoding/xml"
+	"errors"
+	"fmt"
+	"io"
 	"path"
 	"path/filepath"
 	"strings"
@@ -376,7 +379,13 @@ func (p *PidxXML) CheckTime() error {
 		return nil
 	}
 	if err := utils.ReadXML(p.fileName, p); err != nil {
-		return err
+		if errors.Is(err, io.EOF) {
+			return fmt.Errorf("%q: %w too early", p.fileName, err)
+		}
+		if strings.Contains(err.Error(), p.fileName) {
+			return err
+		}
+		return fmt.Errorf("%q: %w", p.fileName, err)
 	}
 	if len(p.TimeStamp) == 0 {
 		return errs.ErrIndexTooOld // if there is no timestamp it always is too old
@@ -427,7 +436,13 @@ func (p *PidxXML) Read() error {
 		return p.Write()
 	}
 	if err := utils.ReadXML(p.fileName, p); err != nil {
-		return err
+		if errors.Is(err, io.EOF) {
+			return fmt.Errorf("%q: %w too early", p.fileName, err)
+		}
+		if strings.Contains(err.Error(), p.fileName) {
+			return err
+		}
+		return fmt.Errorf("%q: %w", p.fileName, err)
 	}
 
 	if p.isCache && p.SchemaVersion == "1.0.0" {

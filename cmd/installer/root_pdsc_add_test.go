@@ -43,7 +43,7 @@ func TestAddPdsc(t *testing.T) {
 
 		err := installer.AddPdsc(pdscPack123)
 		assert.NotNil(err)
-		assert.Equal("XML syntax error on line 3: unexpected EOF", err.Error())
+		assert.Contains(err.Error(), "XML syntax error on line 3: unexpected EOF")
 	})
 
 	t.Run("test add a pdsc", func(t *testing.T) {

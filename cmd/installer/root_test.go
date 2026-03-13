@@ -799,7 +799,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		err = installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
 
 		assert.NotNil(err)
-		assert.Equal(err.Error(), "XML syntax error on line 3: unexpected EOF")
+		assert.Contains(err.Error(), "XML syntax error on line 3: unexpected EOF")
 	})
 
 	t.Run("test add remote "+installer.PublicIndexName, func(t *testing.T) {
