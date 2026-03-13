@@ -426,7 +426,7 @@ func ReadXML(path string, targetStruct interface{}) error {
 	err = decoder.Decode(targetStruct)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
-			return fmt.Errorf("%q: %w too early", path, err)
+			return fmt.Errorf("reading %q: %w (unexpected EOF)", path, err)
 		}
 		return fmt.Errorf("%q: %w", path, err)
 	}
