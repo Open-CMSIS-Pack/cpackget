@@ -5,9 +5,6 @@ package xml
 
 import (
 	"encoding/xml"
-	"errors"
-	"fmt"
-	"io"
 	"strings"
 
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
@@ -121,14 +118,8 @@ func (p *PdscXML) Tag() PdscTag {
 // Note: The filename matching is currently case-sensitive.
 func (p *PdscXML) Read() error {
 	log.Debugf("Reading pdsc from file %q", p.FileName)
-	if err := utils.ReadXML(p.FileName, p); err != nil { // TODO: read should ignore case of filename
-		if errors.Is(err, io.EOF) {
-			return fmt.Errorf("%q: %w too early", p.FileName, err)
-		}
-		if strings.Contains(err.Error(), p.FileName) {
-			return err
-		}
-		return fmt.Errorf("%q: %w", p.FileName, err)
+	if err := utils.ReadXML(p.FileName, p); err != nil {
+		return err
 	}
 	return nil
 }
