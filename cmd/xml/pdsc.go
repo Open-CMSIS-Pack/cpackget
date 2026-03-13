@@ -121,9 +121,6 @@ func (p *PdscXML) Read() error {
 	return utils.ReadXML(p.FileName, p)
 }
 
-
-}
-
 // Write saves the PdscXML struct to the file specified by FileName in XML format.
 // It logs the operation at debug level and returns an error if the write fails.
 func (p *PdscXML) Write() error {
