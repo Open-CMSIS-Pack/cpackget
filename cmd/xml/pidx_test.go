@@ -377,7 +377,7 @@ func TestPidxXML(t *testing.T) {
 		assert.Equal(1, strings.Count(err.Error(), fileName))
 	})
 
-	t.Run("test Read wraps EOF error with filename and too early", func(t *testing.T) {
+	t.Run("test Read wraps EOF error with filename and (unexpected EOF)", func(t *testing.T) {
 		fileName := utils.RandStringBytes(10) + ".pidx"
 		defer os.Remove(fileName)
 		// Create an empty file to trigger EOF
@@ -387,7 +387,7 @@ func TestPidxXML(t *testing.T) {
 		assert.NotNil(err)
 		assert.ErrorIs(err, io.EOF)
 		assert.Contains(err.Error(), fileName)
-		assert.Contains(err.Error(), "too early")
+		assert.Contains(err.Error(), "(unexpected EOF)")
 	})
 
 	t.Run("test CheckTime wraps XML parsing errors with filename", func(t *testing.T) {
@@ -399,7 +399,7 @@ func TestPidxXML(t *testing.T) {
 		assert.Equal(1, strings.Count(err.Error(), fileName))
 	})
 
-	t.Run("test CheckTime wraps EOF error with filename and too early", func(t *testing.T) {
+	t.Run("test CheckTime wraps EOF error with filename and (unexpected EOF)", func(t *testing.T) {
 		fileName := utils.RandStringBytes(10) + ".pidx"
 		defer os.Remove(fileName)
 		// Create an empty file to trigger EOF
@@ -409,7 +409,7 @@ func TestPidxXML(t *testing.T) {
 		assert.NotNil(err)
 		assert.ErrorIs(err, io.EOF)
 		assert.Contains(err.Error(), fileName)
-		assert.Contains(err.Error(), "too early")
+		assert.Contains(err.Error(), "(unexpected EOF)")
 	})
 
 	t.Run("test check public index file for old timestamp", func(t *testing.T) {

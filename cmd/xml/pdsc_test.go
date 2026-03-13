@@ -227,7 +227,7 @@ func TestPdscXML(t *testing.T) {
 		assert.Equal(1, strings.Count(err.Error(), fileName))
 	})
 
-	t.Run("test Read wraps EOF error with filename and too early", func(t *testing.T) {
+	t.Run("test Read wraps EOF error with filename and (unexpected EOF)", func(t *testing.T) {
 		fileName := utils.RandStringBytes(10) + ".pdsc"
 		defer os.Remove(fileName)
 		assert.Nil(os.WriteFile(fileName, []byte{}, 0600))
@@ -236,7 +236,7 @@ func TestPdscXML(t *testing.T) {
 		assert.NotNil(err)
 		assert.ErrorIs(err, io.EOF)
 		assert.Contains(err.Error(), fileName)
-		assert.Contains(err.Error(), "too early")
+		assert.Contains(err.Error(), "(unexpected EOF)")
 	})
 
 	t.Run("test Read does not double-wrap filename from os errors", func(t *testing.T) {
