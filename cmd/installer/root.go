@@ -674,6 +674,7 @@ func CheckConcurrency(concurrency int) int {
 //
 // Parameters:
 // - skipInstalledPdscFiles: If true, skips downloading PDSC files that are already installed.
+// - skipDeprecatedPdscFiles: If true, skips downloading PDSC files that are marked as deprecated.
 // - insecureSkipVerify: If true, skips TLS certificate verification for HTTPS downloads.
 // - concurrency: The number of concurrent downloads to allow. If 0, downloads are sequential.
 // - timeout: The timeout for each download operation.
@@ -686,7 +687,21 @@ func DownloadPDSCFiles(skipInstalledPdscFiles, skipDeprecatedPdscFiles, insecure
 	// 	return err
 	// }
 
-	pdscTags := Installation.PublicIndexXML.ListPdscTags()
+	allPdscTags := Installation.PublicIndexXML.ListPdscTags()
+
+	// Filter out deprecated tags upfront if requested, so the job count
+	// used for progress reporting matches the actual number of downloads.
+	var pdscTags []xml.PdscTag
+	if skipDeprecatedPdscFiles {
+		for _, t := range allPdscTags {
+			if !t.IsDeprecated() {
+				pdscTags = append(pdscTags, t)
+			}
+		}
+	} else {
+		pdscTags = allPdscTags
+	}
+
 	numPdsc := len(pdscTags)
 	if numPdsc == 0 {
 		log.Info("(no packs in public index)")
@@ -704,9 +719,6 @@ func DownloadPDSCFiles(skipInstalledPdscFiles, skipDeprecatedPdscFiles, insecure
 	var errTags lockedSlice
 
 	for _, pdscTag := range pdscTags {
-		if skipDeprecatedPdscFiles && pdscTag.IsDeprecated() {
-			continue
-		}
 		if concurrency == 0 {
 			massDownloadPdscFiles(pdscTag, skipInstalledPdscFiles, true, insecureSkipVerify, timeout, &errTags)
 		} else {
@@ -1228,17 +1240,18 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listDeprecated, lis
 		})
 		// List all available packs from the index
 		for _, pdscTag := range pdscTags {
+			isDeprecated := pdscTag.IsDeprecated()
 			// Filter by deprecated status:
 			// --deprecated: show only deprecated packs
 			// without --deprecated: hide deprecated packs
-			if listDeprecated && !pdscTag.IsDeprecated() {
+			if listDeprecated && !isDeprecated {
 				continue
 			}
-			if !listDeprecated && pdscTag.IsDeprecated() {
+			if !listDeprecated && isDeprecated {
 				continue
 			}
 			logMessage := pdscTag.YamlPackID()
-			if pdscTag.IsDeprecated() {
+			if isDeprecated {
 				logMessage += " (deprecated)"
 			}
 			packFilePath := filepath.Join(Installation.DownloadDir, pdscTag.Key()) + utils.PackExtension
