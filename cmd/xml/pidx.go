@@ -513,5 +513,5 @@ func (p *PdscTag) IsDeprecated() bool {
 	if err != nil {
 		return false
 	}
-	return !time.Now().Before(t)
+	return !time.Now().UTC().Before(t)
 }
