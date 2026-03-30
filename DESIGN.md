@@ -244,7 +244,8 @@ type PacksInstallationType struct {
 - `UpdateInstalledPDSCFiles()` — Refreshes already-cached PDSC files from the index
 - `UpdatePublicIndexIfOnline()` — Updates the public index only when connectivity is available
 - `UpdatePublicIndex()` — Downloads and updates the public index and PDSC files, with option to skip deprecated PDSC files
-- `ListInstalledPacks()` — Lists packs with various filter modes; supports `--deprecated` flag to show only deprecated packs (hidden by default in `--public` listing)
+- `ListInstalledPacks()` — Lists packs with various filter modes; supports `--deprecated` flag to show only deprecated
+ packs (hidden by default in `--public` listing)
 - `FindPackURL()` — Resolves a pack ID to a download URL from the index
 - `SetPackRoot()` — Initializes the `Installation` singleton and directory paths
 - `ReadIndexFiles()` — Loads `index.pidx`, `local_repository.pidx`, and `cache.pidx`
@@ -360,7 +361,8 @@ type PdscTag struct {
 - `YamlPackID()` — Returns `Vendor::Name@Version` format
 - `PackURL()` — Constructs the full `.pack` download URL (PdscTag method)
 - `PdscFileName()` — Returns the `.pdsc` filename (PdscTag method)
-- `IsDeprecated()` — Returns `true` if the `Deprecated` date (format `YYYY-MM-DD`) is today or in the past (PdscTag method)
+- `IsDeprecated()` — Returns `true` if the `Deprecated` date (format `YYYY-MM-DD`) is today or in the
+ past (PdscTag method)
 
 ### 7.2 PDSC — Pack Description (`pdsc.go`)
 
