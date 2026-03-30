@@ -203,7 +203,8 @@ The `configureInstaller` pre-run hook:
 | --- | --- |
 | `list` (default) | Lists all installed packs |
 | `list --cached` | Lists packs in `.Download/` |
-| `list --public` | Lists all packs from the public index |
+| `list --public` | Lists all non-deprecated packs from the public index |
+| `list --public --deprecated` | Lists deprecated packs from the public index |
 | `list --updates` | Lists packs with newer versions available |
 | `list --filter` | Filters results (case-sensitive, accepts multiple expressions) |
 | `list-required` | Lists dependencies of installed packs |
@@ -239,11 +240,11 @@ type PacksInstallationType struct {
 - `UpdatePack()` — Updates one or all packs to latest versions
 - `InitializeCache()` — Builds `cache.pidx` from existing PDSC files in `.Web/`
 - `CheckConcurrency()` — Validates and adjusts the concurrent-downloads setting
-- `DownloadPDSCFiles()` — Downloads all PDSC files from the public index in parallel
+- `DownloadPDSCFiles()` — Downloads all PDSC files from the public index in parallel, optionally skipping deprecated packs
 - `UpdateInstalledPDSCFiles()` — Refreshes already-cached PDSC files from the index
 - `UpdatePublicIndexIfOnline()` — Updates the public index only when connectivity is available
-- `UpdatePublicIndex()` — Downloads and updates the public index and PDSC files
-- `ListInstalledPacks()` — Lists packs with various filter modes
+- `UpdatePublicIndex()` — Downloads and updates the public index and PDSC files, with option to skip deprecated PDSC files
+- `ListInstalledPacks()` — Lists packs with various filter modes; supports `--deprecated` flag to show only deprecated packs (hidden by default in `--public` listing)
 - `FindPackURL()` — Resolves a pack ID to a download URL from the index
 - `SetPackRoot()` — Initializes the `Installation` singleton and directory paths
 - `ReadIndexFiles()` — Loads `index.pidx`, `local_repository.pidx`, and `cache.pidx`
@@ -359,6 +360,7 @@ type PdscTag struct {
 - `YamlPackID()` — Returns `Vendor::Name@Version` format
 - `PackURL()` — Constructs the full `.pack` download URL (PdscTag method)
 - `PdscFileName()` — Returns the `.pdsc` filename (PdscTag method)
+- `IsDeprecated()` — Returns `true` if the `Deprecated` date (format `YYYY-MM-DD`) is today or in the past (PdscTag method)
 
 ### 7.2 PDSC — Pack Description (`pdsc.go`)
 
@@ -706,6 +708,7 @@ installer.UpdatePublicIndex()
   ├── Download new index.pidx from upstream URL
   ├── Compare old vs. new entries
   ├── Download updated/new PDSC files (concurrent, via semaphore)
+  │     └── Skip PDSC files where Deprecated date ≤ today
   ├── Update cache.pidx to reflect changes
   └── Remove deprecated entries
 ```

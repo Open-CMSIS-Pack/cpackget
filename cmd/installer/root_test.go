@@ -738,6 +738,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 	var Sparse = true
 	var DownloadPdsc = false
 	var DownloadRemainingPdscFiles = true
+	var skipDeprecatedPdscFiles = true
 	var UpdatePrivatePdsc = true
 	var ShowInfo = true
 	var Concurrency = 0
@@ -776,7 +777,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		indexPath := server.URL() + "this-file-does-not-exist"
 
-		err := installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
+		err := installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, skipDeprecatedPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
 
 		assert.NotNil(err)
 		assert.Equal(errors.Unwrap(err), errs.ErrBadRequest)
@@ -796,7 +797,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute(installer.PublicIndexName, indexContent)
 		indexPath := indexServer.URL() + installer.PublicIndexName
 
-		err = installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, skipDeprecatedPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
 
 		assert.NotNil(err)
 		assert.Contains(err.Error(), "XML syntax error on line 3: unexpected EOF")
@@ -815,7 +816,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute(installer.PublicIndexName, indexContent)
 		indexPath := indexServer.URL() + installer.PublicIndexName
 
-		err = installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, skipDeprecatedPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
 
 		assert.Nil(err)
 
@@ -846,10 +847,78 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err)
 		indexServer.AddRoute("TheVendor.PublicLocalPack.pdsc", pdscContent)
 
-		err = installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, DownloadRemainingPdscFiles, skipDeprecatedPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
 		assert.Nil(err)
 
 		assert.True(utils.FileExists(path.Join(localTestingDir, ".Web", "TheVendor.PublicLocalPack.pdsc")))
+	})
+
+	t.Run("test all-pdsc-files skips deprecated packs", func(t *testing.T) {
+		localTestingDir := "test-all-pdsc-files-skips-deprecated"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer os.RemoveAll(localTestingDir)
+
+		indexServer := NewServer()
+
+		pdscContent, err := os.ReadFile(publicLocalPack123Pdsc)
+		assert.Nil(err)
+		indexServer.AddRoute("TheVendor.ActivePack.pdsc", pdscContent)
+		indexServer.AddRoute("TheVendor.DeprecatedPack.pdsc", pdscContent)
+
+		// Add both a deprecated and a non-deprecated pack to the public index
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:  "TheVendor",
+			Name:    "ActivePack",
+			Version: "1.2.3",
+			URL:     indexServer.URL(),
+		}))
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:     "TheVendor",
+			Name:       "DeprecatedPack",
+			Version:    "1.0.0",
+			Deprecated: "2020-01-01",
+			URL:        indexServer.URL(),
+		}))
+
+		// DownloadPDSCFiles with skipDeprecated=true should skip the deprecated pack
+		err = installer.DownloadPDSCFiles(false, skipDeprecatedPdscFiles, !InsecureSkipVerify, Concurrency, Timeout)
+		assert.Nil(err)
+
+		// Non-deprecated pack PDSC should be downloaded
+		assert.True(utils.FileExists(filepath.Join(localTestingDir, ".Web", "TheVendor.ActivePack.pdsc")))
+		// Deprecated pack PDSC should NOT be downloaded
+		assert.False(utils.FileExists(filepath.Join(localTestingDir, ".Web", "TheVendor.DeprecatedPack.pdsc")))
+	})
+
+	t.Run("test all-pdsc-files downloads non-deprecated packs with future deprecation date", func(t *testing.T) {
+		localTestingDir := "test-all-pdsc-files-downloads-future-deprecated"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer os.RemoveAll(localTestingDir)
+
+		indexServer := NewServer()
+
+		pdscContent, err := os.ReadFile(publicLocalPack123Pdsc)
+		assert.Nil(err)
+		indexServer.AddRoute("TheVendor.FutureDeprecatedPack.pdsc", pdscContent)
+
+		// Pack with future deprecation date should not be considered deprecated yet
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:     "TheVendor",
+			Name:       "FutureDeprecatedPack",
+			Version:    "1.2.3",
+			Deprecated: "2099-12-31",
+			URL:        indexServer.URL(),
+		}))
+
+		err = installer.DownloadPDSCFiles(false, skipDeprecatedPdscFiles, !InsecureSkipVerify, Concurrency, Timeout)
+		assert.Nil(err)
+
+		// Future-deprecated pack should still be downloaded
+		assert.True(utils.FileExists(filepath.Join(localTestingDir, ".Web", "TheVendor.FutureDeprecatedPack.pdsc")))
 	})
 
 	// TODO: this test currently fails because the pdsc file is not found in the public index
@@ -866,7 +935,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexServer.AddRoute(installer.PublicIndexName, indexContent)
 		indexPath := indexServer.URL() + installer.PublicIndexName
 
-		err = installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, skipDeprecatedPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
 		assert.Nil(err)
 
 		publicIndex := installer.Installation.PublicIndex
@@ -880,7 +949,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		err = utils.CopyFile(pdscPackNotInIndex, filepath.Join(localTestingDir, ".Web", "TheVendor.PackNotInIndex.pdsc"))
 		assert.Nil(err)
 
-		err = installer.UpdatePublicIndex(indexPath, false, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, false, DownloadPdsc, !DownloadRemainingPdscFiles, skipDeprecatedPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
 		assert.Nil(err)
 
 		// assert.False(utils.FileExists(filepath.Join(localTestingDir, ".Web", "TheVendor.PackNotInIndex.pdsc")))
@@ -896,7 +965,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexContent, err := os.ReadFile(samplePublicIndex)
 		assert.Nil(err)
 
-		assert.Nil(installer.UpdatePublicIndex(samplePublicIndex, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout))
+		assert.Nil(installer.UpdatePublicIndex(samplePublicIndex, Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, skipDeprecatedPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout))
 
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
 
@@ -931,7 +1000,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err)
 		indexServer.AddRoute("TheVendor.PublicLocalPack.pdsc", pdscContent)
 
-		err = installer.UpdatePublicIndex(indexPath, Sparse, !DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, Sparse, !DownloadPdsc, !DownloadRemainingPdscFiles, skipDeprecatedPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
 
 		assert.Nil(err)
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
@@ -965,7 +1034,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 			indexServer.AddRoute(publicConcurrentLocalPdscBase+fmt.Sprint(i)+".pdsc", pdscContent)
 		}
 
-		err = installer.UpdatePublicIndex(indexPath, Sparse, !DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, 5, Timeout)
+		err = installer.UpdatePublicIndex(indexPath, Sparse, !DownloadPdsc, !DownloadRemainingPdscFiles, skipDeprecatedPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, 5, Timeout)
 
 		assert.Nil(err)
 		assert.True(utils.FileExists(installer.Installation.PublicIndex))
@@ -1040,7 +1109,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 
 		indexServer.AddRoute(filepath.Base(publicLocalPack124Pdsc), pdscContent)
 
-		assert.Nil(installer.UpdatePublicIndex("", !Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout))
+		assert.Nil(installer.UpdatePublicIndex("", !Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, skipDeprecatedPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout))
 
 		// Make sure index.pidx exists and it is updated
 		assert.FileExists(installer.Installation.PublicIndex)
@@ -1113,7 +1182,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 			indexServer.AddRoute(pdsc, pdscContent)
 		}
 
-		assert.Nil(installer.UpdatePublicIndex("", !Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, 5, Timeout))
+		assert.Nil(installer.UpdatePublicIndex("", !Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, skipDeprecatedPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, 5, Timeout))
 
 		// Make sure index.pidx exists and it is updated
 		assert.FileExists(installer.Installation.PublicIndex)

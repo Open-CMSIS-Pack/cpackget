@@ -24,6 +24,7 @@ var (
 	ListFilter       = ""
 	ListPublic       = true
 	ListUpdates      = true
+	ListDeprecated   = true
 	ListRequirements = true
 )
 
@@ -38,7 +39,7 @@ func ExampleListInstalledPacks() {
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
 
-	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter)
+	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, ListFilter)
 	// Output:
 	// I: Listing installed packs
 	// I: (no packs installed)
@@ -54,7 +55,7 @@ func ExampleListInstalledPacks_emptyCache() {
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
 
-	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, ListFilter)
 	// Output:
 	// I: Listing cached packs
 	// I: (no packs cached)
@@ -70,7 +71,7 @@ func ExampleListInstalledPacks_emptyPublicIndex() {
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
 
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, true, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, ListFilter)
 	// Output:
 	// I: Listing packs from the public index
 	// I: (no packs in public index)
@@ -120,7 +121,7 @@ func ExampleListInstalledPacks_list() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, true, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, ListFilter)
 	// Output:
 	// I: Listing packs from the public index
 	// I: TheVendor::PublicLocalPack@1.2.3 (cached)
@@ -158,7 +159,7 @@ func ExampleListInstalledPacks_listCached() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter)
+	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, ListFilter)
 	// Output:
 	// I: Listing cached packs
 	// I: TheVendor::PublicLocalPack@1.2.3
@@ -207,7 +208,7 @@ func TestListInstalledPacks(t *testing.T) {
 		var buf bytes.Buffer
 		log.SetOutput(&buf)
 		defer log.SetOutput(io.Discard)
-		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter))
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, ListFilter))
 		stdout := buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
 		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.3 (installed via %s)", expectedPdscAbsPath))
@@ -238,7 +239,7 @@ func TestListInstalledPacks(t *testing.T) {
 		var buf bytes.Buffer
 		log.SetOutput(&buf)
 		defer log.SetOutput(io.Discard)
-		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter))
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, ListFilter))
 		stdout := buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
 		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.3 (installed via %s)", expectedPdscAbsPath))
@@ -248,10 +249,98 @@ func TestListInstalledPacks(t *testing.T) {
 		assert.Nil(pdscXML.Read())
 		pdscXML.ReleasesTag.Releases[0].Version = "1.2.4"
 		assert.Nil(utils.WriteXML(pdscPath, pdscXML))
-		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter))
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, ListFilter))
 		stdout = buf.String()
 		assert.Contains(stdout, "I: Listing installed packs")
 		assert.Contains(stdout, fmt.Sprintf("I: TheVendor::PackName@1.2.4 (installed via %s)", expectedPdscAbsPath))
+	})
+
+	t.Run("test list public deprecated only shows deprecated packs", func(t *testing.T) {
+		localTestingDir := "test-list-deprecated-packs"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		// Add a deprecated pack and a non-deprecated pack to the public index
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:     "TheVendor",
+			Name:       "DeprecatedPack",
+			Version:    "1.0.0",
+			Deprecated: "2020-01-01",
+		}))
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:  "TheVendor",
+			Name:    "ActivePack",
+			Version: "2.0.0",
+		}))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+		defer log.SetOutput(io.Discard)
+
+		// list --public --deprecated should only show deprecated packs
+		assert.Nil(installer.ListInstalledPacks(!ListCached, ListPublic, !ListUpdates, ListDeprecated, !ListRequirements, true, ListFilter))
+		stdout := buf.String()
+		assert.Contains(stdout, "TheVendor::DeprecatedPack@1.0.0 (deprecated)")
+		assert.NotContains(stdout, "TheVendor::ActivePack@2.0.0")
+	})
+
+	t.Run("test list public without deprecated hides deprecated packs", func(t *testing.T) {
+		localTestingDir := "test-list-public-no-deprecated-flag"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:     "TheVendor",
+			Name:       "DeprecatedPack",
+			Version:    "1.0.0",
+			Deprecated: "2020-01-01",
+		}))
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:  "TheVendor",
+			Name:    "ActivePack",
+			Version: "2.0.0",
+		}))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+		defer log.SetOutput(io.Discard)
+
+		// list --public (without --deprecated) should hide deprecated packs
+		assert.Nil(installer.ListInstalledPacks(!ListCached, ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, ListFilter))
+		stdout := buf.String()
+		assert.NotContains(stdout, "TheVendor::DeprecatedPack@1.0.0")
+		assert.Contains(stdout, "TheVendor::ActivePack@2.0.0")
+	})
+
+	t.Run("test list public deprecated with future date is not deprecated", func(t *testing.T) {
+		localTestingDir := "test-list-deprecated-future-date"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:     "TheVendor",
+			Name:       "FutureDeprecatedPack",
+			Version:    "1.0.0",
+			Deprecated: "2099-12-31",
+		}))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+		defer log.SetOutput(io.Discard)
+
+		// list --public --deprecated should NOT show packs with future deprecation date
+		assert.Nil(installer.ListInstalledPacks(!ListCached, ListPublic, !ListUpdates, ListDeprecated, !ListRequirements, true, ListFilter))
+		stdout := buf.String()
+		assert.NotContains(stdout, "TheVendor::FutureDeprecatedPack@1.0.0")
 	})
 }
 
@@ -287,7 +376,7 @@ func ExampleListInstalledPacks_listMalformedInstalledPacks() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, ListFilter)
+	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, ListFilter)
 	// Output:
 	// I: Listing installed packs
 	// E: _TheVendor::_PublicLocalPack@1.2.3.4 - error: pack version incorrect format
@@ -334,7 +423,7 @@ func ExampleListInstalledPacks_filter() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, true, "1.2.4")
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, "1.2.4")
 	// Output:
 	// I: Listing packs from the public index, filtering by "1.2.4"
 	// I: TheVendor::PublicLocalPack@1.2.4 (installed)
@@ -372,7 +461,7 @@ func ExampleListInstalledPacks_filterErrorPackages() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, "TheVendor")
+	_ = installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, "TheVendor")
 	// Output:
 	// I: Listing installed packs, filtering by "TheVendor"
 	// E: _TheVendor::_PublicLocalPack@1.2.3.4 - error: pack version incorrect format
@@ -418,7 +507,7 @@ func ExampleListInstalledPacks_filterInvalidChars() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListRequirements, true, "@ :")
+	_ = installer.ListInstalledPacks(ListCached, ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, "@ :")
 	// Output:
 	// I: Listing packs from the public index, filtering by "@ :"
 }
@@ -453,7 +542,7 @@ func ExampleListInstalledPacks_filteradditionalMessages() {
 
 	log.SetOutput(os.Stdout)
 	defer log.SetOutput(io.Discard)
-	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListRequirements, true, "(installed)")
+	_ = installer.ListInstalledPacks(ListCached, !ListPublic, !ListUpdates, !ListDeprecated, !ListRequirements, true, "(installed)")
 	// Output:
 	// I: Listing cached packs, filtering by "(installed)"
 }

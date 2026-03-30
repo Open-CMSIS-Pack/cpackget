@@ -502,3 +502,16 @@ func (p *PdscTag) PackURL() string {
 func (p *PdscTag) PdscFileName() string {
 	return p.VName() + utils.PdscExtension
 }
+
+// IsDeprecated returns true if the Deprecated field contains a date (YYYY-MM-DD)
+// that is not in the future, i.e. the pack is considered deprecated as of today.
+func (p *PdscTag) IsDeprecated() bool {
+	if p.Deprecated == "" {
+		return false
+	}
+	t, err := time.Parse("2006-01-02", p.Deprecated)
+	if err != nil {
+		return false
+	}
+	return !time.Now().Before(t)
+}

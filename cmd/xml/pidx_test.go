@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
@@ -53,6 +54,33 @@ func TestPdscTag(t *testing.T) {
 		assert.NotContains(packURL, "+build456")
 		assert.Contains(packURL, "1.2.3")
 		assert.Equal("http://vendor.com/TheVendor.ThePack.1.2.3.pack", packURL)
+	})
+
+	t.Run("test IsDeprecated with empty string", func(t *testing.T) {
+		pdscTag := xml.PdscTag{Vendor: "V", Name: "P", Version: "1.0.0"}
+		assert.False(pdscTag.IsDeprecated())
+	})
+
+	t.Run("test IsDeprecated with past date", func(t *testing.T) {
+		pdscTag := xml.PdscTag{Vendor: "V", Name: "P", Version: "1.0.0", Deprecated: "2020-01-01"}
+		assert.True(pdscTag.IsDeprecated())
+	})
+
+	t.Run("test IsDeprecated with today's date", func(t *testing.T) {
+		today := time.Now().Format("2006-01-02")
+		pdscTag := xml.PdscTag{Vendor: "V", Name: "P", Version: "1.0.0", Deprecated: today}
+		assert.True(pdscTag.IsDeprecated())
+	})
+
+	t.Run("test IsDeprecated with future date", func(t *testing.T) {
+		future := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+		pdscTag := xml.PdscTag{Vendor: "V", Name: "P", Version: "1.0.0", Deprecated: future}
+		assert.False(pdscTag.IsDeprecated())
+	})
+
+	t.Run("test IsDeprecated with invalid date", func(t *testing.T) {
+		pdscTag := xml.PdscTag{Vendor: "V", Name: "P", Version: "1.0.0", Deprecated: "not-a-date"}
+		assert.False(pdscTag.IsDeprecated())
 	})
 }
 

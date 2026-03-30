@@ -56,7 +56,7 @@ The index-url is mandatory. Ex "cpackget init --pack-root path/to/mypackroot htt
 			return err
 		}
 
-		err = installer.UpdatePublicIndex(indexPath, true, initCmdFlags.downloadPdscFiles, false, true, true, initCmdFlags.insecureSkipVerify, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
+		err = installer.UpdatePublicIndex(indexPath, true, initCmdFlags.downloadPdscFiles, false, true, true, true, initCmdFlags.insecureSkipVerify, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
 		return err
 	},
 }
