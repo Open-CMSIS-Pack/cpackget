@@ -205,6 +205,7 @@ The `configureInstaller` pre-run hook:
 | `list --cached` | Lists packs in `.Download/` |
 | `list --public` | Lists all non-deprecated packs from the public index |
 | `list --public --deprecated` | Lists deprecated packs from the public index |
+| `list --deprecated` | Lists deprecated packs from the public index |
 | `list --updates` | Lists packs with newer versions available |
 | `list --filter` | Filters results (case-sensitive, accepts multiple expressions) |
 | `list-required` | Lists dependencies of installed packs |
@@ -240,12 +241,15 @@ type PacksInstallationType struct {
 - `UpdatePack()` — Updates one or all packs to latest versions
 - `InitializeCache()` — Builds `cache.pidx` from existing PDSC files in `.Web/`
 - `CheckConcurrency()` — Validates and adjusts the concurrent-downloads setting
-- `DownloadPDSCFiles()` — Downloads all PDSC files from the public index in parallel, optionally skipping deprecated packs
+- `DownloadPDSCFiles()` — Downloads all PDSC files from the public
+  index in parallel, optionally skipping deprecated packs
 - `UpdateInstalledPDSCFiles()` — Refreshes already-cached PDSC files from the index
 - `UpdatePublicIndexIfOnline()` — Updates the public index only when connectivity is available
-- `UpdatePublicIndex()` — Downloads and updates the public index and PDSC files, with option to skip deprecated PDSC files
-- `ListInstalledPacks()` — Lists packs with various filter modes; supports `--deprecated` flag to show only deprecated
- packs (hidden by default in `--public` listing)
+- `UpdatePublicIndex()` — Downloads and updates the public index and
+  PDSC files, with option to skip deprecated PDSC files
+- `ListInstalledPacks()` — Lists packs with various filter modes;
+  supports `--deprecated` flag to show only deprecated packs
+  (hidden by default in `--public` listing)
 - `FindPackURL()` — Resolves a pack ID to a download URL from the index
 - `SetPackRoot()` — Initializes the `Installation` singleton and directory paths
 - `ReadIndexFiles()` — Loads `index.pidx`, `local_repository.pidx`, and `cache.pidx`
@@ -331,17 +335,19 @@ type PidxXML struct {
         Pdscs []PdscTag     // List of all pack references
     }
     // Internal lookup maps for O(1) access
-    pdscList     map[string][]int   // key → indices
-    pdscListName map[string][]int   // vendor.name → indices
+    pdscList       map[string][]PdscTag // key → PdscTags
+    pdscListName   map[string]string    // vendor.name → key
+    deprecatedDate time.Time            // today UTC, set once per Read()
 }
 
 type PdscTag struct {
-    URL         string   `xml:"url,attr"`
-    Vendor      string   `xml:"vendor,attr"`
-    Name        string   `xml:"name,attr"`
-    Version     string   `xml:"version,attr"`
-    Deprecated  string   `xml:"deprecated,attr,omitempty"`
-    Replacement string   `xml:"replacement,attr,omitempty"`
+    URL          string `xml:"url,attr"`
+    Vendor       string `xml:"vendor,attr"`
+    Name         string `xml:"name,attr"`
+    Version      string `xml:"version,attr"`
+    Deprecated   string `xml:"deprecated,attr,omitempty"`
+    Replacement  string `xml:"replacement,attr,omitempty"`
+    isDeprecated bool   // cached flag, computed on insert
 }
 ```
 
@@ -361,8 +367,11 @@ type PdscTag struct {
 - `YamlPackID()` — Returns `Vendor::Name@Version` format
 - `PackURL()` — Constructs the full `.pack` download URL (PdscTag method)
 - `PdscFileName()` — Returns the `.pdsc` filename (PdscTag method)
-- `IsDeprecated()` — Returns `true` if the `Deprecated` date (format `YYYY-MM-DD`) is today or in the
- past (PdscTag method)
+- `IsDeprecated()` — Returns the cached deprecated flag.
+  Computed via `computeIsDeprecated()` when a PdscTag is
+  inserted (`Read`, `AddPdsc`, `AddReplacePdsc`).
+  Uses `PidxXML.deprecatedDate` (today UTC, set once per
+  `NewPidxXML`/`Read`) as reference (PdscTag method)
 
 ### 7.2 PDSC — Pack Description (`pdsc.go`)
 
@@ -670,7 +679,8 @@ All errors are predefined constants in `errors.go`, allowing consistent error ch
 Helper functions:
 
 - `Is()` — Wraps `errors.Is()` for convenience
-- `AlreadyLogged()` — Wraps errors to prevent the same message from being logged twice as the error travels up the call stack
+- `AlreadyLogged()` — Wraps errors to prevent the same message from
+  being logged twice as the error travels up the call stack
 
 ---
 

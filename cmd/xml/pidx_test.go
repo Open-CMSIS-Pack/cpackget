@@ -57,30 +57,45 @@ func TestPdscTag(t *testing.T) {
 	})
 
 	t.Run("test IsDeprecated with empty string", func(t *testing.T) {
-		pdscTag := xml.PdscTag{Vendor: "V", Name: "P", Version: "1.0.0"}
-		assert.False(pdscTag.IsDeprecated())
+		pidx := xml.NewPidxXML("test.pidx", false)
+		pidx.AddPdsc(xml.PdscTag{Vendor: "V", Name: "P", Version: "1.0.0"})
+		tags := pidx.FindPdscTags(xml.PdscTag{Vendor: "V", Name: "P", Version: "1.0.0"})
+		assert.Equal(1, len(tags))
+		assert.False(tags[0].IsDeprecated())
 	})
 
 	t.Run("test IsDeprecated with past date", func(t *testing.T) {
-		pdscTag := xml.PdscTag{Vendor: "V", Name: "P", Version: "1.0.0", Deprecated: "2020-01-01"}
-		assert.True(pdscTag.IsDeprecated())
+		pidx := xml.NewPidxXML("test.pidx", false)
+		pidx.AddPdsc(xml.PdscTag{Vendor: "V", Name: "P1", Version: "1.0.0", Deprecated: "2020-01-01"})
+		tags := pidx.FindPdscTags(xml.PdscTag{Vendor: "V", Name: "P1", Version: "1.0.0"})
+		assert.Equal(1, len(tags))
+		assert.True(tags[0].IsDeprecated())
 	})
 
 	t.Run("test IsDeprecated with today's date", func(t *testing.T) {
 		today := time.Now().Format("2006-01-02")
-		pdscTag := xml.PdscTag{Vendor: "V", Name: "P", Version: "1.0.0", Deprecated: today}
-		assert.True(pdscTag.IsDeprecated())
+		pidx := xml.NewPidxXML("test.pidx", false)
+		pidx.AddPdsc(xml.PdscTag{Vendor: "V", Name: "P2", Version: "1.0.0", Deprecated: today})
+		tags := pidx.FindPdscTags(xml.PdscTag{Vendor: "V", Name: "P2", Version: "1.0.0"})
+		assert.Equal(1, len(tags))
+		assert.True(tags[0].IsDeprecated())
 	})
 
 	t.Run("test IsDeprecated with future date", func(t *testing.T) {
 		future := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
-		pdscTag := xml.PdscTag{Vendor: "V", Name: "P", Version: "1.0.0", Deprecated: future}
-		assert.False(pdscTag.IsDeprecated())
+		pidx := xml.NewPidxXML("test.pidx", false)
+		pidx.AddPdsc(xml.PdscTag{Vendor: "V", Name: "P3", Version: "1.0.0", Deprecated: future})
+		tags := pidx.FindPdscTags(xml.PdscTag{Vendor: "V", Name: "P3", Version: "1.0.0"})
+		assert.Equal(1, len(tags))
+		assert.False(tags[0].IsDeprecated())
 	})
 
 	t.Run("test IsDeprecated with invalid date", func(t *testing.T) {
-		pdscTag := xml.PdscTag{Vendor: "V", Name: "P", Version: "1.0.0", Deprecated: "not-a-date"}
-		assert.False(pdscTag.IsDeprecated())
+		pidx := xml.NewPidxXML("test.pidx", false)
+		pidx.AddPdsc(xml.PdscTag{Vendor: "V", Name: "P4", Version: "1.0.0", Deprecated: "not-a-date"})
+		tags := pidx.FindPdscTags(xml.PdscTag{Vendor: "V", Name: "P4", Version: "1.0.0"})
+		assert.Equal(1, len(tags))
+		assert.False(tags[0].IsDeprecated())
 	})
 }
 
