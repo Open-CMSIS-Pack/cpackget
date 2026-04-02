@@ -69,6 +69,7 @@ name = "ripgrep"          # Fast searching for pattern matching in codebase
 
 [[plugin]]
 name = "trivy"            # Scans for vulnerabilities in containers and dependencies
+version = "0.69.3"        # Pinned to secure version
 
 [[plugin]]
 name = "trufflehog"       # Detects secrets and sensitive data in code
