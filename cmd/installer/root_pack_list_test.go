@@ -368,8 +368,8 @@ func TestListInstalledPacks(t *testing.T) {
 		log.SetOutput(&buf)
 		defer log.SetOutput(io.Discard)
 
-		// list --public --deprecated should NOT show packs with future deprecation date
-		assert.Nil(installer.ListInstalledPacks(!ListCached, ListPublic, !ListUpdates, ListDeprecated, !ListRequirements, true, ListFilter))
+		// list --deprecated should NOT show packs with future deprecation date
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, ListDeprecated, !ListRequirements, true, ListFilter))
 		stdout := buf.String()
 		assert.NotContains(stdout, "TheVendor::FutureDeprecatedPack@1.0.0")
 	})
