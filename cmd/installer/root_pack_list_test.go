@@ -280,8 +280,8 @@ func TestListInstalledPacks(t *testing.T) {
 		log.SetOutput(&buf)
 		defer log.SetOutput(io.Discard)
 
-		// list --public --deprecated should only show deprecated packs
-		assert.Nil(installer.ListInstalledPacks(!ListCached, ListPublic, !ListUpdates, ListDeprecated, !ListRequirements, true, ListFilter))
+		// list --deprecated (without --public) should only show deprecated packs
+		assert.Nil(installer.ListInstalledPacks(!ListCached, !ListPublic, !ListUpdates, ListDeprecated, !ListRequirements, true, ListFilter))
 		stdout := buf.String()
 		assert.Contains(stdout, "TheVendor::DeprecatedPack@1.0.0 (deprecated)")
 		assert.NotContains(stdout, "TheVendor::ActivePack@2.0.0")
