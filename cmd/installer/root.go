@@ -1221,7 +1221,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listDeprecated, lis
 			return err
 		}
 	}
-	if listPublic {
+	if listPublic || listDeprecated {
 		if listFilter != "" {
 			log.Infof("Listing packs from the public index, filtering by %q", listFilter)
 		} else {
@@ -1242,12 +1242,10 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listDeprecated, lis
 		for _, pdscTag := range pdscTags {
 			isDeprecated := pdscTag.IsDeprecated()
 			// Filter by deprecated status:
-			// --deprecated: show only deprecated packs
-			// without --deprecated: hide deprecated packs
-			if listDeprecated && !isDeprecated {
-				continue
-			}
-			if !listDeprecated && isDeprecated {
+			// only --deprecated: show only deprecated packs
+			// only --public: hide deprecated packs
+			if (!listPublic && listDeprecated && !isDeprecated) ||
+				(listPublic && !listDeprecated && isDeprecated) {
 				continue
 			}
 			logMessage := pdscTag.YamlPackID()

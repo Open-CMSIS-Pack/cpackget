@@ -318,6 +318,37 @@ func TestListInstalledPacks(t *testing.T) {
 		assert.Contains(stdout, "TheVendor::ActivePack@2.0.0")
 	})
 
+	t.Run("test list public and deprecated shows both public and deprecated packs", func(t *testing.T) {
+		localTestingDir := "test-list-public-and-deprecated"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		assert.Nil(installer.ReadIndexFiles())
+		defer removePackRoot(localTestingDir)
+
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:     "TheVendor",
+			Name:       "DeprecatedPack",
+			Version:    "1.0.0",
+			Deprecated: "2020-01-01",
+		}))
+		assert.Nil(installer.Installation.PublicIndexXML.AddPdsc(xml.PdscTag{
+			Vendor:  "TheVendor",
+			Name:    "ActivePack",
+			Version: "2.0.0",
+		}))
+		assert.Nil(installer.Installation.PublicIndexXML.Write())
+
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+		defer log.SetOutput(io.Discard)
+
+		// list --public --deprecated should show both public and deprecated packs
+		assert.Nil(installer.ListInstalledPacks(!ListCached, ListPublic, !ListUpdates, ListDeprecated, !ListRequirements, true, ListFilter))
+		stdout := buf.String()
+		assert.Contains(stdout, "TheVendor::DeprecatedPack@1.0.0")
+		assert.Contains(stdout, "TheVendor::ActivePack@2.0.0")
+	})
+
 	t.Run("test list public deprecated with future date is not deprecated", func(t *testing.T) {
 		localTestingDir := "test-list-deprecated-future-date"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))

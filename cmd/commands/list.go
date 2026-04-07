@@ -33,9 +33,6 @@ var ListCmd = &cobra.Command{
 	Args:              cobra.MaximumNArgs(0),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if listCmdFlags.listDeprecated {
-			listCmdFlags.listPublic = true
-		}
 		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic, listCmdFlags.listUpdates, listCmdFlags.listDeprecated, false, false, listCmdFlags.listFilter)
 	},
 }
