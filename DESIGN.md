@@ -204,7 +204,7 @@ The `configureInstaller` pre-run hook:
 | `list` (default) | Lists all installed packs |
 | `list --cached` | Lists packs in `.Download/` |
 | `list --public` | Lists all non-deprecated packs from the public index |
-| `list --public --deprecated` | Lists deprecated packs from the public index |
+| `list --public --deprecated` | Lists all packs from the public index |
 | `list --deprecated` | Lists deprecated packs from the public index |
 | `list --updates` | Lists packs with newer versions available |
 | `list --filter` | Filters results (case-sensitive, accepts multiple expressions) |
