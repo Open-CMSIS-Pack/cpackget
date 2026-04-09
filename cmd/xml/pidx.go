@@ -33,10 +33,11 @@ type PidxXML struct {
 		Pdscs   []PdscTag `xml:"pdsc"`
 	} `xml:"pindex"`
 
-	pdscList     map[string][]PdscTag // map of PdscTag.Key() to PdscTag
-	pdscListName map[string]string    // map of lowercase Vendor.Pack to PdscTag.Key()
-	fileName     string
-	isCache      bool // to know if this really is a cache index instead of a PDSC index
+	pdscList       map[string][]PdscTag // map of PdscTag.Key() to PdscTag
+	pdscListName   map[string]string    // map of lowercase Vendor.Pack to PdscTag.Key()
+	fileName       string
+	isCache        bool      // to know if this really is a cache index instead of a PDSC index
+	deprecatedDate time.Time // reference date (today UTC) for deprecated evaluation, refreshed once per Read()
 }
 
 // PdscTag maps a <pdsc> tag that goes in PIDX files.
@@ -48,6 +49,8 @@ type PdscTag struct {
 	Version     string   `xml:"version,attr"`
 	Deprecated  string   `xml:"deprecated,attr,omitempty"`
 	Replacement string   `xml:"replacement,attr,omitempty"`
+
+	isDeprecated bool // to mark a tag as deprecated to speed up filtering
 }
 
 // NewPidxXML initializes a new PidxXML object with the given file name.
@@ -63,6 +66,7 @@ func NewPidxXML(fileName string, isCache bool) *PidxXML {
 	p := new(PidxXML)
 	p.fileName = fileName
 	p.isCache = isCache
+	p.deprecatedDate = time.Now().UTC().Truncate(24 * time.Hour)
 	return p
 }
 
@@ -104,6 +108,7 @@ func (p *PidxXML) Clear() {
 func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 	log.Debugf("Adding pdsc tag %v to %q", pdsc, p.fileName)
 	pdsc.Version = utils.SemverStripMeta(pdsc.Version)
+	pdsc.computeIsDeprecated(p.deprecatedDate)
 	if p.HasPdsc(pdsc) != PdscIndexNotFound {
 		return errs.ErrPdscEntryExists
 	}
@@ -136,6 +141,7 @@ func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 func (p *PidxXML) AddReplacePdsc(cTag PdscTag) error {
 	log.Debugf("AddReplacePdsc pdsc tag %v to %q", cTag, p.fileName)
 	cTag.Version = utils.SemverStripMeta(cTag.Version)
+	cTag.computeIsDeprecated(p.deprecatedDate)
 	name := strings.ToLower(cTag.VName())
 	key, ok := p.pdscListName[name]
 	if ok {
@@ -402,6 +408,7 @@ func (p *PidxXML) Read() error {
 
 	p.pdscList = make(map[string][]PdscTag)
 	p.pdscListName = make(map[string]string)
+	p.deprecatedDate = time.Now().UTC().Truncate(24 * time.Hour)
 
 	// Create a new empty Pidx file if it does not exist
 	if !utils.FileExists(p.fileName) {
@@ -439,6 +446,7 @@ func (p *PidxXML) Read() error {
 
 	for _, pdsc := range p.Pindex.Pdscs {
 		pdsc.Version = utils.SemverStripMeta(pdsc.Version)
+		pdsc.computeIsDeprecated(p.deprecatedDate)
 		key := pdsc.Key()
 		name := strings.ToLower(pdsc.VName())
 		//		log.Debugf("Registring %q", key)
@@ -501,4 +509,26 @@ func (p *PdscTag) PackURL() string {
 // PdscFileName returns a string with how the pack's pdsc file name would be: Vendor.PackName.pdsc
 func (p *PdscTag) PdscFileName() string {
 	return p.VName() + utils.PdscExtension
+}
+
+// computeIsDeprecated evaluates the Deprecated date string against the given
+// reference date and caches the result in the isDeprecated field.
+func (p *PdscTag) computeIsDeprecated(refDate time.Time) {
+	if p.Deprecated == "" {
+		p.isDeprecated = false
+		return
+	}
+	t, err := time.Parse("2006-01-02", p.Deprecated)
+	if err != nil {
+		p.isDeprecated = false
+		return
+	}
+	p.isDeprecated = !refDate.Before(t)
+}
+
+// IsDeprecated returns the cached deprecated status.
+// The flag is computed when the PdscTag is added to a PidxXML (Read, AddPdsc, AddReplacePdsc)
+// and is based on the reference date set at that time.
+func (p *PdscTag) IsDeprecated() bool {
+	return p.isDeprecated
 }

@@ -674,19 +674,34 @@ func CheckConcurrency(concurrency int) int {
 //
 // Parameters:
 // - skipInstalledPdscFiles: If true, skips downloading PDSC files that are already installed.
+// - skipDeprecatedPdscFiles: If true, skips downloading PDSC files that are marked as deprecated.
 // - insecureSkipVerify: If true, skips TLS certificate verification for HTTPS downloads.
 // - concurrency: The number of concurrent downloads to allow. If 0, downloads are sequential.
 // - timeout: The timeout for each download operation.
 //
 // Returns:
 // - An error if there is an issue reading the public index XML or acquiring the semaphore.
-func DownloadPDSCFiles(skipInstalledPdscFiles, insecureSkipVerify bool, concurrency int, timeout int) error {
+func DownloadPDSCFiles(skipInstalledPdscFiles, skipDeprecatedPdscFiles, insecureSkipVerify bool, concurrency int, timeout int) error {
 	log.Info("Downloading all PDSC files available on the public index")
 	// if err := Installation.PublicIndexXML.Read(); err != nil {
 	// 	return err
 	// }
 
-	pdscTags := Installation.PublicIndexXML.ListPdscTags()
+	allPdscTags := Installation.PublicIndexXML.ListPdscTags()
+
+	// Filter out deprecated tags upfront if requested, so the job count
+	// used for progress reporting matches the actual number of downloads.
+	var pdscTags []xml.PdscTag
+	if skipDeprecatedPdscFiles {
+		for _, t := range allPdscTags {
+			if !t.IsDeprecated() {
+				pdscTags = append(pdscTags, t)
+			}
+		}
+	} else {
+		pdscTags = allPdscTags
+	}
+
 	numPdsc := len(pdscTags)
 	if numPdsc == 0 {
 		log.Info("(no packs in public index)")
@@ -940,7 +955,7 @@ func UpdatePublicIndexIfOnline() error {
 			err = Installation.checkUpdateCfg(&updateConf, true)
 			if err != nil {
 				UnlockPackRoot()
-				err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, false, false, false, 0, 0)
+				err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, true, false, false, false, 0, 0)
 				if err1 != nil {
 					log.Warnf("Cannot update public index: %v", err1)
 					return nil
@@ -954,7 +969,7 @@ func UpdatePublicIndexIfOnline() error {
 	// if public index does not or not yet exist then download without check
 	if !utils.FileExists(Installation.PublicIndex) {
 		UnlockPackRoot()
-		err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, false, false, false, 0, 0)
+		err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, true, false, false, false, 0, 0)
 		if err1 != nil {
 			log.Warnf("Cannot update public index: %v", err1)
 			return nil
@@ -974,6 +989,7 @@ func UpdatePublicIndexIfOnline() error {
 //   - sparse: A boolean flag to indicate whether to perform a sparse update.
 //   - downloadPdsc: A boolean flag to indicate whether to download PDSC files.
 //   - downloadRemainingPdscFiles: A boolean flag to indicate whether to download all remaining PDSC files.
+//   - skipDeprecatedPdscFiles: If true, skips downloading deprecated PDSC files.
 //   - updatePrivatePdsc: If true, updates private PDSC files during the update process.
 //   - showInfo: If true, logs informational messages about the download.
 //   - insecureSkipVerify: A boolean flag to indicate whether to skip TLS certificate verification for HTTPS downloads.
@@ -982,7 +998,7 @@ func UpdatePublicIndexIfOnline() error {
 //
 // Returns:
 //   - error: An error if the update fails, otherwise nil.
-func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemainingPdscFiles, updatePrivatePdsc, showInfo, insecureSkipVerify bool, concurrency int, timeout int) error {
+func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemainingPdscFiles, skipDeprecatedPdscFiles, updatePrivatePdsc, showInfo, insecureSkipVerify bool, concurrency int, timeout int) error {
 	// For backwards compatibility, allow indexPath to be a file, but ideally it should be empty
 	if indexPath == "" {
 		indexPath = strings.TrimSuffix(Installation.PublicIndexXML.URL, "/") + "/" + PublicIndexName
@@ -1043,7 +1059,7 @@ func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemaining
 	utils.SetReadOnly(Installation.PublicIndex)
 
 	if downloadPdsc {
-		err = DownloadPDSCFiles(false, insecureSkipVerify, concurrency, timeout)
+		err = DownloadPDSCFiles(false, skipDeprecatedPdscFiles, insecureSkipVerify, concurrency, timeout)
 		if err != nil {
 			return err
 		}
@@ -1066,7 +1082,7 @@ func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemaining
 	Installation.PublicIndexXML.SetFileName(savedIndexPath)
 
 	if downloadRemainingPdscFiles {
-		err = DownloadPDSCFiles(true, insecureSkipVerify, concurrency, timeout)
+		err = DownloadPDSCFiles(true, skipDeprecatedPdscFiles, insecureSkipVerify, concurrency, timeout)
 		if err != nil {
 			return err
 		}
@@ -1190,12 +1206,14 @@ func findInstalledPacks(addLocalPacks, removeDuplicates bool) ([]installedPack, 
 //   - listCached: If true, lists the cached packs.
 //   - listPublic: If true, lists the packs from the public index.
 //   - listUpdates: If true, lists the installed packs with available updates.
+//   - listDeprecated: If true, lists the deprecated packs.
 //   - listRequirements: If true, lists the installed packs with dependencies.
+//   - testing: If true, skips reading index files (used for testing).
 //   - listFilter: A string to filter the packs by.
 //
 // Returns:
 //   - error: An error if any occurs during the listing process.
-func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, testing bool, listFilter string) error {
+func ListInstalledPacks(listCached, listPublic, listUpdates, listDeprecated, listRequirements, testing bool, listFilter string) error {
 	log.Debugf("Listing packs")
 
 	if !testing {
@@ -1203,7 +1221,7 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, t
 			return err
 		}
 	}
-	if listPublic {
+	if listPublic || listDeprecated {
 		if listFilter != "" {
 			log.Infof("Listing packs from the public index, filtering by %q", listFilter)
 		} else {
@@ -1222,7 +1240,18 @@ func ListInstalledPacks(listCached, listPublic, listUpdates, listRequirements, t
 		})
 		// List all available packs from the index
 		for _, pdscTag := range pdscTags {
+			isDeprecated := pdscTag.IsDeprecated()
+			// Filter by deprecated status:
+			// only --deprecated: show only deprecated packs
+			// only --public: hide deprecated packs
+			if (!listPublic && listDeprecated && !isDeprecated) ||
+				(listPublic && !listDeprecated && isDeprecated) {
+				continue
+			}
 			logMessage := pdscTag.YamlPackID()
+			if isDeprecated {
+				logMessage += " (deprecated)"
+			}
 			packFilePath := filepath.Join(Installation.DownloadDir, pdscTag.Key()) + utils.PackExtension
 
 			if ok, _ := Installation.PackIsInstalled(&PackType{PdscTag: pdscTag}, false); ok {

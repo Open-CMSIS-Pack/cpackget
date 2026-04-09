@@ -14,6 +14,9 @@ var initCmdFlags struct {
 	// downloadPdscFiles forces all pdsc files from the public index to be downloaded
 	downloadPdscFiles bool
 
+	// Includes deprecated packs
+	includeDeprecated bool
+
 	// Reports encoded progress for files and download when used by other tools
 	encodedProgress bool
 
@@ -56,14 +59,15 @@ The index-url is mandatory. Ex "cpackget init --pack-root path/to/mypackroot htt
 			return err
 		}
 
-		err = installer.UpdatePublicIndex(indexPath, true, initCmdFlags.downloadPdscFiles, false, true, true, initCmdFlags.insecureSkipVerify, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
+		err = installer.UpdatePublicIndex(indexPath, true, initCmdFlags.downloadPdscFiles, false, !initCmdFlags.includeDeprecated, true, true, initCmdFlags.insecureSkipVerify, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
 		return err
 	},
 }
 
 func init() {
-	InitCmd.Flags().BoolVarP(&initCmdFlags.downloadPdscFiles, "all-pdsc-files", "a", false, "downloads all the latest .pdsc files from the public index")
-	InitCmd.Flags().BoolVarP(&initCmdFlags.encodedProgress, "encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
+	InitCmd.Flags().BoolVarP(&initCmdFlags.downloadPdscFiles, "all-pdsc-files", "a", false, "downloads all the latest .pdsc files from the public index, except deprecated ones")
+	InitCmd.Flags().BoolVarP(&initCmdFlags.includeDeprecated, "deprecated", "d", false, "includes deprecated .pdsc files when downloading")
+	InitCmd.Flags().BoolVarP(&initCmdFlags.encodedProgress, "encoded-progress", "E", false, "reports encoded progress for files and download when used by other tools")
 	InitCmd.Flags().BoolVar(&initCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
 	InitCmd.Flags().BoolVar(&initCmdFlags.insecureSkipVerify, "insecure-skip-verify", false, "skip verification of server's TLS certificate when downloading packs over HTTPS")
 }

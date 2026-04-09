@@ -17,6 +17,9 @@ var updateIndexCmdFlags struct {
 	// downloadPdscFiles forces all pdsc files from the public index to be downloaded
 	downloadUpdatePdscFiles bool
 
+	// Includes deprecated packs
+	includeDeprecated bool
+
 	// Reports encoded progress for files and download when used by other tools
 	encodedProgress bool
 
@@ -47,7 +50,7 @@ var UpdateIndexCmd = &cobra.Command{
 			return err
 		}
 
-		err = installer.UpdatePublicIndex("", updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, true, true, updateIndexCmdFlags.insecureSkipVerify, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
+		err = installer.UpdatePublicIndex("", updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, !updateIndexCmdFlags.includeDeprecated, true, true, updateIndexCmdFlags.insecureSkipVerify, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
 		return err
 	},
 }
@@ -59,8 +62,9 @@ By default it will also check if all PDSC files under .Web/ need update as well.
 
 func init() {
 	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.sparse, "sparse", "s", false, "avoid updating the pdsc files within .Web/ folder")
-	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.downloadUpdatePdscFiles, "all-pdsc-files", "a", false, "updates/downloads all the latest .pdsc files from the public index")
-	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.encodedProgress, "encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
+	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.downloadUpdatePdscFiles, "all-pdsc-files", "a", false, "updates/downloads all the latest .pdsc files from the public index, except deprecated ones")
+	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.includeDeprecated, "deprecated", "d", false, "includes deprecated .pdsc files when downloading")
+	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.encodedProgress, "encoded-progress", "E", false, "reports encoded progress for files and download when used by other tools")
 	UpdateIndexCmd.Flags().BoolVar(&updateIndexCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
 	UpdateIndexCmd.Flags().BoolVar(&updateIndexCmdFlags.insecureSkipVerify, "insecure-skip-verify", false, "skip verification of server's TLS certificate when downloading packs over HTTPS")
 }

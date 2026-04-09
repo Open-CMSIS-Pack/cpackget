@@ -19,18 +19,21 @@ var listCmdFlags struct {
 	// listCached tells whether listing all cached packs
 	listCached bool
 
+	// listDeprecated tells whether listing all deprecated packs
+	listDeprecated bool
+
 	// listFilter is a set of words by which to filter listed packs
 	listFilter string
 }
 
 var ListCmd = &cobra.Command{
-	Use:               "list [--cached|--public|--updates]",
+	Use:               "list [--cached|--public|--updates|--deprecated] [--filter <expression>]",
 	Short:             "List installed packs",
 	Long:              "List all installed packs and optionally cached packs or those for which updates are available",
 	Args:              cobra.MaximumNArgs(0),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic, listCmdFlags.listUpdates, false, false, listCmdFlags.listFilter)
+		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic, listCmdFlags.listUpdates, listCmdFlags.listDeprecated, false, false, listCmdFlags.listFilter)
 	},
 }
 
@@ -41,7 +44,7 @@ var listRequiredCmd = &cobra.Command{
 	Args:              cobra.MaximumNArgs(0),
 	PersistentPreRunE: configureInstaller,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic, listCmdFlags.listUpdates, true, false, listCmdFlags.listFilter)
+		return installer.ListInstalledPacks(listCmdFlags.listCached, listCmdFlags.listPublic, listCmdFlags.listUpdates, listCmdFlags.listDeprecated, true, false, listCmdFlags.listFilter)
 	},
 }
 
@@ -49,6 +52,7 @@ func init() {
 	ListCmd.Flags().BoolVarP(&listCmdFlags.listCached, "cached", "c", false, "list only cached packs")
 	ListCmd.Flags().BoolVarP(&listCmdFlags.listPublic, "public", "p", false, "list packs in the public index")
 	ListCmd.Flags().BoolVarP(&listCmdFlags.listUpdates, "updates", "u", false, "list packs which have newer versions")
+	ListCmd.Flags().BoolVarP(&listCmdFlags.listDeprecated, "deprecated", "d", false, "list only deprecated packs")
 	ListCmd.Flags().StringVarP(&listCmdFlags.listFilter, "filter", "f", "", "filter results (case sensitive, accepts several expressions)")
 	ListCmd.AddCommand(listRequiredCmd)
 
