@@ -5,6 +5,7 @@ on:
       - '.github/workflows/markdown.yml'
       - '.github/markdownlint.json'
       - '.github/markdownlint.jsonc'
+      - '.github/lychee.toml'
       - '**/*.md'
 
 # Declare default permissions as read only.
@@ -15,5 +16,5 @@ jobs:
     uses: Open-CMSIS-Pack/workflows-and-actions-collection/.github/workflows/markdown-lint.yml@v2.0.0
     with:
       lint-config: '.github/markdownlint.jsonc'
-      link-check-config: '.github/markdown-link-check.jsonc'
+      link-check-config: '.github/lychee.toml'
       ignore-files: 'third_party_licenses.md'

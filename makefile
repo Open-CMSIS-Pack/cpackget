@@ -110,7 +110,7 @@ release: test-all $(PROG)
 config:
 	@echo "Configuring local environment"
 	@go version 2>/dev/null || echo "Need Golang: https://golang.org/doc/install"
-	@golangci-lint version 2>/dev/null || echo "Need GolangCi-Lint: https://golangci-lint.run/usage/install/#local-installation"
+	@golangci-lint version 2>/dev/null || echo "Need GolangCi-Lint: https://golangci-lint.run/docs/welcome/install/local/"
 
 	# Install pre-commit hooks
 	cp scripts/pre-commit .git/hooks/pre-commit
