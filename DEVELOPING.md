@@ -6,7 +6,7 @@ Follow steps below to start developing for `cpackget`:
 
 - [Install Make](https://www.gnu.org/software/make/)
 - [Install Golang](https://golang.org/doc/install)
-- [Install GolangCI-Lint](https://golangci-lint.run/usage/install/#local-installation)
+- [Install GolangCI-Lint](https://golangci-lint.run/docs/welcome/install/local/)
 
 2. Clone the repo:
 `$ git clone https://github.com/open-cmsis-pack/cpackget.git`
