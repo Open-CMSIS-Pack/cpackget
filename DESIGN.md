@@ -880,7 +880,7 @@ The output format is machine-readable, designed for IDE and tool integration.
 | `stretchr/testify` | v1.11.1 | Test assertions and mocking |
 | `lu4p/cat` | v0.1.5 | File content type detection |
 
-**Go version:** 1.25.0
+**Go version:** 1.26.2
 
 ---
 
