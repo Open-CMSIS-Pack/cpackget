@@ -2,7 +2,7 @@ FROM ubuntu:23.04
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
-    apt-get -y install \
+    apt-get -y install --no-install-recommends \
         build-essential \
         curl \
         less \
