@@ -33,9 +33,9 @@
 | go.yaml.in/yaml/v3 | v3.0.4  | [MIT](https://github.com/yaml/go-yaml/blob/v3.0.4/LICENSE) |
 | golang.org/x/crypto | v0.51.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.51.0:LICENSE) |
 | golang.org/x/mod/semver | v0.36.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/mod/+/v0.36.0:LICENSE) |
-| golang.org/x/net/html | v0.54.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.54.0:LICENSE) |
+| golang.org/x/net/html | v0.55.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.55.0:LICENSE) |
 | golang.org/x/sync/semaphore | v0.20.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sync/+/v0.20.0:LICENSE) |
-| golang.org/x/sys | v0.44.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.44.0:LICENSE) |
+| golang.org/x/sys | v0.45.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.45.0:LICENSE) |
 | golang.org/x/term | v0.43.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/term/+/v0.43.0:LICENSE) |
 | golang.org/x/text | v0.37.0  | [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.37.0:LICENSE) |
 
