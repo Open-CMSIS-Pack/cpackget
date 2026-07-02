@@ -1,6 +1,5 @@
 [![Release](https://github.com/open-cmsis-pack/cpackget/actions/workflows/release.yml/badge.svg)](https://github.com/Open-CMSIS-Pack/cpackget/actions/workflows/release.yml)
 [![Build And Test](https://github.com/Open-CMSIS-Pack/cpackget/actions/workflows/ci.yml/badge.svg)](https://github.com/Open-CMSIS-Pack/cpackget/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/open-cmsis-pack/cpackget)](https://goreportcard.com/report/github.com/open-cmsis-pack/cpackget)
 [![GoDoc](https://godoc.org/github.com/open-cmsis-pack/cpackget?status.svg)](https://godoc.org/github.com/open-cmsis-pack/cpackget)
 
 [![Maintainability](https://qlty.sh/badges/f4b0ccfb-f90d-4410-985d-3363e144102a/maintainability.svg)](https://qlty.sh/gh/Open-CMSIS-Pack/projects/cpackget)
