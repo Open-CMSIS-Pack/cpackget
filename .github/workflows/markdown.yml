@@ -13,7 +13,7 @@ permissions: read-all
 
 jobs:
   markdown-check:
-    uses: Open-CMSIS-Pack/workflows-and-actions-collection/.github/workflows/markdown-lint.yml@v3.0.0
+    uses: Open-CMSIS-Pack/workflows-and-actions-collection/.github/workflows/markdown-lint.yml@v3.0.1
     with:
       lint-config: '.github/markdownlint.jsonc'
       link-check-config: '.github/lychee.toml'
