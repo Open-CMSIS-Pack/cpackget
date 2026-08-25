@@ -6,6 +6,7 @@ package utils
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/xml"
@@ -200,8 +201,8 @@ func DownloadFile(URL string, useCache, showInfo, showProgressBar, insecureSkipV
 	client := &http.Client{
 		Transport: &TimeoutTransport{
 			Transport: http.Transport{
-				Dial: func(netw, addr string) (net.Conn, error) {
-					return net.Dial(netw, addr)
+				DialContext: func(ctx context.Context, netw, addr string) (net.Conn, error) {
+					return (&net.Dialer{}).DialContext(ctx, netw, addr)
 				},
 				TLSClientConfig: &tls,
 				Proxy:           http.ProxyFromEnvironment,
