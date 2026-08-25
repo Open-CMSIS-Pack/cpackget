@@ -282,7 +282,7 @@ func (l *LicenseWindowType) Setup() error {
 func (l *LicenseWindowType) PromptUser() (bool, error) {
 	log.Debug("Prompting user for license agreement")
 	err := l.Gui.MainLoop()
-	if err != nil && err != gocui.ErrQuit && err != errs.ErrExtractEula {
+	if err != gocui.ErrQuit && err != errs.ErrExtractEula {
 		return false, err
 	}
 
