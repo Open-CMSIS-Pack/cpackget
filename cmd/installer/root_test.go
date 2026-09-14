@@ -1004,7 +1004,7 @@ func TestUpdatePublicIndex(t *testing.T) {
 		indexContent, err := os.ReadFile(samplePublicIndex)
 		assert.Nil(err)
 		indexContent = []byte(strings.Replace(string(indexContent), "http://the.vendor/", sourceIndex, 1))
-		assert.Nil(os.WriteFile(sourceIndex, indexContent, 0600))
+		assert.Nil(os.WriteFile(sourceIndex, indexContent, 0600)) // #nosec G703 -- sourceIndex is confined to t.TempDir.
 		installer.Installation.PublicIndexXML.URL = sourceIndex
 
 		err = installer.UpdatePublicIndex("", Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, skipDeprecatedPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
