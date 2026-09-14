@@ -5,6 +5,7 @@ package xml
 
 import (
 	"encoding/xml"
+	"net/url"
 	"path"
 	"path/filepath"
 	"strings"
@@ -445,6 +446,11 @@ func (p *PidxXML) Read() error {
 	}
 
 	for _, pdsc := range p.Pindex.Pdscs {
+		invalidFields := pdsc.invalidFields()
+		if len(invalidFields) > 0 {
+			log.Warnf("Skipping invalid pdsc entry %q: invalid %s", pdsc.YamlPackID(), strings.Join(invalidFields, ", "))
+			continue
+		}
 		pdsc.Version = utils.SemverStripMeta(pdsc.Version)
 		pdsc.computeIsDeprecated(p.deprecatedDate)
 		key := pdsc.Key()
@@ -458,6 +464,36 @@ func (p *PidxXML) Read() error {
 	p.Pindex.Pdscs = p.Pindex.Pdscs[:0]
 
 	return nil
+}
+
+func (p *PdscTag) invalidFields() []string {
+	invalidFields := []string{}
+	if p.URL != "" {
+		if _, err := url.Parse(p.URL); err != nil {
+			invalidFields = append(invalidFields, "url")
+		}
+	}
+	if !utils.IsPackVendorNameValid(p.Vendor) {
+		invalidFields = append(invalidFields, "vendor")
+	}
+	if !utils.IsPackNameValid(p.Name) {
+		invalidFields = append(invalidFields, "name")
+	}
+	if p.Version != "" && !utils.IsPackVersionValid(p.Version) {
+		invalidFields = append(invalidFields, "version")
+	}
+	if p.Deprecated != "" {
+		if _, err := time.Parse("2006-01-02", p.Deprecated); err != nil {
+			invalidFields = append(invalidFields, "deprecated")
+		}
+	}
+	if p.Replacement != "" {
+		parts := strings.Split(p.Replacement, ".")
+		if len(parts) > 2 || !utils.IsPackNameValid(parts[len(parts)-1]) || (len(parts) == 2 && !utils.IsPackVendorNameValid(parts[0])) {
+			invalidFields = append(invalidFields, "replacement")
+		}
+	}
+	return invalidFields
 }
 
 // Write writes the PidxXML data to the file specified by p.fileName.

@@ -37,6 +37,15 @@ const ConnectionTryURL = "https://www.keil.com/pack/keil.vidx"
 
 // DefaultPublicIndex is the public index to use in "default mode"
 const DefaultPublicIndex = KeilDefaultPackRoot + PublicIndexName
+
+func resolvePublicIndexPath(indexPath string) string {
+	indexPath = strings.TrimSuffix(indexPath, "/")
+	if strings.HasSuffix(indexPath, PublicIndexName) {
+		return indexPath
+	}
+	return indexPath + "/" + PublicIndexName
+}
+
 const DefaultPublicCacheIndex = KeilDefaultPackRoot + PublicCacheIndex
 
 // would be reset to the public index URL when reading the public index
@@ -1001,7 +1010,7 @@ func UpdatePublicIndexIfOnline() error {
 func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemainingPdscFiles, skipDeprecatedPdscFiles, updatePrivatePdsc, showInfo, insecureSkipVerify bool, concurrency int, timeout int) error {
 	// For backwards compatibility, allow indexPath to be a file, but ideally it should be empty
 	if indexPath == "" {
-		indexPath = strings.TrimSuffix(Installation.PublicIndexXML.URL, "/") + "/" + PublicIndexName
+		indexPath = resolvePublicIndexPath(Installation.PublicIndexXML.URL)
 	}
 
 	var err error
@@ -1737,7 +1746,7 @@ func ReadIndexFiles() error {
 		return err
 	}
 	if Installation.PublicIndexXML.URL != "" {
-		ActualPublicIndex = Installation.PublicIndexXML.URL + PublicIndexName
+		ActualPublicIndex = resolvePublicIndexPath(Installation.PublicIndexXML.URL)
 	}
 
 	err = Installation.LocalPidx.Read()

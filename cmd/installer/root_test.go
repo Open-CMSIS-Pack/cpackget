@@ -729,6 +729,24 @@ func TestUpdatePublicIndexIfOnline(t *testing.T) {
 		// Should handle gracefully with warning (WarningInsteadOfErrors is true)
 		assert.Nil(err)
 	})
+
+	t.Run("test invalid index source warns instead of panicking", func(t *testing.T) {
+		localTestingDir := "test-update-invalid-index-source"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+
+		installer.ActualPublicIndex = "invalid\x00index.pidx"
+		var output bytes.Buffer
+		originalOutput := log.StandardLogger().Out
+		log.SetOutput(&output)
+		defer log.SetOutput(originalOutput)
+
+		assert.NotPanics(func() {
+			assert.Nil(installer.UpdatePublicIndexIfOnline())
+		})
+		assert.Contains(output.String(), "Cannot update public index")
+	})
 }
 
 func TestUpdatePublicIndex(t *testing.T) {
@@ -973,6 +991,27 @@ func TestUpdatePublicIndex(t *testing.T) {
 		assert.Nil(err2)
 
 		assert.Equal(copied, indexContent)
+	})
+
+	t.Run("test configured source already ends with "+installer.PublicIndexName, func(t *testing.T) {
+		localTestingDir := "test-index-source-with-filename"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+
+		sourceDir := t.TempDir()
+		sourceIndex := filepath.Join(sourceDir, installer.PublicIndexName)
+		indexContent, err := os.ReadFile(samplePublicIndex)
+		assert.Nil(err)
+		indexContent = []byte(strings.Replace(string(indexContent), "http://the.vendor/", sourceIndex, 1))
+		assert.Nil(os.WriteFile(sourceIndex, indexContent, 0600))
+		installer.Installation.PublicIndexXML.URL = sourceIndex
+
+		err = installer.UpdatePublicIndex("", Sparse, DownloadPdsc, !DownloadRemainingPdscFiles, skipDeprecatedPdscFiles, !UpdatePrivatePdsc, ShowInfo, !InsecureSkipVerify, Concurrency, Timeout)
+		assert.Nil(err)
+		assert.True(utils.FileExists(installer.Installation.PublicIndex))
+		assert.Nil(installer.ReadIndexFiles())
+		assert.Equal(sourceIndex, installer.ActualPublicIndex)
 	})
 
 	t.Run("test check concurrency function call", func(t *testing.T) {

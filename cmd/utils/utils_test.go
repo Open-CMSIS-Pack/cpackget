@@ -232,6 +232,14 @@ func TestFileExists(t *testing.T) {
 	})
 }
 
+func TestDirExists(t *testing.T) {
+	assert := assert.New(t)
+
+	assert.NotPanics(func() {
+		assert.False(utils.DirExists("invalid\x00path"))
+	})
+}
+
 func TestEnsureDir(t *testing.T) {
 	assert := assert.New(t)
 	t.Run("test if directory gets created", func(t *testing.T) {
