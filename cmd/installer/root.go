@@ -1013,7 +1013,10 @@ func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemaining
 		indexPath = resolvePublicIndexPath(Installation.PublicIndexXML.URL)
 	}
 
-	var err error
+	indexPath, err := utils.FileURLToPath(indexPath)
+	if err != nil {
+		return err
+	}
 
 	if strings.HasPrefix(indexPath, "http://") || strings.HasPrefix(indexPath, "https://") {
 		if !strings.HasPrefix(indexPath, "https://127.0.0.1") {
