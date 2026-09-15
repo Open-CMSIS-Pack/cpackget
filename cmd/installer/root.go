@@ -1895,7 +1895,15 @@ func (p *PacksInstallationType) writeUpdateCfg(conf *updateCfg) error {
 	content := "Date=" + conf.Date + "\n" +
 		"Auto=" + strconv.FormatBool(conf.Auto) + "\n" +
 		"UpdateDaily=" + strconv.FormatBool(conf.UpdateDaily) + "\n"
-	return os.WriteFile(filepath.Join(p.WebDir, "update.cfg"), []byte(content), os.FileMode(0o644))
+f, err := os.OpenFile(filepath.Join(p.WebDir, "update.cfg"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
+if err != nil {
+	return err
+}
+defer f.Close()
+if _, err := f.WriteString(content); err != nil {
+	return err
+}
+return f.Sync()
 }
 
 // RecordPublicIndexUpdate records a successful explicit public index update.
