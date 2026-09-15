@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -962,7 +963,7 @@ func UpdatePublicIndexIfOnline() error {
 		if errors.Unwrap(err) != errs.ErrOffline {
 			var updateConf updateCfg
 			err = Installation.checkUpdateCfg(&updateConf, true)
-			if err != nil {
+			if err != nil && updateConf.Auto {
 				UnlockPackRoot()
 				err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, true, false, false, false, 0, 0)
 				if err1 != nil {
@@ -1833,6 +1834,7 @@ type updateCfg struct {
 //     "Date" field cannot be parsed, or if the timestamp in the "Date" field is older
 //     than 24 hours. If no errors occur, nil is returned.
 func (p *PacksInstallationType) checkUpdateCfg(conf *updateCfg, WarningInsteadOfErrors bool) error {
+	conf.Auto = true
 	f, err := os.Open(filepath.Join(p.WebDir, "update.cfg"))
 	if err != nil {
 		if WarningInsteadOfErrors {
@@ -1850,8 +1852,13 @@ func (p *PacksInstallationType) checkUpdateCfg(conf *updateCfg, WarningInsteadOf
 		if strings.HasPrefix(line, "Date=") {
 			conf.Date = strings.TrimPrefix(line, "Date=")
 		} else if strings.HasPrefix(line, "Auto=") {
-			conf.Auto = strings.TrimPrefix(line, "Auto=") == "true"
+			if auto, err := strconv.ParseBool(strings.TrimPrefix(line, "Auto=")); err == nil {
+				conf.Auto = auto
+			}
 		}
+	}
+	if err := scanner.Err(); err != nil {
+		return err
 	}
 	if t, err := time.Parse("2-1-2006", conf.Date); err != nil {
 		return err
@@ -1897,6 +1904,13 @@ func (p *PacksInstallationType) updateUpdateCfg(conf *updateCfg) error {
 	}
 
 	return f.Sync()
+}
+
+// RecordPublicIndexUpdate records a successful explicit public index update.
+func RecordPublicIndexUpdate() error {
+	var updateConf updateCfg
+	_ = Installation.checkUpdateCfg(&updateConf, false)
+	return Installation.updateUpdateCfg(&updateConf)
 }
 
 // touchPackIdx updates the timestamp of the PackIdx file to the current time.

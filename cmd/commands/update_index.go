@@ -50,8 +50,10 @@ var UpdateIndexCmd = &cobra.Command{
 			return err
 		}
 
-		err = installer.UpdatePublicIndex("", updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, !updateIndexCmdFlags.includeDeprecated, true, true, updateIndexCmdFlags.insecureSkipVerify, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout"))
-		return err
+		if err := installer.UpdatePublicIndex("", updateIndexCmdFlags.sparse, false, updateIndexCmdFlags.downloadUpdatePdscFiles, !updateIndexCmdFlags.includeDeprecated, true, true, updateIndexCmdFlags.insecureSkipVerify, viper.GetInt("concurrent-downloads"), viper.GetInt("timeout")); err != nil {
+			return err
+		}
+		return installer.RecordPublicIndexUpdate()
 	},
 }
 
