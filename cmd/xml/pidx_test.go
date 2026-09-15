@@ -4,8 +4,10 @@
 package xml_test
 
 import (
+	"bytes"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +15,7 @@ import (
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
 	"github.com/open-cmsis-pack/cpackget/cmd/utils"
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -409,6 +412,38 @@ func TestPidxXML(t *testing.T) {
 		assert.NotNil(err)
 		assert.Contains(err.Error(), "XML syntax error on line 3: unexpected EOF")
 		assert.Contains(err.Error(), fileName)
+	})
+
+	t.Run("test reading PIDX skips invalid entries", func(t *testing.T) {
+		fileName := filepath.Join(t.TempDir(), "index.pidx")
+		content := `<?xml version="1.0" encoding="UTF-8"?>
+<index schemaVersion="1.1.0">
+  <vendor>TestVendor</vendor>
+  <url>https://example.com/</url>
+  <timestamp>2026-09-14T00:00:00Z</timestamp>
+  <pindex>
+    <pdsc url="https://example.com/" vendor="TheVendor" name="PackOne" version="1.2.3" />
+	<pdsc url="%" vendor="Bad Vendor" name="Bad.Pack" version="invalid" deprecated="tomorrow" replacement="Bad.Replacement.Name" />
+    <pdsc url="https://example.com/" vendor="TheVendor" name="PackTwo" version="2.0.0" />
+  </pindex>
+</index>`
+		assert.NoError(os.WriteFile(fileName, []byte(content), 0600))
+
+		var output bytes.Buffer
+		originalOutput := log.StandardLogger().Out
+		log.SetOutput(&output)
+		defer log.SetOutput(originalOutput)
+
+		pidx := xml.NewPidxXML(fileName, false)
+		assert.NoError(pidx.Read())
+		assert.Len(pidx.ListPdscTags(), 2)
+		assert.Len(pidx.FindPdscTags(xml.PdscTag{Vendor: "TheVendor", Name: "PackOne", Version: "1.2.3"}), 1)
+		assert.Len(pidx.FindPdscTags(xml.PdscTag{Vendor: "TheVendor", Name: "PackTwo", Version: "2.0.0"}), 1)
+		assert.Empty(pidx.FindPdscTags(xml.PdscTag{Vendor: "Bad Vendor", Name: "Bad.Pack", Version: "invalid"}))
+		assert.Contains(output.String(), "Skipping invalid pdsc entry")
+		for _, field := range []string{"url", "vendor", "name", "version", "deprecated", "replacement"} {
+			assert.Contains(output.String(), field)
+		}
 	})
 
 	t.Run("test Read wraps XML parsing errors with filename", func(t *testing.T) {
