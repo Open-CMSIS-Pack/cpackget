@@ -1892,42 +1892,10 @@ func (p *PacksInstallationType) updateUpdateCfg(conf *updateCfg) error {
 }
 
 func (p *PacksInstallationType) writeUpdateCfg(conf *updateCfg) error {
-	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
-	f, err := os.OpenFile(filepath.Join(p.WebDir, "update.cfg"), flags, os.FileMode(0o644))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	if _, err := f.WriteString("Date=" + conf.Date + "\n"); err != nil {
-		return err
-	}
-	if _, err := f.WriteString("Auto="); err != nil {
-		return err
-	}
-	if conf.Auto {
-		if _, err := f.WriteString("true\n"); err != nil {
-			return err
-		}
-	} else {
-		if _, err := f.WriteString("false\n"); err != nil {
-			return err
-		}
-	}
-	if _, err := f.WriteString("UpdateDaily="); err != nil {
-		return err
-	}
-	if conf.UpdateDaily {
-		if _, err := f.WriteString("true\n"); err != nil {
-			return err
-		}
-	} else {
-		if _, err := f.WriteString("false\n"); err != nil {
-			return err
-		}
-	}
-
-	return f.Sync()
+	content := "Date=" + conf.Date + "\n" +
+		"Auto=" + strconv.FormatBool(conf.Auto) + "\n" +
+		"UpdateDaily=" + strconv.FormatBool(conf.UpdateDaily) + "\n"
+	return os.WriteFile(filepath.Join(p.WebDir, "update.cfg"), []byte(content), os.FileMode(0o644))
 }
 
 // RecordPublicIndexUpdate records a successful explicit public index update.
