@@ -1891,19 +1891,23 @@ func (p *PacksInstallationType) updateUpdateCfg(conf *updateCfg) error {
 	return p.writeUpdateCfg(conf)
 }
 
-func (p *PacksInstallationType) writeUpdateCfg(conf *updateCfg) error {
+func (p *PacksInstallationType) writeUpdateCfg(conf *updateCfg) (retErr error) {
 	content := "Date=" + conf.Date + "\n" +
 		"Auto=" + strconv.FormatBool(conf.Auto) + "\n" +
 		"UpdateDaily=" + strconv.FormatBool(conf.UpdateDaily) + "\n"
-f, err := os.OpenFile(filepath.Join(p.WebDir, "update.cfg"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
-if err != nil {
-	return err
-}
-defer f.Close()
-if _, err := f.WriteString(content); err != nil {
-	return err
-}
-return f.Sync()
+	f, err := os.OpenFile(filepath.Join(p.WebDir, "update.cfg"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := f.Close(); retErr == nil && cerr != nil {
+			retErr = cerr
+		}
+	}()
+	if _, err := f.WriteString(content); err != nil {
+		return err
+	}
+	return f.Sync()
 }
 
 // RecordPublicIndexUpdate records a successful explicit public index update.
