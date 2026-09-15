@@ -561,8 +561,37 @@ func TestUpdatePublicIndexIfOnline(t *testing.T) {
 		assert.Nil(err)
 	})
 
-	t.Run("test automatic update disabled", func(t *testing.T) {
+	t.Run("test legacy Auto false is ignored", func(t *testing.T) {
 		localTestingDir := "test-update-online-auto-disabled"
+		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
+		installer.UnlockPackRoot()
+		defer removePackRoot(localTestingDir)
+
+		server := NewServer()
+		defer server.httpsServer.Close()
+
+		publicIndexContent, err := os.ReadFile(samplePublicIndex)
+		assert.Nil(err)
+		server.AddRoute("index.pidx", publicIndexContent)
+		installer.Installation.PublicIndexXML.URL = server.URL() + "index.pidx"
+		installer.ActualPublicIndex = server.URL() + "index.pidx"
+
+		assert.Nil(utils.TouchFile(installer.Installation.PublicIndex))
+		updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
+		oldDate := time.Now().AddDate(0, 0, -2).Format("2-1-2006")
+		updateCfgContent := []byte("Date=" + oldDate + "\nAuto=false\n")
+		assert.Nil(os.WriteFile(updateCfgPath, updateCfgContent, 0600))
+
+		assert.Nil(installer.UpdatePublicIndexIfOnline())
+
+		actualUpdateCfgContent, err := os.ReadFile(updateCfgPath)
+		assert.Nil(err)
+		expected := "Date=" + time.Now().Format("2-1-2006") + "\nAuto=false\nUpdateDaily=true\n"
+		assert.Equal(expected, string(actualUpdateCfgContent))
+	})
+
+	t.Run("test daily update disabled", func(t *testing.T) {
+		localTestingDir := "test-update-online-daily-disabled"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
 		defer removePackRoot(localTestingDir)
@@ -580,7 +609,7 @@ func TestUpdatePublicIndexIfOnline(t *testing.T) {
 		assert.Nil(os.WriteFile(installer.Installation.PublicIndex, originalIndexContent, 0600))
 		updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
 		oldDate := time.Now().AddDate(0, 0, -2).Format("2-1-2006")
-		updateCfgContent := []byte("Date=" + oldDate + "\nAuto=false\n")
+		updateCfgContent := []byte("Date=" + oldDate + "\nAuto=true\nUpdateDaily=false\n")
 		assert.Nil(os.WriteFile(updateCfgPath, updateCfgContent, 0600))
 
 		assert.Nil(installer.UpdatePublicIndexIfOnline())
@@ -593,8 +622,8 @@ func TestUpdatePublicIndexIfOnline(t *testing.T) {
 		assert.Equal(updateCfgContent, actualUpdateCfgContent)
 	})
 
-	t.Run("test malformed Auto defaults to enabled", func(t *testing.T) {
-		localTestingDir := "test-update-online-malformed-auto"
+	t.Run("test malformed daily setting defaults to enabled", func(t *testing.T) {
+		localTestingDir := "test-update-online-malformed-daily"
 		assert.Nil(installer.SetPackRoot(localTestingDir, CreatePackRoot))
 		installer.UnlockPackRoot()
 		defer removePackRoot(localTestingDir)
@@ -611,13 +640,13 @@ func TestUpdatePublicIndexIfOnline(t *testing.T) {
 		assert.Nil(utils.TouchFile(installer.Installation.PublicIndex))
 		updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
 		oldDate := time.Now().AddDate(0, 0, -2).Format("2-1-2006")
-		assert.Nil(os.WriteFile(updateCfgPath, []byte("Date="+oldDate+"\nAuto=invalid\n"), 0600))
+		assert.Nil(os.WriteFile(updateCfgPath, []byte("Date="+oldDate+"\nAuto=false\nUpdateDaily=invalid\n"), 0600))
 
 		assert.Nil(installer.UpdatePublicIndexIfOnline())
 
 		actualUpdateCfgContent, err := os.ReadFile(updateCfgPath)
 		assert.Nil(err)
-		expected := "Date=" + time.Now().Format("2-1-2006") + "\nAuto=true\n"
+		expected := "Date=" + time.Now().Format("2-1-2006") + "\nAuto=false\nUpdateDaily=true\n"
 		assert.Equal(expected, string(actualUpdateCfgContent))
 	})
 

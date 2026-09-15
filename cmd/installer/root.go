@@ -963,7 +963,7 @@ func UpdatePublicIndexIfOnline() error {
 		if errors.Unwrap(err) != errs.ErrOffline {
 			var updateConf updateCfg
 			err = Installation.checkUpdateCfg(&updateConf, true)
-			if err != nil && updateConf.Auto {
+			if err != nil && updateConf.UpdateDaily {
 				UnlockPackRoot()
 				err1 := UpdatePublicIndex(ActualPublicIndex, false, false, false, true, false, false, false, 0, 0)
 				if err1 != nil {
@@ -986,6 +986,7 @@ func UpdatePublicIndexIfOnline() error {
 		}
 		var updateConf updateCfg
 		updateConf.Auto = true
+		updateConf.UpdateDaily = true
 		_ = Installation.updateUpdateCfg(&updateConf) // create the update config file
 	}
 	return nil
@@ -1811,11 +1812,13 @@ type PacksInstallationType struct {
 
 // updateCfg represents the content of "update.cfg" file.
 // - Date: a string representing the date of the last update.
-// - Auto: a boolean indicating whether automatic updates are enabled.
+// - Auto: a legacy setting preserved for compatibility.
+// - UpdateDaily: a boolean indicating whether automatic daily updates are enabled.
 type updateCfg struct {
 	// Default struct {
-	Date string
-	Auto bool
+	Date        string
+	Auto        bool
+	UpdateDaily bool
 	// }
 }
 
@@ -1835,6 +1838,7 @@ type updateCfg struct {
 //     than 24 hours. If no errors occur, nil is returned.
 func (p *PacksInstallationType) checkUpdateCfg(conf *updateCfg, WarningInsteadOfErrors bool) error {
 	conf.Auto = true
+	conf.UpdateDaily = true
 	f, err := os.Open(filepath.Join(p.WebDir, "update.cfg"))
 	if err != nil {
 		if WarningInsteadOfErrors {
@@ -1854,6 +1858,10 @@ func (p *PacksInstallationType) checkUpdateCfg(conf *updateCfg, WarningInsteadOf
 		} else if strings.HasPrefix(line, "Auto=") {
 			if auto, err := strconv.ParseBool(strings.TrimPrefix(line, "Auto=")); err == nil {
 				conf.Auto = auto
+			}
+		} else if strings.HasPrefix(line, "UpdateDaily=") {
+			if updateDaily, err := strconv.ParseBool(strings.TrimPrefix(line, "UpdateDaily=")); err == nil {
+				conf.UpdateDaily = updateDaily
 			}
 		}
 	}
@@ -1880,6 +1888,10 @@ func (p *PacksInstallationType) checkUpdateCfg(conf *updateCfg, WarningInsteadOf
 //   - An error if there is an issue opening, writing to, or syncing the file; otherwise, nil.
 func (p *PacksInstallationType) updateUpdateCfg(conf *updateCfg) error {
 	conf.Date = time.Now().Local().Format("2-1-2006")
+	return p.writeUpdateCfg(conf)
+}
+
+func (p *PacksInstallationType) writeUpdateCfg(conf *updateCfg) error {
 	flags := os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	f, err := os.OpenFile(filepath.Join(p.WebDir, "update.cfg"), flags, os.FileMode(0o644))
 	if err != nil {
@@ -1902,6 +1914,18 @@ func (p *PacksInstallationType) updateUpdateCfg(conf *updateCfg) error {
 			return err
 		}
 	}
+	if _, err := f.WriteString("UpdateDaily="); err != nil {
+		return err
+	}
+	if conf.UpdateDaily {
+		if _, err := f.WriteString("true\n"); err != nil {
+			return err
+		}
+	} else {
+		if _, err := f.WriteString("false\n"); err != nil {
+			return err
+		}
+	}
 
 	return f.Sync()
 }
@@ -1911,6 +1935,27 @@ func RecordPublicIndexUpdate() error {
 	var updateConf updateCfg
 	_ = Installation.checkUpdateCfg(&updateConf, false)
 	return Installation.updateUpdateCfg(&updateConf)
+}
+
+// SetUpdateDaily changes the automatic daily update setting without modifying other pack-root files.
+func SetUpdateDaily(packRoot string, updateDaily bool) error {
+	if len(packRoot) == 0 {
+		return errs.ErrPackRootNotFound
+	}
+	packRoot = filepath.Clean(packRoot)
+	if !utils.DirExists(packRoot) {
+		return errs.ErrPackRootDoesNotExist
+	}
+	webDir := filepath.Join(packRoot, ".Web")
+	if !utils.DirExists(webDir) {
+		return errs.ErrPackRootDoesNotExist
+	}
+
+	installation := PacksInstallationType{WebDir: webDir}
+	var updateConf updateCfg
+	_ = installation.checkUpdateCfg(&updateConf, false)
+	updateConf.UpdateDaily = updateDaily
+	return installation.writeUpdateCfg(&updateConf)
 }
 
 // touchPackIdx updates the timestamp of the PackIdx file to the current time.
