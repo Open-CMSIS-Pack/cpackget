@@ -28,9 +28,6 @@ var updateIndexCmdFlags struct {
 
 	// insecureSkipVerify skips TLS certificate verification for HTTPS downloads
 	insecureSkipVerify bool
-
-	// daily controls automatic daily public index updates
-	daily bool
 }
 
 var UpdateIndexCmd = &cobra.Command{
@@ -39,13 +36,6 @@ var UpdateIndexCmd = &cobra.Command{
 	Long:  getLongUpdateDescription(),
 	Args:  cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("daily") {
-			if err := configureInstallerGlobalCmd(cmd, args); err != nil {
-				return err
-			}
-			return installer.SetUpdateDaily(viper.GetString("pack-root"), updateIndexCmdFlags.daily)
-		}
-
 		utils.SetEncodedProgress(updateIndexCmdFlags.encodedProgress)
 		utils.SetSkipTouch(updateIndexCmdFlags.skipTouch)
 
@@ -78,5 +68,4 @@ func init() {
 	UpdateIndexCmd.Flags().BoolVarP(&updateIndexCmdFlags.encodedProgress, "encoded-progress", "E", false, "reports encoded progress for files and download when used by other tools")
 	UpdateIndexCmd.Flags().BoolVar(&updateIndexCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
 	UpdateIndexCmd.Flags().BoolVar(&updateIndexCmdFlags.insecureSkipVerify, "insecure-skip-verify", false, "skip verification of server's TLS certificate when downloading packs over HTTPS")
-	UpdateIndexCmd.Flags().BoolVar(&updateIndexCmdFlags.daily, "daily", true, "enable automatic daily public index updates")
 }

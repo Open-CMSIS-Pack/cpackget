@@ -96,62 +96,6 @@ var updateIndexCmdTests = []TestCase{
 		},
 	},
 	{
-		name:           "test disabling daily updates only changes update config",
-		args:           []string{"update-index", "--insecure-skip-verify", "--daily=false"},
-		createPackRoot: true,
-		setUpFunc: func(t *TestCase) {
-			_ = os.WriteFile(installer.Installation.PublicIndex, []byte("existing index"), 0600)
-			updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
-			_ = os.WriteFile(updateCfgPath, []byte("Date=1-1-2000\nAuto=true\nUpdateDaily=true\n"), 0600)
-		},
-		validationFunc: func(t *testing.T) {
-			indexContent, err := os.ReadFile(installer.Installation.PublicIndex)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if string(indexContent) != "existing index" {
-				t.Fatalf("daily flag modified public index: %q", indexContent)
-			}
-			updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
-			content, err := os.ReadFile(updateCfgPath)
-			if err != nil {
-				t.Fatal(err)
-			}
-			expected := "Date=1-1-2000\nAuto=true\nUpdateDaily=false\n"
-			if string(content) != expected {
-				t.Fatalf("unexpected update.cfg content: %q", content)
-			}
-		},
-	},
-	{
-		name:           "test enabling daily updates only changes update config",
-		args:           []string{"update-index", "--daily=true"},
-		createPackRoot: true,
-		setUpFunc: func(t *TestCase) {
-			_ = os.WriteFile(installer.Installation.PublicIndex, []byte("existing index"), 0600)
-			updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
-			_ = os.WriteFile(updateCfgPath, []byte("Date=1-1-2000\nAuto=false\nUpdateDaily=false\n"), 0600)
-		},
-		validationFunc: func(t *testing.T) {
-			indexContent, err := os.ReadFile(installer.Installation.PublicIndex)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if string(indexContent) != "existing index" {
-				t.Fatalf("daily flag modified public index: %q", indexContent)
-			}
-			updateCfgPath := filepath.Join(installer.Installation.WebDir, "update.cfg")
-			content, err := os.ReadFile(updateCfgPath)
-			if err != nil {
-				t.Fatal(err)
-			}
-			expected := "Date=1-1-2000\nAuto=false\nUpdateDaily=true\n"
-			if string(content) != expected {
-				t.Fatalf("unexpected update.cfg content: %q", content)
-			}
-		},
-	},
-	{
 		name:           "test malformed index returns read error",
 		args:           []string{"update-index"},
 		createPackRoot: true,

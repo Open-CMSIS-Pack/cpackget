@@ -1917,27 +1917,6 @@ func RecordPublicIndexUpdate() error {
 	return Installation.updateUpdateCfg(&updateConf)
 }
 
-// SetUpdateDaily changes the automatic daily update setting without modifying other pack-root files.
-func SetUpdateDaily(packRoot string, updateDaily bool) error {
-	if len(packRoot) == 0 {
-		return errs.ErrPackRootNotFound
-	}
-	packRoot = filepath.Clean(packRoot)
-	if !utils.DirExists(packRoot) {
-		return errs.ErrPackRootDoesNotExist
-	}
-	webDir := filepath.Join(packRoot, ".Web")
-	if !utils.DirExists(webDir) {
-		return errs.ErrPackRootDoesNotExist
-	}
-
-	installation := PacksInstallationType{WebDir: webDir}
-	var updateConf updateCfg
-	_ = installation.checkUpdateCfg(&updateConf, false)
-	updateConf.UpdateDaily = updateDaily
-	return installation.writeUpdateCfg(&updateConf)
-}
-
 // touchPackIdx updates the timestamp of the PackIdx file to the current time.
 // If the skip touch flag is set, the function returns immediately without making any changes.
 // The function temporarily removes the read-only attribute from the PackIdx file,
