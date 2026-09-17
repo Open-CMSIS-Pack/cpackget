@@ -32,7 +32,9 @@ else ifneq (,$(findstring unknown,$(ARCH)))
 	ARCH=amd64
 endif
 
+VERSION_SCRIPT := scripts/version
 SOURCES := $(wildcard cmd/*.go) $(wildcard cmd/*/*.go)
+VERSION := $(shell $(VERSION_SCRIPT))
 
 all:
 	@echo Pick one of:
