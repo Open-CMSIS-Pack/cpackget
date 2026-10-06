@@ -6,11 +6,13 @@ on:
     - cron: "30 3 * * *"
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   update-workflows:
+    permissions:
+      contents: write
+      pull-requests: write
     uses: Open-CMSIS-Pack/workflows-and-actions-collection/.github/workflows/update-workflow.yml@v3.0.2
     secrets:
       TOKEN_ACCESS: ${{ secrets.GRASCI_WORKFLOW_UPDATE }}
