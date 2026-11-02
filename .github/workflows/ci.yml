@@ -29,7 +29,13 @@ jobs:
       QLTY_COVERAGE_TOKEN: ${{ secrets.QLTY_COVERAGE_TOKEN }}
     with:
       program: cpackget
-      test-matrix: '[{"platform":"windows-2022","arch":"amd64"},{"platform":"ubuntu-24.04","arch":"amd64"},{"platform":"macos-14","arch":"amd64"},{"platform":"ubuntu-24.04","arch":"arm64"}]'
+      test-matrix: >-
+        [
+          {"platform":"windows-2022","arch":"amd64"},
+          {"platform":"ubuntu-24.04","arch":"amd64"},
+          {"platform":"macos-15","arch":"amd64"},
+          {"platform":"ubuntu-24.04","arch":"arm64"}
+        ]
       go-version-file: ./go.mod
       enable-qlty-coverage: true
 
