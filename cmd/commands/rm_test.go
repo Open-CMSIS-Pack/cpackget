@@ -5,8 +5,10 @@ package commands_test
 
 import (
 	"errors"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	errs "github.com/open-cmsis-pack/cpackget/cmd/errors"
@@ -48,7 +50,11 @@ var rmCmdTests = []TestCase{
 			t.assert.Nil(os.WriteFile(filepath.Join(packRoot, ".Local", "Vendor.Pack.pdsc"), []byte(""), 0600))
 			localRepository := installer.Installation.LocalPidx
 			t.assert.Nil(localRepository.Read())
-			t.assert.Nil(localRepository.AddPdsc(xml.PdscTag{Vendor: "Vendor", Name: "PackInstalledViaPdsc", Version: "1.2.3"}))
+			localDir, err := filepath.Abs(filepath.Join(packRoot, ".Local"))
+			t.assert.NoError(err)
+			location := (&url.URL{Scheme: "file", Host: "localhost", Path: "/" + strings.TrimPrefix(filepath.ToSlash(localDir), "/") + "/"}).String()
+			t.assert.NoError(os.WriteFile(filepath.Join(localDir, "Vendor.PackInstalledViaPdsc.pdsc"), []byte(`<package><vendor>Vendor</vendor><name>PackInstalledViaPdsc</name><releases><release version="1.2.3"/></releases></package>`), 0600))
+			t.assert.Nil(localRepository.AddPdsc(xml.PdscTag{Vendor: "Vendor", Name: "PackInstalledViaPdsc", Version: "1.2.3", URL: location}))
 			t.assert.Nil(localRepository.Write())
 		},
 	},
@@ -66,7 +72,11 @@ var rmCmdTests = []TestCase{
 			t.assert.Nil(os.WriteFile(filepath.Join(packRoot, ".Local", "Vendor.Pack.pdsc"), []byte(""), 0600))
 			localRepository := installer.Installation.LocalPidx
 			t.assert.Nil(localRepository.Read())
-			t.assert.Nil(localRepository.AddPdsc(xml.PdscTag{Vendor: "Vendor", Name: "PackInstalledViaPdsc", Version: "1.2.3"}))
+			localDir, err := filepath.Abs(filepath.Join(packRoot, ".Local"))
+			t.assert.NoError(err)
+			location := (&url.URL{Scheme: "file", Host: "localhost", Path: "/" + strings.TrimPrefix(filepath.ToSlash(localDir), "/") + "/"}).String()
+			t.assert.NoError(os.WriteFile(filepath.Join(localDir, "Vendor.PackInstalledViaPdsc.pdsc"), []byte(`<package><vendor>Vendor</vendor><name>PackInstalledViaPdsc</name><releases><release version="1.2.3"/></releases></package>`), 0600))
+			t.assert.Nil(localRepository.AddPdsc(xml.PdscTag{Vendor: "Vendor", Name: "PackInstalledViaPdsc", Version: "1.2.3", URL: location}))
 			t.assert.Nil(localRepository.Write())
 		},
 	},

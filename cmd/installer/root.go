@@ -117,7 +117,13 @@ func GetDefaultCmsisPackRoot() string {
 //   - Fetches the pack from its source and installs it, ensuring dependencies are satisfied unless skipped.
 //   - Provides detailed logging for each step of the installation process.
 //   - Ensures proper cleanup and rollback in case of errors during installation.
-func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirements, insecureSkipVerify, testing bool, timeout int) error {
+func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirements, insecureSkipVerify, testing bool, timeout int) (result error) {
+	operation := &TargetOperation{}
+	defer func() { result = operation.Finish(result) }()
+	return operation.AddPack(packPath, checkEula, extractEula, forceReinstall, noRequirements, insecureSkipVerify, testing, timeout)
+}
+
+func (operation *TargetOperation) AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirements, insecureSkipVerify, testing bool, timeout int) error {
 
 	isDep := false
 	// tag dependency packs with $ for correct logging output
@@ -232,6 +238,10 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 		return err
 	}
 
+	if !extractEula {
+		operation.changed = true
+	}
+
 	// Remove the original "temporary" pack
 	// Manual removal via os.RemoveAll as "_tmp" is an invalid packPath for RemovePack
 	if dropPreInstalled {
@@ -268,7 +278,7 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 				}
 				if !pack.isInstalled {
 					log.Debug("pack has dependencies, installing")
-					err := AddPack("$"+path, checkEula, extractEula, forceReinstall, false, insecureSkipVerify, false, timeout)
+					err := operation.AddPack("$"+path, checkEula, extractEula, forceReinstall, false, insecureSkipVerify, false, timeout)
 					if err != nil {
 						return err
 					}
@@ -297,7 +307,13 @@ func AddPack(packPath string, checkEula, extractEula, forceReinstall, noRequirem
 //
 // Returns:
 //   - error: An error if the removal process fails, or nil if successful.
-func RemovePack(packPath string, purge, testing bool) (bool, error) {
+func RemovePack(packPath string, purge, testing bool) (removed bool, result error) {
+	operation := &TargetOperation{}
+	defer func() { result = operation.Finish(result) }()
+	return operation.RemovePack(packPath, purge, testing)
+}
+
+func (operation *TargetOperation) RemovePack(packPath string, purge, testing bool) (bool, error) {
 	log.Debugf("Removing pack \"%v\"", packPath)
 
 	if err := ReadIndexFiles(); err != nil {
@@ -318,7 +334,7 @@ func RemovePack(packPath string, purge, testing bool) (bool, error) {
 		// TODO: If removing-all is enabled, get rid of the version
 		// pack.Version = ""
 		pack.Unlock()
-		if err = pack.uninstall(Installation); err != nil {
+		if err = pack.uninstallWithOperation(Installation, operation); err != nil {
 			return false, err
 		}
 
@@ -346,7 +362,7 @@ func RemovePack(packPath string, purge, testing bool) (bool, error) {
 	}
 
 	if len(pack.installedVersions) > 0 { // not installed but found in local_repository
-		err = RemovePdsc(packPath)
+		err = operation.RemovePdsc(packPath)
 		return false, err
 	}
 
@@ -373,7 +389,13 @@ func RemovePack(packPath string, purge, testing bool) (bool, error) {
 //
 // Returns:
 //   - error: An error if any step fails, otherwise nil.
-func AddPdsc(pdscPath string) error {
+func AddPdsc(pdscPath string) (result error) {
+	operation := &TargetOperation{}
+	defer func() { result = operation.Finish(result) }()
+	return operation.AddPdsc(pdscPath)
+}
+
+func (operation *TargetOperation) AddPdsc(pdscPath string) error {
 	log.Infof("Adding pdsc \"%v\"", pdscPath)
 
 	if err := ReadIndexFiles(); err != nil {
@@ -397,6 +419,7 @@ func AddPdsc(pdscPath string) error {
 		return err
 	}
 
+	operation.changed = true
 	return Installation.touchPackIdx()
 }
 
@@ -415,7 +438,13 @@ func AddPdsc(pdscPath string) error {
 //  4. Uninstalls the PDSC file from the installation.
 //  5. Writes the updated local Pidx (Pack Index) to disk.
 //  6. Touches the Pack Index to update its timestamp.
-func RemovePdsc(pdscPath string) error {
+func RemovePdsc(pdscPath string) (result error) {
+	operation := &TargetOperation{}
+	defer func() { result = operation.Finish(result) }()
+	return operation.RemovePdsc(pdscPath)
+}
+
+func (operation *TargetOperation) RemovePdsc(pdscPath string) error {
 	log.Debugf("Removing pdsc \"%v\"", pdscPath)
 
 	pdsc, err := preparePdsc(pdscPath)
@@ -435,6 +464,7 @@ func RemovePdsc(pdscPath string) error {
 		return err
 	}
 
+	operation.changed = true
 	return Installation.touchPackIdx()
 }
 
@@ -476,7 +506,13 @@ func massDownloadPdscFiles(pdscTag xml.PdscTag, skipInstalledPdscFiles, showInfo
 //
 // Returns:
 //   - error: An error if the update process fails, otherwise nil.
-func UpdatePack(packPath string, checkEula, noRequirements, subCall, insecureSkipVerify, testing bool, timeout int) error {
+func UpdatePack(packPath string, checkEula, noRequirements, subCall, insecureSkipVerify, testing bool, timeout int) (result error) {
+	operation := &TargetOperation{}
+	defer func() { result = operation.Finish(result) }()
+	return operation.UpdatePack(packPath, checkEula, noRequirements, subCall, insecureSkipVerify, testing, timeout)
+}
+
+func (operation *TargetOperation) UpdatePack(packPath string, checkEula, noRequirements, subCall, insecureSkipVerify, testing bool, timeout int) error {
 
 	if !subCall {
 		if packPath == "" {
@@ -503,7 +539,7 @@ func UpdatePack(packPath string, checkEula, noRequirements, subCall, insecureSki
 			return err
 		}
 		for _, installedPack := range installedPacks {
-			err = UpdatePack(installedPack.VName(), checkEula, noRequirements, true, insecureSkipVerify, testing, timeout)
+			err = operation.UpdatePack(installedPack.VName(), checkEula, noRequirements, true, insecureSkipVerify, testing, timeout)
 			if err != nil {
 				log.Error(err)
 			}
@@ -548,6 +584,7 @@ func UpdatePack(packPath string, checkEula, noRequirements, subCall, insecureSki
 		}
 		return err
 	}
+	operation.changed = true
 
 	if !noRequirements {
 		log.Debug("installing package requirements")
@@ -575,7 +612,7 @@ func UpdatePack(packPath string, checkEula, noRequirements, subCall, insecureSki
 				}
 				if !pack.isInstalled {
 					log.Debug("pack has dependencies, installing")
-					err := AddPack("$"+path, checkEula, false, false, false, insecureSkipVerify, false, timeout)
+					err := operation.AddPack("$"+path, checkEula, false, false, false, insecureSkipVerify, false, timeout)
 					if err != nil {
 						return err
 					}
@@ -1009,7 +1046,7 @@ func UpdatePublicIndexIfOnline() error {
 //
 // Returns:
 //   - error: An error if the update fails, otherwise nil.
-func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemainingPdscFiles, skipDeprecatedPdscFiles, updatePrivatePdsc, showInfo, insecureSkipVerify bool, concurrency int, timeout int) error {
+func UpdatePublicIndex(indexPath string, sparse, downloadPdsc, downloadRemainingPdscFiles, skipDeprecatedPdscFiles, updatePrivatePdsc, showInfo, insecureSkipVerify bool, concurrency int, timeout int) (result error) {
 	// For backwards compatibility, allow indexPath to be a file, but ideally it should be empty
 	if indexPath == "" {
 		indexPath = resolvePublicIndexPath(Installation.PublicIndexXML.URL)
