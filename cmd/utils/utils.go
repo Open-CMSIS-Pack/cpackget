@@ -40,30 +40,32 @@ import (
 //   - file:///C:/path/to/file (Windows)
 //   - file://localhost/C:/path/to/file (Windows)
 //
-// The function performs URL decoding and removes leading slashes on Windows
-// for absolute paths with drive letters.
+// Remote authorities retain a //host prefix, including on Unix. Windows converts
+// this prefix to UNC syntax and removes the slash before drive letters.
 func FileURLToPath(fileURL string) (string, error) {
 	if !strings.HasPrefix(fileURL, "file://") {
-		// Not a file URL, return as is
 		return fileURL, nil
 	}
-
-	// Remove file:// prefix
-	path := strings.TrimPrefix(fileURL, "file://")
-
-	// Remove localhost if present
-	path = strings.TrimPrefix(path, "localhost/")
-	path = strings.TrimPrefix(path, "localhost\\")
-
-	// URL decode (handles %20 and other encoded characters)
-	decodedPath, err := url.PathUnescape(path)
+	if runtime.GOOS == "windows" {
+		fileURL = strings.ReplaceAll(fileURL, "\\", "/")
+		path := strings.TrimPrefix(fileURL, "file://")
+		if len(path) >= 3 && path[1] == ':' && path[2] == '/' &&
+			((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] <= 'z')) {
+			fileURL = "file:///" + path
+		}
+	}
+	parsed, err := url.Parse(fileURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to decode file URL %q: %w", fileURL, err)
 	}
-
-	// On Windows, remove leading slash before drive letter (e.g., /C:/ -> C:/)
+	decodedPath := parsed.Path
+	if parsed.Host != "" && !strings.EqualFold(parsed.Host, "localhost") {
+		decodedPath = "//" + parsed.Host + decodedPath
+	}
 	if runtime.GOOS == "windows" {
-		// Match patterns like /C:/ or /c:/
+		if strings.EqualFold(parsed.Host, "localhost") && strings.HasPrefix(decodedPath, "///") {
+			decodedPath = "//" + strings.TrimLeft(decodedPath, "/")
+		}
 		if len(decodedPath) >= 3 && decodedPath[0] == '/' &&
 			((decodedPath[1] >= 'A' && decodedPath[1] <= 'Z') || (decodedPath[1] >= 'a' && decodedPath[1] <= 'z')) &&
 			decodedPath[2] == ':' {
@@ -71,10 +73,7 @@ func FileURLToPath(fileURL string) (string, error) {
 		}
 	}
 
-	// Convert forward slashes to backslashes on Windows
-	decodedPath = filepath.FromSlash(decodedPath)
-
-	return decodedPath, nil
+	return filepath.FromSlash(decodedPath), nil
 }
 
 var gEncodedProgress = false

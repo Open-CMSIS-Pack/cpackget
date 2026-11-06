@@ -14,11 +14,13 @@ import (
 // PdscXML maps few tags of a PDSC file.
 // Ref: https://github.com/Open-CMSIS-Pack/Open-CMSIS-Pack-Spec/blob/main/schema/PACK.xsd
 type PdscXML struct {
-	XMLName xml.Name `xml:"package"`
-	Vendor  string   `xml:"vendor"`
-	URL     string   `xml:"url"`
-	Name    string   `xml:"name"`
-	License string   `xml:"license"`
+	XMLName  xml.Name     `xml:"package"`
+	Vendor   string       `xml:"vendor"`
+	URL      string       `xml:"url"`
+	Name     string       `xml:"name"`
+	License  string       `xml:"license"`
+	Families []DeviceNode `xml:"devices>family"`
+	Boards   []BoardTag   `xml:"boards>board"`
 
 	ReleasesTag struct {
 		XMLName  xml.Name     `xml:"releases"`
@@ -31,6 +33,59 @@ type PdscXML struct {
 	} `xml:"requirements"`
 
 	FileName string
+}
+
+type DeviceNode struct {
+	Vendor      string       `xml:"Dvendor,attr"`
+	Name        string       `xml:"Dname,attr"`
+	Variant     string       `xml:"Dvariant,attr"`
+	Subfamilies []DeviceNode `xml:"subFamily"`
+	Devices     []DeviceNode `xml:"device"`
+	Variants    []DeviceNode `xml:"variant"`
+}
+
+type DeviceIdentity struct {
+	Vendor string `xml:"vendor,attr"`
+	Name   string `xml:"name,attr"`
+}
+
+type MountedDeviceTag struct {
+	Vendor string `xml:"Dvendor,attr"`
+	Name   string `xml:"Dname,attr"`
+	Index  string `xml:"deviceIndex,attr"`
+}
+
+type BoardTag struct {
+	Vendor         string             `xml:"vendor,attr"`
+	Name           string             `xml:"name,attr"`
+	Revision       string             `xml:"revision,attr"`
+	MountedDevices []MountedDeviceTag `xml:"mountedDevice"`
+}
+
+func (p *PdscXML) TargetDevices() []DeviceIdentity {
+	devices := []DeviceIdentity{}
+	var visit func(DeviceNode, string)
+	visit = func(node DeviceNode, vendor string) {
+		if node.Vendor != "" {
+			vendor = strings.SplitN(node.Vendor, ":", 2)[0]
+		}
+		name := node.Name
+		if node.Variant != "" {
+			name = node.Variant
+		}
+		if name != "" && len(node.Variants) == 0 {
+			devices = append(devices, DeviceIdentity{Vendor: vendor, Name: name})
+		}
+		for _, children := range [][]DeviceNode{node.Subfamilies, node.Devices, node.Variants} {
+			for _, child := range children {
+				visit(child, vendor)
+			}
+		}
+	}
+	for _, family := range p.Families {
+		visit(family, "")
+	}
+	return devices
 }
 
 // ReleaseTag maps the <release> tag of a PDSC file.

@@ -104,6 +104,17 @@ func NewServer() Server {
 
 var rootCmdTests = []TestCase{
 	{
+		name:           "test offline target index rebuild",
+		args:           []string{"update-target-index"},
+		createPackRoot: true,
+		validationFunc: func(t *testing.T) {
+			contents, err := os.ReadFile(filepath.Join("test_offline_target_index_rebuild", ".Targets", "index.tidx"))
+			assert.NoError(t, err)
+			assert.Contains(t, string(contents), "<devices></devices>")
+			assert.Contains(t, string(contents), "<boards></boards>")
+		},
+	},
+	{
 		name:           "test no parameter given",
 		expectedStdout: []string{"cpackget version"},
 	},

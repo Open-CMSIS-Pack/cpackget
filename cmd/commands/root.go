@@ -65,7 +65,10 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	return configureInstallerRoot(cmd)
+}
 
+func configureInstallerRoot(cmd *cobra.Command) error {
 	targetPackRoot := viper.GetString("pack-root")
 	checkConnection := viper.GetBool("check-connection") // TODO: never set
 

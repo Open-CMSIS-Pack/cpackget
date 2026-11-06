@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -29,6 +30,42 @@ func (s *LogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	level := strings.ToUpper(entry.Level.String())
 	msg := fmt.Sprintf("%s: %s\n", level[0:1], entry.Message)
 	return []byte(msg), nil
+}
+
+func TestFileURLToPath(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{"plain path", "plain path"},
+		{"https://server/path", "https://server/path"},
+		{"file:///packs/a%20b%23c%25/", "/packs/a b#c%/"},
+		{"file://localhost/packs/a%20b/", "/packs/a b/"},
+		{"file://LOCALHOST/packs/", "/packs/"},
+		{"file://server/share/a%20b%23c%25/", "//server/share/a b#c%/"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			actual, err := utils.FileURLToPath(test.input)
+			assert.NoError(t, err)
+			want := test.want
+			if strings.HasPrefix(test.input, "file://") {
+				want = filepath.FromSlash(want)
+			}
+			assert.Equal(t, want, actual)
+		})
+	}
+	_, err := utils.FileURLToPath("file://localhost/bad%xx")
+	assert.Error(t, err)
+	if runtime.GOOS == "windows" {
+		for _, input := range []string{"file://C:/packs/a%20b/", "file:///C:/packs/a%20b/", "file://localhost/C:/packs/a%20b/", `file://localhost\C:\packs\a%20b\`} {
+			actual, err := utils.FileURLToPath(input)
+			assert.NoError(t, err)
+			assert.Equal(t, `C:\packs\a b\`, actual)
+		}
+		actual, err := utils.FileURLToPath("file://localhost///server/share/a%20b/")
+		assert.NoError(t, err)
+		assert.Equal(t, `\\server\share\a b\`, actual)
+	}
 }
 
 func TestDownloadFile(t *testing.T) {
