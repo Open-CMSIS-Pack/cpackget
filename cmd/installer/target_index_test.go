@@ -34,7 +34,7 @@ func TestUpdateTargetIndex(t *testing.T) {
 	latestPath := writePdsc(filepath.Join(root, "Vendor", "DFP", "2.0.0"), "Vendor.DFP.pdsc", `<package><vendor>Vendor</vendor><name>DFP</name><devices><family Dvendor="ChipVendor:1"><device Dname="New"/></family></devices></package>`)
 	writePdsc(filepath.Join(root, ".Web"), "Vendor.Cached.pdsc", `<package><vendor>Vendor</vendor><name>Cached</name></package>`)
 	local := t.TempDir()
-	writePdsc(local, "Vendor.BSP.pdsc", `<package><vendor>Vendor</vendor><name>BSP</name><releases><release version="1.0.0"/></releases><boards><board vendor="Vendor" name="Board"><mountedDevice Dvendor="ChipVendor:1" Dname="New" deviceIndex="0"/></board></boards></package>`)
+	writePdsc(local, "Vendor.BSP.pdsc", `<package><vendor>Vendor</vendor><name>BSP</name><releases><release version="1.0.0"/></releases><boards><board vendor="Vendor" name="Board"><mountedDevice Dvendor="ChipVendor:1" Dname="New" deviceIndex="1"/><mountedDevice Dvendor="ChipVendor:1" Dname="New" deviceIndex="0"/></board></boards></package>`)
 	localURL, err := targetDirectoryURL(local)
 	require.NoError(t, err)
 	require.NoError(t, os.MkdirAll(filepath.Join(root, ".Local"), 0755))
@@ -48,6 +48,9 @@ func TestUpdateTargetIndex(t *testing.T) {
 	require.Equal(t, "New", index.Devices[0].Name)
 	require.Equal(t, "2.0.0", index.Devices[0].Pdsc.Version)
 	require.Len(t, index.Boards, 1)
+	require.Len(t, index.Boards[0].MountedDevices, 2)
+	require.Equal(t, "0", index.Boards[0].MountedDevices[0].Index)
+	require.Equal(t, "1", index.Boards[0].MountedDevices[1].Index)
 	require.Equal(t, "ChipVendor", index.Boards[0].MountedDevices[0].Vendor)
 	before, err := os.ReadFile(path)
 	require.NoError(t, err)
@@ -66,6 +69,54 @@ func TestUpdateTargetIndex(t *testing.T) {
 	after, err = os.ReadFile(path)
 	require.NoError(t, err)
 	require.Equal(t, before, after)
+}
+
+func TestTargetIndexInvalidLocalRepository(t *testing.T) {
+	previous := Installation
+	t.Cleanup(func() { Installation = previous })
+	for _, test := range []struct {
+		name     string
+		url      string
+		contents string
+	}{
+		{name: "malformed local index"},
+		{name: "remote URL", url: "https://example.com/"},
+		{name: "missing PDSC", url: "local"},
+		{name: "missing identity", url: "local", contents: `<package><releases><release version="1.0.0"/></releases></package>`},
+		{name: "invalid version", url: "local", contents: `<package><vendor>Vendor</vendor><name>DFP</name><releases><release version="invalid"/></releases></package>`},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			Installation = &PacksInstallationType{PackRoot: root, LocalPidx: xml.NewPidxXML(filepath.Join(root, ".Local", "local_repository.pidx"), false)}
+			require.NoError(t, UpdateTargetIndex())
+			indexPath := filepath.Join(root, ".Targets", "index.tidx")
+			before, err := os.ReadFile(indexPath)
+			require.NoError(t, err)
+			require.NoError(t, os.MkdirAll(filepath.Join(root, ".Local"), 0755))
+			if test.url == "" {
+				require.NoError(t, os.WriteFile(Installation.LocalPidx.GetFileName(), []byte(`<index>`), 0600))
+			} else {
+				address := test.url
+				if address == "local" {
+					directory := t.TempDir()
+					address, err = targetDirectoryURL(directory)
+					require.NoError(t, err)
+					if test.contents != "" {
+						require.NoError(t, os.WriteFile(filepath.Join(directory, "Vendor.DFP.pdsc"), []byte(test.contents), 0600))
+					}
+				}
+				require.NoError(t, Installation.LocalPidx.AddPdsc(xml.PdscTag{Vendor: "Vendor", Name: "DFP", URL: address}))
+				require.NoError(t, Installation.LocalPidx.Write())
+			}
+			require.Error(t, UpdateTargetIndex())
+			after, err := os.ReadFile(indexPath)
+			require.NoError(t, err)
+			require.Equal(t, before, after)
+			files, err := filepath.Glob(filepath.Join(root, ".Targets", ".index-*.tidx"))
+			require.NoError(t, err)
+			require.Empty(t, files)
+		})
+	}
 }
 
 func TestEmptyTargetIndex(t *testing.T) {
@@ -120,6 +171,8 @@ func TestTargetOperation(t *testing.T) {
 	files, err := filepath.Glob(filepath.Join(root, ".Targets", ".index-*.tidx"))
 	require.NoError(t, err)
 	require.Empty(t, files)
+	operation.changed = true
+	require.ErrorContains(t, operation.Finish(nil), "repository changes were applied")
 }
 
 func TestTargetOperationPartialRemoval(t *testing.T) {
