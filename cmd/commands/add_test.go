@@ -41,9 +41,18 @@ var addCmdTests = []TestCase{
 		expectedErr: errs.ErrIncorrectCmdArgs,
 	},
 	{
-		name:        "test help command",
-		args:        []string{"help", "add"},
-		expectedErr: nil,
+		name: "test help command",
+		args: []string{"help", "add"},
+		expectedStdout: []string{
+			"Usage:\n  cpackget add [<pack> | -f <packs list>] [flags]\n  cpackget add board <pattern> [flags]\n  cpackget add device <pattern> [flags]",
+		},
+	},
+	{
+		name: "test add help flag",
+		args: []string{"add", "-h"},
+		expectedStdout: []string{
+			"Usage:\n  cpackget add [<pack> | -f <packs list>] [flags]\n  cpackget add board <pattern> [flags]\n  cpackget add device <pattern> [flags]",
+		},
 	},
 	{
 		name:           "test device help command",

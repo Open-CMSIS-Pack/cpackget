@@ -125,7 +125,8 @@ func printVersionAndLicense(file io.Writer) {
 
 // UsageTemplate returns usage template for the command.
 var usageTemplate = `Usage:{{if .Runnable}}
-  {{.UseLine}}{{end}}{{if gt (len .Aliases) 0}}
+{{"  "}}{{.UseLine}}{{end}}{{if and .HasParent .HasAvailableSubCommands}}{{range .Commands}}{{if .IsAvailableCommand}}
+{{"  "}}{{.UseLine}}{{end}}{{end}}{{end}}{{if gt (len .Aliases) 0}}
 
 Aliases:
   {{.NameAndAliases}}{{end}}{{if .HasExample}}
