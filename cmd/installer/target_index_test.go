@@ -55,7 +55,10 @@ func TestUpdateTargetIndex(t *testing.T) {
 	before, err := os.ReadFile(path)
 	require.NoError(t, err)
 	require.Contains(t, string(before), "<vendor>target_index</vendor>")
-	require.Contains(t, string(before), "<url></url>")
+	require.Contains(t, index.URL, "file://localhost/")
+	indexPath, err := utils.FileURLToPath(index.URL)
+	require.NoError(t, err)
+	require.Equal(t, path, indexPath)
 	require.Equal(t, "1.0.0", index.SchemaVersion)
 	require.Equal(t, "Vendor", index.Devices[0].Pdsc.Vendor)
 	require.Equal(t, "DFP", index.Devices[0].Pdsc.Name)
@@ -122,7 +125,8 @@ func TestTargetIndexInvalidLocalRepository(t *testing.T) {
 func TestEmptyTargetIndex(t *testing.T) {
 	previous := Installation
 	t.Cleanup(func() { Installation = previous })
-	root := t.TempDir()
+	root := filepath.Join(t.TempDir(), "local packs #100%")
+	require.NoError(t, os.MkdirAll(root, 0755))
 	Installation = &PacksInstallationType{PackRoot: root}
 	require.NoError(t, UpdateTargetIndex())
 	contents, err := os.ReadFile(filepath.Join(root, ".Targets", "index.tidx"))
@@ -130,7 +134,13 @@ func TestEmptyTargetIndex(t *testing.T) {
 	require.Contains(t, string(contents), "<devices></devices>")
 	require.Contains(t, string(contents), "<boards></boards>")
 	require.Contains(t, string(contents), "<vendor>target_index</vendor>")
-	require.Contains(t, string(contents), "<url></url>")
+	var index xml.TidxXML
+	require.NoError(t, utils.ReadXML(filepath.Join(root, ".Targets", "index.tidx"), &index))
+	require.Contains(t, index.URL, "file://localhost/")
+	require.Contains(t, index.URL, "local%20packs%20%23100%25/.Targets/index.tidx")
+	indexPath, err := utils.FileURLToPath(index.URL)
+	require.NoError(t, err)
+	require.Equal(t, filepath.Join(root, ".Targets", "index.tidx"), indexPath)
 }
 
 func TestTargetDirectoryURLRoundTrip(t *testing.T) {
@@ -141,9 +151,15 @@ func TestTargetDirectoryURLRoundTrip(t *testing.T) {
 	for _, directory := range directories {
 		address, err := targetDirectoryURL(directory)
 		require.NoError(t, err)
+		if runtime.GOOS == "windows" && directory == `\\server\share\local packs #100%` {
+			require.Equal(t, "file://server/share/local%20packs%20%23100%25/", address)
+		}
 		path, err := utils.FileURLToPath(address)
 		require.NoError(t, err)
 		require.Equal(t, filepath.Clean(directory), filepath.Clean(path))
+		indexPath, err := utils.FileURLToPath(address + "index.tidx")
+		require.NoError(t, err)
+		require.Equal(t, filepath.Join(directory, "index.tidx"), indexPath)
 	}
 }
 

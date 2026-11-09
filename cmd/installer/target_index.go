@@ -37,7 +37,15 @@ func targetDirectoryURL(directory string) (string, error) {
 }
 
 func collectTargetIndex() (*packxml.TidxXML, error) {
-	index := &packxml.TidxXML{SchemaVersion: "1.0.0", Vendor: "target_index"}
+	directoryURL, err := targetDirectoryURL(filepath.Join(Installation.PackRoot, ".Targets"))
+	if err != nil {
+		return nil, err
+	}
+	index := &packxml.TidxXML{
+		SchemaVersion: "1.0.0",
+		Vendor:        "target_index",
+		URL:           directoryURL + "index.tidx",
+	}
 	packs, err := findInstalledPacks(false, false)
 	if err != nil {
 		return nil, err
