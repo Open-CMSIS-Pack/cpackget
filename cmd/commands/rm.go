@@ -53,20 +53,23 @@ are *NOT* removed. If cache files need to be actually removed,
 please use "--purge".`,
 	Args:              cobra.MinimumNArgs(1),
 	PersistentPreRunE: configureInstaller,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (result error) {
 		utils.SetSkipTouch(rmCmdFlags.skipTouch)
 		log.Infof("Removing %v", args)
 		var lastErr error
 		installer.UnlockPackRoot()
+		defer installer.LockPackRoot()
+		operation := &installer.TargetOperation{}
+		defer func() { result = operation.Finish(result) }()
 		for _, packPath := range args {
 			var err error
 			if filepath.Ext(packPath) == utils.PdscExtension {
-				err = installer.RemovePdsc(packPath)
+				err = operation.RemovePdsc(packPath)
 				if err == errs.ErrPdscEntryNotFound {
 					err = errs.ErrPackNotInstalled
 				}
 			} else {
-				_, err = installer.RemovePack(packPath, rmCmdFlags.purge, false)
+				_, err = operation.RemovePack(packPath, rmCmdFlags.purge, false)
 			}
 			if err != nil {
 				if err != errs.ErrAlreadyLogged {
@@ -77,8 +80,6 @@ please use "--purge".`,
 
 			}
 		}
-		installer.LockPackRoot()
-
 		return lastErr
 	},
 }

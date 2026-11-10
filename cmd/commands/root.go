@@ -65,7 +65,10 @@ func configureInstaller(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	return configureInstallerRoot(cmd)
+}
 
+func configureInstallerRoot(cmd *cobra.Command) error {
 	targetPackRoot := viper.GetString("pack-root")
 	checkConnection := viper.GetBool("check-connection") // TODO: never set
 
@@ -122,7 +125,8 @@ func printVersionAndLicense(file io.Writer) {
 
 // UsageTemplate returns usage template for the command.
 var usageTemplate = `Usage:{{if .Runnable}}
-  {{.UseLine}}{{end}}{{if gt (len .Aliases) 0}}
+{{"  "}}{{.UseLine}}{{end}}{{if and .HasParent .HasAvailableSubCommands}}{{range .Commands}}{{if .IsAvailableCommand}}
+{{"  "}}{{.UseLine}}{{end}}{{end}}{{end}}{{if gt (len .Aliases) 0}}
 
 Aliases:
   {{.NameAndAliases}}{{end}}{{if .HasExample}}

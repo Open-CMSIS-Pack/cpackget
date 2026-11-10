@@ -48,6 +48,11 @@ Add a pack using the following "<pack>" specification or using packs provided by
   $ cpackget add Vendor.Pack.1.2.3
   $ cpackget add Vendor::Pack@1.2.3
 
+	$ cpackget add device <pattern>
+	$ cpackget add board <pattern>
+
+	Use these subcommands to install an unambiguous set of packs for matching targets.
+
   Use the syntax above to let cpackget determine
   the location of pack files prior to installing it locally.
 
@@ -71,70 +76,102 @@ Add a pack using the following "<pack>" specification or using packs provided by
   If "-f" is used, cpackget will call "cpackget pack add" on each URL specified in the <packs list> file.`,
 	Args: cobra.MinimumNArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-
-		utils.SetEncodedProgress(addCmdFlags.encodedProgress)
-		utils.SetSkipTouch(addCmdFlags.skipTouch)
-
-		createPackRoot = true
-		err := configureInstaller(cmd, args)
-		if err != nil {
+		if err := configureInstallerGlobalCmd(cmd, args); err != nil {
 			return err
 		}
-
-		files, err := utils.GetListFiles(addCmdFlags.packsListFileName)
-		if err != nil {
-			return err
-		}
-		args = append(args, files...)
-
-		if len(args) == 0 {
-			log.Warn("Missing a pack-path or list with pack urls specified via -f/--packs-list-filename")
-
-			if addCmdFlags.packsListFileName != "" {
-				return nil
-			}
-
-			return errs.ErrIncorrectCmdArgs
-		}
-
-		var lastErr error
-
-		log.Debugf("Specified packs %v", args)
-		installer.UnlockPackRoot()
-		for _, packPath := range args {
-			var err error
-			if filepath.Ext(packPath) == utils.PdscExtension {
-				err = installer.AddPdsc(packPath)
-			} else {
-				err = installer.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, addCmdFlags.noRequirements, addCmdFlags.insecureSkipVerify, false, viper.GetInt("timeout"))
-			}
-			if err != nil {
-				lastErr = err
-				if !errs.AlreadyLogged(err) {
-					log.Error(err)
-				}
-			}
-		}
-		installer.LockPackRoot()
-		return lastErr
+		return installPacks(cmd, args)
 	},
 }
 
+func installPacks(cmd *cobra.Command, args []string) (result error) {
+	utils.SetEncodedProgress(addCmdFlags.encodedProgress)
+	utils.SetSkipTouch(addCmdFlags.skipTouch)
+
+	createPackRoot = true
+	err := configureInstallerRoot(cmd)
+	if err != nil {
+		return err
+	}
+
+	files, err := utils.GetListFiles(addCmdFlags.packsListFileName)
+	if err != nil {
+		return err
+	}
+	args = append(args, files...)
+
+	if len(args) == 0 {
+		log.Warn("Missing a pack-path or list with pack urls specified via -f/--packs-list-filename")
+
+		if addCmdFlags.packsListFileName != "" {
+			return nil
+		}
+
+		return errs.ErrIncorrectCmdArgs
+	}
+
+	var lastErr error
+
+	log.Debugf("Specified packs %v", args)
+	installer.UnlockPackRoot()
+	defer installer.LockPackRoot()
+	operation := &installer.TargetOperation{}
+	defer func() { result = operation.Finish(result) }()
+	for _, packPath := range args {
+		var err error
+		if filepath.Ext(packPath) == utils.PdscExtension {
+			err = operation.AddPdsc(packPath)
+		} else {
+			err = operation.AddPack(packPath, !addCmdFlags.skipEula, addCmdFlags.extractEula, addCmdFlags.forceReinstall, addCmdFlags.noRequirements, addCmdFlags.insecureSkipVerify, false, viper.GetInt("timeout"))
+		}
+		if err != nil {
+			lastErr = err
+			if !errs.AlreadyLogged(err) {
+				log.Error(err)
+			}
+		}
+	}
+	return lastErr
+}
+
 func init() {
-	AddCmd.Flags().BoolVarP(&addCmdFlags.skipEula, "agree-embedded-license", "a", false, "agrees with the embedded license of the pack")
-	AddCmd.Flags().BoolVarP(&addCmdFlags.extractEula, "extract-embedded-license", "x", false, "extracts the embedded license of the pack and aborts the installation")
-	AddCmd.Flags().BoolVarP(&addCmdFlags.forceReinstall, "force-reinstall", "F", false, "forces installation of an already installed pack")
-	AddCmd.Flags().BoolVarP(&addCmdFlags.noRequirements, "no-dependencies", "n", false, "do not install package dependencies")
-	AddCmd.Flags().StringVarP(&addCmdFlags.packsListFileName, "packs-list-filename", "f", "", "specifies a file listing packs urls, one per line")
-	AddCmd.Flags().BoolVar(&addCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
-	AddCmd.Flags().BoolVarP(&addCmdFlags.encodedProgress, "encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
-	AddCmd.Flags().BoolVar(&addCmdFlags.insecureSkipVerify, "insecure-skip-verify", false, "skip verification of server's TLS certificate when downloading packs over HTTPS")
+	for _, kind := range []string{"device", "board"} {
+		AddCmd.AddCommand(&cobra.Command{
+			Use:   kind + " <pattern>",
+			Short: "Install packs providing matching " + kind + " targets",
+			Args:  cobra.ExactArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				if addCmdFlags.packsListFileName != "" || addCmdFlags.extractEula {
+					return errs.ErrIncorrectCmdArgs
+				}
+				if err := configureInstallerGlobalCmd(cmd, args); err != nil {
+					return err
+				}
+				results, err := searchTargetsWithProgress(cmd, kind, args[0], addCmdFlags.insecureSkipVerify, true)
+				if err != nil {
+					return err
+				}
+				packs, err := installer.ResolveTargetPacks(kind, results, args[0])
+				if err != nil {
+					return err
+				}
+				return installPacks(cmd, packs)
+			},
+		})
+	}
+	AddCmd.PersistentFlags().BoolVarP(&addCmdFlags.skipEula, "agree-embedded-license", "a", false, "agrees with the embedded license of the pack")
+	AddCmd.PersistentFlags().BoolVarP(&addCmdFlags.extractEula, "extract-embedded-license", "x", false, "extracts the embedded license of the pack and aborts the installation")
+	AddCmd.PersistentFlags().BoolVarP(&addCmdFlags.forceReinstall, "force-reinstall", "F", false, "forces installation of an already installed pack")
+	AddCmd.PersistentFlags().BoolVarP(&addCmdFlags.noRequirements, "no-dependencies", "n", false, "do not install package dependencies")
+	AddCmd.PersistentFlags().StringVarP(&addCmdFlags.packsListFileName, "packs-list-filename", "f", "", "specifies a file listing packs urls, one per line")
+	AddCmd.PersistentFlags().BoolVar(&addCmdFlags.skipTouch, "skip-touch", false, "do not touch pack.idx")
+	AddCmd.PersistentFlags().BoolVarP(&addCmdFlags.encodedProgress, "encoded-progress", "E", false, "Reports encoded progress for files and download when used by other tools")
+	AddCmd.PersistentFlags().BoolVar(&addCmdFlags.insecureSkipVerify, "insecure-skip-verify", false, "skip verification of server's TLS certificate when downloading packs over HTTPS")
 
 	AddCmd.SetHelpFunc(func(command *cobra.Command, strings []string) {
 		// Small workaround to keep the linter happy, not
 		// really necessary to test this
 		err := command.Flags().MarkHidden("concurrent-downloads")
 		log.Debug(err)
-		command.Parent().HelpFunc()(command, strings)
+		AddCmd.Parent().HelpFunc()(command, strings)
 	})
 }

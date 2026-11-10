@@ -496,10 +496,31 @@ func (p *PackType) install(installation *PacksInstallationType, checkEula bool) 
 //   - If "CMSIS_PACK_ROOT/.Web/p.Vendor.p.Name.pdsc" does not exist then
 //   - Remove "p.Vendor.p.Name.pdsc" from "CMSIS_PACK_ROOT/.Local/"
 func (p *PackType) uninstall(installation *PacksInstallationType) error {
+	return p.uninstallWithOperation(installation, nil)
+}
+
+func (p *PackType) uninstallWithOperation(installation *PacksInstallationType, operation *TargetOperation) error {
 	log.Debugf("Uninstalling \"%v\"", p.path)
 
 	// Remove Vendor/Pack/x.y.z
 	packPath := filepath.Join(installation.PackRoot, p.Vendor, p.Name, p.GetVersionNoMeta())
+	if operation != nil {
+		pattern := filepath.Join(packPath, "*"+utils.PdscExtension)
+		if p.GetVersionNoMeta() == "" {
+			pattern = filepath.Join(packPath, "*", "*"+utils.PdscExtension)
+		}
+		paths, err := filepath.Glob(pattern)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			for _, path := range paths {
+				if _, err := os.Stat(path); os.IsNotExist(err) {
+					operation.changed = true
+				}
+			}
+		}()
+	}
 	if err := os.RemoveAll(packPath); err != nil {
 		return err
 	}
@@ -616,6 +637,9 @@ func (p *PackType) resolveVersionModifier(pdscXML *xml.PdscXML) {
 
 	if p.versionModifier == utils.ExactVersion {
 		p.targetVersion = p.Version
+		if release := pdscXML.FindReleaseTagByVersion(p.Version); release != nil {
+			p.targetVersion = release.Version
+		}
 		log.Debugf("- resolved(@) as %s", p.targetVersion)
 		return
 	}

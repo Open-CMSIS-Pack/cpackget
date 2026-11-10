@@ -4,6 +4,7 @@
 package commands_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -20,9 +21,48 @@ var (
 
 var addCmdTests = []TestCase{
 	{
-		name:        "test help command",
-		args:        []string{"help", "add"},
-		expectedErr: nil,
+		name:        "test target with packs list",
+		args:        []string{"add", "device", "chip", "-f", "packs.txt"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
+	},
+	{
+		name:        "test target with positional pack",
+		args:        []string{"add", "device", "chip", "Vendor::DFP"},
+		expectedErr: errors.New("accepts 1 arg(s), received 2"),
+	},
+	{
+		name:        "test board without pattern",
+		args:        []string{"add", "board"},
+		expectedErr: errors.New("accepts 1 arg(s), received 0"),
+	},
+	{
+		name:        "test board with license extraction",
+		args:        []string{"add", "board", "board", "-x", "-a", "-n"},
+		expectedErr: errs.ErrIncorrectCmdArgs,
+	},
+	{
+		name: "test help command",
+		args: []string{"help", "add"},
+		expectedStdout: []string{
+			"Usage:\n  cpackget add [<pack> | -f <packs list>] [flags]\n  cpackget add board <pattern> [flags]\n  cpackget add device <pattern> [flags]",
+		},
+	},
+	{
+		name: "test add help flag",
+		args: []string{"add", "-h"},
+		expectedStdout: []string{
+			"Usage:\n  cpackget add [<pack> | -f <packs list>] [flags]\n  cpackget add board <pattern> [flags]\n  cpackget add device <pattern> [flags]",
+		},
+	},
+	{
+		name:           "test device help command",
+		args:           []string{"add", "device", "--help"},
+		expectedStdout: []string{"device <pattern>", "--agree-embedded-license", "--no-dependencies"},
+	},
+	{
+		name:           "test board help command",
+		args:           []string{"add", "board", "--help"},
+		expectedStdout: []string{"board <pattern>", "--skip-touch", "--insecure-skip-verify"},
 	},
 	{
 		name:           "test adding pack file no args",

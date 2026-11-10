@@ -116,6 +116,82 @@ The command below is an example how to add packs via PDSC files:
 
 Note that for adding packs via PDSC files is not possible to provide a URL as input. Only local files are allowed.
 
+### Finding devices and boards
+
+Search Solar online using a case-insensitive substring of the target name or vendor:
+
+```bash
+cpackget find device stm32h757
+cpackget find device ABOV
+cpackget find board nucleo-h743zi
+cpackget find board NXP::LPCXpresso812MAX --mounted-devices
+cpackget add device stm32h757
+cpackget add board nucleo-h743zi
+```
+
+Patterns also accept an optional `Vendor::` prefix, for example
+`cpackget find device NXP::LPC55` or `cpackget add board STMicroelectronics::NUCLEO`.
+The vendor and target name both use case-insensitive substring matching,
+for example `cpackget find board st::disc1`. The prefix identifies the target vendor, not
+the vendor of its providing pack.
+
+Board patterns also accept an optional `:Revision` suffix, matched as a
+case-insensitive substring, for example
+`cpackget find board STMicroelectronics::STM32N6570-DK:Rev.C`.
+The same syntax is supported by `add board`.
+
+Discovery returns matching targets and checks their latest available pack
+descriptors. Both `find board` and `add board` omit boards whose board pack is
+unresolved. Board searches skip mounted-device lookups by default for speed.
+Use `find board <pattern> --mounted-devices` to search and show mounted devices
+and their providing packs. `add board` always resolves mounted devices,
+independently of this discovery option.
+If a mounted-device name has no exact match, same-vendor devices whose names
+start with it are listed as alternatives. Pack descriptors and repeated device
+lookups are reused within a search, not cached across commands.
+Installed versions and local registrations are annotated with their locations;
+installed packs are not an offline search fallback. Standard verbosity, timeout,
+and TLS options apply.
+
+Target-based `add` installs only when all matches resolve to the same complete
+pack set. A board needs both its board pack and every mounted-device provider.
+Alternatives for each mounted device must resolve to one unique device pack.
+Ambiguous or unresolved results stop before installation and list candidate
+packs for explicit selection. Normal license and dependency options still apply.
+Target subcommands cannot be combined with positional packs, pack lists, or license
+extraction.
+
+### Installed target index
+
+Pack installation, removal, and registration maintain
+`.Targets/index.tidx` in the pack root. It contains devices and boards from the
+latest installed version of each public pack and from registered local PDSCs.
+Provider URLs identify the actual PDSC directories, including external local
+registrations. Mounted devices store identities only; their providers can be
+found in the device list.
+
+Rebuild the index without network access:
+
+```bash
+cpackget update-target-index --pack-root path/to/pack-root
+```
+
+The XML format is described by `TargetIndex.xsd`.
+A malformed source PDSC causes rebuilding to fail without replacing the previous
+index. `--skip-touch` does not disable target-index maintenance.
+
+Each changed command batch refreshes the index once, including after a later
+item fails. No-op operations and public-index-only updates do not rebuild it.
+Automatic refresh failures remain errors and explicitly report that repository
+changes were applied; those changes are not rolled back. Correct the source or
+filesystem problem and run `update-target-index` to recover.
+
+Publication uses a closed temporary file in `.Targets` and a platform replacement
+operation, preserving the previous index if replacement fails. The index is ordered
+by target vendor/name, board revision, provider identity/location, and mounted-device
+identity/index. Consumers should use these identities rather than relying on the previous
+XML byte order.
+
 ### Listing installed packs
 
 One could get a list of all installed packs by running the list command:

@@ -49,7 +49,7 @@ Update a pack using the following "<pack>" specification or using packs provided
   If it's hosted somewhere, cpackget will first download it then extract all pack files into "CMSIS_PACK_ROOT/<vendor>/<packName>/<x.y.z>/"
   If "-f" is used, cpackget will call "cpackget update pack" on each URL specified in the <packs list> file.`,
 	Args: cobra.MinimumNArgs(0),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (result error) {
 
 		utils.SetEncodedProgress(updateCmdFlags.encodedProgress)
 		utils.SetSkipTouch(updateCmdFlags.skipTouch)
@@ -67,27 +67,28 @@ Update a pack using the following "<pack>" specification or using packs provided
 		args = append(args, files...)
 
 		var lastErr error
+		operation := &installer.TargetOperation{}
+		installer.UnlockPackRoot()
+		defer installer.LockPackRoot()
+		defer func() { result = operation.Finish(result) }()
 
 		if len(args) == 0 {
 			if updateCmdFlags.packsListFileName != "" {
 				return nil // nothing to do
 			}
-			installer.UnlockPackRoot()
-			err := installer.UpdatePack("", !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, updateCmdFlags.insecureSkipVerify, false, viper.GetInt("timeout"))
+			err := operation.UpdatePack("", !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, updateCmdFlags.insecureSkipVerify, false, viper.GetInt("timeout"))
 			if err != nil {
 				lastErr = err
 				if !errs.AlreadyLogged(err) {
 					log.Error(err)
 				}
 			}
-			installer.LockPackRoot()
 			return lastErr
 		}
 
 		log.Debugf("Specified packs %v", args)
-		installer.UnlockPackRoot()
 		for _, packPath := range args {
-			err := installer.UpdatePack(packPath, !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, updateCmdFlags.insecureSkipVerify, false, viper.GetInt("timeout"))
+			err := operation.UpdatePack(packPath, !updateCmdFlags.skipEula, updateCmdFlags.noRequirements, false, updateCmdFlags.insecureSkipVerify, false, viper.GetInt("timeout"))
 			if err != nil {
 				lastErr = err
 				if !errs.AlreadyLogged(err) {
@@ -95,7 +96,6 @@ Update a pack using the following "<pack>" specification or using packs provided
 				}
 			}
 		}
-		installer.LockPackRoot()
 		return lastErr
 	},
 }
