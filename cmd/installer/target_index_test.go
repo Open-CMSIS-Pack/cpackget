@@ -74,6 +74,81 @@ func TestUpdateTargetIndex(t *testing.T) {
 	require.Equal(t, before, after)
 }
 
+func TestTargetIndexPackPriority(t *testing.T) {
+	previous := Installation
+	t.Cleanup(func() { Installation = previous })
+	for _, test := range []struct {
+		name      string
+		installed []string
+		local     []string
+		winner    string
+		version   string
+	}{
+		{"installed versions", []string{"1.9.0", "1.10.0"}, nil, "Installed1", "1.10.0"},
+		{"equal local copy", []string{"1.10.0"}, []string{"1.10.0"}, "Local0", "1.10.0"},
+		{"newer local", []string{"1.9.0"}, []string{"1.10.0"}, "Local0", "1.10.0"},
+		{"older local", []string{"1.10.0"}, []string{"1.9.0"}, "Installed0", "1.10.0"},
+		{"local prerelease", []string{"1.10.0"}, []string{"1.10.0-dev"}, "Installed0", "1.10.0"},
+		{"multiple local versions", []string{"1.9.0"}, []string{"1.11.0", "1.10.0"}, "Local0", "1.11.0"},
+		{"only local versions", nil, []string{"1.9.0", "1.10.0"}, "Local1", "1.10.0"},
+		{"multiple equal local copies", []string{"1.10.0"}, []string{"1.10.0", "1.10.0"}, "Local1", "1.10.0"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			Installation = &PacksInstallationType{PackRoot: root, LocalPidx: xml.NewPidxXML(filepath.Join(root, ".Local", "local_repository.pidx"), false)}
+			urls := make(map[string]string)
+			writePack := func(directory, vendor, name, version, source string) {
+				require.NoError(t, os.MkdirAll(directory, 0755))
+				// Each copy has a shared target and a unique target, so losing
+				// copies must be excluded entirely rather than merged.
+				contents := fmt.Sprintf(`<package><vendor>%s</vendor><name>%s</name><releases><release version="%s"/></releases>
+<devices><family Dvendor="ChipVendor:1"><device Dname="Chip"/><device Dname="%s"/></family></devices>
+<boards><board vendor="BoardVendor" name="Board" revision="A"><mountedDevice Dvendor="ChipVendor:1" Dname="%s" deviceIndex="0"/></board>
+<board vendor="BoardVendor" name="Board" revision="B"/></boards></package>`, vendor, name, version, source, source)
+				require.NoError(t, os.WriteFile(filepath.Join(directory, vendor+"."+name+".pdsc"), []byte(contents), 0600))
+				address, err := targetDirectoryURL(directory)
+				require.NoError(t, err)
+				urls[source] = address
+			}
+			for i, version := range test.installed {
+				writePack(filepath.Join(root, "Vendor", "DFP", version), "Vendor", "DFP", version, fmt.Sprintf("Installed%d", i))
+			}
+			// Write XML directly to preserve registration order and deliberately
+			// stale version fields. Local versions must come from the PDSCs.
+			var localIndex xml.PidxXML
+			for i, version := range test.local {
+				source := fmt.Sprintf("Local%d", i)
+				// Pack IDs are case insensitive in csolution.
+				writePack(filepath.Join(t.TempDir(), source), "vendor", "dfp", version, source)
+				localIndex.Pindex.Pdscs = append(localIndex.Pindex.Pdscs, xml.PdscTag{Vendor: "vendor", Name: "dfp", Version: "99.0.0", URL: urls[source]})
+			}
+			require.NoError(t, os.MkdirAll(filepath.Join(root, ".Local"), 0755))
+			require.NoError(t, utils.WriteXML(Installation.LocalPidx.GetFileName(), &localIndex))
+			for range 3 {
+				require.NoError(t, UpdateTargetIndex())
+				var index xml.TidxXML
+				require.NoError(t, utils.ReadXML(filepath.Join(root, ".Targets", "index.tidx"), &index))
+				require.Len(t, index.Devices, 2)
+				require.Equal(t, "Chip", index.Devices[0].Name)
+				require.Equal(t, test.winner, index.Devices[1].Name)
+				require.Len(t, index.Boards, 2)
+				require.Equal(t, "A", index.Boards[0].Revision)
+				require.Equal(t, "B", index.Boards[1].Revision)
+				require.Len(t, index.Boards[0].MountedDevices, 1)
+				require.Equal(t, test.winner, index.Boards[0].MountedDevices[0].Name)
+				for _, device := range index.Devices {
+					require.Equal(t, test.version, device.Pdsc.Version)
+					require.Equal(t, urls[test.winner], device.Pdsc.URL)
+				}
+				for _, board := range index.Boards {
+					require.Equal(t, test.version, board.Pdsc.Version)
+					require.Equal(t, urls[test.winner], board.Pdsc.URL)
+				}
+			}
+		})
+	}
+}
+
 func TestTargetIndexInvalidLocalRepository(t *testing.T) {
 	previous := Installation
 	t.Cleanup(func() { Installation = previous })

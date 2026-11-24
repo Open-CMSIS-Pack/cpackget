@@ -52,22 +52,23 @@ func collectTargetIndex() (*packxml.TidxXML, error) {
 	}
 	latest := make(map[string]installedPack)
 	for _, pack := range packs {
-		key := pack.Vendor + "::" + pack.Name
+		key := strings.ToLower(pack.Vendor + "::" + pack.Name)
 		previous, exists := latest[key]
 		if !exists || utils.SemverCompare(pack.Version, previous.Version) > 0 {
 			latest[key] = pack
 		}
 	}
-	paths := make(map[string]string)
+	candidates := make([]installedPack, 0, len(latest))
 	for _, pack := range latest {
-		paths[pack.pdscPath] = pack.Version
+		candidates = append(candidates, pack)
 	}
 	if Installation.LocalPidx != nil && utils.FileExists(Installation.LocalPidx.GetFileName()) {
-		localIndex := packxml.NewPidxXML(Installation.LocalPidx.GetFileName(), false)
-		if err := localIndex.Read(); err != nil {
+		var localIndex packxml.PidxXML
+		if err := utils.ReadXML(Installation.LocalPidx.GetFileName(), &localIndex); err != nil {
 			return nil, err
 		}
-		for _, tag := range localIndex.ListPdscTags() {
+		// Preserve registration order: the last local copy of a version wins.
+		for _, tag := range localIndex.Pindex.Pdscs {
 			parsed, err := url.Parse(tag.URL)
 			if err != nil || parsed.Scheme != "file" {
 				return nil, fmt.Errorf("invalid local PDSC URL %q", tag.URL)
@@ -76,13 +77,16 @@ func collectTargetIndex() (*packxml.TidxXML, error) {
 			if err != nil {
 				return nil, err
 			}
-			if _, exists := paths[path]; !exists {
-				paths[path] = ""
-			}
+			candidates = append(candidates, installedPack{pdscPath: path})
 		}
 	}
-	seen := make(map[string]bool)
-	for path, version := range paths {
+	type targetPack struct {
+		pdsc *packxml.PdscXML
+		tag  packxml.PdscTag
+	}
+	selected := make(map[string]targetPack)
+	for _, candidate := range candidates {
+		path, version := candidate.pdscPath, candidate.Version
 		pdsc := packxml.NewPdscXML(path)
 		if err := pdsc.Read(); err != nil {
 			return nil, err
@@ -98,11 +102,15 @@ func collectTargetIndex() (*packxml.TidxXML, error) {
 			return nil, err
 		}
 		tag := packxml.PdscTag{Vendor: pdsc.Vendor, Name: pdsc.Name, Version: version, URL: directoryURL}
-		key := tag.VName() + "@" + version + ":" + directoryURL
-		if seen[key] {
-			continue
+		key := strings.ToLower(tag.Vendor + "::" + tag.Name)
+		// Match csolution's RteKernel: highest version, with local copies
+		// overriding installed copies of the same version.
+		if previous, exists := selected[key]; !exists || utils.SemverCompare(version, previous.tag.Version) >= 0 {
+			selected[key] = targetPack{pdsc: pdsc, tag: tag}
 		}
-		seen[key] = true
+	}
+	for _, pack := range selected {
+		pdsc, tag := pack.pdsc, pack.tag
 		for _, device := range pdsc.TargetDevices() {
 			index.Devices = append(index.Devices, packxml.TargetDeviceTag{DeviceIdentity: device, Pdsc: tag})
 		}
