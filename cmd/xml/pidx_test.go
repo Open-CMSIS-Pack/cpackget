@@ -17,6 +17,7 @@ import (
 	"github.com/open-cmsis-pack/cpackget/cmd/xml"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPdscTag(t *testing.T) {
@@ -100,6 +101,47 @@ func TestPdscTag(t *testing.T) {
 		assert.Equal(1, len(tags))
 		assert.False(tags[0].IsDeprecated())
 	})
+}
+
+func TestPidxRegistrationOrder(t *testing.T) {
+	fileName := filepath.Join(t.TempDir(), "local_repository.pidx")
+	var original xml.PidxXML
+	original.Pindex.Pdscs = []xml.PdscTag{
+		{Vendor: "Vendor", Name: "DFP", Version: "1.0.0", URL: "file:///first/"},
+		{Vendor: "vendor", Name: "dfp", Version: "1.0.0", URL: "file:///middle/"},
+		{Vendor: "Vendor", Name: "DFP", Version: "1.0.0", URL: "file:///last/"},
+	}
+	require.NoError(t, utils.WriteXML(fileName, &original))
+	pidx := xml.NewPidxXML(fileName, false)
+	checkOrder := func(expected ...string) {
+		t.Helper()
+		require.NoError(t, pidx.Write())
+		var written xml.PidxXML
+		require.NoError(t, utils.ReadXML(fileName, &written))
+		var addresses []string
+		for _, tag := range written.Pindex.Pdscs {
+			addresses = append(addresses, tag.URL)
+		}
+		require.Equal(t, expected, addresses)
+	}
+	for range 3 {
+		require.NoError(t, pidx.Read())
+		checkOrder("file:///first/", "file:///middle/", "file:///last/")
+	}
+	// Removing an entry must retain the positions of interleaved registrations.
+	require.NoError(t, pidx.RemovePdsc(original.Pindex.Pdscs[0]))
+	checkOrder("file:///middle/", "file:///last/")
+	require.NoError(t, pidx.ReplacePdscVersion(xml.PdscTag{Vendor: "Vendor", Name: "DFP", Version: "2.0.0"}))
+	checkOrder("file:///middle/", "file:///last/")
+	require.NoError(t, pidx.AddReplacePdsc(xml.PdscTag{Vendor: "Vendor", Name: "DFP", Version: "3.0.0", URL: "file:///updated/"}))
+	checkOrder("file:///middle/", "file:///updated/")
+	require.NoError(t, pidx.AddPdsc(xml.PdscTag{Vendor: "Other", Name: "BSP", Version: "1.0.0", URL: "file:///new/"}))
+	checkOrder("file:///middle/", "file:///updated/", "file:///new/")
+	require.NoError(t, pidx.Read())
+	checkOrder("file:///middle/", "file:///updated/", "file:///new/")
+	pidx.Clear()
+	require.NoError(t, pidx.AddReplacePdsc(original.Pindex.Pdscs[0]))
+	checkOrder("file:///first/")
 }
 
 func TestPidxXML(t *testing.T) {

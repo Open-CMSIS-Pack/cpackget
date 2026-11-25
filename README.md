@@ -164,8 +164,20 @@ extraction.
 ### Installed target index
 
 Pack installation, removal, and registration maintain
-`.Targets/index.tidx` in the pack root. It contains devices and boards from the
-latest installed version of each public pack and from registered local PDSCs.
+`.Targets/index.tidx` in the pack root. It contains devices and boards from one
+effective copy of each pack, selected from installed packs and registered local
+PDSCs:
+
+* Pack vendor and name are matched case-insensitively.
+* The highest semantic version wins, whether installed or local.
+* At the same version, a registered local PDSC overrides an installed copy.
+  If multiple local copies have that version, the last entry in
+  `.Local/local_repository.pidx` wins.
+* Local versions come from the PDSC's first release, ignoring the version recorded
+  in the local repository index.
+
+Only the selected copy contributes targets; targets exclusive to lower-priority
+copies are omitted.
 Provider URLs identify the actual PDSC directories, including external local
 registrations. Mounted devices store identities only; their providers can be
 found in the device list.
