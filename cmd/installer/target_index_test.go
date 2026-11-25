@@ -149,6 +149,75 @@ func TestTargetIndexPackPriority(t *testing.T) {
 	}
 }
 
+func TestTargetIndexRegistrationOrderAfterRewrite(t *testing.T) {
+	previous := Installation
+	t.Cleanup(func() { Installation = previous })
+	root := t.TempDir()
+	require.NoError(t, SetPackRoot(root, true))
+	UnlockPackRoot()
+	for i, identity := range []struct{ vendor, name string }{{"Vendor", "DFP"}, {"vendor", "dfp"}, {"Other", "BSP"}} {
+		path := filepath.Join(t.TempDir(), identity.vendor+"."+identity.name+".pdsc")
+		contents := fmt.Sprintf(`<package><vendor>%s</vendor><name>%s</name><releases><release version="1.0.0"/></releases><boards><board vendor="Vendor" name="Board%d"/></boards></package>`, identity.vendor, identity.name, i)
+		require.NoError(t, os.WriteFile(path, []byte(contents), 0600))
+		require.NoError(t, AddPdsc(path))
+		if i == 0 {
+			continue
+		}
+		for range 20 {
+			require.NoError(t, Installation.LocalPidx.Read())
+			require.NoError(t, Installation.LocalPidx.Write())
+			require.NoError(t, UpdateTargetIndex())
+			var index xml.TidxXML
+			require.NoError(t, utils.ReadXML(filepath.Join(root, ".Targets", "index.tidx"), &index))
+			require.Len(t, index.Boards, i)
+			require.Equal(t, "Board1", index.Boards[0].Name)
+			require.Equal(t, "vendor", index.Boards[0].Pdsc.Vendor)
+		}
+	}
+}
+
+func TestTargetIndexSkipsInvalidRegistrations(t *testing.T) {
+	previous := Installation
+	t.Cleanup(func() { Installation = previous })
+	for _, field := range []string{"url", "vendor", "name", "version", "deprecated", "replacement"} {
+		t.Run(field, func(t *testing.T) {
+			root := t.TempDir()
+			Installation = &PacksInstallationType{PackRoot: root, LocalPidx: xml.NewPidxXML(filepath.Join(root, ".Local", "local_repository.pidx"), false)}
+			directory := t.TempDir()
+			require.NoError(t, os.WriteFile(filepath.Join(directory, "Vendor.DFP.pdsc"), []byte(`<package><vendor>Vendor</vendor><name>DFP</name><releases><release version="1.0.0"/></releases><boards><board vendor="Vendor" name="Board"/></boards></package>`), 0600))
+			address, err := targetDirectoryURL(directory)
+			require.NoError(t, err)
+			valid := xml.PdscTag{Vendor: "Vendor", Name: "DFP", Version: "99.0.0", URL: address}
+			invalid := valid
+			invalid.URL += "missing/"
+			switch field {
+			case "url":
+				invalid.URL = "%"
+			case "vendor":
+				invalid.Vendor = "Bad Vendor"
+			case "name":
+				invalid.Name = "Bad.Pack"
+			case "version":
+				invalid.Version = "invalid"
+			case "deprecated":
+				invalid.Deprecated = "tomorrow"
+			case "replacement":
+				invalid.Replacement = "Bad.Replacement.Name"
+			}
+			var localIndex xml.PidxXML
+			localIndex.Pindex.Pdscs = []xml.PdscTag{invalid, valid, invalid}
+			require.NoError(t, os.MkdirAll(filepath.Join(root, ".Local"), 0755))
+			require.NoError(t, utils.WriteXML(Installation.LocalPidx.GetFileName(), &localIndex))
+			require.NoError(t, UpdateTargetIndex())
+			var index xml.TidxXML
+			require.NoError(t, utils.ReadXML(filepath.Join(root, ".Targets", "index.tidx"), &index))
+			require.Len(t, index.Boards, 1)
+			require.Equal(t, "Board", index.Boards[0].Name)
+			require.Equal(t, "1.0.0", index.Boards[0].Pdsc.Version)
+		})
+	}
+}
+
 func TestTargetIndexInvalidLocalRepository(t *testing.T) {
 	previous := Installation
 	t.Cleanup(func() { Installation = previous })

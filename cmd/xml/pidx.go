@@ -124,6 +124,7 @@ func (p *PidxXML) AddPdsc(pdsc PdscTag) error {
 	}
 	p.pdscList[key] = append(p.pdscList[key], pdsc)
 	p.pdscListName[name] = key
+	p.Pindex.Pdscs = append(p.Pindex.Pdscs, pdsc)
 	return nil
 }
 
@@ -150,9 +151,8 @@ func (p *PidxXML) AddReplacePdsc(cTag PdscTag) error {
 		if len(oldPdsc) > 0 {
 			oldPdsc[0].URL = cTag.URL
 			oldPdsc[0].Version = cTag.Version
-			delete(p.pdscList, key) // remove the old key
-			key = cTag.Key()        // and replace by new one
-			p.pdscList[key] = oldPdsc
+			p.replacePdsc(key, oldPdsc[0])
+			key = oldPdsc[0].Key()
 		} else {
 			// If the slice is empty, treat it as a new entry
 			key = cTag.Key()
@@ -163,6 +163,7 @@ func (p *PidxXML) AddReplacePdsc(cTag PdscTag) error {
 				p.pdscListName = make(map[string]string)
 			}
 			p.pdscList[key] = append(p.pdscList[key], cTag)
+			p.Pindex.Pdscs = append(p.Pindex.Pdscs, cTag)
 		}
 	} else {
 		key = cTag.Key()       // insert new key
@@ -173,6 +174,7 @@ func (p *PidxXML) AddReplacePdsc(cTag PdscTag) error {
 			p.pdscListName = make(map[string]string)
 		}
 		p.pdscList[key] = append(p.pdscList[key], cTag)
+		p.Pindex.Pdscs = append(p.Pindex.Pdscs, cTag)
 	}
 	p.pdscListName[name] = key
 	return nil
@@ -206,11 +208,25 @@ func (p *PidxXML) ReplacePdscVersion(pdsc PdscTag) error {
 		oldPdsc[0].URL = pdsc.URL // only for cache tags
 	}
 	oldPdsc[0].Version = pdsc.Version
-	delete(p.pdscList, key) // remove the old key
-	key = pdsc.Key()        // and replyce by new one
-	p.pdscList[key] = oldPdsc
+	p.replacePdsc(key, oldPdsc[0])
+	key = oldPdsc[0].Key()
 	p.pdscListName[name] = key
 	return nil
+}
+
+// replacePdsc updates an entry in place and rebuilds the key lookup.
+func (p *PidxXML) replacePdsc(key string, tag PdscTag) {
+	for i := range p.Pindex.Pdscs {
+		if p.Pindex.Pdscs[i].Key() == key {
+			p.Pindex.Pdscs[i] = tag
+			break
+		}
+	}
+	p.pdscList = make(map[string][]PdscTag)
+	for _, pdsc := range p.Pindex.Pdscs {
+		key := pdsc.Key()
+		p.pdscList[key] = append(p.pdscList[key], pdsc)
+	}
 }
 
 // Empty checks if the PidxXML instance has an uninitialized or nil pdscList.
@@ -279,6 +295,16 @@ func (p *PidxXML) RemovePdsc(pdsc PdscTag) error {
 
 	for _, info := range toRemove {
 		log.Debugf("Removing \"%v:%d\"", info.key, info.index)
+		index := 0
+		for i, tag := range p.Pindex.Pdscs {
+			if tag.Key() == info.key {
+				if index == info.index {
+					p.Pindex.Pdscs = append(p.Pindex.Pdscs[:i], p.Pindex.Pdscs[i+1:]...)
+					break
+				}
+				index++
+			}
+		}
 		p.pdscList[info.key] = append(p.pdscList[info.key][:info.index], p.pdscList[info.key][info.index+1:]...)
 		if len(p.pdscList[info.key]) == 0 {
 			delete(p.pdscList, info.key)
@@ -378,6 +404,7 @@ func (p *PidxXML) CheckTime() error {
 	log.Debugf("Checking timestamp of pidx %q", p.fileName)
 
 	p.pdscList = make(map[string][]PdscTag)
+	p.Pindex.Pdscs = p.Pindex.Pdscs[:0]
 
 	if !utils.FileExists(p.fileName) {
 		return nil
@@ -401,7 +428,7 @@ func (p *PidxXML) CheckTime() error {
 // Read reads the PidxXML from the file specified by p.fileName.
 // If the file does not exist, it creates a new PidxXML with default values and writes it to the file.
 // It initializes the pdscList map and populates it with PdscTag entries from the Pindex.Pdscs slice.
-// After processing, it truncates the Pindex.Pdscs slice to release memory.
+// It retains valid entries in Pindex.Pdscs in registration order.
 //
 // Returns an error if reading the XML file fails or if writing a new file fails.
 func (p *PidxXML) Read() error {
@@ -409,6 +436,7 @@ func (p *PidxXML) Read() error {
 
 	p.pdscList = make(map[string][]PdscTag)
 	p.pdscListName = make(map[string]string)
+	p.Pindex.Pdscs = p.Pindex.Pdscs[:0]
 	p.deprecatedDate = time.Now().UTC().Truncate(24 * time.Hour)
 
 	// Create a new empty Pidx file if it does not exist
@@ -445,10 +473,9 @@ func (p *PidxXML) Read() error {
 		return errs.ErrFileNotFound // only to trigger an initialization
 	}
 
+	entries := p.Pindex.Pdscs[:0]
 	for _, pdsc := range p.Pindex.Pdscs {
-		invalidFields := pdsc.invalidFields()
-		if len(invalidFields) > 0 {
-			log.Warnf("Skipping invalid pdsc entry %q: invalid %s", pdsc.YamlPackID(), strings.Join(invalidFields, ", "))
+		if !pdsc.IsValid() {
 			continue
 		}
 		pdsc.Version = utils.SemverStripMeta(pdsc.Version)
@@ -458,12 +485,22 @@ func (p *PidxXML) Read() error {
 		//		log.Debugf("Registring %q", key)
 		p.pdscList[key] = append(p.pdscList[key], pdsc)
 		p.pdscListName[name] = key
+		entries = append(entries, pdsc)
 	}
 
-	// truncate Pindex.Pdscs
-	p.Pindex.Pdscs = p.Pindex.Pdscs[:0]
+	p.Pindex.Pdscs = entries
 
 	return nil
+}
+
+// IsValid checks the entry fields and logs a warning for an invalid entry.
+func (p *PdscTag) IsValid() bool {
+	invalidFields := p.invalidFields()
+	if len(invalidFields) > 0 {
+		log.Warnf("Skipping invalid pdsc entry %q: invalid %s", p.YamlPackID(), strings.Join(invalidFields, ", "))
+		return false
+	}
+	return true
 }
 
 func (p *PdscTag) invalidFields() []string {
@@ -497,23 +534,11 @@ func (p *PdscTag) invalidFields() []string {
 }
 
 // Write writes the PidxXML data to the file specified by p.fileName.
-// It appends the pdsc tags from p.pdscList to p.Pindex.Pdscs before writing,
-// and truncates p.Pindex.Pdscs after writing to prepare for potential future writes.
 // Returns an error if the writing process fails.
 func (p *PidxXML) Write() error {
 	log.Debugf("Writing pidx file to %q", p.fileName)
 
-	// Use p.pdscList as the main source of pdsc tags
-	for _, pdscs := range p.pdscList {
-		p.Pindex.Pdscs = append(p.Pindex.Pdscs, pdscs...)
-	}
-
-	err := utils.WriteXML(p.fileName, p)
-
-	// Truncate Pindex.Pdscs in case a new Write is requested
-	p.Pindex.Pdscs = p.Pindex.Pdscs[:0]
-
-	return err
+	return utils.WriteXML(p.fileName, p)
 }
 
 // Key generates a unique key for the PdscTag by concatenating the Vendor, Name, and Version fields

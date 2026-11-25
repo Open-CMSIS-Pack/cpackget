@@ -69,6 +69,9 @@ func collectTargetIndex() (*packxml.TidxXML, error) {
 		}
 		// Preserve registration order: the last local copy of a version wins.
 		for _, tag := range localIndex.Pindex.Pdscs {
+			if !tag.IsValid() {
+				continue
+			}
 			parsed, err := url.Parse(tag.URL)
 			if err != nil || parsed.Scheme != "file" {
 				return nil, fmt.Errorf("invalid local PDSC URL %q", tag.URL)
